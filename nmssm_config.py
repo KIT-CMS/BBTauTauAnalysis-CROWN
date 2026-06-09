@@ -356,7 +356,7 @@ def add_electron_config(configuration: Configuration):
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
         {
-            "tight_electron_min_pt": 25.0,
+            "tight_electron_min_pt": 20.0,
             "tight_electron_max_abs_eta": 2.5,
             "tight_electron_max_abs_dxy": 0.045,
             "tight_electron_max_abs_dz": 0.2,

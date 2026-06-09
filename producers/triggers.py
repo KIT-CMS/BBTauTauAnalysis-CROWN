@@ -13,7 +13,7 @@ from ..constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, EM_SCOPES, ELECTRON_SCO
 # single electron trigger flags, including trigger object matching
 SingleEleTriggerFlags = ExtendedVectorProducer(
     name="SingleEleTriggerFlags",
-    call='trigger::SingleObjectFlag({df}, {output}, {input}, "{hlt_path}", {min_pt}, {max_abs_eta}, {particle_id}, {filter_bit}, {match_max_delta_r})',
+    call='trigger::SingleObjectFlag({df}, {output}, {input}, "{hlt_path}", {min_pt}, {max_abs_eta}, {particle_id}, {vec_open}{filter_bit}{vec_close}, {match_max_delta_r})',
     input=[
         q.p4_1,
         nanoAOD.TrigObj_pt,
@@ -30,7 +30,7 @@ SingleEleTriggerFlags = ExtendedVectorProducer(
 # double electron-tau trigger flags, including trigger object matching
 DoubleEleTauTriggerFlags = ExtendedVectorProducer(
     name="DoubleEleTauTriggerFlags",
-    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {p1_filter_bit}, {p2_filter_bit}, {match_max_delta_r})',
+    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {vec_open}{p1_filter_bit}{vec_close}, {vec_open}{p2_filter_bit}{vec_close}, {match_max_delta_r})',
     input=[
         q.p4_1,
         q.p4_2,
@@ -61,7 +61,7 @@ common_inputs = [
 ]
 SingleMuTriggerFlags = ExtendedVectorProducer(
     name="SingleMuTriggerFlags",
-    call='trigger::SingleObjectFlag({df}, {output}, {input}, "{hlt_path}", {min_pt}, {max_abs_eta}, {particle_id}, {filter_bit}, {match_max_delta_r})',
+    call='trigger::SingleObjectFlag({df}, {output}, {input}, "{hlt_path}", {min_pt}, {max_abs_eta}, {particle_id}, {vec_open}{filter_bit}{vec_close}, {match_max_delta_r})',
     input={
         "mt": [q.p4_1] + common_inputs,
         "mm": [q.p4_1] + common_inputs,
@@ -75,7 +75,7 @@ SingleMuTriggerFlags = ExtendedVectorProducer(
 # double muon-tau trigger flags, including trigger object matching
 DoubleMuTauTriggerFlags = ExtendedVectorProducer(
     name="DoubleMuTauTriggerFlags",
-    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {p1_filter_bit}, {p2_filter_bit}, {match_max_delta_r})',
+    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {vec_open}{p1_filter_bit}{vec_close}, {vec_open}{p2_filter_bit}{vec_close}, {match_max_delta_r})',
     input=[
         q.p4_1,
         q.p4_2,
@@ -98,7 +98,7 @@ DoubleMuTauTriggerFlags = ExtendedVectorProducer(
 # double tau-tau trigger flags, including trigger object matching
 TauTauTriggerFlags = ExtendedVectorProducer(
     name="TauTauTriggerFlags",
-    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {p1_filter_bit}, {p2_filter_bit}, {match_max_delta_r})',
+    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {vec_open}{p1_filter_bit}{vec_close}, {vec_open}{p2_filter_bit}{vec_close}, {match_max_delta_r})',
     input=[
         q.p4_1,
         q.p4_2,
@@ -116,7 +116,7 @@ TauTauTriggerFlags = ExtendedVectorProducer(
 # double tau-tau + jet trigger flags, including trigger object matching
 TauTauJetTriggerFlags = ExtendedVectorProducer(
     name="TauTauJetTriggerFlags",
-    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {p1_filter_bit}, {p2_filter_bit}, {match_max_delta_r})',
+    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {vec_open}{p1_filter_bit}{vec_close}, {vec_open}{p2_filter_bit}{vec_close}, {match_max_delta_r})',
     input=[
         q.p4_1,
         q.p4_2,
@@ -140,7 +140,7 @@ TauTauJetTriggerFlags = ExtendedVectorProducer(
 # double electron-muon trigger flags, including trigger object matching
 DoubleEleMuTriggerFlags = ExtendedVectorProducer(
     name="DoubleEleMuTriggerFlags",
-    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {p1_filter_bit}, {p2_filter_bit}, {match_max_delta_r})',
+    call='trigger::DoubleObjectFlag({df}, {output}, {input}, "{hlt_path}", {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {vec_open}{p1_filter_bit}{vec_close}, {vec_open}{p2_filter_bit}{vec_close}, {match_max_delta_r})',
     input=[
         q.p4_1,
         q.p4_2,

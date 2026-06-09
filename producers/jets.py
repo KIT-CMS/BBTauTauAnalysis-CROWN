@@ -106,34 +106,6 @@ JERSmearingSeed = Producer(
 # JET ENERGY CALIBRATION
 #
 
-# Create jet energy correction producers for AK4 jets
-# JetEnergyCorrection_data, JetEnergyCorrection, RenameJetsData = jerc_producer_factory(
-#     input={
-#         "jet_pt": nanoAOD.Jet_pt,
-#         "jet_eta": nanoAOD.Jet_eta,
-#         "jet_phi": nanoAOD.Jet_phi,
-#         "jet_mass": nanoAOD.Jet_mass,
-#         "jet_area": nanoAOD.Jet_area,
-#         "jet_raw_factor": nanoAOD.Jet_rawFactor,
-#         "jet_id": q.Jet_ID,
-#         "gen_jet_pt": nanoAOD.GenJet_pt,
-#         "gen_jet_eta": nanoAOD.GenJet_eta,
-#         "gen_jet_phi": nanoAOD.GenJet_phi,
-#         "rho": nanoAOD.Rho_fixedGridRhoFastjetAll,
-#         "luminosity_block": nanoAOD.luminosityBlock,
-#         "run": nanoAOD.run,
-#         "event": nanoAOD.event,
-#     },
-#     output={
-#         "jet_seed": q.jet_seed,
-#         "jet_pt_corrected": q.Jet_correctedPt,
-#         "jet_mass_corrected": q.Jet_correctedMass,
-#     },
-#     scopes=GLOBAL_SCOPES,
-#     producer_prefix="Jet",
-#     config_parameter_prefix="ak4jet",
-# )
-
 # Producer for raw jet pt before JES corrections
 JetRawPt = Producer(
     name="JetRawPt",
@@ -544,56 +516,6 @@ JetSelection = ProducerGroup(
         BJetCollection,
     ],
 )
-
-
-#
-# JET QUANTITIES
-#
-
-"""
-# columns for jet pt regression with PNet
-jet_column_producers.extend(
-    [
-        Producer(
-            name="JetColumn_jet_pt_pnet",
-            call="physicsobject::jet::quantities::JetPtPNetRegression({df}, {output}, {input})",
-            input=[
-                nanoAOD.Jet_pt,
-                nanoAOD.Jet_rawFactor,
-                nanoAOD.Jet_PNetRegPtRawCorr,
-                q.good_jet_combined_collection,
-            ],
-            output=[q.jet_pt_pnet],
-            scopes=SCOPES,
-        ),
-        Producer(
-            name="JetColumn_jet_pt_pnet_with_neutrino",
-            call="physicsobject::jet::quantities::JetPtPNetRegressionWithNeutrino({df}, {output}, {input})",
-            input=[
-                nanoAOD.Jet_pt,
-                nanoAOD.Jet_rawFactor,
-                nanoAOD.Jet_PNetRegPtRawCorr,
-                nanoAOD.Jet_PNetRegPtRawCorrNeutrino,
-                q.good_jet_combined_collection
-            ],
-            output=[q.jet_pt_pnet_with_neutrino],
-            scopes=SCOPES,
-        ),
-        Producer(
-            name="JetColumn_jet_pt_resolution_pnet_with_neutrino",
-            call="physicsobject::jet::quantities::JetPtPNetRegression({df}, {output}, {input})",
-            input=[
-                nanoAOD.Jet_pt,
-                nanoAOD.Jet_rawFactor,
-                nanoAOD.Jet_PNetRegPtRawRes,
-                q.good_jet_combined_collection,
-            ],
-            output=[q.jet_pt_pnet_resolution],
-            scopes=SCOPES,
-        ),
-    ]
-)
-"""
 
 
 #
