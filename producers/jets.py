@@ -684,10 +684,14 @@ BasicJetQuantities = ProducerGroup(
         jeta_1,
         jphi_1,
         jtag_value_1,
+        jpt_nano_1,
+        jpt_raw_1,
         jpt_2,
         jeta_2,
         jphi_2,
         jtag_value_2,
+        jpt_nano_2,
+        jpt_raw_2,
         mjj,
     ],
 )
@@ -740,90 +744,6 @@ NumberOfBJets_boosted = Producer(
     scopes=SCOPES,
 )
 
-# bpt_1 = Producer(
-#     name="bpt_1",
-#     call="lorentzvector::GetPt({df}, {output}, {input})",
-#     input=[q.bjet_p4_1],
-#     output=[q.bpt_1],
-#     scopes=SCOPES,
-# )
-# bpt_2 = Producer(
-#     name="bpt_2",
-#     call="lorentzvector::GetPt({df}, {output}, {input})",
-#     input=[q.bjet_p4_2],
-#     output=[q.bpt_2],
-#     scopes=SCOPES,
-# )
-# beta_1 = Producer(
-#     name="beta_1",
-#     call="lorentzvector::GetEta({df}, {output}, {input})",
-#     input=[q.bjet_p4_1],
-#     output=[q.beta_1],
-#     scopes=SCOPES,
-# )
-# beta_2 = Producer(
-#     name="beta_2",
-#     call="lorentzvector::GetEta({df}, {output}, {input})",
-#     input=[q.bjet_p4_2],
-#     output=[q.beta_2],
-#     scopes=SCOPES,
-# )
-# bphi_1 = Producer(
-#     name="bphi_1",
-#     call="lorentzvector::GetPhi({df}, {output}, {input})",
-#     input=[q.bjet_p4_1],
-#     output=[q.bphi_1],
-#     scopes=SCOPES,
-# )
-# bphi_2 = Producer(
-#     name="bphi_2",
-#     call="lorentzvector::GetPhi({df}, {output}, {input})",
-#     input=[q.bjet_p4_2],
-#     output=[q.bphi_2],
-#     scopes=SCOPES,
-# )
-# btag_value_deepjet_1 = Producer(
-#     name="btag_value_deepjet_1",
-#     call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
-#     input=[nanoAOD.Jet_btagDeepFlavB, q.good_bjet_collection],
-#     output=[q.btag_value_1],
-#     scopes=SCOPES,
-# )
-# btag_value_deepjet_2 = Producer(
-#     name="btag_value_deepjet_1",
-#     call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
-#     input=[nanoAOD.Jet_btagDeepFlavB, q.good_bjet_collection],
-#     output=[q.btag_value_2],
-#     scopes=SCOPES,
-# )
-# btag_value_pnet_1 = Producer(
-#     name="btag_value_pnet_1",
-#     call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
-#     input=[nanoAOD.Jet_btagPNetB, q.good_bjet_collection],
-#     output=[q.btag_value_1],
-#     scopes=SCOPES,
-# )
-# btag_value_pnet_2 = Producer(
-#     name="btag_value_pnet_2",
-#     call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
-#     input=[nanoAOD.Jet_btagPNetB, q.good_bjet_collection],
-#     output=[q.btag_value_2],
-#     scopes=SCOPES,
-# )
-# btag_value_upart_1 = Producer(
-#     name="btag_value_upart_1",
-#     call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
-#     input=[nanoAOD.Jet_btagUParTAK4B, q.good_bjet_collection],
-#     output=[q.btag_value_1],
-#     scopes=SCOPES,
-# )
-# btag_value_pnet_2 = Producer(
-#     name="btag_value_upart_2",
-#     call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
-#     input=[nanoAOD.Jet_btagUParTAK4B, q.good_bjet_collection],
-#     output=[q.btag_value_2],
-#     scopes=SCOPES,
-# )
 BasicBJetQuantities = ProducerGroup(
     name="BasicBJetQuantities",
     call=None,
