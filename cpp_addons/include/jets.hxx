@@ -58,6 +58,7 @@ float apply_jer(const float &jet_pt, const float &jet_eta, const float &jet_phi,
                 const ROOT::RVec<float> &genjet_phi,
                 const correction::Correction *jer_resolution_evaluator,
                 const correction::Correction *jer_scalefactor_evaluator,
+                const correction::Correction *jer_scalefactor_uncertainty_evaluator,
                 const std::string &jer_shift, const float &jet_radius,
                 const std::string &era, TRandom3 randgen);
 JECResult apply_full_jec_mc(
@@ -72,7 +73,9 @@ JECResult apply_full_jec_mc(
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
-    const correction::Correction *jer_scalefactor_evaluator);
+    const correction::Correction *jer_scalefactor_evaluator,
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator
+    );
 JECResult apply_jes_shifts_and_jer_mc(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const UChar_t &jet_id, const float &rho, const ROOT::RVec<float> &genjet_pt,
@@ -82,7 +85,9 @@ JECResult apply_jes_shifts_and_jer_mc(
     const float &jet_radius, const std::string &era, TRandom3 randgen,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
-    const correction::Correction *jer_scalefactor_evaluator);
+    const correction::Correction *jer_scalefactor_evaluator,
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator
+    );
 JECResult
 apply_full_jec_data(const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_area,
