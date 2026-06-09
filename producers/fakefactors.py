@@ -412,12 +412,12 @@ RawFakeFactorFullhadronicLeading = Producer(
         {output},
         {input},
         "{ff_file}",
-        "{ff_qcd_name}",
-        "{ff_tt_name}",
-        "{ff_fraction_name}",
-        "{ff_qcd_variation}",
-        "{ff_tt_variation}",
-        "{ff_fraction_variation}"
+        "{ff_1_qcd_name}",
+        "{ff_1_tt_name}",
+        "{ff_1_fraction_name}",
+        "{ff_1_qcd_variation}",
+        "{ff_1_tt_variation}",
+        "{ff_1_fraction_variation}"
     )
     """,
     input=[
@@ -440,18 +440,18 @@ FakeFactorFullhadronicLeading = Producer(
         {input},
         "{ff_file}",
         "{ff_qcd_name}",
-        "{ff_tt_name}",
-        "{ff_fraction_name}",
+        "{ff_1_tt_name}",
+        "{ff_1_fraction_name}",
         "{ff_corr_file}",
-        "{ff_corr_dr_sr_qcd_name}",
-        "{ff_corr_closure_qcd_name}",
-        "{ff_corr_closure_tt_name}",
-        "{ff_qcd_variation}",
-        "{ff_tt_variation}",
-        "{ff_fraction_variation}",
-        "{ff_dr_sr_corr_qcd_variation}",
-        "{ff_closure_corr_qcd_variation}",
-        "{ff_closure_corr_tt_variation}"
+        "{ff_1_corr_dr_sr_qcd_name}",
+        "{ff_1_corr_closure_qcd_name}",
+        "{ff_1_corr_closure_tt_name}",
+        "{ff_1_qcd_variation}",
+        "{ff_1_tt_variation}",
+        "{ff_1_fraction_variation}",
+        "{ff_1_dr_sr_corr_qcd_variation}",
+        "{ff_1_closure_corr_qcd_variation}",
+        "{ff_1_closure_corr_tt_variation}"
     )
     """,
     input=[
@@ -476,12 +476,12 @@ RawFakeFactorFullhadronicSubleading = Producer(
         {output},
         {input},
         "{ff_file}",
-        "{ff_qcd_name}",
-        "{ff_tt_name}",
-        "{ff_fraction_name}",
-        "{ff_qcd_variation}",
-        "{ff_tt_variation}",
-        "{ff_fraction_variation}"
+        "{ff_2_qcd_name}",
+        "{ff_2_tt_name}",
+        "{ff_2_fraction_name}",
+        "{ff_2_qcd_variation}",
+        "{ff_2_tt_variation}",
+        "{ff_2_fraction_variation}"
     )
     """,
     input=[
@@ -503,19 +503,19 @@ FakeFactorFullhadronicSubleading = Producer(
         {output},
         {input},
         "{ff_file}",
-        "{ff_qcd_name}",
-        "{ff_tt_name}",
-        "{ff_fraction_name}",
+        "{ff_2_qcd_name}",
+        "{ff_2_tt_name}",
+        "{ff_2_fraction_name}",
         "{ff_corr_file}",
-        "{ff_corr_dr_sr_qcd_name}",
-        "{ff_corr_closure_qcd_name}",
-        "{ff_corr_closure_tt_name}",
-        "{ff_qcd_variation}",
-        "{ff_tt_variation}",
-        "{ff_fraction_variation}",
-        "{ff_dr_sr_corr_qcd_variation}",
-        "{ff_closure_corr_qcd_variation}",
-        "{ff_closure_corr_tt_variation}"
+        "{ff_2_corr_dr_sr_qcd_name}",
+        "{ff_2_corr_closure_qcd_name}",
+        "{ff_2_corr_closure_tt_name}",
+        "{ff_2_qcd_variation}",
+        "{ff_2_tt_variation}",
+        "{ff_2_fraction_variation}",
+        "{ff_2_dr_sr_corr_qcd_variation}",
+        "{ff_2_closure_corr_qcd_variation}",
+        "{ff_2_closure_corr_tt_variation}"
     )
     """,
     input=[
