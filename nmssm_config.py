@@ -1556,9 +1556,9 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
         },
     )
 
-    # corrections for b jet identification
+    # corrections for b jet identification in et channel
     configuration.add_config_parameters(
-        ET_SCOPES + EE_SCOPES,
+        ET_SCOPES,
         {
             "bjet_eff_file": EraModifier(
                 {
@@ -1570,14 +1570,15 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2022postEE": "TO_ADD",
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
-                    "2024": "payloads/btagging_efficiencies/btag_efficiency_2024_et.json.gz",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_et.json.gz",
                 }
             ),
         },
     )
 
+    # corrections for b jet identification in mt channel
     configuration.add_config_parameters(
-        MT_SCOPES + MM_SCOPES + EM_SCOPES,
+        MT_SCOPES,
         {
             "bjet_eff_file": EraModifier(
                 {
@@ -1589,12 +1590,13 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2022postEE": "TO_ADD",
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
-                    "2024": "payloads/btagging_efficiencies/btag_efficiency_2024_mt.json.gz",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mt.json.gz",
                 }
             ),
         },
     )
 
+    # corrections for b jet identification in tt channel
     configuration.add_config_parameters(
         TT_SCOPES,
         {
@@ -1608,7 +1610,67 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2022postEE": "TO_ADD",
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
-                    "2024": "payloads/btagging_efficiencies/btag_efficiency_2024_tt.json.gz",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_tt.json.gz",
+                }
+            ),
+        },
+    )
+
+    # corrections for b jet identification in em channel
+    configuration.add_config_parameters(
+        EM_SCOPES,
+        {
+            "bjet_eff_file": EraModifier(
+                {
+                    "2016preVFP": "TO_ADD",
+                    "2016postVFP": "TO_ADD",
+                    "2017": "TO_ADD",
+                    "2018": "TO_ADD",
+                    "2022preEE": "TO_ADD",
+                    "2022postEE": "TO_ADD",
+                    "2023preBPix": "TO_ADD",
+                    "2023postBPix": "TO_ADD",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_em.json.gz",
+                }
+            ),
+        },
+    )
+
+    # corrections for b jet identification in ee channel
+    configuration.add_config_parameters(
+        EE_SCOPES,
+        {
+            "bjet_eff_file": EraModifier(
+                {
+                    "2016preVFP": "TO_ADD",
+                    "2016postVFP": "TO_ADD",
+                    "2017": "TO_ADD",
+                    "2018": "TO_ADD",
+                    "2022preEE": "TO_ADD",
+                    "2022postEE": "TO_ADD",
+                    "2023preBPix": "TO_ADD",
+                    "2023postBPix": "TO_ADD",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_ee.json.gz",
+                }
+            ),
+        },
+    )
+
+    # corrections for b jet identification in mm channel
+    configuration.add_config_parameters(
+        MM_SCOPES,
+        {
+            "bjet_eff_file": EraModifier(
+                {
+                    "2016preVFP": "TO_ADD",
+                    "2016postVFP": "TO_ADD",
+                    "2017": "TO_ADD",
+                    "2018": "TO_ADD",
+                    "2022preEE": "TO_ADD",
+                    "2022postEE": "TO_ADD",
+                    "2023preBPix": "TO_ADD",
+                    "2023postBPix": "TO_ADD",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mm.json.gz",
                 }
             ),
         },
@@ -1662,7 +1724,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         ]
                     },
                     **{
-                        sample_type: "dyjets"
+                        sample_type: "ggh_htautau"
                         for sample_type in [
                             "ggh_htautau",
                             "ggh_hbb",
@@ -1685,6 +1747,12 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         for sample_type in [
                             "ttbar",
                             "rem_ttbar",
+                        ]
+                    },
+                    **{
+                        sample_type: "singletop"
+                        for sample_type in [
+                            "singletop",
                         ]
                     },
                     **{
@@ -1736,7 +1804,6 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                 },
             ),
             "bjet_sf_variation": "central",
-            "bjet_sf_wp": "M",  # for UParT WP-based SFs in 2024
         },
     )
 
