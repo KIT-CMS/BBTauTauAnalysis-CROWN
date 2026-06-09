@@ -635,6 +635,34 @@ jtag_value_2 = Producer(
     output=[q.jtag_value_2],
     scopes=SCOPES,
 )
+jpt_nano_1 = Producer(
+    name="jpt_nano_1",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[nanoAOD.Jet_pt, q.good_jet_collection],
+    output=[q.jpt_nano_1],
+    scopes=SCOPES,
+)
+jpt_nano_2 = Producer(
+    name="jpt_nano_2",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
+    input=[nanoAOD.Jet_pt, q.good_jet_collection],
+    output=[q.jpt_nano_2],
+    scopes=SCOPES,
+)
+jpt_raw_1 = Producer(
+    name="jpt_raw_1",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[q.Jet_rawPt, q.good_jet_collection],
+    output=[q.jpt_raw_1],
+    scopes=SCOPES,
+)
+jpt_raw_2 = Producer(
+    name="jpt_raw_2",
+    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 1)",
+    input=[q.Jet_rawPt, q.good_jet_collection],
+    output=[q.jpt_raw_2],
+    scopes=SCOPES,
+)
 mjj = Producer(
     name="m_jj",
     call="lorentzvector::GetMass({df}, {output}, {input})",
