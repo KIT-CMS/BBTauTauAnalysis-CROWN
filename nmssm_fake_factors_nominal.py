@@ -125,6 +125,10 @@ def build_config(
         },
     )
 
+    # -------------------------------------------------------------------------
+    # Fake factor producers in semileptonic channels
+    # -------------------------------------------------------------------------
+
     configuration.add_producers(
         SL_SCOPES,
         [
@@ -139,6 +143,36 @@ def build_config(
         ],
     )
 
+    # -------------------------------------------------------------------------
+    # Fake factor producers in fullhadronic channel
+    # -------------------------------------------------------------------------
+
+    configuration.add_producers(
+        FH_SCOPES,
+        [
+            fakefactors.FakeFactorFullhadronicLeadingQCDInput,
+            fakefactors.FakeFactorFullhadronicLeadingTTInput,
+            fakefactors.FakeFactorFullhadronicLeadingFractionInput,
+            fakefactors.FakeFactorDRSRCorrectionFullhadronicLeadingQCDInput,
+            fakefactors.FakeFactorClosureCorrectionFullhadronicLeadingQCDInput,
+            fakefactors.FakeFactorClosureCorrectionFullhadronicLeadingTTInput,
+            fakefactors.RawFakeFactorFullhadronicLeading,
+            fakefactors.FakeFactorFullhadronicLeading,
+            fakefactors.FakeFactorFullhadronicSubleadingQCDInput,
+            fakefactors.FakeFactorFullhadronicSubleadingTTInput,
+            fakefactors.FakeFactorFullhadronicSubleadingFractionInput,
+            fakefactors.FakeFactorDRSRCorrectionFullhadronicSubleadingQCDInput,
+            fakefactors.FakeFactorClosureCorrectionFullhadronicSubleadingQCDInput,
+            fakefactors.FakeFactorClosureCorrectionFullhadronicSubleadingTTInput,
+            fakefactors.RawFakeFactorFullhadronicSubleading,
+            fakefactors.FakeFactorFullhadronicSubleading,
+        ],
+    )
+
+    # -------------------------------------------------------------------------
+    # Fake factor outputs in semileptonic channels
+    # -------------------------------------------------------------------------
+
     configuration.add_outputs(
         SL_SCOPES,
         [
@@ -147,10 +181,26 @@ def build_config(
         ],
     )
 
+    # -------------------------------------------------------------------------
+    # Fake factor outputs in fullhadronic channels
+    # -------------------------------------------------------------------------
+
+    configuration.add_outputs(
+        SL_SCOPES,
+        [
+            q.fake_factor_1_raw,
+            q.fake_factor_1,
+            q.fake_factor_2_raw,
+            q.fake_factor_2,
+        ],
+    )
+
     #########################
     # Finalize and validate the configuration
     #########################
+
     configuration.optimize()
     configuration.validate()
     configuration.report()
+
     return configuration.expanded_configuration()
