@@ -658,7 +658,7 @@ jpt_raw_1 = Producer(
 )
 jpt_raw_2 = Producer(
     name="jpt_raw_2",
-    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 1)",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
     input=[q.Jet_rawPt, q.good_jet_collection],
     output=[q.jpt_raw_2],
     scopes=SCOPES,
