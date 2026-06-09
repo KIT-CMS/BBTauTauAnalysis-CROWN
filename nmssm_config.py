@@ -1266,7 +1266,7 @@ def add_ak4jet_config(configuration: Configuration):
         "2017": "Summer19UL17_V5",
         "2023preBPix": "Summer23Prompt23_V2",
         "2023postBPix": "Summer23BPixPrompt23_V3",
-        "2024": "Summer24Prompt24_V2",
+        "2024": "Summer24Prompt24_V3",
     }
 
     # AK4 jet energy calibration and resolution corrections
@@ -1289,7 +1289,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-04-13/jet_jerc.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-04-13/jet_jerc.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-13/jet_jerc.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jet_jerc.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jet_jerc.json.gz",
                 },
             ),
             "ak4jet_jer_tag": EraModifier(
@@ -1302,7 +1302,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2022postEE": "Summer22EE_22Sep2023_JRV1",
                     "2023preBPix": "Summer23Prompt23_RunCv1234_JRV1",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_JRV1",
-                    "2024": "Summer23BPixPrompt23_RunD_JRV1",  # copied from 2023postBPix
+                    "2024": "Summer24Prompt24_JRV1",
                 }
             ),
             "ak4jet_jes_tag_data": EraModifier(
@@ -1368,7 +1368,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-04-13/jetvetomaps.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-04-13/jetvetomaps.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-13/jetvetomaps.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetvetomaps.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
                 },
             ),
             "jet_veto_map_name": EraModifier(
@@ -1433,7 +1433,7 @@ def add_ak8jet_config(configuration: Configuration):
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-04-13/fatJet_jerc.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-04-13/fatJet_jerc.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-13/fatJet_jerc.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/fatJet_jerc.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
                 },
             ),
             "ak8jet_jer_tag": EraModifier(
