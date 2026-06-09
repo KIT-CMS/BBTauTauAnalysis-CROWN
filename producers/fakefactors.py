@@ -2,7 +2,7 @@ from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from code_generation.producer import Producer
 
-from ..constants import SL_SCOPES
+from ..constants import FH_SCOPES, SL_SCOPES
 
 # ------------------------------------------------------------------------------
 # Fake factor inputs for semileptonic channels
@@ -112,6 +112,225 @@ FakeFactorClosureCorrectionSemileptonicTTInput = Producer(
 )
 
 # ------------------------------------------------------------------------------
+# Fake factor inputs for fullhadronic channel
+# ------------------------------------------------------------------------------
+
+FakeFactorFullhadronicLeadingQCDInput = Producer(
+    name="FakeFactorFullhadronicLeadingQCDInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.pt_1,
+        q.n_jets,
+    ],
+    output=[q.ff_1_input_qcd],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorFullhadronicLeadingTTInput = Producer(
+    name="FakeFactorFullhadronicLeadingTTInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.pt_1,
+        q.n_jets,
+    ],
+    output=[q.ff_input_tt],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorFullhadronicLeadingFractionInput = Producer(
+    name="FakeFactorFullhadronicLeadingFractionInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.m_vis,
+        q.n_bjets,
+    ],
+    output=[q.ff_1_input_fraction],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorDRSRCorrectionFullhadronicLeadingQCDInput = Producer(
+    name="FakeFactorDRSRCorrectionFullhadronicLeadingQCDInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.m_vis,
+    ],
+    output=[q.ff_1_corr_dr_sr_input_qcd],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorClosureCorrectionFullhadronicLeadingQCDInput = Producer(
+    name="FakeFactorClosureCorrectionFullhadronicLeadingQCDInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.pt_2,
+        q.tau_decaymode_1,
+        q.tau_decaymode_2,
+        q.mass_1,
+        q.mass_2,
+    ],
+    output=[q.ff_2_corr_closure_input_qcd],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorClosureCorrectionFullhadronicLeadingTTInput = Producer(
+    name="FakeFactorClosureCorrectionFullhadronicLeadingTTInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.pt_2,
+        q.tau_decaymode_1,
+        q.tau_decaymode_2,
+        q.mass_1,
+        q.mass_2,
+    ],
+    output=[q.ff_2_corr_closure_input_tt],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorFullhadronicSubleadingQCDInput = Producer(
+    name="FakeFactorFullhadronicSubleadingQCDInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.pt_2,
+        q.n_jets,
+    ],
+    output=[q.ff_2_input_qcd],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorFullhadronicSubleadingTTInput = Producer(
+    name="FakeFactorFullhadronicSubleadingTTInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.pt_2,
+        q.n_jets,
+    ],
+    output=[q.ff_2_input_tt],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorFullhadronicSubleadingFractionInput = Producer(
+    name="FakeFactorFullhadronicSubleadingFractionInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.m_vis,
+        q.n_bjets,
+    ],
+    output=[q.ff_2_input_fraction],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorDRSRCorrectionFullhadronicSubleadingQCDInput = Producer(
+    name="FakeFactorDRSRCorrectionFullhadronicSubleadingQCDInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.m_vis,
+    ],
+    output=[q.ff_2_corr_dr_sr_input_qcd],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorClosureCorrectionFullhadronicSubleadingQCDInput = Producer(
+    name="FakeFactorClosureCorrectionFullhadronicSubleadingQCDInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+        q.pt_1,
+        q.tau_decaymode_2,
+        q.tau_decaymode_1,
+        q.mass_1,
+        q.mass_2,
+    ],
+    output=[q.ff_2_corr_closure_input_qcd],
+    scopes=FH_SCOPES,
+)
+
+FakeFactorClosureCorrectionFullhadronicSubleadingTTInput = Producer(
+    name="FakeFactorClosureCorrectionFullhadronicSubleadingTTInput",
+    call="""
+    fakefactors::BuildFloatVector(
+        {df},
+        {output},
+        {vec_open}{input}{vec_close}
+    )
+    """,
+    input=[
+
+        q.pt_1,
+        q.tau_decaymode_2,
+        q.tau_decaymode_1,
+        q.mass_1,
+        q.mass_2,
+    ],
+    output=[q.ff_2_corr_closure_input_tt],
+    scopes=FH_SCOPES,
+)
+
+# ------------------------------------------------------------------------------
 # Fake factors for semileptonic channels
 # ------------------------------------------------------------------------------
 
@@ -179,6 +398,137 @@ FakeFactorSemileptonic = Producer(
     scopes=SL_SCOPES,
 )
 
+# ------------------------------------------------------------------------------
+# Fake factors for fullhadronic channel
+# ------------------------------------------------------------------------------
+
+# Raw fake factor of the leading tau fake without any corrections applied
+RawFakeFactorFullhadronicLeading = Producer(
+    name="RawFakeFactorFullhadronicLeading",
+    call="""
+    fakefactors::xyh::RawFakeFactorSemileptonic(
+        {df},
+        correctionManager,
+        {output},
+        {input},
+        "{ff_file}",
+        "{ff_qcd_name}",
+        "{ff_tt_name}",
+        "{ff_fraction_name}",
+        "{ff_qcd_variation}",
+        "{ff_tt_variation}",
+        "{ff_fraction_variation}"
+    )
+    """,
+    input=[
+        q.ff_1_input_qcd,
+        q.ff_1_input_tt,
+        q.ff_1_nput_fraction,
+    ],
+    output=[q.fake_factor_1_raw],
+    scopes=FH_SCOPES,
+)
+
+# Fake factor of the leading tau fake including DR/SR and closure corrections
+FakeFactorFullhadronicLeading = Producer(
+    name="FakeFactorFullhadronicLeading",
+    call="""
+    fakefactors::xyh::FakeFactorSemileptonic(
+        {df},
+        correctionManager,
+        {output},
+        {input},
+        "{ff_file}",
+        "{ff_qcd_name}",
+        "{ff_tt_name}",
+        "{ff_fraction_name}",
+        "{ff_corr_file}",
+        "{ff_corr_dr_sr_qcd_name}",
+        "{ff_corr_closure_qcd_name}",
+        "{ff_corr_closure_tt_name}",
+        "{ff_qcd_variation}",
+        "{ff_tt_variation}",
+        "{ff_fraction_variation}",
+        "{ff_dr_sr_corr_qcd_variation}",
+        "{ff_closure_corr_qcd_variation}",
+        "{ff_closure_corr_tt_variation}"
+    )
+    """,
+    input=[
+        q.ff_1_input_qcd,
+        q.ff_1_input_tt,
+        q.ff_1_input_fraction,
+        q.ff_1_corr_dr_sr_input_qcd,
+        q.ff_1_corr_closure_input_qcd,
+        q.ff_1_corr_closure_input_tt,
+    ],
+    output=[q.fake_factor_1],
+    scopes=FH_SCOPES,
+)
+
+# Raw fake factor of the subleading tau fake without any corrections applied
+RawFakeFactorFullhadronicSubleading = Producer(
+    name="RawFakeFactorFullhadronicSubleading",
+    call="""
+    fakefactors::xyh::RawFakeFactorSemileptonic(
+        {df},
+        correctionManager,
+        {output},
+        {input},
+        "{ff_file}",
+        "{ff_qcd_name}",
+        "{ff_tt_name}",
+        "{ff_fraction_name}",
+        "{ff_qcd_variation}",
+        "{ff_tt_variation}",
+        "{ff_fraction_variation}"
+    )
+    """,
+    input=[
+        q.ff_2_input_qcd,
+        q.ff_2_input_tt,
+        q.ff_2_nput_fraction,
+    ],
+    output=[q.fake_factor_2_raw],
+    scopes=FH_SCOPES,
+)
+
+# Fake factor of the subleading tau fake including DR/SR and closure corrections
+FakeFactorFullhadronicSubleading = Producer(
+    name="FakeFactorFullhadronicSubleading",
+    call="""
+    fakefactors::xyh::FakeFactorSemileptonic(
+        {df},
+        correctionManager,
+        {output},
+        {input},
+        "{ff_file}",
+        "{ff_qcd_name}",
+        "{ff_tt_name}",
+        "{ff_fraction_name}",
+        "{ff_corr_file}",
+        "{ff_corr_dr_sr_qcd_name}",
+        "{ff_corr_closure_qcd_name}",
+        "{ff_corr_closure_tt_name}",
+        "{ff_qcd_variation}",
+        "{ff_tt_variation}",
+        "{ff_fraction_variation}",
+        "{ff_dr_sr_corr_qcd_variation}",
+        "{ff_closure_corr_qcd_variation}",
+        "{ff_closure_corr_tt_variation}"
+    )
+    """,
+    input=[
+        q.ff_2_input_qcd,
+        q.ff_2_input_tt,
+        q.ff_2_input_fraction,
+        q.ff_2_corr_dr_sr_input_qcd,
+        q.ff_2_corr_closure_input_qcd,
+        q.ff_2_corr_closure_input_tt,
+    ],
+    output=[q.fake_factor_2],
+    scopes=FH_SCOPES,
+)
 
 # ------------------------------------------------------------------------------
 # Fake factors for NMSSM analysis (old)
