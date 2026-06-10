@@ -44,10 +44,10 @@ main () {
 
     # build associative array of test files for different sample types
     declare -A test_files_list
-    test_files_list[data]="root://xrootd-cms.infn.it///store/data/Run2023C/Muon0/NANOAOD/22Sep2023_v1-v1/30000/0ceac210-9c0b-49a3-baea-ea57c85de9d4.root"
+    test_files_list[data]="root://cmsdcache-kit-disk.gridka.de//store/data/Run2023C/Muon0/NANOAOD/22Sep2023_v1-v1/30000/0ceac210-9c0b-49a3-baea-ea57c85de9d4.root"
     #test_files_list[nmssm_Ybb]=""
-    test_files_list[ttbar]="root://xrootd-cms.infn.it///store/mc/Run3Summer23NanoAODv12/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_v14-v2/70000/428c6754-4ad2-4c2f-8ec6-4f2b5dc60758.root"
-    test_files_list[dyjets_amcatnlo_ll]="root://xrootd-cms.infn.it///store/mc/Run3Summer23NanoAODv12/DYto2L-2Jets_MLL-50_0J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_v14-v3/2820000/21ad2859-37a5-436b-82f9-51b55cf93ba0.root"
+    test_files_list[ttbar]="root://cmsdcache-kit-disk.gridka.de//store/mc/Run3Summer23NanoAODv12/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_v14-v2/70000/428c6754-4ad2-4c2f-8ec6-4f2b5dc60758.root"
+    test_files_list[dyjets_amcatnlo_ll]="root://cmsdcache-kit-disk.gridka.de//store/mc/Run3Summer23NanoAODv12/DYto2L-2Jets_MLL-50_0J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2023_realistic_v14-v3/2820000/21ad2859-37a5-436b-82f9-51b55cf93ba0.root"
 
     # configure and compile the project
     if [[ "${steps}" == "build" || "${steps}" == "all" ]]; then
