@@ -1,19 +1,7 @@
 from ..quantities import output as q
-from ..quantities import nanoAOD, nanoAOD_run2
 from code_generation.producer import Producer, ProducerGroup
 
-from ..constants import SCOPES, AvailableBJetIDs, BJET_ID_ALGORITHM
-
-
-# Get the nanoAOD b jet tagging column, according to the default b jet identification algorithm
-# selected with BJET_ID_ALGORITHM
-nanoaod_btag_score = None
-if BJET_ID_ALGORITHM == AvailableBJetIDs.DEEPJET:
-    nanoaod_btag_score = nanoAOD_run2.Jet_btagDeepFlavB
-elif BJET_ID_ALGORITHM == AvailableBJetIDs.PNET:
-    nanoaod_btag_score = nanoAOD.Jet_btagPNetB
-elif BJET_ID_ALGORITHM == AvailableBJetIDs.UPART:
-    nanoaod_btag_score = nanoAOD.Jet_btagUParTAK4B
+from ..constants import SCOPES
 
 
 ####################
@@ -78,15 +66,15 @@ bpair_mass_2 = Producer(
 )
 bpair_btag_value_1 = Producer(
     name="bpair_btag_value_1",
-    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
-    input=[nanoaod_btag_score, q.dibjetpair],
+    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 0)",
+    input=[q.dibjetpair],
     output=[q.bpair_btag_value_1],
     scopes=SCOPES,
 )
 bpair_btag_value_2 = Producer(
     name="bpair_btag_value_2",
-    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
-    input=[nanoaod_btag_score, q.dibjetpair],
+    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 1)",
+    input=[q.dibjetpair],
     output=[q.bpair_btag_value_2],
     scopes=SCOPES,
 )
@@ -268,15 +256,15 @@ bpair_mass_2_boosted = Producer(
 )
 bpair_btag_value_1_boosted = Producer(
     name="bpair_btag_value_1_boosted",
-    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
-    input=[nanoaod_btag_score, q.dibjetpair_boosted],
+    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 0)",
+    input=[q.dibjetpair_boosted],
     output=[q.bpair_btag_value_1_boosted],
     scopes=SCOPES,
 )
 bpair_btag_value_2_boosted = Producer(
     name="bpair_btag_value_2_boosted",
-    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
-    input=[nanoaod_btag_score, q.dibjetpair_boosted],
+    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 1)",
+    input=[q.dibjetpair_boosted],
     output=[q.bpair_btag_value_2_boosted],
     scopes=SCOPES,
 )
