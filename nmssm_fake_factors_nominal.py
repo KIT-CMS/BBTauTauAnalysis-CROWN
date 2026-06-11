@@ -7,9 +7,9 @@ from .quantities import output as q
 from code_generation.friend_trees import FriendTreeConfiguration
 from code_generation.modifiers import EraModifier
 
-from .constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, ERAS_RUN2, SL_SCOPES
+from .constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, ERAS_RUN2, SL_SCOPES, FH_SCOPES
 
-FAKE_FACTOR_VERSION = "fake-factors-2026-05-09"
+FAKE_FACTOR_VERSION = "fake-factors-2026-06-10"
 
 
 def build_config(
@@ -257,7 +257,7 @@ def build_config(
     # -------------------------------------------------------------------------
 
     configuration.add_outputs(
-        SL_SCOPES,
+        FH_SCOPES,
         [
             q.fake_factor_1_raw,
             q.fake_factor_1,
