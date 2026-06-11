@@ -145,7 +145,7 @@ FakeFactorFullhadronicLeadingTTInput = Producer(
         q.pt_1,
         q.n_jets,
     ],
-    output=[q.ff_input_tt],
+    output=[q.ff_1_input_tt],
     scopes=FH_SCOPES,
 )
 
@@ -198,7 +198,7 @@ FakeFactorClosureCorrectionFullhadronicLeadingQCDInput = Producer(
         q.mass_1,
         q.mass_2,
     ],
-    output=[q.ff_2_corr_closure_input_qcd],
+    output=[q.ff_1_corr_closure_input_qcd],
     scopes=FH_SCOPES,
 )
 
@@ -218,7 +218,7 @@ FakeFactorClosureCorrectionFullhadronicLeadingTTInput = Producer(
         q.mass_1,
         q.mass_2,
     ],
-    output=[q.ff_2_corr_closure_input_tt],
+    output=[q.ff_1_corr_closure_input_tt],
     scopes=FH_SCOPES,
 )
 
@@ -302,8 +302,8 @@ FakeFactorClosureCorrectionFullhadronicSubleadingQCDInput = Producer(
         q.pt_1,
         q.tau_decaymode_2,
         q.tau_decaymode_1,
-        q.mass_1,
         q.mass_2,
+        q.mass_1,
     ],
     output=[q.ff_2_corr_closure_input_qcd],
     scopes=FH_SCOPES,
@@ -323,8 +323,8 @@ FakeFactorClosureCorrectionFullhadronicSubleadingTTInput = Producer(
         q.pt_1,
         q.tau_decaymode_2,
         q.tau_decaymode_1,
-        q.mass_1,
         q.mass_2,
+        q.mass_1,
     ],
     output=[q.ff_2_corr_closure_input_tt],
     scopes=FH_SCOPES,
@@ -423,7 +423,7 @@ RawFakeFactorFullhadronicLeading = Producer(
     input=[
         q.ff_1_input_qcd,
         q.ff_1_input_tt,
-        q.ff_1_nput_fraction,
+        q.ff_1_input_fraction,
     ],
     output=[q.fake_factor_1_raw],
     scopes=FH_SCOPES,
@@ -439,7 +439,7 @@ FakeFactorFullhadronicLeading = Producer(
         {output},
         {input},
         "{ff_file}",
-        "{ff_qcd_name}",
+        "{ff_1_qcd_name}",
         "{ff_1_tt_name}",
         "{ff_1_fraction_name}",
         "{ff_corr_file}",
@@ -487,7 +487,7 @@ RawFakeFactorFullhadronicSubleading = Producer(
     input=[
         q.ff_2_input_qcd,
         q.ff_2_input_tt,
-        q.ff_2_nput_fraction,
+        q.ff_2_input_fraction,
     ],
     output=[q.fake_factor_2_raw],
     scopes=FH_SCOPES,
