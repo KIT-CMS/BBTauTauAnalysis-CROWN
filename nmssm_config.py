@@ -1819,8 +1819,8 @@ def add_zpt_weight_config(configuration: Configuration):
         {
             "zpt_weight_order": SampleModifier(
                 {
-                    "dyjets": "LO",
-                    "dyjets_madgraph": "LO",
+                    "dyjets": "NLO",  # "LO" does not exist anymore
+                    "dyjets_madgraph": "NLO",  # "LO" does not exist anymore
                     "dyjets_amcatnlo": "NLO",
                     "dyjets_amcatnlo_ll": "NLO",
                     "dyjets_amcatnlo_tt": "NLO",
@@ -1924,13 +1924,13 @@ def add_met_corrections_config(configuration: Configuration):
             "recoil_correction_name": "Recoil_correction",
             "recoil_correction_order": SampleModifier(
                 {
-                    "dyjets": "LO",
-                    "dyjets_madgraph": "LO",
+                    "dyjets": "NLO",  # "LO" not available
+                    "dyjets_madgraph": "NLO",  # "LO" not available
                     "dyjets_amcatnlo": "NLO",
                     "dyjets_amcatnlo_ll": "NLO",
                     "dyjets_amcatnlo_tt": "NLO",
                     "dyjets_powheg": "NNLO",
-                    "wjets_madgraph": "LO",
+                    "wjets_madgraph": "NLO",  # "LO" not available
                     "wjets_amcatnlo": "NLO",
                 },
                 default="DOES_NOT_EXIST",  # placeholder for samples without recoil corrections
