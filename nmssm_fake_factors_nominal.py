@@ -7,7 +7,7 @@ from .quantities import output as q
 from code_generation.friend_trees import FriendTreeConfiguration
 from code_generation.modifiers import EraModifier
 
-from .constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, ERAS_RUN2, SL_SCOPES, FH_SCOPES
+from .constants import TT_SCOPES, ERAS_RUN2, ERAS_RUN3, SL_SCOPES, FH_SCOPES
 
 FAKE_FACTOR_VERSION = "fake-factors-2026-06-10"
 
@@ -33,166 +33,96 @@ def build_config(
         quantities_map,
     )
 
-    # Common configuration parameters in the semileptonic channels
-    common_parameters_sl = {
-        # --- Correction set names
-        "ff_qcd_name": "QCD_fake_factors",
-        "ff_tt_name": "ttbar_fake_factors",
-        "ff_fraction_name": "process_fractions",
-        "ff_corr_dr_sr_qcd_name": "QCD_DR_SR_correction",
-        "ff_corr_closure_qcd_name": "QCD_compound_correction",
-        "ff_corr_closure_tt_name": "ttbar_compound_correction",
-        # --- Variations
-        "ff_qcd_variation": "nominal",
-        "ff_tt_variation": "nominal",
-        "ff_fraction_variation": "nominal",
-        "ff_dr_sr_corr_qcd_variation": "nominal",
-        "ff_closure_corr_qcd_variation": "nominal",
-        "ff_closure_corr_tt_variation": "nominal"
-    }
-
-    # Common configuration parameters in the fullhadronic channel
-    common_parameters_tt = {
-        # --- Leading tau fake ---
-        # --- Correction set names
-        "ff_1_qcd_name": "QCD_fake_factors",
-        "ff_1_tt_name": "ttbar_fake_factors",
-        "ff_1_fraction_name": "process_fractions",
-        "ff_1_corr_dr_sr_qcd_name": "QCD_DR_SR_correction",
-        "ff_1_corr_closure_qcd_name": "QCD_compound_correction",
-        "ff_1_corr_closure_tt_name": "ttbar_compound_correction",
-        # --- Variations
-        "ff_1_qcd_variation": "nominal",
-        "ff_1_tt_variation": "nominal",
-        "ff_1_fraction_variation": "nominal",
-        "ff_1_dr_sr_corr_qcd_variation": "nominal",
-        "ff_1_closure_corr_qcd_variation": "nominal",
-        "ff_1_closure_corr_tt_variation": "nominal",
-        # --- Subleading tau fake ---
-        # --- Correction set names
-        "ff_2_qcd_name": "QCD_subleading_fake_factors",
-        "ff_2_tt_name": "ttbar_subleading_fake_factors",
-        "ff_2_fraction_name": "process_fractions",
-        "ff_2_corr_dr_sr_qcd_name": "QCD_subleading_DR_SR_correction",
-        "ff_2_corr_closure_qcd_name": "QCD_subleading_compound_correction",
-        "ff_2_corr_closure_tt_name": "ttbar_subleading_compound_correction",
-        # --- Variations
-        "ff_2_qcd_variation": "nominal",
-        "ff_2_tt_variation": "nominal",
-        "ff_2_fraction_variation": "nominal",
-        "ff_2_dr_sr_corr_qcd_variation": "nominal",
-        "ff_2_closure_corr_qcd_variation": "nominal",
-        "ff_2_closure_corr_tt_variation": "nominal"
-    }
-
     # -------------------------------------------------------------------------
-    # Fake factor configuration in et channel
+    # Fake factor parameter configuration
     # -------------------------------------------------------------------------
 
+    for _channel in ["et", "mt", "tt"]:
+        configuration.add_config_parameters(
+            [_channel],
+            {
+                "ff_file": EraModifier(
+                    {
+                        **{
+                            _era: "DOES NOT EXIST"  # placeholder
+                            for _era in ERAS_RUN2
+                        },
+                        **{
+                            _era: f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/{_era}/fake_factors_{_channel}.json.gz"
+                            for _era in ERAS_RUN3
+                        },
+                    },
+                ),
+                "ff_corr_file": EraModifier(
+                    {
+                        **{
+                            _era: "DOES NOT EXIST"  # placeholder
+                            for _era in ERAS_RUN2
+                        },
+                        **{
+                            _era: f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/{_era}/FF_corrections_{_channel}.json.gz"
+                            for _era in ERAS_RUN3
+                        },
+                    },
+                ),
+            },
+        )
+
+    # Common parameters for semileptonic channels
     configuration.add_config_parameters(
-        ET_SCOPES,
+        SL_SCOPES,
         {
-            "ff_file": EraModifier(
-                {
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2024": f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/2024/fake_factors_et.json.gz",
-                },
-            ),
-            "ff_corr_file": EraModifier(
-                {
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2024": f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/2024/FF_corrections_et.json.gz",
-                },
-            ),
-            **common_parameters_sl,
+            # --- Correction set names
+            "ff_qcd_name": "QCD_fake_factors",
+            "ff_tt_name": "ttbar_fake_factors",
+            "ff_fraction_name": "process_fractions",
+            "ff_corr_dr_sr_qcd_name": "QCD_DR_SR_correction",
+            "ff_corr_closure_qcd_name": "QCD_compound_correction",
+            "ff_corr_closure_tt_name": "ttbar_compound_correction",
+            # --- Variations
+            "ff_qcd_variation": "nominal",
+            "ff_tt_variation": "nominal",
+            "ff_fraction_variation": "nominal",
+            "ff_dr_sr_corr_qcd_variation": "nominal",
+            "ff_closure_corr_qcd_variation": "nominal",
+            "ff_closure_corr_tt_variation": "nominal",
         },
     )
 
-    # -------------------------------------------------------------------------
-    # Fake factor configuration in mt channel
-    # -------------------------------------------------------------------------
-
-    configuration.add_config_parameters(
-        MT_SCOPES,
-        {
-            "ff_file": EraModifier(
-                {
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2024": f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/2024/fake_factors_mt.json.gz",
-                },
-            ),
-            "ff_corr_file": EraModifier(
-                {
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2024": f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/2024/FF_corrections_mt.json.gz",
-                },
-            ),
-            **common_parameters_sl,
-        },
-    )
-
-    # -------------------------------------------------------------------------
-    # Fake factor configuration in tt channel
-    # -------------------------------------------------------------------------
-
+    # Common parameters for fullhadronic channels
     configuration.add_config_parameters(
         TT_SCOPES,
         {
-            "ff_file": EraModifier(
-                {
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2024": f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/2024/fake_factors_tt.json.gz",
-                },
-            ),
-            "ff_corr_file": EraModifier(
-                {
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: "DOES NOT EXIST"  # placeholder
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2024": f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/2024/FF_corrections_tt.json.gz",
-                },
-            ),
-            **common_parameters_tt,
+            # --- Leading tau fake ---
+            # --- Correction set names
+            "ff_1_qcd_name": "QCD_fake_factors",
+            "ff_1_tt_name": "ttbar_fake_factors",
+            "ff_1_fraction_name": "process_fractions",
+            "ff_1_corr_dr_sr_qcd_name": "QCD_DR_SR_correction",
+            "ff_1_corr_closure_qcd_name": "QCD_compound_correction",
+            "ff_1_corr_closure_tt_name": "ttbar_compound_correction",
+            # --- Variations
+            "ff_1_qcd_variation": "nominal",
+            "ff_1_tt_variation": "nominal",
+            "ff_1_fraction_variation": "nominal",
+            "ff_1_dr_sr_corr_qcd_variation": "nominal",
+            "ff_1_closure_corr_qcd_variation": "nominal",
+            "ff_1_closure_corr_tt_variation": "nominal",
+            # --- Subleading tau fake ---
+            # --- Correction set names
+            "ff_2_qcd_name": "QCD_subleading_fake_factors",
+            "ff_2_tt_name": "ttbar_subleading_fake_factors",
+            "ff_2_fraction_name": "process_fractions",
+            "ff_2_corr_dr_sr_qcd_name": "QCD_subleading_DR_SR_correction",
+            "ff_2_corr_closure_qcd_name": "QCD_subleading_compound_correction",
+            "ff_2_corr_closure_tt_name": "ttbar_subleading_compound_correction",
+            # --- Variations
+            "ff_2_qcd_variation": "nominal",
+            "ff_2_tt_variation": "nominal",
+            "ff_2_fraction_variation": "nominal",
+            "ff_2_dr_sr_corr_qcd_variation": "nominal",
+            "ff_2_closure_corr_qcd_variation": "nominal",
+            "ff_2_closure_corr_tt_variation": "nominal",
         },
     )
 
