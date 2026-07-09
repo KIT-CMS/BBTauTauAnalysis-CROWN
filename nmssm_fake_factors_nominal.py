@@ -197,11 +197,11 @@ def build_config(
     )
 
     # -------------------------------------------------------------------------
-    # Fake factor variations
+    # Fake factor variations in semileptonic channels
     # -------------------------------------------------------------------------
 
     # Concise list of parameter variations
-    parameter_variations = [
+    parameter_variations_sl = [
         # --- Fake factor uncertainties
         {
             "name": "ff_qcd_variation",
@@ -221,8 +221,11 @@ def build_config(
         },
         # --- Process fraction uncertainties
         {
-            "name": "ff_tt_variation",
-            "values": ["process_fractionsfracQCDUnc", p],
+            "name": "ff_fraction_variation",
+            "values": [
+                "process_fractionsfracQCDUnc",
+                "process_fractionsfracTTBarUnc",
+            ],
             "producers": [
                 fakefactors.RawFakeFactorSemileptonic,
                 fakefactors.FakeFactorSemileptonic,
@@ -260,7 +263,7 @@ def build_config(
     ]
 
     # Apply parameter variations
-    for parameter_variation in parameter_variations:
+    for parameter_variation in parameter_variations_sl:
         # Get parameter to vary, corresponding shift, and producers to apply
         # the shift to
         parameter = parameter_variation["name"]
