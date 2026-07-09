@@ -11,7 +11,7 @@ BuildFloatVector(ROOT::RDF::RNode df, const std::string &output,
                  const std::vector<std::string> &input_columns) {
 
     // Set name of the logger for debug messages
-    auto logger_name = "fakefactors::BuildInputVector";
+    auto logger_name = "fakefactors::BuildFloatVector";
     Logger::get(logger_name)
         ->debug("Building input vector from columns {}",
                 fmt::join(input_columns, ", "));
