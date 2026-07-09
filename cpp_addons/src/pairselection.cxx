@@ -555,7 +555,6 @@ auto BBPairSelectionAlgo(const float &mindeltaR, const float &btag_WP_value) {
             index_1 = good_bjet_collection_sorted.at(0);
             auto j1_eta = jet_eta[index_1];
             auto j1_phi = jet_phi[index_1];
-            auto j1_bscore = jet_btag_discr[index_1];
 
             // Remove jets which have deltaR < 0.4 to the first jet in the list
             auto keep = ROOT::VecOps::Map(
