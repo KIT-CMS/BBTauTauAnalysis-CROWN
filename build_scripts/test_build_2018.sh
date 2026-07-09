@@ -44,10 +44,10 @@ main () {
 
     # build associative array of test files for different sample types
     declare -A test_files_list
-    test_files_list[data]="root://xrootd-cms.infn.it///store/user/aakhmets/SingleMuon/data_2018UL_singlemuon_SingleMuon_Run2018A_1729863731/241025_134540/0000/nano_7.root"
+    test_files_list[data]="root://xrootd-cms.infn.it///store/data/Run2018A/SingleMuon/NANOAOD/UL2018_NanoAODv15-v2/2520000/b29840f2-a936-4cea-be5a-a0d78e2b307e.root"
     #test_files_list[nmssm_Ybb]=""
-    test_files_list[ttbar]="root://xrootd-cms.infn.it///store/user/aakhmets/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/mc_2018UL_ttbar_TTTo2L2Nu_1729599001/241022_121510/0000/nanosim_84.root"
-    test_files_list[dyjets]="root://xrootd-cms.infn.it///store/user/sdaigler/DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/mc_2018UL_DY_DYJetsToLL_1734539918/241218_164017/0000/nanosim_196.root"
+    test_files_list[ttbar]="root://xrootd-cms.infn.it///store/mc/RunIISummer20UL18NanoAODv15/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/150X_mc2018_realistic_v1-v2/2810000/3ecaec0b-69a7-4502-904e-0f0b19be96a3.root"
+    test_files_list[dyjets]="root://xrootd-cms.infn.it///store/mc/RunIISummer20UL18NanoAODv15/DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/150X_mc2018_realistic_v1-v1/2810000/3aaff2df-d67e-4c87-b09c-26515fe4ad7c.root"
 
     # configure and compile the project
     if [[ "${steps}" == "build" || "${steps}" == "all" ]]; then

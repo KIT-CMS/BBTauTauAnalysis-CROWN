@@ -1264,9 +1264,11 @@ def add_ak4jet_config(configuration: Configuration):
         "2016preVFP": "Summer19UL16APV_V7",
         "2016postVFP": "Summer19UL16_V7",
         "2017": "Summer19UL17_V5",
-        "2023preBPix": "Summer23Prompt23_V2",
-        "2023postBPix": "Summer23BPixPrompt23_V3",
-        "2024": "Summer24Prompt24_V2",
+        "2022preEE": "Summer22_22Sep2023_V4",
+        "2022postEE": "Summer22EE_22Sep2023_V4",
+        "2023preBPix": "Summer23Prompt23_V4",
+        "2023postBPix": "Summer23BPixPrompt23_V4",
+        "2024": "Summer24Prompt24_V3",
     }
 
     # AK4 jet energy calibration and resolution corrections
@@ -1285,11 +1287,11 @@ def add_ak4jet_config(configuration: Configuration):
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
                     "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-04-13/jet_jerc.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-04-13/jet_jerc.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-04-13/jet_jerc.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-13/jet_jerc.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jet_jerc.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/jet_jerc.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/jet_jerc.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/jet_jerc.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/jet_jerc.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jet_jerc.json.gz",
                 },
             ),
             "ak4jet_jer_tag": EraModifier(
@@ -1298,27 +1300,23 @@ def add_ak4jet_config(configuration: Configuration):
                     "2016postVFP": "Summer20UL16_JRV3",
                     "2017": "Summer19UL17_JRV2",
                     "2018": "Summer19UL18_JRV2",
-                    "2022preEE": "Summer22_22Sep2023_JRV1",
-                    "2022postEE": "Summer22EE_22Sep2023_JRV1",
-                    "2023preBPix": "Summer23Prompt23_RunCv1234_JRV1",
-                    "2023postBPix": "Summer23BPixPrompt23_RunD_JRV1",
-                    "2024": "Summer23BPixPrompt23_RunD_JRV1",  # copied from 2023postBPix
+                    "2022preEE": "Summer22_22Sep2023_JRV2",
+                    "2022postEE": "Summer22EE_22Sep2023_JRV2",
+                    "2023preBPix": "Summer23Prompt23_RunCv123_JRV2",
+                    "2023postBPix": "Summer23BPixPrompt23_RunD_JRV2",
+                    "2024": "Summer24Prompt24_JRV1",
                 }
             ),
             "ak4jet_jes_tag_data": EraModifier(
                 {
                     **common_jes_tags,
                     "2018": "Summer19UL18_V5",
-                    "2022preEE": "Summer22_22Sep2023_V3",
-                    "2022postEE": "Summer22EE_22Sep2023_V3",
                 },
             ),
             "ak4jet_jes_tag_mc": EraModifier(
                 {
                     **common_jes_tags,
                     "2018": "Summer19UL18_V5",
-                    "2022preEE": "Summer22_22Sep2023_V3",
-                    "2022postEE": "Summer22EE_22Sep2023_V3",
                 }
             ),
             "ak4jet_jec_algo": EraModifier(
@@ -1364,11 +1362,11 @@ def add_ak4jet_config(configuration: Configuration):
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv9/2026-04-22/jetvetomaps.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv9/2026-04-22/jetvetomaps.json.gz",
                     "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/jetvetomaps.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-04-13/jetvetomaps.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-04-13/jetvetomaps.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-04-13/jetvetomaps.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-13/jetvetomaps.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetvetomaps.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
                 },
             ),
             "jet_veto_map_name": EraModifier(
@@ -1429,11 +1427,11 @@ def add_ak8jet_config(configuration: Configuration):
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv9/2026-04-22/fatJet_jerc.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv9/2026-04-22/fatJet_jerc.json.gz",
                     "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/fatJet_jerc.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-04-13/fatJet_jerc.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-04-13/fatJet_jerc.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-04-13/fatJet_jerc.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-13/fatJet_jerc.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/fatJet_jerc.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
                 },
             ),
             "ak8jet_jer_tag": EraModifier(
@@ -1556,9 +1554,9 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
         },
     )
 
-    # corrections for b jet identification
+    # corrections for b jet identification in et channel
     configuration.add_config_parameters(
-        ET_SCOPES + EE_SCOPES,
+        ET_SCOPES,
         {
             "bjet_eff_file": EraModifier(
                 {
@@ -1570,14 +1568,15 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2022postEE": "TO_ADD",
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
-                    "2024": "payloads/btagging_efficiencies/btag_efficiency_2024_et.json.gz",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_et.json.gz",
                 }
             ),
         },
     )
 
+    # corrections for b jet identification in mt channel
     configuration.add_config_parameters(
-        MT_SCOPES + MM_SCOPES + EM_SCOPES,
+        MT_SCOPES,
         {
             "bjet_eff_file": EraModifier(
                 {
@@ -1589,12 +1588,13 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2022postEE": "TO_ADD",
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
-                    "2024": "payloads/btagging_efficiencies/btag_efficiency_2024_mt.json.gz",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mt.json.gz",
                 }
             ),
         },
     )
 
+    # corrections for b jet identification in tt channel
     configuration.add_config_parameters(
         TT_SCOPES,
         {
@@ -1608,7 +1608,67 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2022postEE": "TO_ADD",
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
-                    "2024": "payloads/btagging_efficiencies/btag_efficiency_2024_tt.json.gz",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_tt.json.gz",
+                }
+            ),
+        },
+    )
+
+    # corrections for b jet identification in em channel
+    configuration.add_config_parameters(
+        EM_SCOPES,
+        {
+            "bjet_eff_file": EraModifier(
+                {
+                    "2016preVFP": "TO_ADD",
+                    "2016postVFP": "TO_ADD",
+                    "2017": "TO_ADD",
+                    "2018": "TO_ADD",
+                    "2022preEE": "TO_ADD",
+                    "2022postEE": "TO_ADD",
+                    "2023preBPix": "TO_ADD",
+                    "2023postBPix": "TO_ADD",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_em.json.gz",
+                }
+            ),
+        },
+    )
+
+    # corrections for b jet identification in ee channel
+    configuration.add_config_parameters(
+        EE_SCOPES,
+        {
+            "bjet_eff_file": EraModifier(
+                {
+                    "2016preVFP": "TO_ADD",
+                    "2016postVFP": "TO_ADD",
+                    "2017": "TO_ADD",
+                    "2018": "TO_ADD",
+                    "2022preEE": "TO_ADD",
+                    "2022postEE": "TO_ADD",
+                    "2023preBPix": "TO_ADD",
+                    "2023postBPix": "TO_ADD",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_ee.json.gz",
+                }
+            ),
+        },
+    )
+
+    # corrections for b jet identification in mm channel
+    configuration.add_config_parameters(
+        MM_SCOPES,
+        {
+            "bjet_eff_file": EraModifier(
+                {
+                    "2016preVFP": "TO_ADD",
+                    "2016postVFP": "TO_ADD",
+                    "2017": "TO_ADD",
+                    "2018": "TO_ADD",
+                    "2022preEE": "TO_ADD",
+                    "2022postEE": "TO_ADD",
+                    "2023preBPix": "TO_ADD",
+                    "2023postBPix": "TO_ADD",
+                    "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mm.json.gz",
                 }
             ),
         },
@@ -1623,10 +1683,10 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run2-2016postVFP-UL-NanoAODv9/2025-08-19/btagging.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run2-2017-UL-NanoAODv9/2025-08-19/btagging.json.gz",
                     "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run2-2018-UL-NanoAODv9/2025-08-19/btagging.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-22CDSep23-Summer22-NanoAODv12/2025-08-23/btagging.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-22CDSep23-Summer22-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23CSep23-Summer23-NanoAODv12/2025-08-20/btagging.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-13/btagging.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-03-10/btagging.json.gz",
                 }
             ),
@@ -1662,7 +1722,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         ]
                     },
                     **{
-                        sample_type: "dyjets"
+                        sample_type: "ggh_htautau"
                         for sample_type in [
                             "ggh_htautau",
                             "ggh_hbb",
@@ -1685,6 +1745,12 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         for sample_type in [
                             "ttbar",
                             "rem_ttbar",
+                        ]
+                    },
+                    **{
+                        sample_type: "singletop"
+                        for sample_type in [
+                            "singletop",
                         ]
                     },
                     **{
@@ -1736,7 +1802,6 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                 },
             ),
             "bjet_sf_variation": "central",
-            "bjet_sf_wp": "M",  # for UParT WP-based SFs in 2024
         },
     )
 
@@ -1754,8 +1819,8 @@ def add_zpt_weight_config(configuration: Configuration):
         {
             "zpt_weight_order": SampleModifier(
                 {
-                    "dyjets": "LO",
-                    "dyjets_madgraph": "LO",
+                    "dyjets": "NLO",  # "LO" does not exist anymore
+                    "dyjets_madgraph": "NLO",  # "LO" does not exist anymore
                     "dyjets_amcatnlo": "NLO",
                     "dyjets_amcatnlo_ll": "NLO",
                     "dyjets_amcatnlo_tt": "NLO",
@@ -1859,13 +1924,13 @@ def add_met_corrections_config(configuration: Configuration):
             "recoil_correction_name": "Recoil_correction",
             "recoil_correction_order": SampleModifier(
                 {
-                    "dyjets": "LO",
-                    "dyjets_madgraph": "LO",
+                    "dyjets": "NLO",  # "LO" not available
+                    "dyjets_madgraph": "NLO",  # "LO" not available
                     "dyjets_amcatnlo": "NLO",
                     "dyjets_amcatnlo_ll": "NLO",
                     "dyjets_amcatnlo_tt": "NLO",
                     "dyjets_powheg": "NNLO",
-                    "wjets_madgraph": "LO",
+                    "wjets_madgraph": "NLO",  # "LO" not available
                     "wjets_amcatnlo": "NLO",
                 },
                 default="DOES_NOT_EXIST",  # placeholder for samples without recoil corrections
@@ -3178,6 +3243,10 @@ def build_config(
             q.jphi_2,
             q.jtag_value_1,
             q.jtag_value_2,
+            q.jpt_nano_1,
+            q.jpt_nano_2,
+            q.jpt_raw_1,
+            q.jpt_raw_2,
             q.mjj,
             q.m_vis,
             q.deltaR_ditaupair,

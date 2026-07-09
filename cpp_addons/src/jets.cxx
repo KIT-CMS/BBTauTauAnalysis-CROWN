@@ -120,6 +120,7 @@ float apply_jer(const float &jet_pt, const float &jet_eta, const float &jet_phi,
                 const ROOT::RVec<float> &genjet_phi,
                 const correction::Correction *jer_resolution_evaluator,
                 const correction::Correction *jer_scalefactor_evaluator,
+                const correction::Correction *jer_scalefactor_uncertainty_evaluator,
                 const std::string &jer_shift, const float &jet_radius,
                 const std::string &era, TRandom3 randgen) {
     // Get the JER MC resolution and data-MC scale factor for the smearing
@@ -128,8 +129,17 @@ float apply_jer(const float &jet_pt, const float &jet_eta, const float &jet_phi,
     if (std::stoi(era.substr(0, 4)) <= 2018) { // with run 2 inputs
         sf = jer_scalefactor_evaluator->evaluate({jet_eta, jer_shift});
     } else {
-        sf = jer_scalefactor_evaluator->evaluate({// with run 3 inputs
-                                                  jet_eta, jet_pt, jer_shift});
+        sf = jer_scalefactor_evaluator->evaluate({ // with run 3 inputs
+                                                  jet_eta, jet_pt});
+        if (jer_shift == "up" || jer_shift == "down") {
+            auto sf_unc = jer_scalefactor_uncertainty_evaluator->evaluate({jet_eta, jet_pt});
+            if (jer_shift == "up") {
+                sf *= 1 + sf_unc;
+            }
+            else if (jer_shift == "down") {
+                sf *= 1 - sf_unc;
+            }
+        }
     }
 
     // Match the jet to a generator-level jet
@@ -181,7 +191,9 @@ JECResult apply_full_jec_mc(
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
-    const correction::Correction *jer_scalefactor_evaluator) {
+    const correction::Correction *jer_scalefactor_evaluator,
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator
+    ) {
     // Apply the consecutive steps of the jet energy calibration
     auto jet_pt_l1 =
         apply_jes_l1(jet_pt, jet_eta, jet_area, rho, jes_l1_evaluator);
@@ -192,7 +204,7 @@ JECResult apply_full_jec_mc(
                                         jes_shift_evaluators);
     auto jet_pt_jer = apply_jer(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
-        jer_resolution_evaluator, jer_scalefactor_evaluator, jer_shift,
+        jer_resolution_evaluator, jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator, jer_shift,
         jet_radius, era, randgen);
 
     // Create the JECResult which also contains intermediate results of the
@@ -215,14 +227,14 @@ JECResult apply_jes_shifts_and_jer_mc(
     const float &jet_radius, const std::string &era, TRandom3 randgen,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
-    const correction::Correction *jer_scalefactor_evaluator) {
+    const correction::Correction *jer_scalefactor_evaluator, const correction::Correction* jer_scalefactor_uncertainty_evaluator) {
     // Apply the jet energy scale shifts and the resolution smearing
     auto jet_pt_syst =
         apply_jes_shifts(jet_pt, jet_eta, jet_phi, jet_id, jes_shift_sources,
                          jes_shift_factor, jes_shift_evaluators);
     auto jet_pt_jer = apply_jer(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
-        jer_resolution_evaluator, jer_scalefactor_evaluator, jer_shift,
+        jer_resolution_evaluator, jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator, jer_shift,
         jet_radius, era, randgen);
 
     // Create the JECResult which also contains intermediate results of the
@@ -450,13 +462,18 @@ PtCorrectionMC(ROOT::RDF::RNode df,
     auto jer_scalefactor_evaluator =
         load_jer_correction(correction_manager, jec_file, jer_tag, type_tag,
                             "ScaleFactor", jec_algo);
+    auto jer_scalefactor_uncertainty_evaluator =
+        load_jer_correction(correction_manager, jec_file, jer_tag, type_tag,
+                            "SFUncertainty", jec_algo);
 
     // Function to retrieve the JEC result with intermediate steps
     auto func_jec_result = [jes_shift_sources, jes_shift_factor, jer_shift,
                             jet_radius, reapply_jes, era, jes_l1_evaluator,
                             jes_l2rel_evaluator, jes_shift_evaluators,
                             jer_resolution_evaluator,
-                            jer_scalefactor_evaluator](
+                            jer_scalefactor_evaluator,
+                            jer_scalefactor_uncertainty_evaluator
+    ](
                                const ROOT::RVec<float> &jet_pt_raw,
                                const ROOT::RVec<float> &jet_eta,
                                const ROOT::RVec<float> &jet_phi,
@@ -480,7 +497,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_sources,
                  jes_shift_factor, jer_shift, jet_radius, era, randgen,
                  jes_l1_evaluator, jes_l2rel_evaluator, jes_shift_evaluators,
-                 jer_resolution_evaluator, jer_scalefactor_evaluator](
+                 jer_resolution_evaluator, jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
                     const float &jet_area) {
@@ -490,7 +507,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                         jes_shift_factor, jer_shift, jet_radius, era, randgen,
                         jes_l1_evaluator, jes_l2rel_evaluator,
                         jes_shift_evaluators, jer_resolution_evaluator,
-                        jer_scalefactor_evaluator);
+                        jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator);
                 });
         } else {
             // The jet_pt_raw is already the jet energy scale-corrected pt.
@@ -503,7 +520,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_sources,
                  jes_shift_factor, jer_shift, jet_radius, era, randgen,
                  jes_shift_evaluators, jer_resolution_evaluator,
-                 jer_scalefactor_evaluator](
+                 jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
                     const float &jet_area) {
@@ -512,7 +529,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                         genjet_eta, genjet_phi, jes_shift_sources,
                         jes_shift_factor, jer_shift, jet_radius, era, randgen,
                         jes_shift_evaluators, jer_resolution_evaluator,
-                        jer_scalefactor_evaluator);
+                        jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator);
                 });
         }
         return jet_jec_result;

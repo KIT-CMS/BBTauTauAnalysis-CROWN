@@ -493,94 +493,78 @@ auto BBPairSelectionAlgo(const float &mindeltaR, const float &btag_WP_value) {
                            const ROOT::RVec<int> &good_bjet_collection,
                            const ROOT::RVec<int> &good_jet_collection,
                            const ROOT::RVec<float> &jet_btag_discr) {
-        // first entry is index of the leading bjet,
-        // second entry is the index of the subleading bjet or non b-tagged jet
-        // with the highest btag value
-        ROOT::RVec<int> selected_pair = {-1, -1};
+        // Get the number of b-tagged jets
+        auto n_bjets = good_bjet_collection.size();
 
-        if (good_bjet_collection.size() == 1) {
-            Logger::get("bb::PairSelectionAlgo")
-                ->debug("Running algorithm on one good bjet");
+        // Initialize index pair of selected jets
+        auto index_1 = -1;
+        auto index_2 = -1;
 
-            int highest_non_tag_jet_index = -1;
-            float highest_non_tag_value = -1.;
-            const auto selected_jet_btag_values =
-                ROOT::VecOps::Take(jet_btag_discr, good_jet_collection);
-
-            auto leading_bjet_index = good_bjet_collection[0];
-            ROOT::Math::PtEtaPhiMVector leading_bjet =
-                ROOT::Math::PtEtaPhiMVector(jet_pt.at(leading_bjet_index),
-                                            jet_eta.at(leading_bjet_index),
-                                            jet_phi.at(leading_bjet_index),
-                                            jet_mass.at(leading_bjet_index));
-            Logger::get("bb::PairSelectionAlgo")
-                ->debug("{} leading bjet vector: {}", leading_bjet_index,
-                        leading_bjet);
-
-            for (auto &index : good_jet_collection) {
-                ROOT::Math::PtEtaPhiMVector subleading_candidate =
-                    ROOT::Math::PtEtaPhiMVector(
-                        jet_pt.at(index), jet_eta.at(index), jet_phi.at(index),
-                        jet_mass.at(index));
-                Logger::get("bb::PairSelectionAlgo")
-                    ->debug("{} subleading non bjet candidate vector: {}",
-                            index, subleading_candidate);
-
-                if ((selected_jet_btag_values[index] < btag_WP_value) &&
-                    (selected_jet_btag_values[index] > highest_non_tag_value) &&
-                    (index != good_bjet_collection[0]) &&
-                    (ROOT::Math::VectorUtil::DeltaR(
-                         leading_bjet, subleading_candidate) > mindeltaR)) {
-                    highest_non_tag_jet_index = index;
-                    highest_non_tag_value = selected_jet_btag_values[index];
-                }
-            }
-
-            selected_pair = {static_cast<int>(leading_bjet_index),
-                             static_cast<int>(highest_non_tag_jet_index)};
-            Logger::get("bb::PairSelectionAlgo")
-                ->debug("Final pair {} {}", selected_pair[0], selected_pair[1]);
-
-            return selected_pair;
-
-        } else if (good_bjet_collection.size() >= 2) {
-            Logger::get("bb::PairSelectionAlgo")
-                ->debug("Running algorithm on at least two good bjets");
-
-            auto leading_bjet_index = good_bjet_collection[0];
-            ROOT::Math::PtEtaPhiMVector leading_bjet =
-                ROOT::Math::PtEtaPhiMVector(jet_pt.at(leading_bjet_index),
-                                            jet_eta.at(leading_bjet_index),
-                                            jet_phi.at(leading_bjet_index),
-                                            jet_mass.at(leading_bjet_index));
-            Logger::get("bb::PairSelectionAlgo")
-                ->debug("{} leading bjet vector: {}", leading_bjet_index,
-                        leading_bjet);
-
-            for (auto &index : good_bjet_collection) {
-                ROOT::Math::PtEtaPhiMVector subleading_candidate =
-                    ROOT::Math::PtEtaPhiMVector(
-                        jet_pt.at(index), jet_eta.at(index), jet_phi.at(index),
-                        jet_mass.at(index));
-                Logger::get("bb::PairSelectionAlgo")
-                    ->debug("{} subleading bjet candidate vector: {}", index,
-                            subleading_candidate);
-                if ((index != leading_bjet_index) &&
-                    (ROOT::Math::VectorUtil::DeltaR(
-                         leading_bjet, subleading_candidate) > mindeltaR)) {
-                    selected_pair = {static_cast<int>(leading_bjet_index),
-                                     static_cast<int>(index)};
-                    Logger::get("bb::PairSelectionAlgo")
-                        ->debug("Final pair {} {}", selected_pair[0],
-                                selected_pair[1]);
-                    break;
-                }
-            }
-            return selected_pair;
-        } else {
-            return selected_pair;
+        // Sort jets descending in the sorting score
+        ROOT::RVec<float> score;
+        ROOT::RVec<int> collection;
+        if (n_bjets == 0) {
+            // Immediately return undefined index pair if no b jets are found
+            // in the event
+            return ROOT::RVec<int>({index_1, index_2});
         }
+        else if (n_bjets == 1) {
+            // If n_bjets == 1, the b-tagged jet and the additional jet with
+            // the highest p_T are selected. Thus, we need to sort the jets
+            // descending in the b jet tagging score.
+            score = jet_btag_discr;
+            collection = good_jet_collection;
+        } else {
+            // If n_bjets >= 2, the two b-tagged jets with the highest p_T are
+            // selected. Thus, we need to sort the jets descending in their
+            // p_T.
+            score = jet_pt;
+            collection = good_bjet_collection;
+        }
+        auto sorted_index = ROOT::VecOps::Reverse(
+            ROOT::VecOps::Argsort(
+                ROOT::VecOps::Take(score, collection)
+            )
+        );
+        auto collection_sorted = ROOT::VecOps::Take(
+            collection,
+            sorted_index
+        );
+
+        // Start pairing algorithm with the jet with the highest sort score
+        index_1 = collection_sorted.at(0);
+        auto j1_eta = jet_eta[index_1];
+        auto j1_phi = jet_phi[index_1];
+        auto j1_bscore = jet_btag_discr[index_1];
+
+        // Remove jets which have deltaR smaller than threshold value to the
+        // first jet in the list
+        auto keep = ROOT::VecOps::Map(
+            ROOT::VecOps::Take(jet_eta, collection_sorted),
+            ROOT::VecOps::Take(jet_phi, collection_sorted),
+            [j1_eta, j1_phi, mindeltaR] (
+                const float &jeta,
+                const float &jphi
+            ) {
+                return ROOT::VecOps::DeltaR(
+                    j1_eta, jeta, j1_phi, jphi
+                ) >= mindeltaR;
+            }
+        );
+        collection_sorted = collection_sorted[keep];
+
+        // Get the remaining jet in the list with largest sort score. If the
+        // event has at least two b jets. If no jets are left, reset the index
+        // of the first selected jet to -1.
+        if (collection_sorted.size() >= 1) {
+            index_2 = collection_sorted.at(0);
+        } else {
+            index_1 = -1;
+        }
+
+        return ROOT::RVec<int>({index_1, index_2});
     };
+
 }
 /**
  * @brief Function used to select a pair of b-jets
