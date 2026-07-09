@@ -112,7 +112,7 @@ def build_config(
             # --- Correction set names
             "ff_2_qcd_name": "QCD_subleading_fake_factors",
             "ff_2_tt_name": "ttbar_subleading_fake_factors",
-            "ff_2_fraction_name": "process_fractions",
+            "ff_2_fraction_name": "process_fractions_subleading",
             "ff_2_corr_dr_sr_qcd_name": "QCD_subleading_DR_SR_correction",
             "ff_2_corr_closure_qcd_name": "QCD_subleading_compound_correction",
             "ff_2_corr_closure_tt_name": "ttbar_subleading_compound_correction",
