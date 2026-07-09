@@ -3,6 +3,8 @@
 #include "ROOT/RDataFrame.hxx"
 #include "correction.h"
 #include <sstream>
+#include <spdlog/fmt/ranges.h>
+
 
 namespace fakefactors {
 
