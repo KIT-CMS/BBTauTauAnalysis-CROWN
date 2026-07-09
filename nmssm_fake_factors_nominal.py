@@ -196,6 +196,94 @@ def build_config(
         ],
     )
 
+    # -------------------------------------------------------------------------
+    # Fake factor variations in semileptonic channels
+    # -------------------------------------------------------------------------
+
+    # Concise list of parameter variations
+    parameter_variations = [
+        # --- Fake factor uncertainties
+        {
+            "name": "ff_qcd_variation",
+            "values": ["QCDFFunc", "QCDFFmcSubUnc"],
+            "producers": [
+                fakefactors.RawFakeFactorSemileptonic,
+                fakefactors.FakeFactorSemileptonic,
+            ],
+        },
+        {
+            "name": "ff_tt_variation",
+            "values": ["ttbarFFunc"],
+            "producers": [
+                fakefactors.RawFakeFactorSemileptonic,
+                fakefactors.FakeFactorSemileptonic,
+            ],
+        },
+        # --- Process fraction uncertainties
+        {
+            "name": "ff_fraction_variation",
+            "values": [
+                "process_fractionsfracQCDUnc",
+                "process_fractionsfracTTbarUnc",
+            ],
+            "producers": [
+                fakefactors.RawFakeFactorSemileptonic,
+                fakefactors.FakeFactorSemileptonic,
+            ],
+        },
+        # --- DR -> SR correction uncertainties
+        {
+            "name": "ff_dr_sr_corr_qcd_variation",
+            "values": [
+                "QCD_DR_SR_CorrStat1Sigma",
+                "QCD_DR_SR_CorrSystMCShift",
+                "QCD_DR_SR_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorSemileptonic],
+        },
+        # --- Closure correction uncertainties
+        {
+            "name": "ff_closure_corr_qcd_variation",
+            "values": [
+                "QCD_non_closure_CorrStat1Sigma",
+                "QCD_non_closure_CorrSystMCShift",
+                "QCD_non_closure_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorSemileptonic],
+        },
+        {
+            "name": "ff_closure_corr_tt_variation",
+            "values": [
+                "ttbar_non_closure_CorrStat1Sigma",
+                "ttbar_non_closure_CorrSystMCShift",
+                "ttbar_non_closure_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorSemileptonic],
+        },
+    ]
+
+    # Apply parameter variations
+    for parameter_variation in parameter_variations:
+        # Get parameter to vary, corresponding shift, and producers to apply
+        # the shift to
+        parameter = parameter_variation["name"]
+        values = parameter_variation["values"]
+        producers = parameter_variation["producers"]
+
+        # Define a up and a down shift for each parameter value independently
+        for value in values:
+            for direction in ["Up", "Down"]:
+                value_with_direction = f"{value}{direction}"
+                configuration.add_shift(
+                    name=value_with_direction,
+                    shift_config={
+                        tuple(SL_SCOPES): {
+                            parameter: value_with_direction,
+                        },
+                    },
+                    producers=producers,
+                )
+
     #########################
     # Finalize and validate the configuration
     #########################
