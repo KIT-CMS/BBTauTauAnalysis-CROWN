@@ -22,6 +22,11 @@ def build_config(
     available_scopes: List[str],
     quantities_map: Union[str, None] = None,
 ):
+
+    # -------------------------------------------------------------------------
+    # Base configuration
+    # -------------------------------------------------------------------------
+
     configuration = FriendTreeConfiguration(
         era,
         sample,
@@ -284,10 +289,160 @@ def build_config(
                     producers=producers,
                 )
 
+    # -------------------------------------------------------------------------
+    # Fake factor variations in fullhadronic channel
+    # -------------------------------------------------------------------------
 
-    #########################
-    # Finalize and validate the configuration
-    #########################
+    # Concise list of parameter variations
+    parameter_variations_tt = [
+        # --- Leading tau
+
+        # --- Fake factor uncertainties
+        {
+            "name": "ff_1_qcd_variation",
+            "values": ["QCDFFunc", "QCDFFmcSubUnc"],
+            "producers": [
+                fakefactors.RawFakeFactorFullhadronicLeading,
+                fakefactors.FakeFactorFullhadronicLeading,
+            ],
+        },
+        {
+            "name": "ff_1_tt_variation",
+            "values": ["ttbarFFunc"],
+            "producers": [
+                fakefactors.RawFakeFactorFullhadronicLeading,
+                fakefactors.FakeFactorFullhadronicLeading,
+            ],
+        },
+        # --- Process fraction uncertainties
+        {
+            "name": "ff_1_fraction_variation",
+            "values": [
+                "process_fractionsfracQCDUnc",
+                "process_fractionsfracTTBarUnc",
+            ],
+            "producers": [
+                fakefactors.RawFakeFactorFullhadronicLeading,
+                fakefactors.FakeFactorFullhadronicLeading,
+            ],
+        },
+        # --- DR -> SR correction uncertainties
+        {
+            "name": "ff_1_dr_sr_corr_qcd_variation",
+            "values": [
+                "QCD_DR_SR_CorrStat1Sigma",
+                "QCD_DR_SR_CorrSystMCShift",
+                "QCD_DR_SR_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorFullhadronicLeading],
+        },
+        # --- Closure correction uncertainties
+        {
+            "name": "ff_1_closure_corr_qcd_variation",
+            "values": [
+                "QCD_non_closure_CorrStat1Sigma",
+                "QCD_non_closure_CorrSystMCShift",
+                "QCD_non_closure_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorFullhadronicLeading],
+        },
+        {
+            "name": "ff_1_closure_corr_tt_variation",
+            "values": [
+                "ttbar_non_closure_CorrStat1Sigma",
+                "ttbar_non_closure_CorrSystMCShift",
+                "ttbar_non_closure_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorFullhadronicLeading],
+        },
+
+        # --- Subleading tau
+
+        # --- Fake factor uncertainties
+        {
+            "name": "ff_2_qcd_variation",
+            "values": ["QCD_subleadingFFunc", "QCD_subleadingFFmcSubUnc"],
+            "producers": [
+                fakefactors.RawFakeFactorFullhadronicSubleading,
+                fakefactors.FakeFactorFullhadronicSubleading,
+            ],
+        },
+        {
+            "name": "ff_2_tt_variation",
+            "values": ["ttbar_subleadingFFunc"],
+            "producers": [
+                fakefactors.RawFakeFactorFullhadronicSubleading,
+                fakefactors.FakeFactorFullhadronicSubleading,
+            ],
+        },
+        # --- Process fraction uncertainties
+        {
+            "name": "ff_2_fraction_variation",
+            "values": [
+                "process_fractions_subleadingfracQCDUnc",
+                "process_fractions_subleadingfracTTBarUnc",
+            ],
+            "producers": [
+                fakefactors.RawFakeFactorFullhadronicSubleading,
+                fakefactors.FakeFactorFullhadronicSubleading,
+            ],
+        },
+        # --- DR -> SR correction uncertainties
+        {
+            "name": "ff_2_dr_sr_corr_qcd_variation",
+            "values": [
+                "QCD_subleading_DR_SR_CorrStat1Sigma",
+                "QCD_subleading_DR_SR_CorrSystMCShift",
+                "QCD_subleading_DR_SR_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorFullhadronicSubleading],
+        },
+        # --- Closure correction uncertainties
+        {
+            "name": "ff_2_closure_corr_qcd_variation",
+            "values": [
+                "QCD_subleading_non_closure_CorrStat1Sigma",
+                "QCD_subleading_non_closure_CorrSystMCShift",
+                "QCD_subleading_non_closure_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorFullhadronicSubleading],
+        },
+        {
+            "name": "ff_1_closure_corr_tt_variation",
+            "values": [
+                "ttbar_subleading_non_closure_CorrStat1Sigma",
+                "ttbar_subleading_non_closure_CorrSystMCShift",
+                "ttbar_subleading_non_closure_CorrSystBandAsym",
+            ],
+            "producers": [fakefactors.FakeFactorFullhadronicSubleading],
+        },
+    ]
+
+    # Apply parameter variations
+    for parameter_variation in parameter_variations_tt:
+        # Get parameter to vary, corresponding shift, and producers to apply
+        # the shift to
+        parameter = parameter_variation["name"]
+        values = parameter_variation["values"]
+        producers = parameter_variation["producers"]
+
+        # Define a up and a down shift for each parameter value independently
+        for value in values:
+            for direction in ["Up", "Down"]:
+                value_with_direction = f"{value}{direction}"
+                configuration.add_shift(
+                    name=value_with_direction,
+                    shift_config={
+                        tuple(FH_SCOPES): {
+                            parameter: value_with_direction,
+                        },
+                    },
+                    producers=producers,
+                )
+
+    # -------------------------------------------------------------------------
+    # Configuration optimization and validation
+    # -------------------------------------------------------------------------
 
     configuration.optimize()
     configuration.validate()
