@@ -493,96 +493,75 @@ auto BBPairSelectionAlgo(const float &mindeltaR, const float &btag_WP_value) {
                            const ROOT::RVec<int> &good_bjet_collection,
                            const ROOT::RVec<int> &good_jet_collection,
                            const ROOT::RVec<float> &jet_btag_discr) {
-        ROOT::RVec<int> selected_pair = {-1, -1};
+        // Get the number of b-tagged jets
+        auto n_bjets = good_bjet_collection.size();
+
+        // Initialize index pair of selected jets
         auto index_1 = -1;
         auto index_2 = -1;
 
-        if (good_bjet_collection.size() == 1) {
-            // Sort good jet collection with descending b jet scores
-            auto sorted_index = ROOT::VecOps::Reverse(
-                ROOT::VecOps::Argsort(
-                    ROOT::VecOps::Take(jet_btag_discr, good_jet_collection)
-                )
-            );
-            auto good_jet_collection_sorted = ROOT::VecOps::Take(
-                good_jet_collection,
-                sorted_index
-            );
-            index_1 = good_jet_collection_sorted.at(0);
-            auto j1_eta = jet_eta[index_1];
-            auto j1_phi = jet_phi[index_1];
-            auto j1_bscore = jet_btag_discr[index_1];
-
-            // Remove jets with have deltaR < 0.4 to the first jet in the list
-            auto keep = ROOT::VecOps::Map(
-                ROOT::VecOps::Take(jet_eta, good_jet_collection_sorted),
-                ROOT::VecOps::Take(jet_phi, good_jet_collection_sorted),
-                [j1_eta, j1_phi, mindeltaR] (
-                    const float &jeta,
-                    const float &jphi
-                ) {
-                    return ROOT::VecOps::DeltaR(
-                        j1_eta, jeta, j1_phi, jphi
-                    ) >= mindeltaR;
-                }
-            );
-            good_jet_collection_sorted = good_jet_collection_sorted[keep];
-
-            // Get the remaining jet in the list with largest b jet tagging score
-            // If no jets are left, reset the index of the first selected jet to -1
-            if (good_jet_collection_sorted.size() >= 1 && j1_bscore >= btag_WP_value) {
-                index_2 = good_jet_collection_sorted.at(0);
-            } else {
-                index_1 = -1;
-            }
-
-            selected_pair = {static_cast<int>(index_1),
-                             static_cast<int>(index_2)};
-        } else if (good_bjet_collection.size() >= 2) {
-            // Sort good b jet collection with descending jet pt
-            auto sorted_index = ROOT::VecOps::Reverse(
-                ROOT::VecOps::Argsort(
-                    ROOT::VecOps::Take(
-                        jet_pt,
-                        good_bjet_collection
-                    )
-                )
-            );
-            auto good_bjet_collection_sorted = ROOT::VecOps::Take(
-                good_bjet_collection,
-                sorted_index
-            );
-            index_1 = good_bjet_collection_sorted.at(0);
-            auto j1_eta = jet_eta[index_1];
-            auto j1_phi = jet_phi[index_1];
-
-            // Remove jets which have deltaR < 0.4 to the first jet in the list
-            auto keep = ROOT::VecOps::Map(
-                ROOT::VecOps::Take(jet_eta, good_bjet_collection_sorted),
-                ROOT::VecOps::Take(jet_phi, good_bjet_collection_sorted),
-                [j1_eta, j1_phi, mindeltaR] (
-                    const float &jeta,
-                    const float &jphi
-                ) {
-                    return ROOT::VecOps::DeltaR(
-                        j1_eta, jeta, j1_phi, jphi
-                    ) >= mindeltaR;
-                }
-            );
-            good_bjet_collection_sorted = good_bjet_collection_sorted[keep];
-
-            // Get the remaining jet in the list with largest jet pt
-            // If no jets are left, reset the index of the first selected jet to -1
-            if (good_bjet_collection_sorted.size() >= 1) {
-                index_2 = good_bjet_collection_sorted.at(0);
-            } else {
-                index_1 = -1;
-            }
-
-            selected_pair = {static_cast<int>(index_1),
-                             static_cast<int>(index_2)};
+        // Sort jets descending in the sorting score
+        ROOT::RVec<float> score;
+        ROOT::RVec<int> collection;
+        if (n_bjets == 0) {
+            // Immediately return undefined index pair if no b jets are found
+            // in the event
+            return ROOT::RVec<int>({index_1, index_2});
         }
-        return selected_pair;
+        else if (n_bjets == 1) {
+            // If n_bjets == 1, the b-tagged jet and the additional jet with
+            // the highest p_T are selected. Thus, we need to sort the jets
+            // descending in the b jet tagging score.
+            score = jet_btag_discr;
+            collection = good_jet_collection;
+        } else {
+            // If n_bjets >= 2, the two b-tagged jets with the highest p_T are
+            // selected. Thus, we need to sort the jets descending in their
+            // p_T.
+            score = jet_pt;
+            collection = good_bjet_collection;
+        }
+        auto sorted_index = ROOT::VecOps::Reverse(
+            ROOT::VecOps::Argsort(
+                ROOT::VecOps::Take(score, good_jet_collection)
+            )
+        );
+        auto collection_sorted = ROOT::VecOps::Take(
+            collection,
+            sorted_index
+        );
+
+        // Start pairing algorithm with the jet with the highest sort score
+        index_1 = collection_sorted.at(0);
+        auto j1_eta = jet_eta[index_1];
+        auto j1_phi = jet_phi[index_1];
+        auto j1_bscore = jet_btag_discr[index_1];
+
+        // Remove jets which have deltaR < 0.4 to the first jet in the list
+        auto keep = ROOT::VecOps::Map(
+            ROOT::VecOps::Take(jet_eta, collection_sorted),
+            ROOT::VecOps::Take(jet_phi, collection_sorted),
+            [j1_eta, j1_phi, mindeltaR] (
+                const float &jeta,
+                const float &jphi
+            ) {
+                return ROOT::VecOps::DeltaR(
+                    j1_eta, jeta, j1_phi, jphi
+                ) >= mindeltaR;
+            }
+        );
+        collection_sorted = collection_sorted[keep];
+
+        // Get the remaining jet in the list with largest sort score. If the
+        // event has at least two b jets. If no jets are left, reset the index
+        // of the first selected jet to -1.
+        if (collection_sorted.size() >= 1) {
+            index_2 = collection_sorted.at(0);
+        } else {
+            index_1 = -1;
+        }
+
+        return ROOT::RVec<int>({index_1, index_2});
     };
 
 }
