@@ -523,7 +523,7 @@ auto BBPairSelectionAlgo(const float &mindeltaR, const float &btag_WP_value) {
         }
         auto sorted_index = ROOT::VecOps::Reverse(
             ROOT::VecOps::Argsort(
-                ROOT::VecOps::Take(score, good_jet_collection)
+                ROOT::VecOps::Take(score, collection)
             )
         );
         auto collection_sorted = ROOT::VecOps::Take(
