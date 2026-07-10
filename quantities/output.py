@@ -5,26 +5,6 @@ puweight = Quantity("puweight")
 prefireweight = Quantity("prefiring_wgt")
 lhe_scale_weight = Quantity("lhe_scale_weight")
 
-# fake factors
-raw_fake_factor = Quantity("raw_fake_factor")
-raw_qcd_fake_factor = Quantity("raw_qcd_fake_factor")
-raw_wjets_fake_factor = Quantity("raw_wjets_fake_factor")
-raw_ttbar_fake_factor = Quantity("raw_ttbar_fake_factor")
-qcd_fake_factor = Quantity("qcd_fake_factor")
-wjets_fake_factor = Quantity("wjets_fake_factor")
-ttbar_fake_factor = Quantity("ttbar_fake_factor")
-fake_factor = Quantity("fake_factor")
-raw_fake_factor_boosted = Quantity("raw_fake_factor_boosted")
-fake_factor_boosted = Quantity("fake_factor_boosted")
-raw_fake_factor_1 = Quantity("raw_fake_factor_1")
-raw_fake_factor_2 = Quantity("raw_fake_factor_2")
-fake_factor_1 = Quantity("fake_factor_1")
-fake_factor_2 = Quantity("fake_factor_2")
-raw_fake_factor_boosted_1 = Quantity("raw_fake_boosted_factor_1")
-raw_fake_factor_boosted_2 = Quantity("raw_fake_boosted_factor_2")
-fake_factor_boosted_1 = Quantity("fake_factor_boosted_1")
-fake_factor_boosted_2 = Quantity("fake_factor_boosted_2")
-
 # kinematic fit
 kinfit_convergence_YToBB = Quantity("kinfit_convergence_YToBB")
 kinfit_mX_YToBB = Quantity("kinfit_mX_YToBB")
@@ -732,3 +712,35 @@ Type1Jet_l1Pt = Quantity("Type1Jet_l1Pt")
 Type1Jet_l2relPt = Quantity("Type1Jet_l2relPt")
 Type1Jet_l2l3resPt = Quantity("Type1Jet_l2l3resPt")
 Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
+
+# ------------------------------------------------------------------------------
+# Fake factor quantities
+# ------------------------------------------------------------------------------
+
+# Fake factor outputs in semileptonic channels
+ff_input_qcd = Quantity("ff_input_qcd")
+ff_input_tt = Quantity("ff_input_tt")
+ff_input_fraction = Quantity("ff_input_fraction")
+ff_corr_dr_sr_input_qcd = Quantity("ff_corr_dr_sr_input_qcd")
+ff_corr_closure_input_qcd = Quantity("ff_corr_closure_input_qcd")
+ff_corr_closure_input_tt = Quantity("ff_corr_closure_input_tt")
+fake_factor_raw = Quantity("fake_factor_raw")
+fake_factor = Quantity("fake_factor")
+
+# Fake factor outputs in fullhadronic channel
+ff_1_input_qcd = Quantity("ff_1_input_qcd")
+ff_1_input_tt = Quantity("ff_1_input_tt")
+ff_1_input_fraction = Quantity("ff_1_input_fraction")
+ff_1_corr_dr_sr_input_qcd = Quantity("ff_1_corr_dr_sr_input_qcd")
+ff_1_corr_closure_input_qcd = Quantity("ff_1_corr_closure_input_qcd")
+ff_1_corr_closure_input_tt = Quantity("ff_1_corr_closure_input_tt")
+fake_factor_1_raw = Quantity("fake_factor_1_raw")
+fake_factor_1 = Quantity("fake_factor_1")
+ff_2_input_qcd = Quantity("ff_2_input_qcd")
+ff_2_input_tt = Quantity("ff_2_input_tt")
+ff_2_input_fraction = Quantity("ff_2_input_fraction")
+ff_2_corr_dr_sr_input_qcd = Quantity("ff_2_corr_dr_sr_input_qcd")
+ff_2_corr_closure_input_qcd = Quantity("ff_2_corr_closure_input_qcd")
+ff_2_corr_closure_input_tt = Quantity("ff_2_corr_closure_input_tt")
+fake_factor_2_raw = Quantity("fake_factor_2_raw")
+fake_factor_2 = Quantity("fake_factor_2")
