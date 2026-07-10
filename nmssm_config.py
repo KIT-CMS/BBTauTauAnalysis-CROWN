@@ -2337,8 +2337,8 @@ def build_config(
     #
     # TODO As soon as dedicated corrections are available, implement the
     # Run 3 procedure also for Run 2 eras.
-    ElectronPtCorrectionMC = get_for_era(electrons.ElectronPtCorrectionMC)
-    ElectronPtCorrectionData = get_for_era(electrons.ElectronPtCorrectionData)
+    ElectronPtCorrectionMC = get_for_era(electrons.ElectronPtCorrectionMC, era)
+    ElectronPtCorrectionData = get_for_era(electrons.ElectronPtCorrectionData, era)
 
     # Jet ID producer
     # For a detailed description, see producers/jets.py

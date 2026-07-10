@@ -100,7 +100,7 @@ ElectronPtCorrectionData = {
         output=[q.Electron_pt_corrected],
         scopes=GLOBAL_SCOPES,
     ),
-    tuple(ERAS_RUN3): ProducerGroup(
+    tuple(ERAS_RUN3): Producer(
         name="ElectronPtCorrectionData",
         call='physicsobject::electron::PtCorrectionData({df}, correctionManager, {output}, {input}, "{ele_es_file}", "{ele_es_sf_data_name}")',
         input=[
