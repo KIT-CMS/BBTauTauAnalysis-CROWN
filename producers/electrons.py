@@ -6,7 +6,7 @@ from ..quantities import output as q
 from ..quantities import nanoAOD, nanoAOD_run2
 from code_generation.producer import Producer, ProducerGroup
 
-from ..constants import EE_SCOPES, ET_SCOPES, ELECTRON_SCOPES, SCOPES, GLOBAL_SCOPES
+from ..constants import EE_SCOPES, ET_SCOPES, ELECTRON_SCOPES, SCOPES, GLOBAL_SCOPES, ERAS_RUN2, ERAS_RUN3
 
 
 #
@@ -14,7 +14,8 @@ from ..constants import EE_SCOPES, ET_SCOPES, ELECTRON_SCOPES, SCOPES, GLOBAL_SC
 #
 
 
-# corrections in embedding samples
+# TODO Probably needs to be reworked, depending on the structure of upcoming
+# embedding corrections
 ElectronPtCorrectionEmbedding = Producer(
     name="ElectronPtCorrectionEmbedding",
     call='embedding::electron::PtCorrection({df}, correctionManager, {output}, {input}, "{embedding_electron_es_sf_file}", "{ele_ES_json_name}", "{ele_energyscale_barrel}", "{ele_energyscale_endcap}")',
@@ -26,7 +27,10 @@ ElectronPtCorrectionEmbedding = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-# corrections in MC samples in Run 2, for which an additional scale factor file needs to be provided
+
+# TODO Deprecated producer, remove this producer when NANOAODv9/v12 samples are
+# not used anymore. Corrections in MC samples in Run 2, for which an additional
+# scale factor file needs to be provided.
 ElectronPtCorrectionMCRun2 = Producer(
     name="ElectronPtCorrectionMCRun2",
     call='physicsobject::electron::PtCorrectionMC({df}, correctionManager, {output}, {input}, "{ele_es_file}", "{ele_es_sf_name}", "{ele_es_era}", "{ele_es_variation}")',
@@ -41,23 +45,8 @@ ElectronPtCorrectionMCRun2 = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-# electron scale correction for data in Run 3
-ElectronPtCorrectionDataRun3 = Producer(
-    name="ElectronPtCorrectionDataRun3",
-    call='physicsobject::electron::PtCorrectionData({df}, correctionManager, {output}, {input}, "{ele_es_file}", "{ele_es_sf_data_name}")',
-    input=[
-        nanoAOD.Electron_pt,
-        nanoAOD.Electron_eta,
-        nanoAOD.Electron_deltaEtaSC,
-        nanoAOD.Electron_seedGain,
-        nanoAOD.Electron_r9,
-        nanoAOD.run
-    ],
-    output=[q.Electron_pt_corrected],
-    scopes=GLOBAL_SCOPES,
-)
 
-# event seed for initializing the smearing
+# Event seed for initializing the smearing (needed for Run 3 MC corrections)
 ElectronPtSmearingSeed = Producer(
     name="ElectronPtSmearingSeed",
     call="event::quantity::GenerateSeed({df}, {output}, {input}, {ele_es_master_seed})",
@@ -70,29 +59,62 @@ ElectronPtSmearingSeed = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-# electron scale and resolution correction for MC in Run 3
-ElectronPtCorrectionMCRun3 = ProducerGroup(
-    name="ElectronPtCorrectionMCRun3",
-    call='physicsobject::electron::PtCorrectionMC({df}, correctionManager, {output}, {input}, "{ele_es_file}", "{ele_es_sf_mc_name}", "{ele_es_variation}")',
-    input=[
-        nanoAOD.Electron_pt,
-        nanoAOD.Electron_eta,
-        nanoAOD.Electron_deltaEtaSC,
-        nanoAOD.Electron_r9,
-    ],
-    output=[q.Electron_pt_corrected],
-    scopes=GLOBAL_SCOPES,
-    subproducers=[ElectronPtSmearingSeed],
-)
 
-# dummy corrections for cases in which corrections are already applied on NanoAOD level (just rename column)
-RenameElectronPt = Producer(
-    name="RenameElectronPt",
-    call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
-    input=[nanoAOD.Electron_pt],
-    output=[q.Electron_pt_corrected],
-    scopes=GLOBAL_SCOPES,
-)
+# Electron pt correction on MC events
+ElectronPtCorrectionMC = {
+    # TODO The Run 2 electron p_T corrections for NANOAOD v15 still need to be
+    # implemented. The corresponding correctionlib files have not been made
+    # available yet.
+    tuple(ERAS_RUN2): Producer(
+        name="ElectronPtCorrectionMC",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Electron_pt],
+        output=[q.Electron_pt_corrected],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN3): ProducerGroup(
+        name="ElectronPtCorrectionMC",
+        call='physicsobject::electron::PtCorrectionMC({df}, correctionManager, {output}, {input}, "{ele_es_file}", "{ele_es_sf_mc_name}", "{ele_es_variation}")',
+        input=[
+            nanoAOD.Electron_pt,
+            nanoAOD.Electron_eta,
+            nanoAOD.Electron_deltaEtaSC,
+            nanoAOD.Electron_r9,
+        ],
+        output=[q.Electron_pt_corrected],
+        scopes=GLOBAL_SCOPES,
+        subproducers=[ElectronPtSmearingSeed],
+    ),
+}
+
+
+# Electron pt correction on data events
+ElectronPtCorrectionData = {
+    # TODO The Run 2 electron p_T corrections for NANOAOD v15 still need to be
+    # implemented. The corresponding correctionlib files have not been made
+    # available yet.
+    tuple(ERAS_RUN2): Producer(
+        name="ElectronPtCorrectionData",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Electron_pt],
+        output=[q.Electron_pt_corrected],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN3): ProducerGroup(
+        name="ElectronPtCorrectionData",
+        call='physicsobject::electron::PtCorrectionData({df}, correctionManager, {output}, {input}, "{ele_es_file}", "{ele_es_sf_data_name}")',
+        input=[
+            nanoAOD.Electron_pt,
+            nanoAOD.Electron_eta,
+            nanoAOD.Electron_deltaEtaSC,
+            nanoAOD.Electron_seedGain,
+            nanoAOD.Electron_r9,
+            nanoAOD.run
+        ],
+        output=[q.Electron_pt_corrected],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
 
 
 #
