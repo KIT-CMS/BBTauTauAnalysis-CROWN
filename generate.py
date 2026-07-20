@@ -6,7 +6,7 @@ from .constants import ERAS, SCOPES
 
 
 def run(args):
-    analysis_name = "xyh_bbtautau"
+    analysis_name = "bbtautau"
 
     available_samples = [
         "ggh_htautau",

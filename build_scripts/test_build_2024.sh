@@ -23,7 +23,7 @@ main () {
     fi
 
     # define fixed parameters of the compilation process
-    local analysis="xyh_bbtautau"
+    local analysis="bbtautau"
     local config="nmssm_config"
     local era="2024"
     local shifts="none"
