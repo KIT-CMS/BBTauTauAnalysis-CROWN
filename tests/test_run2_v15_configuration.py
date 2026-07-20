@@ -2,6 +2,7 @@ from pathlib import Path
 import unittest
 
 from analysis_configurations.bbtautau.producers import taus
+from analysis_configurations.bbtautau.tau_triggersetup import add_diTauTriggerSetup
 
 
 CROWN_ROOT = Path(__file__).resolve().parents[3]
@@ -14,6 +15,23 @@ BUILD_SCRIPTS = [
     ANALYSIS_ROOT / "build_scripts" / "test_build_2023postBPix.sh",
     ANALYSIS_ROOT / "build_scripts" / "test_build_2024.sh",
 ]
+
+
+class CaptureConfiguration:
+    def __init__(self):
+        self.calls = []
+
+    def add_config_parameters(self, scopes, parameters):
+        self.calls.append((scopes, parameters))
+
+
+def get_double_eletau_trigger_modifier():
+    configuration = CaptureConfiguration()
+    add_diTauTriggerSetup(configuration)
+    for _, parameters in configuration.calls:
+        if "double_eletau_trigger" in parameters:
+            return parameters["double_eletau_trigger"]
+    raise AssertionError("double_eletau_trigger was not configured")
 
 
 class Run2NanoAODv15ConfigurationTest(unittest.TestCase):
@@ -59,6 +77,64 @@ class Run2NanoAODv15ConfigurationTest(unittest.TestCase):
             self.assertIn(argument, call)
         positions = [call.index(argument) for argument in ordered_arguments]
         self.assertEqual(positions, sorted(positions))
+
+    def test_2018_double_eletau_trigger_arguments_are_mapped_correctly(self):
+        modifier = get_double_eletau_trigger_modifier()
+        expected = [
+            {
+                "flagname": "trg_cross_ele24tau30_hps",
+                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
+                "p1_min_pt": 25,
+                "p1_max_abs_eta": 2.5,
+                "p1_filter_bit": 1,
+                "p1_particle_id": 11,
+                "p2_min_pt": 32,
+                "p2_max_abs_eta": 2.1,
+                "p2_filter_bit": -1,
+                "p2_particle_id": 15,
+                "match_max_delta_r": 0.4,
+            },
+            {
+                "flagname": "trg_cross_ele24tau30",
+                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
+                "p1_min_pt": 25,
+                "p1_max_abs_eta": 2.5,
+                "p1_filter_bit": 1,
+                "p1_particle_id": 11,
+                "p2_min_pt": 32,
+                "p2_max_abs_eta": 2.1,
+                "p2_filter_bit": 4,
+                "p2_particle_id": 15,
+                "match_max_delta_r": 0.4,
+            },
+        ]
+        self.assertEqual(modifier.modifier_dict["2018"], expected)
+
+    def test_run3_double_eletau_trigger_arguments_are_preserved(self):
+        modifier = get_double_eletau_trigger_modifier()
+        expected = [
+            {
+                "flagname": "trg_double_ele24tau30",
+                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1",
+                "p1_min_pt": 26.0,
+                "p1_max_abs_eta": 2.1,
+                "p1_filter_bit": -1,
+                "p1_particle_id": 11,
+                "p2_min_pt": 32.0,
+                "p2_max_abs_eta": 2.1,
+                "p2_filter_bit": -1,
+                "p2_particle_id": 15,
+                "match_max_delta_r": 0.4,
+            }
+        ]
+        for era in [
+            "2022preEE",
+            "2022postEE",
+            "2023preBPix",
+            "2023postBPix",
+            "2024",
+        ]:
+            self.assertEqual(modifier.modifier_dict[era], expected)
 
 
 if __name__ == "__main__":
