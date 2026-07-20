@@ -1,6 +1,8 @@
 from pathlib import Path
 import unittest
 
+from analysis_configurations.bbtautau.producers import taus
+
 
 CROWN_ROOT = Path(__file__).resolve().parents[3]
 ANALYSIS_ROOT = CROWN_ROOT / "analysis_configurations" / "bbtautau"
@@ -35,6 +37,28 @@ class Run2NanoAODv15ConfigurationTest(unittest.TestCase):
             + [script.read_text() for script in BUILD_SCRIPTS]
         )
         self.assertNotIn("xyh_bbtautau", checked_text)
+
+    def test_tau_pt_correction_matches_current_crown_signature(self):
+        call = taus.TauPtCorrectionMC.call
+        ordered_arguments = [
+            '"{tau_id_algorithm}"',
+            '"{tau_ides_sf_vsjet_wp}"',
+            '"{tau_ides_sf_vsele_wp}"',
+            "{vec_open}{tight_tau_decay_modes}{vec_close}",
+            '"{tau_elefake_es_DM0_barrel}"',
+            '"{tau_elefake_es_DM1_barrel}"',
+            '"{tau_elefake_es_DM0_endcap}"',
+            '"{tau_elefake_es_DM1_endcap}"',
+            '"{tau_mufake_es}"',
+            '"{tau_ES_shift_DM0}"',
+            '"{tau_ES_shift_DM1}"',
+            '"{tau_ES_shift_DM10}"',
+            '"{tau_ES_shift_DM11}"',
+        ]
+        for argument in ordered_arguments:
+            self.assertIn(argument, call)
+        positions = [call.index(argument) for argument in ordered_arguments]
+        self.assertEqual(positions, sorted(positions))
 
 
 if __name__ == "__main__":
