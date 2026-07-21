@@ -127,12 +127,13 @@ class Run2NanoAODv15ConfigurationTest(unittest.TestCase):
                 "match_max_delta_r": 0.4,
             }
         ]
+        # 2024 is excluded because its trigger uses PNet instead of DeepTau for
+        # trigger-level tau tagging.
         for era in [
             "2022preEE",
             "2022postEE",
             "2023preBPix",
             "2023postBPix",
-            "2024",
         ]:
             self.assertEqual(modifier.modifier_dict[era], expected)
 
