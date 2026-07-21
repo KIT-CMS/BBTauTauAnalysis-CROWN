@@ -24,6 +24,9 @@ TauPtCorrectionMC = Producer(
             "{tau_ides_sf_file}",
             "{tau_ES_json_name}",
             "{tau_id_algorithm}",
+            "{tau_ides_sf_vsjet_wp}",
+            "{tau_ides_sf_vsele_wp}",
+            {vec_open}{tight_tau_decay_modes}{vec_close},
             "{tau_elefake_es_DM0_barrel}",
             "{tau_elefake_es_DM1_barrel}",
             "{tau_elefake_es_DM0_endcap}",
@@ -32,9 +35,7 @@ TauPtCorrectionMC = Producer(
             "{tau_ES_shift_DM0}",
             "{tau_ES_shift_DM1}",
             "{tau_ES_shift_DM10}",
-            "{tau_ES_shift_DM11}",
-            "{tau_ides_sf_vsjet_wp}",
-            "{tau_ides_sf_vsele_wp}"
+            "{tau_ES_shift_DM11}"
         )
     """,
     input=[
