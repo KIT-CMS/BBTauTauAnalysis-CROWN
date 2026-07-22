@@ -11,10 +11,11 @@ main () {
     local channels="${2:-all}"
     local debug="${3:-false}"
     local steps="${4:-all}"
+    local config="${5:-nmssm_config}"
 
     # get the CROWN directories
     local crown_dir="$( cd "${this_dir}/../../.." && pwd )"
-    local crown_build_dir="${crown_dir}/build_2022preEE"
+    local crown_build_dir="${crown_dir}/build_2022preEE$( [[ "${config}" != "nmssm_config" ]] && echo "_${config}" )"
     local crown_bin_dir="${crown_build_dir}/bin"
 
     # create the build directory if it does not exist
@@ -24,7 +25,6 @@ main () {
 
     # define fixed parameters of the compilation process
     local analysis="bbtautau"
-    local config="nmssm_config"
     local era="2022preEE"
     local shifts="none"
     local threads="$( [[ "${debug}" == true ]] && echo "1" || echo "4" )"
