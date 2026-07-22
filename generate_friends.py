@@ -5,47 +5,11 @@ from code_generation.friend_trees import FriendTreeConfiguration
 import inspect
 
 from .constants import ERAS, SCOPES
+from .generate import resolve_sample_surface
+
 
 def run(args):
     analysis_name = "bbtautau"
-
-    available_samples = [
-        "ggh_htautau",
-        "ggh_hbb",
-        "vbf_htautau",
-        "vbf_hbb",
-        "rem_htautau",
-        "rem_hbb",
-        "rem_hww",
-        "rem_hzz",
-        "rem_higgs",
-        "higgs",
-        "hh4b",
-        "hh2b2tau",
-        "hh4v",
-        "embedding",
-        "embedding_mc",
-        "singletop",
-        "ttbar",
-        "rem_ttbar",
-        "diboson",
-        "dyjets",
-        "dyjets_madgraph",
-        "dyjets_amcatnlo",
-        "dyjets_amcatnlo_ll",
-        "dyjets_amcatnlo_tt",
-        "dyjets_powheg",
-        "wjets",
-        "wjets_madgraph",
-        "wjets_amcatnlo",
-        "data",
-        "electroweak_boson",
-        "nmssm_Ybb",
-        "nmssm_Ytautau",
-    ]
-
-    available_eras = ERAS
-    available_scopes = SCOPES
 
     ## setup variables
     shifts = set([shift.lower() for shift in args.shifts])
@@ -58,6 +22,23 @@ def run(args):
     config = importlib.import_module(
         f"analysis_configurations.{analysis_name}.{configname}"
     )
+
+    ## resolve and enforce the config-specific sample/era surface BEFORE
+    ## build_config is invoked
+    available_samples, _ = resolve_sample_surface(config)
+    available_eras = getattr(config, "AVAILABLE_ERAS", ERAS)
+    available_scopes = SCOPES
+    if era not in available_eras:
+        raise ValueError(
+            f"Config '{configname}' does not support era '{era}' "
+            f"(supported: {available_eras})."
+        )
+    if sample_group not in available_samples:
+        raise ValueError(
+            f"Config '{configname}' does not accept sample '{sample_group}' "
+            f"(accepted: {available_samples})."
+        )
+
     # check if the config is of type FriendTreeConfiguration
     imported_members = [x[0] for x in inspect.getmembers(config, inspect.isclass)]
     if (
