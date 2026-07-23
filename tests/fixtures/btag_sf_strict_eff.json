@@ -1,0 +1,1374 @@
+{
+  "schema_version": 2,
+  "description": "synthetic b-tag efficiency fixture (strict consumer test)",
+  "corrections": [
+    {
+      "name": "btag_efficiency",
+      "version": 1,
+      "inputs": [
+        {
+          "name": "sample_type",
+          "type": "string"
+        },
+        {
+          "name": "working_point",
+          "type": "string"
+        },
+        {
+          "name": "jet_flavor",
+          "type": "int"
+        },
+        {
+          "name": "eta",
+          "type": "real"
+        },
+        {
+          "name": "pt",
+          "type": "real"
+        }
+      ],
+      "output": {
+        "name": "efficiency",
+        "type": "real"
+      },
+      "data": {
+        "nodetype": "category",
+        "input": "sample_type",
+        "content": [
+          {
+            "key": "valid",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.2
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.5
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.05
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.3
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.6
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.02
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.15
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.4
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.01
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.08
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.25
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.005
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.03
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.1
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "zero",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.2
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.5
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.05
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.3
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.0
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.02
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.15
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.4
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.01
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.08
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.25
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.005
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.03
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.1
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "nonmono",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.2
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.5
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.05
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.3
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.3
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.02
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.15
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.5
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.01
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.08
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.25
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "jet_flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.005
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.03
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      },
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "eta",
+                          "edges": [
+                            0.0,
+                            2.5
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.1
+                              ],
+                              "flow": "clamp"
+                            }
+                          ],
+                          "flow": "clamp"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

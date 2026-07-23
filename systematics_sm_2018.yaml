@@ -1,0 +1,532 @@
+# Machine-readable systematics inventory for the SM (non-resonant HH -> bb
+# tautau) 2018 UL NanoAOD v15 analysis path (analysis_profiles.SM_PROFILE,
+# built via common_config.build_config; entry points sm_config.py /
+# sm_btag_efficiency_config.py).
+#
+# This is milestone 1 of the inventory: it enumerates every systematic source
+# the SM 2018 configuration surface is aware of -- whether or not it has
+# actually been run through KingMaker/CROWN into produced ntuples yet -- and
+# classifies each by *how* CROWN represents it:
+#
+#   nominal_column    -- an ordinary output column (no CROWN shift); the
+#                         variation is dispatched as separate weight-only
+#                         columns evaluated alongside the nominal event (e.g.
+#                         the UParTAK4 b-tag SF components, LHE weights).
+#   crown_shift       -- a code_generation.systematics.SystematicShift
+#                         registered via configuration.add_shift(), selected
+#                         at build time via -DSHIFTS and producing separate
+#                         shifted ntuple columns.
+#   alternative_sample -- estimated by comparing the nominal MC sample against
+#                         a differently-generated alternative sample (not a
+#                         CROWN shift at all).
+#   downstream        -- not produced by CROWN; applied at the statistical/
+#                         limit-setting stage (luminosity, MC statistics,
+#                         efficiency-measurement systematics).
+#
+# Validate with scripts/validate_systematics_inventory.py (default mode: schema
+# + coverage of every SM crown_shift the framework currently registers;
+# --final-inference: additionally gates pending_review / non-produced entries
+# without an "excluded:" disposition -- expected to fail at this milestone).
+#
+# `variation_keys` lists the base variation identifier(s); for crown_shift
+# entries each base key is registered as two CROWN shift names, "<key>Up" and
+# "<key>Down" (case as CROWN registers it), unless noted otherwise in `source`.
+# `shift_name_patterns` (crown_shift entries only) are the substrings the
+# validator matches against the framework's actually-registered shift names
+# (case-sensitive substring containment, mirroring
+# tests/test_nmssm_characterization.py's own `expected in s` convention and
+# Configuration._is_valid_shift's -DSHIFTS substring rule).
+#
+# Single-owner rule: every crown_shift name the SM 2018 configuration surface
+# actually registers must be matched by shift_name_patterns from exactly one
+# crown_shift entry below -- never zero (that name would have no
+# classification/production_status/correlation_policy at all) and never more
+# than one (two entries would each claim to own the same shift's
+# classification, and a reader would have no way to tell which applies).
+# Symmetrically, every shift_name_patterns substring must itself match at
+# least one registered shift name; a pattern that matches nothing is stale or
+# describes a shift that isn't actually wired up yet (in which case ship it
+# as an empty list, as `muon_momentum_scale` below does, not as a pattern
+# that matches zero names). validate_systematics_inventory.py's
+# check_shift_coverage enforces all three invariants (uncovered / unused
+# pattern / ambiguous coverage).
+
+schema_version: 1
+inventory_version: "2018-v15-milestone-1"
+analysis: sm_bbtautau_2018_v15
+era: "2018"
+
+sample_groups:
+  all_mc_2018: &all_mc_2018
+    - hh2b2tau
+    - dyjets
+    - wjets
+    - ttbar
+    - singletop
+    - diboson
+    - electroweak_boson
+    - ggh_htautau
+    - vbf_htautau
+    - vbf_hbb
+    - rem_hbb
+    - rem_higgs
+    - rem_ttbar
+  # SM_PROFILE.lhe_scale_weight_excluded_samples = (data, embedding,
+  # embedding_mc, diboson): the standard LHE_Scale_weight producer runs for
+  # every other SM sample, hh2b2tau included.
+  all_mc_2018_excl_diboson: &all_mc_2018_excl_diboson
+    - hh2b2tau
+    - dyjets
+    - wjets
+    - ttbar
+    - singletop
+    - electroweak_boson
+    - ggh_htautau
+    - vbf_htautau
+    - vbf_hbb
+    - rem_hbb
+    - rem_higgs
+    - rem_ttbar
+
+channel_groups:
+  all_channels: &all_channels [et, mt, tt, em, ee, mm]
+  had_tau_channels: &had_tau_channels [et, mt, tt]
+
+systematics:
+  # -- JES / JER -------------------------------------------------------------
+  - name: jes_regrouped_sources
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      jet_variations.py:add_jetVariations -- regrouped Run-2 JES uncertainty
+      sources (era-specific + era-independent companions per source)
+    variation_keys:
+      - jesUncAbsolute2018
+      - jesUncAbsolute
+      - jesUncBBEC12018
+      - jesUncBBEC1
+      - jesUncEC22018
+      - jesUncEC2
+      - jesUncFlavorQCD
+      - jesUncHF2018
+      - jesUncHF
+      - jesUncRelativeBal
+      - jesUncRelativeSample2018
+      - jesUncTotal
+    shift_name_patterns:
+      - jesUncAbsolute2018
+      - jesUncAbsolute
+      - jesUncBBEC12018
+      - jesUncBBEC1
+      - jesUncEC22018
+      - jesUncEC2
+      - jesUncFlavorQCD
+      - jesUncHF2018
+      - jesUncHF
+      - jesUncRelativeBal
+      - jesUncRelativeSample2018
+      - jesUncTotal
+    correlation_policy: >-
+      uncorrelated across the 12 regrouped JES sources; each source fully
+      correlated across processes and channels within 2018 (single-year
+      analysis, no cross-year correlation to model)
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: jer_uncertainty
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: "jet_variations.py:add_jetVariations -- jet-energy-resolution smearing"
+    variation_keys: [jerUnc]
+    shift_name_patterns: [jerUnc]
+    correlation_policy: >-
+      fully correlated across processes and channels (single per-jet smearing
+      factor) within 2018
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: jes_hem_issue_2018
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      jet_variations.py:add_jetVariations, era == "2018" branch -- HEM15/16
+      endcap-failure region correction, 2018 only
+    variation_keys: [jesUncHEMIssue]
+    shift_name_patterns: [jesUncHEMIssue]
+    correlation_policy: >-
+      2018-only nuisance (HEM15/16 endcap failure region); fully correlated
+      across affected processes and channels
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  # -- Tau / electron / muon energy scale + resolution ------------------------
+  - name: tau_energy_scale_by_decay_mode
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *had_tau_channels
+    source: >-
+      tau_variations.py:add_tauVariations -> taus.TauPtCorrectionMC, per
+      reconstructed decay mode
+    variation_keys:
+      - tauEs1prong0pizero
+      - tauEs1prong1pizero
+      - tauEs3prong0pizero
+      - tauEs3prong1pizero
+    shift_name_patterns:
+      - tauEs1prong0pizero
+      - tauEs1prong1pizero
+      - tauEs3prong0pizero
+      - tauEs3prong1pizero
+    correlation_policy: >-
+      uncorrelated across the four reconstructed decay-mode categories;
+      correlated across processes within a category
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: lepton_to_tau_fake_energy_scale
+    execution_class: crown_shift
+    affected_samples: [dyjets, electroweak_boson]
+    affected_channels: [et, mt]
+    source: >-
+      common_config.py build_config, 'if "dyjets" in sample or
+      "electroweak_boson" in sample' block -> taus.TauPtCorrectionMC (mu->tau
+      fake in mt; e->tau fake, DM0/DM1 x barrel/endcap, in et)
+    variation_keys:
+      - tauMuFakeEs
+      - tauEleFakeEs1prongBarrel
+      - tauEleFakeEs1prongEndcap
+      - tauEleFakeEs1prong1pizeroBarrel
+      - tauEleFakeEs1prong1pizeroEndcap
+    shift_name_patterns:
+      - tauMuFakeEs
+      - tauEleFakeEs1prongBarrel
+      - tauEleFakeEs1prongEndcap
+      - tauEleFakeEs1prong1pizeroBarrel
+      - tauEleFakeEs1prong1pizeroEndcap
+    correlation_policy: >-
+      uncorrelated across (fake source x decay-mode/eta-region) category;
+      correlated across processes within a category
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: electron_energy_scale_and_resolution
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      common_config.py build_config, era in ERAS_RUN2 branch ->
+      electrons.ElectronPtCorrectionMCRun2 (ele_es_variation
+      resolutionUp/Down, scaleUp/Down)
+    variation_keys: [eleEsReso, eleEsScale]
+    shift_name_patterns: [eleEsReso, eleEsScale]
+    correlation_policy: >-
+      scale and resolution treated as independent nuisances; each correlated
+      across processes and channels
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: muon_momentum_scale
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      not yet wired: no Producer in common_config.py/producers/muons.py
+      applies a Rochester-style momentum-scale variation for muons (unlike
+      the electron energy-scale/resolution treatment above)
+    variation_keys: []
+    shift_name_patterns: []
+    correlation_policy: >-
+      not yet implemented; expected fully correlated across processes and
+      channels, analogous to the electron energy-scale treatment
+    production_status: planned
+    final_disposition: pending_review
+
+  # -- MET ---------------------------------------------------------------
+  - name: met_unclustered_energy
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      common_config.py build_config -> SystematicShiftByQuantity on
+      nanoAOD.PuppiMET_pt/phi (PuppiMET_pt/phiUnclustered Up/Down NanoAOD
+      branches)
+    variation_keys: [metUnclusteredEn]
+    shift_name_patterns: [metUnclusteredEn]
+    correlation_policy: fully correlated across processes and channels
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: met_recoil_response_resolution
+    execution_class: crown_shift
+    affected_samples: [dyjets, wjets]
+    affected_channels: *all_channels
+    source: >-
+      common_config.py build_config -> met.MetRecoilCorrection
+      (recoil_correction_variation Resp/Resol Up/Down); DY/W (merged SM sample
+      names) only
+    variation_keys: [metRecoilResp, metRecoilResol]
+    shift_name_patterns: [metRecoilResp, metRecoilResol]
+    correlation_policy: >-
+      response and resolution treated as independent nuisances; correlated
+      across the DY/W processes sharing the recoil correction
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  # -- Pileup --------------------------------------------------------------
+  - name: pileup_reweighting
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: "common_config.py build_config -> event.PUweights (PU_reweighting_variation up/down)"
+    variation_keys: [PileUp]
+    shift_name_patterns: [PileUp]
+    correlation_policy: >-
+      fully correlated across processes and channels (single min-bias
+      cross-section variation)
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  # -- Lepton / tau ID + isolation SFs, trigger SFs --------------------------
+  - name: lepton_id_iso_scale_factors
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: [et, mt]
+    source: >-
+      common_config.py build_config -> scalefactors.EleID_SF (et scope),
+      scalefactors.MuonIDIso_SF (mt scope)
+    variation_keys: [electronIdSF, muonIdSF, muonIsoSF]
+    shift_name_patterns: [electronIdSF, muonIdSF, muonIsoSF]
+    correlation_policy: >-
+      correlated across processes; electron and muon legs treated as
+      independent sources
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: single_muon_trigger_sf
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: [mt]
+    source: >-
+      common_config.py build_config -> scalefactors.SingleMuTriggerSF, 2018
+      included in the era list carrying this shift
+    variation_keys: [singleMuTriggerSF]
+    shift_name_patterns: [singleMuTriggerSF]
+    correlation_policy: correlated across processes sharing the single-muon trigger leg
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: tau_id_vs_jet
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *had_tau_channels
+    source: >-
+      tau_variations.py:add_tauVariations -> scalefactors.TauIDVsJetSF1/2,
+      pT-binned (et/mt) or decay-mode-binned (tt)
+    variation_keys:
+      - vsJetTau1000toInf
+      - vsJetTau30to35
+      - vsJetTau35to40
+      - vsJetTau40to500
+      - vsJetTau500to1000
+      - vsJetTauDM0
+      - vsJetTauDM1
+      - vsJetTauDM10
+      - vsJetTauDM11
+    shift_name_patterns: [vsJetTau]
+    correlation_policy: >-
+      uncorrelated across pT bins (et/mt) or decay-mode bins (tt); correlated
+      across processes within a bin
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: tau_id_vs_electron
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *had_tau_channels
+    source: "tau_variations.py:add_tauVariations -> scalefactors.TauIDVsEleSF1/2, barrel/endcap"
+    variation_keys: [vsEleBarrel, vsEleEndcap]
+    shift_name_patterns: [vsEleBarrel, vsEleEndcap]
+    correlation_policy: >-
+      uncorrelated between barrel and endcap; correlated across processes
+      within a region
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: tau_id_vs_muon
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: *had_tau_channels
+    source: "tau_variations.py:add_tauVariations -> scalefactors.TauIDVsMuSF1/2, eta wheels 1-5"
+    variation_keys: [vsMuWheel1, vsMuWheel2, vsMuWheel3, vsMuWheel4, vsMuWheel5]
+    shift_name_patterns: [vsMuWheel]
+    correlation_policy: >-
+      uncorrelated across the five eta wheels; correlated across processes
+      within a wheel
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: lhe_scale_murmuf_variation
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018_excl_diboson
+    affected_channels: *all_channels
+    source: >-
+      common_config.py build_config muRWeight/muFWeight add_shift blocks:
+      currently gated to `sample in ["ggh", "qqh"]` (legacy nicks, not part of
+      the SM sample surface) or `["nmssm_Ybb", "nmssm_Ytautau"]` (NMSSM
+      signal only) -- NOT registered for any SM 2018 sample nick today, even
+      though the same LHE_Scale_weight producer backs the SM nominal column
+      below
+    variation_keys: [muRWeight, muFWeight]
+    # Empty, not [muRWeight, muFWeight]: those add_shift calls are gated to
+    # sample nicks outside the SM sample surface (see `source` above), so
+    # neither pattern matches any name the SM 2018 build actually registers
+    # -- confirmed by full-MC-sample-census enumeration. A non-empty pattern
+    # here would be flagged as "unused pattern" by check_shift_coverage (see
+    # the single-owner-rule comment above); an empty list is the documented
+    # convention for a crown_shift that is not yet registered for SM (see
+    # `muon_momentum_scale` below).
+    shift_name_patterns: []
+    correlation_policy: >-
+      not yet registered for any SM sample nick; when wired, expected
+      correlated across processes sharing the same matrix-element generator,
+      decorrelated from PDF/alpha_s
+    production_status: planned
+    final_disposition: pending_review
+
+  # -- UParT fixed-WP b-tag SF (nominal columns, dynamic variation keys) -----
+  - name: upart_fixed_wp_btag_sf
+    execution_class: nominal_column
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      btag_payloads.discover_upart_variations(btag_payloads.PINNED_BTV_2018_V15)
+      -> producers/scalefactors.py:build_strict_upart_btag_weight
+      (StrictUParTBtagWeight ProducerGroup); gated by
+      common_config._use_strict_upart_btag and
+      btag_payloads.require_validated_payload
+    variation_keys: pinned payload (dynamic)
+    variation_keys_source: >-
+      btag_payloads.discover_upart_variations(btag_payloads.PINNED_BTV_2018_V15)
+    correlation_policy: >-
+      per-component split via up_correlated/up_uncorrelated keys (BTV
+      recommendation); UParTAK4_comb (b/c-flavor) and UParTAK4_light
+      (light-flavor) are independent sources, each fully correlated across
+      samples and channels within 2018
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  # -- LHE scale / PDF / alpha_s weights (nominal columns) -------------------
+  - name: lhe_scale_weight_nominal
+    execution_class: nominal_column
+    affected_samples: *all_mc_2018_excl_diboson
+    affected_channels: *all_channels
+    source: >-
+      producers/event.py:LHE_Scale_weight (event::reweighting::LHEscale),
+      nominal muR=1.0/muF=1.0 selection from the 9-entry NanoAOD
+      LHEScaleWeight vector; the SM signal (hh2b2tau) keeps this standard
+      producer (analysis_profiles.SM_PROFILE, NOT the NMSSM-specific
+      NMSSM_LHE_Scale_weight producer)
+    variation_keys: [nominal]
+    correlation_policy: >-
+      single nominal (muR=1.0, muF=1.0) weight; not itself a variation, feeds
+      the nominal event weight only
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  - name: lhe_pdf_alphas_weights
+    execution_class: nominal_column
+    affected_samples: *all_mc_2018_excl_diboson
+    affected_channels: *all_channels
+    source: >-
+      core CROWN include/reweighting.hxx + src/reweighting.cxx define
+      event::reweighting::LHEPdf / LHEalphaS; no Producer wraps either in
+      analysis_configurations/bbtautau/producers/event.py for SM or NMSSM
+    variation_keys: []
+    correlation_policy: >-
+      not yet implemented; expected PDF-replica envelope + alpha_s nuisance,
+      decorrelated from the muR/muF scale choice
+    production_status: planned
+    final_disposition: pending_review
+
+  # -- Alternative-sample estimate --------------------------------------------
+  - name: parton_shower_tune_cp5_up
+    execution_class: alternative_sample
+    affected_samples: [ttbar]
+    affected_channels: *all_channels
+    source: >-
+      registered dataset nick
+      TTTo2L2Nu_TuneCP5up_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv15-150X
+      (sample_database/nanoAOD_v15/2018/ttbar/); no dedicated CROWN producer,
+      compared at the analysis/statistical level against the nominal ttbar
+      sample
+    variation_keys: [TuneCP5up]
+    correlation_policy: >-
+      one-sided alternative-sample envelope for the ttbar parton-shower/
+      hadronization tune; decorrelated from the ME scale (muR/muF) choice
+    production_status: registered_not_produced
+    final_disposition: propagate
+
+  # -- Downstream (not produced by CROWN) ------------------------------------
+  - name: luminosity_2018
+    execution_class: downstream
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      external constant (2018 integrated luminosity + its recommended
+      uncertainty), applied at the statistical-inference stage, not by CROWN
+    variation_keys: [lumi_2018]
+    correlation_policy: >-
+      fully correlated across all 2018 MC processes (single 2018
+      integrated-luminosity uncertainty; no cross-year correlation to model
+      since the SM path is 2018-only)
+    production_status: produced
+    final_disposition: propagate
+
+  - name: mc_statistical_uncertainty
+    execution_class: downstream
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      per-bin MC statistical uncertainty derived from the produced ntuples'
+      effective event counts (e.g. Barlow-Beeston/autoMCStats treatment),
+      applied at the statistical-inference stage
+    variation_keys: [per_bin_mc_stat]
+    correlation_policy: >-
+      uncorrelated across bins and processes (per-bin MC-statistics
+      treatment)
+    production_status: produced
+    final_disposition: propagate
+
+  - name: mc_efficiency_statistics
+    execution_class: downstream
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      TauFakeFactors b-tag efficiency-measurement chain
+      (sm_btag_efficiency_config -> TauFakeFactors -> install); finite-MC-
+      statistics uncertainty of the per-(sample_type, working_point, flavor,
+      eta, pt) efficiency map is not yet propagated
+    variation_keys: [btag_efficiency_mc_stat]
+    correlation_policy: >-
+      would be uncorrelated across (sample_type, working_point, flavor, eta,
+      pt) efficiency-map bins; excluded at this milestone
+    production_status: planned
+    final_disposition: "excluded: recorded Phase-1 approximation per design spec"
+
+  - name: phase_space_transfer_uncertainty
+    execution_class: downstream
+    affected_samples: *all_mc_2018
+    affected_channels: *all_channels
+    source: >-
+      extrapolation uncertainty of applying the b-tag efficiency map measured
+      in the ttbar/dyjets-dominated measurement region to the signal phase
+      space; not yet propagated
+    variation_keys: [phase_space_transfer]
+    correlation_policy: >-
+      would be correlated across processes sharing the same
+      measurement-to-signal-region extrapolation; excluded at this milestone
+    production_status: planned
+    final_disposition: "excluded: recorded Phase-1 approximation per design spec"
