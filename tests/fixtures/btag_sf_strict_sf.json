@@ -1,0 +1,2976 @@
+{
+  "schema_version": 2,
+  "description": "synthetic UParTAK4 b-tag SF fixture (strict consumer test)",
+  "corrections": [
+    {
+      "name": "UParTAK4_comb",
+      "version": 1,
+      "inputs": [
+        {
+          "name": "systematic",
+          "type": "string"
+        },
+        {
+          "name": "working_point",
+          "type": "string"
+        },
+        {
+          "name": "flavor",
+          "type": "int"
+        },
+        {
+          "name": "abseta",
+          "type": "real"
+        },
+        {
+          "name": "pt",
+          "type": "real"
+        }
+      ],
+      "output": {
+        "name": "weight",
+        "type": "real"
+      },
+      "data": {
+        "nodetype": "category",
+        "input": "systematic",
+        "content": [
+          {
+            "key": "central",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.98
+                              ],
+                              "flow": 0.98
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.95
+                              ],
+                              "flow": 0.95
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.88
+                              ],
+                              "flow": 0.88
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.85
+                              ],
+                              "flow": 0.85
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.85
+                              ],
+                              "flow": 0.85
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.82
+                              ],
+                              "flow": 0.82
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": 0.8
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": 0.8
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "up",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.08
+                              ],
+                              "flow": 1.08
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.0
+                              ],
+                              "flow": 1.0
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.05
+                              ],
+                              "flow": 1.05
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.98
+                              ],
+                              "flow": 0.98
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.0
+                              ],
+                              "flow": 1.0
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.95
+                              ],
+                              "flow": 0.95
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.95
+                              ],
+                              "flow": 0.95
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9199999999999999
+                              ],
+                              "flow": 0.9199999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "down",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.88
+                              ],
+                              "flow": 0.88
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": 0.8
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.85
+                              ],
+                              "flow": 0.85
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.78
+                              ],
+                              "flow": 0.78
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": 0.8
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.75
+                              ],
+                              "flow": 0.75
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.75
+                              ],
+                              "flow": 0.75
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.72
+                              ],
+                              "flow": 0.72
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.7000000000000001
+                              ],
+                              "flow": 0.7000000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.7000000000000001
+                              ],
+                              "flow": 0.7000000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "up_hf",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.08
+                              ],
+                              "flow": 1.08
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.0
+                              ],
+                              "flow": 1.0
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.05
+                              ],
+                              "flow": 1.05
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.98
+                              ],
+                              "flow": 0.98
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.0
+                              ],
+                              "flow": 1.0
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.95
+                              ],
+                              "flow": 0.95
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.95
+                              ],
+                              "flow": 0.95
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9199999999999999
+                              ],
+                              "flow": 0.9199999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "down_hf",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.88
+                              ],
+                              "flow": 0.88
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": 0.8
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.85
+                              ],
+                              "flow": 0.85
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.78
+                              ],
+                              "flow": 0.78
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8
+                              ],
+                              "flow": 0.8
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.75
+                              ],
+                              "flow": 0.75
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.75
+                              ],
+                              "flow": 0.75
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.72
+                              ],
+                              "flow": 0.72
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 5,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.7000000000000001
+                              ],
+                              "flow": 0.7000000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      },
+                      {
+                        "key": 4,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.7000000000000001
+                              ],
+                              "flow": 0.7000000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UParTAK4_light",
+      "version": 1,
+      "inputs": [
+        {
+          "name": "systematic",
+          "type": "string"
+        },
+        {
+          "name": "working_point",
+          "type": "string"
+        },
+        {
+          "name": "flavor",
+          "type": "int"
+        },
+        {
+          "name": "abseta",
+          "type": "real"
+        },
+        {
+          "name": "pt",
+          "type": "real"
+        }
+      ],
+      "output": {
+        "name": "weight",
+        "type": "real"
+      },
+      "data": {
+        "nodetype": "category",
+        "input": "systematic",
+        "content": [
+          {
+            "key": "central",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.98
+                              ],
+                              "flow": 0.98
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.96
+                              ],
+                              "flow": 0.96
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.94
+                              ],
+                              "flow": 0.94
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.92
+                              ],
+                              "flow": 0.92
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "up",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.03
+                              ],
+                              "flow": 1.03
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.01
+                              ],
+                              "flow": 1.01
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.99
+                              ],
+                              "flow": 0.99
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9700000000000001
+                              ],
+                              "flow": 0.9700000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9500000000000001
+                              ],
+                              "flow": 0.9500000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "down",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9299999999999999
+                              ],
+                              "flow": 0.9299999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9099999999999999
+                              ],
+                              "flow": 0.9099999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.8899999999999999
+                              ],
+                              "flow": 0.8899999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.87
+                              ],
+                              "flow": 0.87
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.85
+                              ],
+                              "flow": 0.85
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "up_correlated",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.01
+                              ],
+                              "flow": 1.01
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.99
+                              ],
+                              "flow": 0.99
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.97
+                              ],
+                              "flow": 0.97
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9500000000000001
+                              ],
+                              "flow": 0.9500000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.93
+                              ],
+                              "flow": 0.93
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "down_correlated",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.95
+                              ],
+                              "flow": 0.95
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9299999999999999
+                              ],
+                              "flow": 0.9299999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9099999999999999
+                              ],
+                              "flow": 0.9099999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.89
+                              ],
+                              "flow": 0.89
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.87
+                              ],
+                              "flow": 0.87
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "up_uncorrelated",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                1.0
+                              ],
+                              "flow": 1.0
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.98
+                              ],
+                              "flow": 0.98
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.96
+                              ],
+                              "flow": 0.96
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9400000000000001
+                              ],
+                              "flow": 0.9400000000000001
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.92
+                              ],
+                              "flow": 0.92
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "key": "down_uncorrelated",
+            "value": {
+              "nodetype": "category",
+              "input": "working_point",
+              "content": [
+                {
+                  "key": "L",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.96
+                              ],
+                              "flow": 0.96
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "M",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.94
+                              ],
+                              "flow": 0.94
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "T",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9199999999999999
+                              ],
+                              "flow": 0.9199999999999999
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.9
+                              ],
+                              "flow": 0.9
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": "XXT",
+                  "value": {
+                    "nodetype": "category",
+                    "input": "flavor",
+                    "content": [
+                      {
+                        "key": 0,
+                        "value": {
+                          "nodetype": "binning",
+                          "input": "abseta",
+                          "edges": [
+                            0.0,
+                            2.4
+                          ],
+                          "content": [
+                            {
+                              "nodetype": "binning",
+                              "input": "pt",
+                              "edges": [
+                                20.0,
+                                1000.0
+                              ],
+                              "content": [
+                                0.88
+                              ],
+                              "flow": 0.88
+                            }
+                          ],
+                          "flow": "error"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UParTAK4_wp_values",
+      "version": 1,
+      "inputs": [
+        {
+          "name": "working_point",
+          "type": "string"
+        }
+      ],
+      "output": {
+        "name": "cut",
+        "type": "real"
+      },
+      "data": {
+        "nodetype": "category",
+        "input": "working_point",
+        "content": [
+          {
+            "key": "L",
+            "value": 0.1
+          },
+          {
+            "key": "M",
+            "value": 0.3
+          },
+          {
+            "key": "T",
+            "value": 0.5
+          },
+          {
+            "key": "XT",
+            "value": 0.7
+          },
+          {
+            "key": "XXT",
+            "value": 0.9
+          }
+        ]
+      }
+    }
+  ]
+}
