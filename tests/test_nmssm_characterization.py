@@ -77,6 +77,11 @@ class NMSSMCharacterizationTest(unittest.TestCase):
         self.assertEqual(params["bjet_max_abs_eta"], 2.5)
         self.assertIn("Jet_btagDeepFlavB", str(params["bjet_score_column"]))
 
+    def test_nmssm_2018_jet_id_wp_legacy(self):
+        """NMSSM 2018 must keep the legacy ak4jet_id_wp value (2) for v9 Jet_jetId."""
+        params = self.cfg_ttbar.config_parameters["global"]["nominal"]
+        self.assertEqual(params["ak4jet_id_wp"], 2)
+
     def test_mass_tautaubb_is_an_output(self):
         self.assertIn("mass_tautaubb", output_names(self.cfg_ttbar, "mt"))
 

@@ -1,5 +1,7 @@
 from __future__ import annotations  # needed for type annotations in > python 3.7
 
+import json
+import os
 from typing import List
 from itertools import chain
 from .producers import electrons as electrons
@@ -1190,7 +1192,7 @@ def add_boosted_hadronic_tau_config(configuration: Configuration):
     )
 
 
-def add_ak4jet_config(configuration: Configuration):
+def add_ak4jet_config(configuration: Configuration, era: str, profile):
     """
     Selection requirements and corrections for AK4 jets.
 
@@ -1224,13 +1226,51 @@ def add_ak4jet_config(configuration: Configuration):
     :type configuration: Configuration
     """
 
+    # Isolated SM 2018 NanoAOD-v15 AK4-PUPPI path. The 2018-only SM profiles
+    # switch this branch on; NMSSM and every other era keep the legacy AK4-CHS
+    # NanoAODv9 wiring untouched. The `era == "2018"` guard is redundant for
+    # the 2018-only SM profiles but keeps the branch self-documenting and inert
+    # for any other era.
+    use_sm_2018_v15 = profile.use_2018_v15_jet_path and era == "2018"
+
+    # 2018 JEC/JER payload and algorithm selection.
+    # - NMSSM & default: legacy AK4-CHS NanoAODv9 corrections (Summer19UL18_V5
+    #   JEC, Summer19UL18_JRV2 JER).
+    # - SM 2018-v15: pinned AK4-PUPPI NanoAODv15 corrections. The pinned file
+    #   ships a single combined MC JEC set (Summer20UL18NanoV15_V1_MC_L1FastJet
+    #   / L2Relative / L3Absolute / L2L3Residual_AK4PFPuppi), the matching
+    #   single combined DATA set (Summer20UL18NanoV15_V1_DATA_*_AK4PFPuppi, no
+    #   per-run split), and JER SFs (Summer19UL18_JRV3_MC_{PtResolution,
+    #   ScaleFactor}_AK4PFPuppi) -- so MC and DATA JEC are wired exactly like
+    #   the CHS path (a single JES tag, the level/data-vs-mc infix is appended
+    #   by the C++ jerc factory).
+    jec_file_2018 = (
+        "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz"
+        if use_sm_2018_v15
+        else "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz"
+    )
+    jes_tag_2018 = "Summer20UL18NanoV15_V1" if use_sm_2018_v15 else "Summer19UL18_V5"
+    jer_tag_2018 = "Summer19UL18_JRV3" if use_sm_2018_v15 else "Summer19UL18_JRV2"
+    jec_algo_2018 = "AK4PFPuppi" if use_sm_2018_v15 else "AK4PFchs"
+    # No CHS pileup-jet-ID cut on the PUPPI collection: disable it by pushing
+    # the max-pt threshold to 0 so no jet is ever subjected to the PUID cut.
+    puid_max_pt_2018 = 0.0 if use_sm_2018_v15 else 50.0
+
     # JetID recommendations: https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVUL#Preliminary_Recommendations_for
     configuration.add_config_parameters(
         "global",
         {
             "ak4jet_min_pt": 30.0,
             "ak4jet_max_abs_eta": 2.5,
-            "ak4jet_id_wp": 2,  # 0 == fail, 2 == pass(tight) & fail(tightLepVeto), 6 == pass(tight) & pass(tightLepVeto)
+            # Jet-ID working point for the `id >= id_wp` comparison in
+            # `xyh::object_selection::select_jet`.
+            # - Legacy CHS/PUPPI paths read a cumulative bitmask
+            #   (0 == fail, 2 == pass(tight) & fail(tightLepVeto),
+            #   6 == pass(tight) & pass(tightLepVeto)), so wp 2 selects tight.
+            # - The SM 2018-v15 path reads the reconstructed
+            #   JetIDTight2018PuppiV15 mask, which is a boolean pass/fail
+            #   (1 == pass tight, 0 == fail), so wp 1 selects tight.
+            "ak4jet_id_wp": 1 if use_sm_2018_v15 else 2,
             "ak4jet_apply_jet_horn_veto": "true",
             "ak4jet_puid_wp": EraModifier(
                 {
@@ -1250,6 +1290,7 @@ def add_ak4jet_config(configuration: Configuration):
                         _era: 50.0  # recommended to apply puID only for jets below 50 GeV
                         for _era in ERAS_RUN2
                     },
+                    "2018": puid_max_pt_2018,  # 0.0 on the SM 2018-v15 PUPPI path
                     **{
                         _era: 0.0  # placeholder value as it does not exist for Run3 samples
                         for _era in ERAS_RUN3
@@ -1286,7 +1327,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
+                    "2018": jec_file_2018,
                     "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/jet_jerc.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/jet_jerc.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/jet_jerc.json.gz",
@@ -1299,7 +1340,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2016preVFP": "Summer20UL16APV_JRV3",
                     "2016postVFP": "Summer20UL16_JRV3",
                     "2017": "Summer19UL17_JRV2",
-                    "2018": "Summer19UL18_JRV2",
+                    "2018": jer_tag_2018,
                     "2022preEE": "Summer22_22Sep2023_JRV2",
                     "2022postEE": "Summer22EE_22Sep2023_JRV2",
                     "2023preBPix": "Summer23Prompt23_RunCv123_JRV2",
@@ -1310,13 +1351,13 @@ def add_ak4jet_config(configuration: Configuration):
             "ak4jet_jes_tag_data": EraModifier(
                 {
                     **common_jes_tags,
-                    "2018": "Summer19UL18_V5",
+                    "2018": jes_tag_2018,
                 },
             ),
             "ak4jet_jes_tag_mc": EraModifier(
                 {
                     **common_jes_tags,
-                    "2018": "Summer19UL18_V5",
+                    "2018": jes_tag_2018,
                 }
             ),
             "ak4jet_jec_algo": EraModifier(
@@ -1325,6 +1366,7 @@ def add_ak4jet_config(configuration: Configuration):
                         _era: "AK4PFchs"
                         for _era in ERAS_RUN2
                     },
+                    "2018": jec_algo_2018,  # AK4PFPuppi on the SM 2018-v15 path
                     **{
                         _era: "AK4PFPuppi"
                         for _era in ERAS_RUN3
@@ -2044,6 +2086,21 @@ def build_config(
         },
     )
 
+    def profile_samples(*samples):
+        """Restrict a hardcoded rule/shift sample list to the active surface.
+
+        The DY/W modification rules and the MET-recoil shift below name the
+        full legacy DY/W sample surface (madgraph/amcatnlo/powheg subtypes).
+        The rule and shift machinery validates every named sample against
+        ``available_sample_types``, which raises a SampleRuleConfigurationError
+        for a reduced profile surface (e.g. the SM profiles, which carry the
+        merged ``dyjets``/``wjets`` groups but not every subtype). Intersecting
+        is a no-op for NMSSM (its surface is the full legacy list, so the tuple
+        is returned unchanged in order and the configuration stays
+        byte-identical) and drops the absent subtypes for reduced surfaces.
+        """
+        return [s for s in samples if s in available_sample_types]
+
     # noise filters
     add_noise_filters_config(configuration)
 
@@ -2057,7 +2114,7 @@ def build_config(
     add_mur_muf_weights_config(configuration)
 
     # AK4 jet selection and energy/resolution corrections
-    add_ak4jet_config(configuration)
+    add_ak4jet_config(configuration, era, profile)
 
     # AK8 jet selection and energy/resolution corrections
     add_ak8jet_config(configuration)
@@ -2366,7 +2423,35 @@ def build_config(
 
     # Jet ID producer
     # For a detailed description, see producers/jets.py
-    JetID = get_for_era(jets.JetID, era)
+    #
+    # The isolated SM 2018-v15 AK4-PUPPI path recomputes the tight jet ID from
+    # the v15 composition branches: NanoAOD v15 drops the precomputed Jet_jetId
+    # branch that the legacy v9 rename producer reads, and its Jet collection is
+    # AK4 PUPPI. Before wiring the reconstructed producer in, verify that its
+    # pinned formula is still validated against its boundary fixture. NMSSM
+    # (use_2018_v15_jet_path=False) never reaches this gate and keeps the v9
+    # rename producer via get_for_era.
+    if profile.use_2018_v15_jet_path and era == "2018":
+        jetid_v15_fixture_path = os.path.join(
+            os.path.dirname(__file__),
+            "tests",
+            "fixtures",
+            "jetid_2018UL_puppi_tight_v1.json",
+        )
+        try:
+            with open(jetid_v15_fixture_path) as jetid_v15_fixture_file:
+                jetid_v15_fixture = json.load(jetid_v15_fixture_file)
+            jetid_v15_fixture_formula_version = jetid_v15_fixture["formula_version"]
+        except (OSError, ValueError, KeyError):
+            jetid_v15_fixture_formula_version = None
+        if jetid_v15_fixture_formula_version != jets.JETID_V15_FORMULA_VERSION:
+            raise ValueError(
+                "2018-v15 jet ID formula not pinned/validated — SM entry "
+                "points are blocked"
+            )
+        JetID = jets.JetIDTight2018PuppiV15
+    else:
+        JetID = get_for_era(jets.JetID, era)
 
     # Calibrated jets used for Type-I MET corrections
     # For a detailed descriptions, see producers/jets.py
@@ -2386,20 +2471,28 @@ def build_config(
     # - In Run 3, the PUPPI collection is used and no pileup ID is applied; the jet ID needs to
     #   be corrected in 2022 and 2023 due to a bug.
     # - In 2024, the jet ID must be calculated from base NANOAOD variables and a correction JSON
-    base_jet_selection_producers = get_for_era(
-        {
-            tuple(ERAS_RUN2): [
-                jets.BaseJetSelectionWithPUID,
-            ],
-            ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): [
-                jets.BaseJetSelectionWithoutPUID,
-            ],
-            "2024": [
-                jets.BaseJetSelectionWithoutPUID,
-            ],
-        },
-        era,
-    )
+    # - On the isolated SM 2018-v15 path, the AK4 PUPPI collection is used with
+    #   no pileup ID (v15 ships no Jet_puId for PUPPI jets), so the without-PUID
+    #   selection group is used instead of the legacy CHS-with-PUID group.
+    if profile.use_2018_v15_jet_path and era == "2018":
+        base_jet_selection_producers = [
+            jets.BaseJetSelectionWithoutPUID,
+        ]
+    else:
+        base_jet_selection_producers = get_for_era(
+            {
+                tuple(ERAS_RUN2): [
+                    jets.BaseJetSelectionWithPUID,
+                ],
+                ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): [
+                    jets.BaseJetSelectionWithoutPUID,
+                ],
+                "2024": [
+                    jets.BaseJetSelectionWithoutPUID,
+                ],
+            },
+            era,
+        )
 
     # AK8 jet ID producers
     # fat_jet_id_producers = get_for_era(
@@ -2776,40 +2869,62 @@ def build_config(
         )
 
     # For DY and W samples, calculate the generator-level boson four-vector
-    configuration.add_modification_rule(
-        SCOPES,
-        AppendProducer(
-            [boson_corrections.GenBosonQuantities],
-            samples=["dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll", "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo"],
-        ),
+    _gen_boson_samples = profile_samples(
+        "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
+        "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo",
     )
+    if _gen_boson_samples:
+        configuration.add_modification_rule(
+            SCOPES,
+            AppendProducer(
+                [boson_corrections.GenBosonQuantities],
+                samples=_gen_boson_samples,
+            ),
+        )
 
     # For DY samples, apply Z pt reweighting
-    configuration.add_modification_rule(
-        SCOPES,
-        AppendProducer(
-            z_pt_reweighting_producers,
-            samples=["dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll", "dyjets_amcatnlo_tt", "dyjets_powheg"],
-        )
+    _zpt_samples = profile_samples(
+        "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
+        "dyjets_amcatnlo_tt", "dyjets_powheg",
     )
+    if _zpt_samples:
+        configuration.add_modification_rule(
+            SCOPES,
+            AppendProducer(
+                z_pt_reweighting_producers,
+                samples=_zpt_samples,
+            )
+        )
 
     # For all samples that are not DY and W, replace recoil corrections with
-    # renaming operation
-    configuration.add_modification_rule(
-        SCOPES,
-        ReplaceProducer(
-            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
-            exclude_samples=[
-                "dyjets_madgraph",
-                "dyjets_amcatnlo",
-                "dyjets_amcatnlo_ll",
-                "dyjets_amcatnlo_tt",
-                "dyjets_powheg",
-                "wjets_madgraph",
-                "wjets_amcatnlo",
-            ],
-        ),
+    # renaming operation.
+    #
+    # `samples = available - exclude`, so filtering the excluded DY/W subtypes
+    # to the active surface leaves the subtraction result unchanged for NMSSM
+    # (full legacy surface -> byte-identical). On a reduced surface (SM) none
+    # of the legacy recoil subtypes are present, which would collapse the
+    # exclude list to empty (rejected by the rule machinery); there recoil
+    # correction is renamed for every sample in the surface instead.
+    _recoil_rename_exclude = profile_samples(
+        "dyjets_madgraph",
+        "dyjets_amcatnlo",
+        "dyjets_amcatnlo_ll",
+        "dyjets_amcatnlo_tt",
+        "dyjets_powheg",
+        "wjets_madgraph",
+        "wjets_amcatnlo",
     )
+    if _recoil_rename_exclude:
+        _recoil_rename_rule = ReplaceProducer(
+            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
+            exclude_samples=_recoil_rename_exclude,
+        )
+    else:
+        _recoil_rename_rule = ReplaceProducer(
+            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
+            samples=list(available_sample_types),
+        )
+    configuration.add_modification_rule(SCOPES, _recoil_rename_rule)
 
     # Remove DeepTau ID scale factor producers from data samples
     configuration.add_modification_rule(
@@ -3006,7 +3121,7 @@ def build_config(
         GLOBAL_SCOPES,
         RemoveProducer(
             producers=[event.npartons],
-            exclude_samples=[
+            exclude_samples=profile_samples(
                 "dyjets",
                 "dyjets_madgraph",
                 "dyjets_powheg",
@@ -3017,7 +3132,7 @@ def build_config(
                 "wjets_madgraph",
                 "wjets_amcatnlo",
                 "electroweak_boson",
-            ],
+            ),
         ),
     )
 
@@ -3945,7 +4060,7 @@ def build_config(
                         ],
                     },
                 ),
-                samples=[
+                samples=profile_samples(
                     "dyjets",
                     "dyjets_madgraph",
                     "dyjets_amcatnlo",
@@ -3954,7 +4069,7 @@ def build_config(
                     "dyjets_powheg",
                     "wjets_madgraph",
                     "wjets_amcatnlo",
-                ],
+                ),
             )
 
     #########################

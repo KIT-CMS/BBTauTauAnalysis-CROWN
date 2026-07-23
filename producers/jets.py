@@ -646,6 +646,56 @@ class StepwiseJERCProducerMetaConfiguration():
         )
 
 
+# Version tag of the pinned 2018-v15 tight jet ID formula recomputed by
+# JetIDTight2018PuppiV15 below. Must equal both:
+#  - the header constant `xyh::object_selection::formula_version`
+#    (cpp_addons/include/jetid_v15.hxx), and
+#  - the "formula_version" field of
+#    tests/fixtures/jetid_2018UL_puppi_tight_v1.json.
+# common_config.py's blocking gate compares this constant against the
+# fixture before allowing any SM (use_2018_v15_jet_path) entry point to
+# build.
+JETID_V15_FORMULA_VERSION = "jetid_2018UL_puppi_tight_v1"
+
+# Reconstructed 2018 UL AK4 PUPPI tight jet ID (v15).
+#
+# NanoAOD v15 drops the precomputed Jet_jetId branch that NanoAODv9 shipped
+# and its v15 `Jet` collection is AK4 PUPPI (not AK4 CHS), so for 2018 this
+# producer recomputes the tight working point event-by-event from the v15
+# composition branches instead of reading (or patching) a jetId bitmask --
+# see docs/jetid_2018UL_puppi_v15.md for the pinned formula, its region
+# structure, and sources, and tests/fixtures/jetid_2018UL_puppi_tight_v1.json
+# for the machine-readable boundary fixture validated by
+# tests/cpp/test_jetid_v15.cxx.
+#
+# Inputs are the nine v15 composition quantities, in the same order as the
+# C++ signature `xyh::object_selection::tight_jet_id_2018_puppi_v15`. Note
+# that `Jet_muEF` and `Jet_chEmEF` are read but unused by the *tight*
+# (non-lepton-veto) formula computed here -- they (and `Jet_neMultiplicity`)
+# are kept as inputs only so a future tightLepVeto/forward-region extension
+# of this producer does not need to touch the Python call site.
+#
+# Selecting this producer for era 2018 (replacing the `JetID` dict above) is
+# Task 8; this producer only needs to exist and be gated (see
+# common_config.py) for now.
+JetIDTight2018PuppiV15 = Producer(
+    name="JetIDTight2018PuppiV15",
+    call="xyh::object_selection::tight_jet_id_2018_puppi_v15({df}, {output}, {input})",
+    input=[
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_neHEF,
+        nanoAOD.Jet_neEmEF,
+        nanoAOD.Jet_nConstituents,
+        nanoAOD.Jet_chHEF,
+        nanoAOD.Jet_muEF,
+        nanoAOD.Jet_chEmEF,
+        nanoAOD.Jet_chMultiplicity,
+        nanoAOD.Jet_neMultiplicity,
+    ],
+    output=[q.Jet_ID],
+    scopes=GLOBAL_SCOPES,
+)
+
 # Seed for the random number generator for jet energy resolution smearing
 JERSmearingSeed = Producer(
     name="JERSmearingSeed",
