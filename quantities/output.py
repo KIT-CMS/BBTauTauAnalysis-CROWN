@@ -95,6 +95,9 @@ good_jets_with_veto_mask_boosted = Quantity("good_jets_with_veto_mask")
 base_bjets_mask = Quantity("base_bjets_mask")
 good_bjets_mask = Quantity("good_bjets_mask")
 good_bjets_with_veto_mask = Quantity("good_bjets_with_veto_mask")
+# Kinematic b-jet acceptance (before the b-tag WP cut) cleaned of lepton
+# overlaps: the jet set the strict UParTAK4 multi-WP event weight reweights.
+base_bjets_with_veto_mask = Quantity("base_bjets_with_veto_mask")
 base_photons_mask = Quantity("base_photons_mask")
 Tau_pt_ele_corrected = Quantity("Tau_pt_ele_corrected")
 Tau_pt_ele_mu_corrected = Quantity("Tau_pt_mu_corrected")
@@ -632,6 +635,13 @@ emb_iso_wgt_mu_boosted_1 = Quantity("emb_iso_wgt_mu_boosted_1")
 # btag weight
 btag_weight = Quantity("btag_weight")
 btag_weight_boosted = Quantity("btag_weight_boosted")
+# Strict UParTAK4 multi-WP b-tag event weight (SM 2018-v15 path). The nominal
+# column plus the pt-flow clamp diagnostic; the per-variation weight columns
+# (btag_weight_upart_<variation>) are created at config time from the payload's
+# discovered systematic variations by
+# producers.scalefactors.build_strict_upart_btag_weight.
+btag_weight_upart = Quantity("btag_weight_upart")
+btag_eff_pt_clamped_njets = Quantity("btag_eff_pt_clamped_njets")
 # ditau trigger weights
 trg_wgt_double_tau_1 = Quantity("trg_wgt_double_tau_1")
 trg_wgt_double_tau_2 = Quantity("trg_wgt_double_tau_2")

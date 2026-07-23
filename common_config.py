@@ -1,6 +1,7 @@
 from __future__ import annotations  # needed for type annotations in > python 3.7
 
 import json
+import logging
 import os
 from typing import List
 from itertools import chain
@@ -25,6 +26,7 @@ from .tau_variations import add_tauVariations
 from .jet_variations import add_jetVariations
 from .tau_embedding_settings import setup_embedding
 from .btag_variations import add_btagVariations
+from . import btag_payloads
 # from .jec_data import add_jetCorrectionData
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier, SampleModifier
@@ -33,6 +35,8 @@ from code_generation.systematics import SystematicShift, SystematicShiftByQuanti
 
 from .constants import ERAS_RUN2, ERAS_RUN3, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
 from .helpers import get_for_era
+
+log = logging.getLogger(__name__)
 
 
 def add_noise_filters_config(configuration: Configuration):
@@ -1526,7 +1530,97 @@ def add_ak8jet_config(configuration: Configuration):
     )
 
 
-def add_bjet_config(configuration: Configuration, sample_types: list[str], profile):
+def _use_strict_upart_btag(profile, era: str) -> bool:
+    """Whether the strict UParTAK4 multi-WP b-tag SF branch is active.
+
+    True only for profiles pinned to the 2018 UParT payload
+    (``btag_2018_algorithm == "upart_2018_v15"``) built for era 2018 AND that
+    actually apply b-tag scale factors (``profile.enable_btag_sf``).
+    Efficiency-measurement profiles (e.g. ``SM_BTAG_EFFICIENCY_PROFILE``) pin
+    the same ``btag_2018_algorithm`` but set ``enable_btag_sf=False`` and
+    ``btag_payload_dir=None`` -- they must never take this branch, since the
+    strict consumer's ``{bjet_eff_file}`` config parameter is only staged when
+    ``btag_payload_dir`` is set, and a b-tag-SF producer must not run at all
+    on a profile whose whole point is measuring the efficiency, not applying
+    the SF derived from it.
+
+    Shared by ``add_bjet_config`` (stages the payload parameters) and
+    ``build_config`` (schedules the strict weight-producer group) so the two
+    call sites can never drift apart.
+    """
+    return (
+        profile.btag_2018_algorithm == "upart_2018_v15"
+        and era == "2018"
+        and profile.enable_btag_sf
+    )
+
+
+def _resolve_legacy_btag_efficiency_alias(profile) -> dict:
+    """Resolve the (opt-in only) legacy efficiency sample-type alias.
+
+    ``AnalysisProfile.legacy_btag_efficiency_alias`` is a narrow escape hatch
+    for a NON-production payload path whose efficiency was measured under a
+    legacy sample-type name (e.g. the old NMSSM ``hh2b2tau -> ggh_htautau``
+    aliasing). It may only activate the alias when ALL of the following hold:
+
+    * the profile is pinned to the 2018-v15 UParT algorithm
+      (``btag_2018_algorithm == "upart_2018_v15"``);
+    * the alias mapping is non-empty and maps some sample type onto
+      ``"ggh_htautau"`` (i.e. ``"ggh_htautau" in alias.values()`` -- the
+      dict keys on the sample_type being aliased, e.g.
+      ``{"hh2b2tau": "ggh_htautau"}``, so this is the explicit legacy
+      *target* the escape hatch exists to reproduce);
+    * the profile is NOT on the dedicated, validated production payload path
+      (``require_validated_btag_payload`` is False) -- the production path
+      (``SM_PROFILE``) always keys the efficiency lookup on the sample's own
+      name (pure identity), by contract.
+
+    A profile that sets a non-empty alias together with
+    ``require_validated_btag_payload=True`` is a contradiction: the validated
+    production path is defined to apply identity unconditionally, so a
+    legacy alias on that same profile can never mean anything. Rather than
+    silently ignoring it, this raises ``ValueError`` so the contradictory
+    profile is caught at build time.
+
+    When the alias DOES activate, this is a non-production approximation
+    (the efficiency was measured under a different sample-type name than the
+    one it is being applied to) and must never pass unnoticed: it is logged
+    prominently at WARNING level, naming the exact sample -> target mapping.
+    The caller (``add_bjet_config``) additionally stages the same mapping as
+    a config parameter so it also surfaces in the generated configuration
+    report.
+
+    Returns the alias mapping to use (possibly empty, meaning pure identity).
+    """
+    alias = dict(profile.legacy_btag_efficiency_alias or {})
+    if alias and profile.require_validated_btag_payload:
+        raise ValueError(
+            f"AnalysisProfile '{profile.name}' sets a non-empty "
+            f"legacy_btag_efficiency_alias={alias!r} together with "
+            f"require_validated_btag_payload=True; the validated production "
+            f"payload path always keys the efficiency lookup on the "
+            f"sample's own name (identity) and forbids the legacy alias -- "
+            f"clear one of the two fields."
+        )
+    if (
+        alias
+        and "ggh_htautau" in alias.values()
+        and profile.btag_2018_algorithm == "upart_2018_v15"
+        and not profile.require_validated_btag_payload
+    ):
+        mapping_str = ", ".join(
+            f"{sample_type} -> {target}" for sample_type, target in sorted(alias.items())
+        )
+        log.warning(
+            "LEGACY B-TAG EFFICIENCY ALIAS ACTIVE: %s (approximation, forbidden "
+            "for final upper limits unless separately certified)",
+            mapping_str,
+        )
+        return alias
+    return {}
+
+
+def add_bjet_config(configuration: Configuration, era: str, sample_types: list[str], profile):
     """
     B jet identification and corrections.
 
@@ -1850,6 +1944,95 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str], profi
         },
     )
 
+    # SM 2018-v15 UParT b-tag branch. The isolated SM profile reads b-jets from
+    # the reconstructed AK4-PUPPI collection and identifies them with the pinned
+    # UParTAK4 payload (validated at config time), replacing the legacy Run-2
+    # DeepJet score column / WP / SF payload. These are *parameters only*: the
+    # strict UParTAK4 working-point SF consumer producer is wired separately, so
+    # the values below stage the payload for that producer. The NMSSM path keeps
+    # the legacy EraModifier wiring untouched (``btag_2018_algorithm is None``).
+    # Gated the same way (and via the same shared predicate) as the producer
+    # scheduling in build_config: profiles with enable_btag_sf=False (e.g. the
+    # b-tag efficiency-measurement profile) never stage these SF parameters.
+    use_sm_2018_v15 = _use_strict_upart_btag(profile, era)
+    if use_sm_2018_v15:
+        upart_wps = btag_payloads.load_upart_wps(btag_payloads.PINNED_BTV_2018_V15)
+        configuration.add_config_parameters(
+            GLOBAL_SCOPES + SCOPES,
+            {
+                "bjet_score_column": nanoAOD.Jet_btagUParTAK4B.name,
+                "bjet_min_score": upart_wps["M"],  # medium WP (UParTAK4)
+            },
+        )
+        configuration.add_config_parameters(
+            SCOPES,
+            {
+                "bjet_sf_file": btag_payloads.PINNED_BTV_2018_V15,
+                "bjet_sf_wp_name": btag_payloads.WP_VALUES_CORRECTION,
+                "bjet_sf_name": btag_payloads.COMB_SF_CORRECTION,
+                "bjet_sf_bc_name": btag_payloads.COMB_SF_CORRECTION,
+                "bjet_sf_lf_name": btag_payloads.LIGHT_SF_CORRECTION,
+            },
+        )
+        # Parameters consumed by the strict UParTAK4 multi-WP event-weight
+        # producer (scheduled in build_config for the SM profile). These are
+        # parameters only; the producer wiring lives there.
+        #  - bjet_eff_sample_type: the sample's OWN name (identity), unless the
+        #    profile opts a sample into a legacy alias
+        #    (legacy_btag_efficiency_alias is None for the SM profile -> pure
+        #    identity), replacing the legacy hh2b2tau -> ggh_htautau aliasing so
+        #    the SM efficiency lookup keys on the true process.
+        #  - bjet_eff_pt_clamp: pt above which the efficiency payload clamps (a
+        #    per-event count of affected jets is written as a diagnostic).
+        # (The five WP thresholds are baked into the consumer's call in
+        # build_config, not passed as a config parameter, because a
+        # std::vector<float> literal would need braces that CROWN's format
+        # passes cannot carry; the {vec_open}/{vec_close} mechanism is used
+        # there instead.)
+        eff_alias = _resolve_legacy_btag_efficiency_alias(profile)
+        if eff_alias:
+            # Mirror the WARNING logged in _resolve_legacy_btag_efficiency_alias
+            # into the configuration itself, so the active alias is also
+            # visible in the generated configuration report/parameters (e.g.
+            # via Configuration.config_parameters / str(configuration)), not
+            # only in the build log.
+            configuration.add_config_parameters(
+                GLOBAL_SCOPES,
+                {
+                    "legacy_btag_efficiency_alias_active": ",".join(
+                        f"{sample_type}->{target}"
+                        for sample_type, target in sorted(eff_alias.items())
+                    ),
+                },
+            )
+        configuration.add_config_parameters(
+            SCOPES,
+            {
+                "bjet_eff_sample_type": SampleModifier(
+                    {
+                        sample_type: eff_alias.get(sample_type, sample_type)
+                        for sample_type in sample_types
+                    }
+                ),
+                "bjet_eff_pt_clamp": 1000.0,
+            },
+        )
+        #  - bjet_eff_file: per-scope efficiency payload path. Installed by a
+        #    later task; the consumer loads it at RUNTIME through the
+        #    CorrectionManager, so a missing file fails only at run time, not at
+        #    config/compile time (no config-time existence gate here).
+        if profile.btag_payload_dir is not None:
+            for scope in SCOPES:
+                configuration.add_config_parameters(
+                    [scope],
+                    {
+                        "bjet_eff_file": (
+                            f"{profile.btag_payload_dir}/"
+                            f"btag_efficiency_{scope}.json.gz"
+                        ),
+                    },
+                )
+
 
 def add_zpt_weight_config(configuration: Configuration):
     """
@@ -2077,12 +2260,15 @@ def build_config(
     # Set sample flags manually
     # The configuration of is_data and is_embedding is set here for better readability, although
     # it has already been set in the Configuration class.
+    is_data = sample == "data"
+    is_embedding = sample == "embedding"
+    is_mc = sample not in ["data", "embedding"]
     configuration.add_config_parameters(
         GLOBAL_SCOPES,
         {
-            "is_data": sample == "data",
-            "is_embedding": sample == "embedding",
-            "is_mc": sample not in ["data", "embedding"],
+            "is_data": is_data,
+            "is_embedding": is_embedding,
+            "is_mc": is_mc,
         },
     )
 
@@ -2100,6 +2286,21 @@ def build_config(
         byte-identical) and drops the absent subtypes for reduced surfaces.
         """
         return [s for s in samples if s in available_sample_types]
+
+    # The SM v15 surface carries the DY and W processes as the single merged
+    # sample-type names ``dyjets`` / ``wjets`` (the legacy per-generator
+    # subtypes -- dyjets_madgraph, wjets_amcatnlo, ... -- are absent). Those
+    # merged names must therefore receive exactly the gen-boson-quantities /
+    # Zpt / recoil treatment the legacy 2018 subtypes get (same era, same
+    # physics process, different sample-type name); otherwise SM DY/W silently
+    # lose their gen boson four-vector and recoil correction. For the SM profile
+    # only, the merged names are added to the wrapped DY/W lists below before the
+    # ``profile_samples`` intersection. For NMSSM these stay empty, so every
+    # wrapped list is byte-identical (the merged NMSSM ``dyjets``/``wjets``
+    # samples keep their legacy "everything-else" recoil-rename treatment,
+    # because NMSSM uses the subtypes for the DY/W physics).
+    sm_merged_dyw = ["dyjets", "wjets"] if profile.use_2018_v15_jet_path else []
+    sm_merged_dy = ["dyjets"] if profile.use_2018_v15_jet_path else []
 
     # noise filters
     add_noise_filters_config(configuration)
@@ -2129,7 +2330,37 @@ def build_config(
     add_hadronic_tau_config(configuration, era)
 
     # b jet selection, identification, and corrections
-    add_bjet_config(configuration, available_sample_types, profile)
+    add_bjet_config(configuration, era, available_sample_types, profile)
+
+    # Strict validated-payload gate (SM production path only). Before any
+    # producer referencing the efficiency payload is scheduled (i.e. before
+    # ANY code generation happens), assert that the per-scope payload
+    # installed at profile.btag_payload_dir was produced by the validated
+    # chain (sm_btag_efficiency_config -> TauFakeFactors -> install), has not
+    # been tampered with (SHA256 vs its own provenance manifest), and carries
+    # every expected sample_type category. Only applies when ALL of:
+    #  - the strict UParT consumer would actually be scheduled
+    #    (_use_strict_upart_btag: upart_2018_v15, era 2018, enable_btag_sf);
+    #  - the profile opts into the gate (require_validated_btag_payload --
+    #    True only for SM_PROFILE; NMSSM and the b-tag-efficiency-measurement
+    #    profile never set it, so they never reach this branch);
+    #  - the sample requires a b-tag MC efficiency lookup at all. This is
+    #    NOT plain `is_mc`: `is_mc = sample not in ["data", "embedding"]`
+    #    (kept as-is -- other NMSSM code depends on that exact semantics)
+    #    classifies "embedding_mc" as MC, but embedding_mc jobs -- like
+    #    "embedding" -- never evaluate a b-tag MC efficiency SF and must not
+    #    require the payload to exist on disk either.
+    requires_btag_payload = is_mc and sample != "embedding_mc"
+    if (
+        _use_strict_upart_btag(profile, era)
+        and profile.require_validated_btag_payload
+        and requires_btag_payload
+    ):
+        payload_dir = btag_payloads.resolve_payload_dir(profile.btag_payload_dir)
+        channel_scopes = [s for s in HAD_TAU_SCOPES if s in scopes]
+        btag_payloads.require_validated_payload(
+            payload_dir, channel_scopes, btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
+        )
 
     # Z pt reweighting
     add_zpt_weight_config(configuration)
@@ -2541,6 +2772,39 @@ def build_config(
         default=[]
     )
 
+    # SM 2018-v15 profile: replace the era-selected (DeepJet-shape) SF producer
+    # with the strict UParTAK4 multiple-working-point event-weight consumer. It
+    # emits the nominal weight plus one weight-only column per discovered
+    # systematic variation and the pt-flow clamp diagnostic (its output columns
+    # are collected into strict_upart_btag_outputs and added to the ntuple
+    # below). NMSSM (btag_2018_algorithm is None) keeps the era selection
+    # untouched, so its b-tag SF scheduling stays byte-identical. Profiles with
+    # enable_btag_sf=False (e.g. the b-tag efficiency-measurement profile, which
+    # also leaves btag_payload_dir=None) must never take this branch either: an
+    # efficiency-measurement profile must not apply b-tag SFs, and its
+    # {bjet_eff_file} parameter is never staged, so building it would hit an
+    # unresolved config parameter. Shared with add_bjet_config via
+    # _use_strict_upart_btag so the two call sites can't drift apart.
+    use_strict_upart_btag = _use_strict_upart_btag(profile, era)
+    strict_upart_btag_outputs = []
+    if use_strict_upart_btag:
+        upart_btag_variations = btag_payloads.discover_upart_variations(
+            btag_payloads.PINNED_BTV_2018_V15
+        )
+        upart_btag_wps = btag_payloads.load_upart_wps(
+            btag_payloads.PINNED_BTV_2018_V15
+        )
+        # WP thresholds ordered tightest -> loosest to match the consumer's
+        # fixed WP names {XXT, XT, T, M, L}.
+        upart_btag_wp_values = [
+            upart_btag_wps[wp] for wp in ["XXT", "XT", "T", "M", "L"]
+        ]
+        bjet_id_sf_producer, strict_upart_btag_outputs = (
+            scalefactors.build_strict_upart_btag_weight(
+                upart_btag_variations, upart_btag_wp_values
+            )
+        )
+
     # B jet pair quantities
     # Run 3 does not include b jet regression variables, so the producers for the b jet pair
     # quantities differ for both eras.
@@ -2872,6 +3136,7 @@ def build_config(
     _gen_boson_samples = profile_samples(
         "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
         "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo",
+        *sm_merged_dyw,
     )
     if _gen_boson_samples:
         configuration.add_modification_rule(
@@ -2882,10 +3147,17 @@ def build_config(
             ),
         )
 
-    # For DY samples, apply Z pt reweighting
+    # For DY samples, apply Z pt reweighting. NOTE: the ZPtReweighting producer
+    # is Run-3-only (``z_pt_reweighting_producers`` resolves to [] for 2018, and
+    # ``zpt_weight_file`` is DOES_NOT_EXIST for Run 2), so this rule appends no
+    # producer for era 2018 for both legacy subtypes and the merged SM name --
+    # the merged ``dyjets`` is added here for structural parity so it picks up
+    # any future Run-2 Zpt producer automatically. W samples get no Zpt (legacy
+    # subtype behavior mirrored: wjets is intentionally absent from this list).
     _zpt_samples = profile_samples(
         "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
         "dyjets_amcatnlo_tt", "dyjets_powheg",
+        *sm_merged_dy,
     )
     if _zpt_samples:
         configuration.add_modification_rule(
@@ -2913,6 +3185,7 @@ def build_config(
         "dyjets_powheg",
         "wjets_madgraph",
         "wjets_amcatnlo",
+        *sm_merged_dyw,
     )
     if _recoil_rename_exclude:
         _recoil_rename_rule = ReplaceProducer(
@@ -4069,6 +4342,12 @@ def build_config(
                     "dyjets_powheg",
                     "wjets_madgraph",
                     "wjets_amcatnlo",
+                    # SM: the literal "dyjets" above already covers the merged DY
+                    # name; sm_merged_dyw adds the merged "wjets" so the recoil
+                    # systematic tracks the recoil correction it now carries, at
+                    # parity with the legacy wjets subtypes ("dyjets" duplicate is
+                    # harmless). Empty for NMSSM -> byte-identical.
+                    *sm_merged_dyw,
                 ),
             )
 
@@ -4400,6 +4679,22 @@ def build_config(
     )
 
     #########################
+    # Strict UParTAK4 b-tag event-weight outputs (SM 2018-v15 profile)
+    #########################
+    # The strict consumer replaces the DeepJet-shape SF producer, which
+    # produced ``id_wgt_bjet``; that column is no longer produced on the SM
+    # path (nothing else consumes it -- it is a pure output), so drop it from
+    # the requested outputs and register the strict weight columns instead
+    # (nominal + per-variation weight-only columns + pt-flow clamp diagnostic).
+    # For data/embedding the strict producer group and its outputs are removed
+    # by the b-tag RemoveProducer rule, matching the legacy id_wgt_bjet
+    # behavior. NMSSM never enters this branch, so its outputs stay unchanged.
+    if use_strict_upart_btag:
+        for scope in configuration.outputs:
+            configuration.outputs[scope].discard(q.id_wgt_bjet)
+        configuration.add_outputs(SCOPES, strict_upart_btag_outputs)
+
+    #########################
     # Import triggersetup   #
     #########################
     add_diTauTriggerSetup(configuration)
@@ -4417,7 +4712,12 @@ def build_config(
     #########################
     # btagging scale factor shape variation
     #########################
-    add_btagVariations(configuration, bjet_id_sf_producer)
+    # The DeepJet/PNet shape variations (up_hf, up_lf, ... reconfiguring
+    # {bjet_sf_variation}) do not apply to the strict UParTAK4 consumer, whose
+    # systematic variations are emitted as ordinary weight-only columns instead
+    # of shifts. Skip them on the SM UParT path; NMSSM keeps them unchanged.
+    if not use_strict_upart_btag:
+        add_btagVariations(configuration, bjet_id_sf_producer)
 
     #########################
     # Jet energy correction for data

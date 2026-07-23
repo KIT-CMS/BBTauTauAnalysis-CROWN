@@ -85,6 +85,29 @@ class NMSSMCharacterizationTest(unittest.TestCase):
     def test_mass_tautaubb_is_an_output(self):
         self.assertIn("mass_tautaubb", output_names(self.cfg_ttbar, "mt"))
 
+    def test_nmssm_dyw_recoil_wiring_unchanged(self):
+        # Freezes the NMSSM DY/W treatment the SM merged-group fix must not
+        # touch: NMSSM does its DY/W physics through the per-generator subtypes,
+        # which carry GenBosonQuantities + the intact MetScopes recoil group; the
+        # merged ``dyjets``/``wjets`` names are treated as "everything else"
+        # (recoil renamed via RenameMet, no gen-boson quantities). The SM merged
+        # additions are profile-gated, so all of this stays byte-identical here.
+        def names(sample):
+            cfg = build_nmssm(sample)
+            return producer_names(cfg, "mt") | producer_names(cfg, "global")
+
+        for subtype in ("dyjets_madgraph", "wjets_madgraph"):
+            producers = names(subtype)
+            self.assertIn("GenBosonQuantities", producers)
+            self.assertIn("MetScopes", producers)
+            self.assertNotIn("RenameMet", producers)
+
+        for merged in ("dyjets", "wjets"):
+            producers = names(merged)
+            self.assertIn("RenameMet", producers)
+            self.assertNotIn("GenBosonQuantities", producers)
+            self.assertNotIn("MetScopes", producers)
+
     def test_registered_shift_names_2018_signal(self):
         # Shift *registration* can only be observed by actually selecting
         # shifts at build time: with the class-level default shifts="none",
