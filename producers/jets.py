@@ -9,7 +9,7 @@ from code_generation.producer import Producer, ProducerGroup
 from code_generation.quantity import Quantity
 
 from ..helpers import era_producer_groups
-from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2
+from ..constants import GLOBAL_SCOPES, SCOPES, HAD_TAU_SCOPES, ERAS_RUN2
 
 
 # ------------------------------------------------------------------------------
@@ -267,26 +267,66 @@ JetRawPtRegressedResolution = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
+# Members of the auxiliary `Jet` collection quantity group, in call order. The
+# jet ID is the first member and the only one a profile may substitute (see
+# aux_jet_collection_quantities below).
+_AUX_JET_COLLECTION_MEMBERS = [
+    JetID,
+    JetBTagValue,
+    JetIsBTagged,
+    JetRawPt,
+    JetRawMass,
+    JetRawMuonSubtrPt,
+    JetEmEf,
+    JetRegPtRawCorr,
+    JetRegPtRawCorrNeutrino,
+    JetRegPtRawRes,
+    JetRawPtRegressed,
+    JetRawMassRegressed,
+    JetRawPtRegressedResolution,
+]
+
 # Group of auxiliary `Jet` collection quantities
 AuxJetCollectionQuantities = era_producer_groups(
     "AuxJetCollectionQuantities",
-    [
-        JetID,
-        JetBTagValue,
-        JetIsBTagged,
-        JetRawPt,
-        JetRawMass,
-        JetRawMuonSubtrPt,
-        JetEmEf,
-        JetRegPtRawCorr,
-        JetRegPtRawCorrNeutrino,
-        JetRegPtRawRes,
-        JetRawPtRegressed,
-        JetRawMassRegressed,
-        JetRawPtRegressedResolution,
-    ],
+    _AUX_JET_COLLECTION_MEMBERS,
     GLOBAL_SCOPES,
 )
+
+
+def aux_jet_collection_quantities(jet_id_overrides=None):
+    """
+    Rebuild the auxiliary `Jet` collection quantity group with a substituted jet
+    ID member for selected eras.
+
+    The jet ID is no longer a standalone config-level producer -- it runs as the
+    first member of this group -- so a profile that recomputes it must replace
+    the member rather than schedule a second producer, which would define
+    `Jet_ID` twice. `jet_id_overrides` maps an era string to the producer that
+    replaces the default `JetID` entry for that era; the eras it names are split
+    out of the tuple keys of `JetID`, every other era keeps its default. Used by
+    the SM 2018 NanoAOD-v15 path, which recomputes the tight AK4-PUPPI jet ID
+    instead of renaming the v9 `Jet_jetId` branch (absent from v15 files).
+
+    :param jet_id_overrides: mapping of era to replacement jet ID producer
+    :return: mapping of era to producer group, like `AuxJetCollectionQuantities`
+    """
+    if not jet_id_overrides:
+        return AuxJetCollectionQuantities
+
+    jet_id = {}
+    for key, producer in JetID.items():
+        eras = key if isinstance(key, tuple) else (key,)
+        remaining = tuple(_era for _era in eras if _era not in jet_id_overrides)
+        if remaining:
+            jet_id[remaining if len(remaining) > 1 else remaining[0]] = producer
+    jet_id.update(jet_id_overrides)
+
+    return era_producer_groups(
+        "AuxJetCollectionQuantities",
+        [jet_id] + _AUX_JET_COLLECTION_MEMBERS[1:],
+        GLOBAL_SCOPES,
+    )
 
 #endregion
 
@@ -1251,5 +1291,88 @@ BasicBJetQuantities = ProducerGroup(
     scopes=SCOPES,
     subproducers=[
         NumberOfBJets,
+    ],
+)
+
+##########################
+# Payload-independent UParT probe-jet collection
+# (sm_btag_efficiency_config only)
+##########################
+# The b-tag efficiency-measurement profile exports a probe-jet collection
+# selected purely on kinematics + the reconstructed tight jet ID -- NOT on any
+# b-tag discriminator and with NO b-tag scale factor -- from which the b-tag
+# efficiency is measured downstream. The probe mask is built from the base jet
+# collection (corrected pt, eta, phi, the tight jet-ID mask q.Jet_ID) and is
+# deliberately independent of the analysis b-jet-selected mask, so that the
+# 20-30 GeV region is not biased by the analysis b-jet pt threshold. The
+# selection lives in the hadronic-tau scopes because it cleans probe jets
+# against BOTH selected pair legs (q.p4_1, q.p4_2).
+
+# Per-jet probe mask: corrected pt >= 20, |eta| < 2.4, pass tight jet ID, no
+# PUID, deltaR >= 0.4 vs both pair legs, no discriminator cut.
+BtagProbeJetMask = Producer(
+    name="BtagProbeJetMask",
+    call="xyh::btag_probe::probe_mask({df}, {output}, {input}, {btag_probe_min_pt}, {btag_probe_max_abs_eta}, {btag_probe_min_delta_r})",
+    input=[
+        q.Jet_correctedPt,
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.Jet_ID,
+        q.p4_1,
+        q.p4_2,
+    ],
+    output=[q.btag_probe_jet_mask],
+    scopes=HAD_TAU_SCOPES,
+)
+
+# Nominal corrected pt of the probe jets.
+BtagProbeJetPt = Producer(
+    name="BtagProbeJetPt",
+    call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
+    input=[q.Jet_correctedPt, q.btag_probe_jet_mask],
+    output=[q.btag_probe_jet_pt],
+    scopes=HAD_TAU_SCOPES,
+)
+
+# Eta of the probe jets.
+BtagProbeJetEta = Producer(
+    name="BtagProbeJetEta",
+    call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
+    input=[nanoAOD.Jet_eta, q.btag_probe_jet_mask],
+    output=[q.btag_probe_jet_eta],
+    scopes=HAD_TAU_SCOPES,
+)
+
+# Hadron flavour of the probe jets (MC-only NanoAOD branch, stored as UChar_t,
+# exported as int).
+BtagProbeJetHadronFlavour = Producer(
+    name="BtagProbeJetHadronFlavour",
+    call="xyh::btag_probe::masked_vector<int, UChar_t>({df}, {output}, {input})",
+    input=[nanoAOD.Jet_hadronFlavour, q.btag_probe_jet_mask],
+    output=[q.btag_probe_jet_hadron_flavour],
+    scopes=HAD_TAU_SCOPES,
+)
+
+# UParTAK4 B score of the probe jets.
+BtagProbeJetUParT = Producer(
+    name="BtagProbeJetUParT",
+    call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
+    input=[nanoAOD.Jet_btagUParTAK4B, q.btag_probe_jet_mask],
+    output=[q.btag_probe_jet_upart],
+    scopes=HAD_TAU_SCOPES,
+)
+
+BtagProbeJetVectors = ProducerGroup(
+    name="BtagProbeJetVectors",
+    call=None,
+    input=None,
+    output=None,
+    scopes=HAD_TAU_SCOPES,
+    subproducers=[
+        BtagProbeJetMask,
+        BtagProbeJetPt,
+        BtagProbeJetEta,
+        BtagProbeJetHadronFlavour,
+        BtagProbeJetUParT,
     ],
 )

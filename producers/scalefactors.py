@@ -647,6 +647,33 @@ SingleEleTriggerSF = ExtendedVectorProducer(
 )
 
 
+# Unity single-electron-trigger scale factor: defines the same
+# ``ele_trigger_sf`` output column(s) as ``SingleEleTriggerSF`` (e.g.
+# ``trg_wgt_single_ele30``) but hard-set to 1.0, taking no correctionlib input.
+#
+# ``SingleEleTriggerSF`` evaluates the EGM ``Electron-HLT-SF`` correction, whose
+# correctionlib schema (year, ValType, Path, eta, pt) only exists in the Run-3
+# EGM ``electronHlt.json.gz`` payloads. For Run-2 UL the EGM ``electron.json.gz``
+# ships only the ID SF (``UL-Electron-ID-SF``) and no HLT-trigger correction at
+# all, so loading ``Electron-HLT-SF`` throws ``std::out_of_range`` (correctionlib
+# ``CorrectionSet::at``) and aborts the whole job at DataFrame setup. The SM
+# 2018-v15 b-tag efficiency profile substitutes this unity producer so its
+# et-channel executable runs while keeping the exact output-column contract the
+# TauFakeFactors preselection reads. A per-event electron-trigger SF is a
+# nuisance weight for the payload-independent efficiency measurement; the
+# physically-correct Run-2 electron-trigger SF source remains an open user
+# physics decision (the pre-existing "2018 et Ele32 flag vs Ele30-named SF"
+# item). NMSSM / SM-main keep the original ``SingleEleTriggerSF`` unchanged.
+SingleEleTriggerSFUnity = ExtendedVectorProducer(
+    name="SingleEleTriggerSFUnity",
+    call="event::quantity::Define({df}, {output}, 1.0)",
+    input=[],
+    output="e_trigger_flagname",
+    scopes=ELECTRON_SCOPES,
+    vec_config="ele_trigger_sf",
+)
+
+
 #
 # SINGLE MUON TRIGGER SCALE FACTORS
 #

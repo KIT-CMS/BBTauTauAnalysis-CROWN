@@ -40,6 +40,8 @@ kinfit_prob = Quantity("kinfit_prob")
 kinfit_pull1 = Quantity("kinfit_pull1")
 kinfit_pull2 = Quantity("kinfit_pull2")
 kinfit_pullBalance = Quantity("kinfit_pullBalance")
+# SM fixed-mass (m(H->bb)=125, m(H->tautau)=125) HH kinematic fit output
+kinfit_mHH = Quantity("kinfit_mHH")
 kinfit_convergence_YToBB_boosted = Quantity("kinfit_convergence_YToBB_boosted")
 kinfit_mX_YToBB_boosted = Quantity("kinfit_mX_YToBB_boosted")
 kinfit_mY_YToBB_boosted = Quantity("kinfit_mY_YToBB_boosted")
@@ -808,6 +810,17 @@ Type1Jet_l2l3resPt = Quantity("Type1Jet_l2l3resPt")
 Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
 
 # endregion
+
+# ------------------------------------------------------------------------------
+# Payload-independent UParT probe-jet collection (sm_btag_efficiency_config)
+# ------------------------------------------------------------------------------
+# Per-jet probe mask (1 = probe) and the four equal-length exported vectors
+# it selects: corrected pt, eta, hadron flavour (int), and UParTAK4 B score.
+btag_probe_jet_mask = Quantity("btag_probe_jet_mask")
+btag_probe_jet_pt = Quantity("btag_probe_jet_pt")
+btag_probe_jet_eta = Quantity("btag_probe_jet_eta")
+btag_probe_jet_hadron_flavour = Quantity("btag_probe_jet_hadron_flavour")
+btag_probe_jet_upart = Quantity("btag_probe_jet_upart")
 
 # ------------------------------------------------------------------------------
 # Fake factor quantities

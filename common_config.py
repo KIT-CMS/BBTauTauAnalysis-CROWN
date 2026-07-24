@@ -9,7 +9,7 @@ from .producers import electrons as electrons
 from .producers import event as event
 from .producers import genparticles as genparticles
 from .producers import jets as jets
-from .producers import fatjets as fatjets
+# from .producers import fatjets as fatjets
 from .producers import met as met
 from .producers import muons as muons
 from .producers import pairquantities as pairquantities
@@ -154,6 +154,16 @@ def add_noise_filters_config(configuration: Configuration):
                         "Flag_eeBadScFilter",
                         "Flag_ecalBadCalibFilter",
                     ],
+                    "2025": [
+                        "Flag_goodVertices",
+                        "Flag_globalSuperTightHalo2016Filter",
+                        "Flag_EcalDeadCellTriggerPrimitiveFilter",
+                        "Flag_BadPFMuonFilter",
+                        "Flag_BadPFMuonDzFilter",
+                        "Flag_hfNoisyHitsFilter",
+                        "Flag_eeBadScFilter",
+                        "Flag_ecalBadCalibFilter",  # marked as "yellow" in TWiki
+                    ],
                 },
             ),
         },
@@ -203,6 +213,7 @@ def add_pileup_reweighting_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-23CSep23-Summer23-NanoAODv12/2024-01-31/puWeights.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-23DSep23-Summer23BPix-NanoAODv12/2024-01-31/puWeights.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-04-15/puWeights_BCDEFGHI.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-05/puWeights_2025pp_Golden_Summer24_25ns_69200ub.json.gz",
                 },
             ),
             "PU_reweighting_era": EraModifier(
@@ -216,6 +227,7 @@ def add_pileup_reweighting_config(configuration: Configuration):
                     "2023preBPix": "Collisions2023_366403_369802_eraBC_GoldenJson",
                     "2023postBPix": "Collisions2023_369803_370790_eraD_GoldenJson",
                     "2024": "Collisions24_BCDEFGHI_goldenJSON",
+                    "2025": "Collisions25_goldenJSON",
                 }
             ),
             "PU_reweighting_variation": "nominal",
@@ -268,6 +280,7 @@ def add_golden_json_config(configuration: Configuration):
                     "2023preBPix": "data/golden_json/Cert_Collisions2023_366442_370790_Golden.json",
                     "2023postBPix": "data/golden_json/Cert_Collisions2023_366442_370790_Golden.json",
                     "2024": "data/golden_json/Cert_Collisions2024_378981_386951_Golden.json",
+                    "2025": "data/golden_json/Cert_Collisions2025_391658_398903_Golden.json",
                 },
             ),
         },
@@ -394,15 +407,16 @@ def add_electron_config(configuration: Configuration):
         {
             "ele_sf_file": EraModifier(
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2017-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv15/2025-12-05/electron.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016postVFP-UL-NanoAODv15/2025-12-05/electron.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2017-UL-NanoAODv15/2025-12-05/electron.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv15/2025-12-05/electron.json.gz",
                     "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-15/electron.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-15/electron.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electron.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electron.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electron.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/electron.json.gz",
                 },
             ),
             "ele_sf_cset_name": EraModifier(
@@ -428,6 +442,7 @@ def add_electron_config(configuration: Configuration):
                     "2023preBPix": "2023PromptC",
                     "2023postBPix": "2023PromptD",
                     "2024": "2024Prompt",
+                    "2025": "2025Prompt",
                 }
             ),
             "ele_reco_sf_name": "RecoAbove20",  # TODO needs to be modified for 2022 and 2023
@@ -452,6 +467,7 @@ def add_electron_config(configuration: Configuration):
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023postBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2024": "DOES_NOT_EXIST",  # TODO to be added when available
+                    "2025": "DOES_NOT_EXIST",  # TODO to be added when available
                 },
             ),
             "mc_electron_id_sf": "ID90_pt_eta_bins",
@@ -593,11 +609,12 @@ def add_muon_config(configuration: Configuration):
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2017-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
                     "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2018-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22CDSep23-Summer22-NanoAODv12/2026-04-28/muon_Z.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-04-28/muon_Z.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23CSep23-Summer23-NanoAODv12/2026-04-28/muon_Z.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-28/muon_Z.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-04-28/muon_Z.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23CSep23-Summer23-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-18/muon_Z.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-25Prompt-Summer24-NanoAODv15/2026-04-28/muon_Z.json.gz",
                 },
             ),
             "muon_reco_sf_name": EraModifier(
@@ -646,6 +663,7 @@ def add_muon_config(configuration: Configuration):
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023postBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2024": "DOES_NOT_EXIST",  # TODO to be added when available
+                    "2025": "DOES_NOT_EXIST",  # TODO to be added when available
                 }
             ),
             "mc_muon_id_sf": "ID_pt_eta_bins",
@@ -796,14 +814,16 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
         },
     )
 
-    # correction files for tau identification/energy scale corrections and tau trigger scale factors
-    # TODO for now, preliminary corrections are used for 2022 and 2023, update them as soon as the official corrections are available
+    # Correction files for tau identification/energy scale corrections and tau trigger scale factors.
+    # TODO Update 2025 corrections as soon as they are available. For now, the 2024 corrections are used for 2025 as well.
+    # TODO The Run 2 NanoAOD v15 corrections are still not final, some placeholders taken from the NanoAOD v9 corrections have been inserted. E.g., for 2016preVFP:
+    # > DeepTau2018v2p5 Correctionlib JSON : 1st iteration \ DeepTauVSe and VSmu are taken from 2018 : Temporary -- will be updated soon
     configuration.add_config_parameters(
         HAD_TAU_SCOPES,
         {
             "tau_ides_sf_file": EraModifier(
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016preVFP-UL-NanoAODv15/2024-11-27/tau.json.gz",
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016preVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016postVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2017-UL-NanoAODv15/2025-11-27/tau.json.gz",
                     "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2018-UL-NanoAODv15/2025-11-27/tau.json.gz",
@@ -812,19 +832,21 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
                 }
             ),
             "tau_trigger_sf_file": EraModifier(
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/tau.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/tau.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2017-UL-NanoAODv9/2024-07-02/tau.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2018-UL-NanoAODv9/2024-07-02/tau.json.gz",
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016preVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016postVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2017-UL-NanoAODv15/2025-11-27/tau.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2018-UL-NanoAODv15/2025-11-27/tau.json.gz",
                     "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-25/tau.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-25/tau.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
                 }
             ),
             "tau_ES_json_name": "tau_energy_scale",
@@ -907,7 +929,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
             "tau_id_sf_vsjet_tau_dm10_pt40toInf_shift": "nom",
             "tau_id_sf_vsjet_tau_dm11_pt20to40_shift": "nom",
             "tau_id_sf_vsjet_tau_dm11_pt40toInf_shift": "nom",
-            "tau_id_sf_vsjet_sf_dependence": "dm",  # or "dm" ("pt" is both dm and pt dependent)
+            "tau_id_sf_vsjet_sf_dependence": "dm",  # dm for dm- and pt-binned SFs, "pt" for high-pt SFs
         },
     )
 
@@ -1237,25 +1259,15 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
     # for any other era.
     use_sm_2018_v15 = profile.use_2018_v15_jet_path and era == "2018"
 
-    # 2018 JEC/JER payload and algorithm selection.
-    # - NMSSM & default: legacy AK4-CHS NanoAODv9 corrections (Summer19UL18_V5
-    #   JEC, Summer19UL18_JRV2 JER).
-    # - SM 2018-v15: pinned AK4-PUPPI NanoAODv15 corrections. The pinned file
-    #   ships a single combined MC JEC set (Summer20UL18NanoV15_V1_MC_L1FastJet
-    #   / L2Relative / L3Absolute / L2L3Residual_AK4PFPuppi), the matching
-    #   single combined DATA set (Summer20UL18NanoV15_V1_DATA_*_AK4PFPuppi, no
-    #   per-run split), and JER SFs (Summer19UL18_JRV3_MC_{PtResolution,
-    #   ScaleFactor}_AK4PFPuppi) -- so MC and DATA JEC are wired exactly like
-    #   the CHS path (a single JES tag, the level/data-vs-mc infix is appended
-    #   by the C++ jerc factory).
-    jec_file_2018 = (
-        "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz"
-        if use_sm_2018_v15
-        else "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz"
-    )
-    jes_tag_2018 = "Summer20UL18NanoV15_V1" if use_sm_2018_v15 else "Summer19UL18_V5"
-    jer_tag_2018 = "Summer19UL18_JRV3" if use_sm_2018_v15 else "Summer19UL18_JRV2"
-    jec_algo_2018 = "AK4PFPuppi" if use_sm_2018_v15 else "AK4PFchs"
+    # 2018 JEC/JER payloads are no longer profile-dependent: the AK4 JEC file
+    # for every Run-2 era now points at the NanoAODv15 AK4-PUPPI payload for all
+    # profiles, and that file contains exactly one JES tag
+    # (Summer20UL18NanoV15_V1_{MC,DATA}_*_AK4PFPuppi, no per-run split) and one
+    # JER tag (Summer19UL18_JRV3_MC_{PtResolution,ScaleFactor}_AK4PFPuppi) --
+    # the values the SM 2018-v15 path already used. The legacy v9 CHS tags
+    # (Summer19UL18_V5 / Summer19UL18_JRV2 / AK4PFchs) do not exist in it, so
+    # they are gone from this block; the level and data-vs-mc infixes are still
+    # appended by the C++ jerc factory.
     # No CHS pileup-jet-ID cut on the PUPPI collection: disable it by pushing
     # the max-pt threshold to 0 so no jet is ever subjected to the PUID cut.
     puid_max_pt_2018 = 0.0 if use_sm_2018_v15 else 50.0
@@ -1300,7 +1312,17 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
                         for _era in ERAS_RUN3
                     },
                 },
-            )
+            ),
+            "ak4jet_reg_algo": EraModifier({
+                **{
+                    _era: "UParTAK4"
+                    for _era in ERAS_RUN2 + ["2024", "2025"]
+                },
+                **{
+                    _era: "PNet"
+                    for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                },
+            }),
         },
     )
 
@@ -1309,11 +1331,13 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
         "2016preVFP": "Summer19UL16APV_V7",
         "2016postVFP": "Summer19UL16_V7",
         "2017": "Summer19UL17_V5",
+        "2018": "Summer20UL18NanoV15_V1",  # v15 AK4-PUPPI payload (see above)
         "2022preEE": "Summer22_22Sep2023_V4",
         "2022postEE": "Summer22EE_22Sep2023_V4",
         "2023preBPix": "Summer23Prompt23_V4",
         "2023postBPix": "Summer23BPixPrompt23_V4",
         "2024": "Summer24Prompt24_V3",
+        "2025": "Summer24Prompt25_V3",
     }
 
     # AK4 jet energy calibration and resolution corrections
@@ -1328,15 +1352,16 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
             "ak4jet_jer_shift": "nom",  # or '"up"', '"down"'
             "ak4jet_jec_file": EraModifier(
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv9/2026-04-22/jet_jerc.json.gz",
-                    "2018": jec_file_2018,
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
                     "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/jet_jerc.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/jet_jerc.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/jet_jerc.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/jet_jerc.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jet_jerc.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-07-15/jet_jerc.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-07-15/jet_jerc.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-07-16/jet_jerc.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jet_jerc.json.gz",
                 },
             ),
             "ak4jet_jer_tag": EraModifier(
@@ -1344,39 +1369,18 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
                     "2016preVFP": "Summer20UL16APV_JRV3",
                     "2016postVFP": "Summer20UL16_JRV3",
                     "2017": "Summer19UL17_JRV2",
-                    "2018": jer_tag_2018,
+                    "2018": "Summer19UL18_JRV3",  # v15 AK4-PUPPI payload
                     "2022preEE": "Summer22_22Sep2023_JRV2",
                     "2022postEE": "Summer22EE_22Sep2023_JRV2",
                     "2023preBPix": "Summer23Prompt23_RunCv123_JRV2",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_JRV2",
                     "2024": "Summer24Prompt24_JRV1",
+                    "2025": "Summer24Prompt25_JRV2",
                 }
             ),
-            "ak4jet_jes_tag_data": EraModifier(
-                {
-                    **common_jes_tags,
-                    "2018": jes_tag_2018,
-                },
-            ),
-            "ak4jet_jes_tag_mc": EraModifier(
-                {
-                    **common_jes_tags,
-                    "2018": jes_tag_2018,
-                }
-            ),
-            "ak4jet_jec_algo": EraModifier(
-                {
-                    **{
-                        _era: "AK4PFchs"
-                        for _era in ERAS_RUN2
-                    },
-                    "2018": jec_algo_2018,  # AK4PFPuppi on the SM 2018-v15 path
-                    **{
-                        _era: "AK4PFPuppi"
-                        for _era in ERAS_RUN3
-                    }
-                }
-            )
+            "ak4jet_jes_tag_data": EraModifier(common_jes_tags),
+            "ak4jet_jes_tag_mc": EraModifier(common_jes_tags),
+            "ak4jet_jec_algo": "AK4PFPuppi",
         },
     )
 
@@ -1385,7 +1389,18 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
     configuration.add_config_parameters(
         "global",
         {
-            "ak4jet_id_file": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetid.json.gz",  # only needed for 2024
+            "ak4jet_id_file": EraModifier(
+                {
+                    **{
+                        era: "DOES_NOT_EXIST"
+                        for era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-07-16/jetid.json.gz",
+                        "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jetid.json.gz",
+                    }
+                }
+            ),
             "ak4jet_id_name": "AK4PUPPI",
         },
     )
@@ -1404,15 +1419,16 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
         {
             "jet_veto_map_file": EraModifier(
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv9/2026-04-22/jetvetomaps.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv9/2026-04-22/jetvetomaps.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv9/2026-04-22/jetvetomaps.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/jetvetomaps.json.gz",
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
                     "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-07-15/jetvetomaps.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-07-15/jetvetomaps.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-07-16/jetvetomaps.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jetvetomaps.json.gz",
                 },
             ),
             "jet_veto_map_name": EraModifier(
@@ -1426,6 +1442,7 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
                     "2023preBPix": "Summer23Prompt23_RunC_V1",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_V1",
                     "2024": "Summer24Prompt24_RunBCDEFGHI_V1",
+                    "2025": "Summer24Prompt25_RunCDEFG_V1",
                 },
             ),
             "jet_veto_map_type": "jetvetomap",
@@ -1469,15 +1486,16 @@ def add_ak8jet_config(configuration: Configuration):
             "ak8jet_jer_shift": "nom",  # or '"up"', '"down"'
             "ak8jet_jec_file": EraModifier(  # TODO use AK4 file for fatjets because it either was is just copied and the fatjet file has no merged uncertainty scheme?
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv9/2026-04-22/fatJet_jerc.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv9/2026-04-22/fatJet_jerc.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv9/2026-04-22/fatJet_jerc.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv9/2026-04-22/fatJet_jerc.json.gz",
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
                     "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-07-15/fatJet_jerc.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-07-15/fatJet_jerc.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-07-16/fatJet_jerc.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/fatJet_jerc.json.gz",
                 },
             ),
             "ak8jet_jer_tag": EraModifier(
@@ -1491,6 +1509,7 @@ def add_ak8jet_config(configuration: Configuration):
                     "2023preBPix": "Summer23Prompt23_RunCv1234_JRV1_MC",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_JRV1_MC",
                     "2024": "Summer23BPixPrompt23_RunD_JRV1_MC",  # copied from 2023postBPix
+                    "2025": "Summer24Prompt25_JRV2_MC",
                 }
             ),
             "ak8jet_jes_tag_data": "\"\"",
@@ -1505,6 +1524,7 @@ def add_ak8jet_config(configuration: Configuration):
                     "2023preBPix": "Summer23Prompt23_V2_MC",
                     "2023postBPix": "Summer23BPixPrompt23_V3_MC",
                     "2024": "Summer24Prompt24_V2_MC",
+                    "2025": "Summer24Prompt25_V3_MC",
                 }
             ),
             "ak8jet_jec_algo": "AK8PFPuppi",  # TODO normally "AK8PFPuppi" would be used -> change to AK4 naming to get merged uncertainty scheme?
@@ -1516,7 +1536,18 @@ def add_ak8jet_config(configuration: Configuration):
     configuration.add_config_parameters(
         "global",
         {
-            "ak8jet_id_file": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetid.json.gz",  # only needed for 2024
+            "ak8jet_id_file": EraModifier(
+                {
+                    **{
+                        era: "DOES_NOT_EXIST"
+                        for era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-07-16/jetid.json.gz",
+                        "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jetid.json.gz",
+                    },
+                },
+            ),
             "ak8jet_id_name": "AK8PUPPI",
         },
     )
@@ -1558,55 +1589,20 @@ def _use_strict_upart_btag(profile, era: str) -> bool:
 def _resolve_legacy_btag_efficiency_alias(profile) -> dict:
     """Resolve the (opt-in only) legacy efficiency sample-type alias.
 
-    ``AnalysisProfile.legacy_btag_efficiency_alias`` is a narrow escape hatch
-    for a NON-production payload path whose efficiency was measured under a
+    ``AnalysisProfile.legacy_btag_efficiency_alias`` is an escape hatch for a
+    payload whose efficiency was measured under a
     legacy sample-type name (e.g. the old NMSSM ``hh2b2tau -> ggh_htautau``
-    aliasing). It may only activate the alias when ALL of the following hold:
-
-    * the profile is pinned to the 2018-v15 UParT algorithm
-      (``btag_2018_algorithm == "upart_2018_v15"``);
-    * the alias mapping is non-empty and maps some sample type onto
-      ``"ggh_htautau"`` (i.e. ``"ggh_htautau" in alias.values()`` -- the
-      dict keys on the sample_type being aliased, e.g.
-      ``{"hh2b2tau": "ggh_htautau"}``, so this is the explicit legacy
-      *target* the escape hatch exists to reproduce);
-    * the profile is NOT on the dedicated, validated production payload path
-      (``require_validated_btag_payload`` is False) -- the production path
-      (``SM_PROFILE``) always keys the efficiency lookup on the sample's own
-      name (pure identity), by contract.
-
-    A profile that sets a non-empty alias together with
-    ``require_validated_btag_payload=True`` is a contradiction: the validated
-    production path is defined to apply identity unconditionally, so a
-    legacy alias on that same profile can never mean anything. Rather than
-    silently ignoring it, this raises ``ValueError`` so the contradictory
-    profile is caught at build time.
-
-    When the alias DOES activate, this is a non-production approximation
-    (the efficiency was measured under a different sample-type name than the
-    one it is being applied to) and must never pass unnoticed: it is logged
-    prominently at WARNING level, naming the exact sample -> target mapping.
-    The caller (``add_bjet_config``) additionally stages the same mapping as
-    a config parameter so it also surfaces in the generated configuration
-    report.
+    aliasing). It activates only for the 2018-v15 UParT algorithm and an
+    explicit mapping onto ``ggh_htautau``. Activation is logged and recorded
+    in the generated configuration parameters.
 
     Returns the alias mapping to use (possibly empty, meaning pure identity).
     """
     alias = dict(profile.legacy_btag_efficiency_alias or {})
-    if alias and profile.require_validated_btag_payload:
-        raise ValueError(
-            f"AnalysisProfile '{profile.name}' sets a non-empty "
-            f"legacy_btag_efficiency_alias={alias!r} together with "
-            f"require_validated_btag_payload=True; the validated production "
-            f"payload path always keys the efficiency lookup on the "
-            f"sample's own name (identity) and forbids the legacy alias -- "
-            f"clear one of the two fields."
-        )
     if (
         alias
         and "ggh_htautau" in alias.values()
         and profile.btag_2018_algorithm == "upart_2018_v15"
-        and not profile.require_validated_btag_payload
     ):
         mapping_str = ", ".join(
             f"{sample_type} -> {target}" for sample_type, target in sorted(alias.items())
@@ -1675,12 +1671,13 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": nanoAOD.Jet_btagUParTAK4B.name,
+                    "2025": nanoAOD.Jet_btagUParTAK4B.name,
                 },
             ),
             "bjet_min_score": EraModifier(  # medium WP
                 {
                     "2016preVFP": 0.2598,  # DeepJet
-                    "2016postVFPP": 0.2489,  # DeepJet
+                    "2016postVFP": 0.2489,  # DeepJet
                     "2017": 0.3040,  # DeepJet
                     "2018": 0.2783,  # DeepJet
                     "2022preEE": 0.245,  # ParticleNet
@@ -1688,12 +1685,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": 0.1917,  # ParticleNet
                     "2023postBPix": 0.1919,  # ParticleNet
                     "2024": 0.1272,  # UParT
+                    "2025": 0.1272,  # UParT
                 },
             ),
         },
     )
 
     # corrections for b jet identification in et channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         ET_SCOPES,
         {
@@ -1708,12 +1707,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_et.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_et.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in mt channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         MT_SCOPES,
         {
@@ -1728,12 +1729,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mt.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mt.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in tt channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         TT_SCOPES,
         {
@@ -1748,12 +1751,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_tt.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_tt.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in em channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         EM_SCOPES,
         {
@@ -1768,12 +1773,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_em.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_em.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in ee channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         EE_SCOPES,
         {
@@ -1788,12 +1795,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_ee.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_ee.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in mm channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         MM_SCOPES,
         {
@@ -1808,13 +1817,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mm.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mm.json.gz",
                 }
             ),
         },
     )
 
     configuration.add_config_parameters(
-        SCOPES,
+        GLOBAL_SCOPES + SCOPES,
         {
             "bjet_sf_file": EraModifier(
                 {
@@ -1827,19 +1837,27 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23CSep23-Summer23-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-03-10/btagging.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/btagging.json.gz",
                 }
             ),
+            # Name of the working-point-values correction inside bjet_sf_file, loaded
+            # by jets.JetIsBTagged together with bjet_btag_wp_name. It must name the
+            # same tagger as bjet_score_column, otherwise the flag thresholds one
+            # discriminant with another tagger's cut. The M values of these
+            # corrections equal the bjet_min_score thresholds above exactly, so the
+            # b-tag flag reproduces the numeric cut it replaced.
             "bjet_sf_wp_name": EraModifier(
                 {
-                    "2016preVFP": "TO_ADD",
-                    "2016postVFP": "TO_ADD",
-                    "2017": "TO_ADD",
-                    "2018": "TO_ADD",
-                    "2022preEE": "TO_ADD",
-                    "2022postEE": "TO_ADD",
-                    "2023preBPix": "TO_ADD",
-                    "2023postBPix": "TO_ADD",
-                    "2024": "UParTAK4_wp_values",
+                    **{
+                        _era: "deepJet_wp_values"  # DeepJet
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: "particleNet_wp_values"  # ParticleNet
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    "2024": "UParTAK4_wp_values",  # UParT
+                    "2025": "UParTAK4_wp_values",  # UParT
                 },
             ),
             "bjet_eff_sample_type": SampleModifier(
@@ -1863,6 +1881,7 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     **{
                         sample_type: "ggh_htautau"
                         for sample_type in [
+                            "higgs",
                             "ggh_htautau",
                             "ggh_hbb",
                             "vbf_htautau",
@@ -1920,6 +1939,7 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": "UParTAK4_comb",  # UParT
+                    "2025": "UParTAK4_comb",  # UParT
                 },
             ),
             "bjet_sf_bc_name": EraModifier(
@@ -1929,6 +1949,7 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                         for _era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": "UParTAK4_comb",  # UParT
+                    "2025": "UParTAK4_comb",  # UParT
                 },
             ),
             "bjet_sf_lf_name": EraModifier(
@@ -1938,15 +1959,26 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                         for _era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": "UParTAK4_light",  # UParT
+                    "2025": "UParTAK4_light",  # UParT
                 },
             ),
+            # Nominal variation of the single-value shape SFs
+            # (BJetShapeDeepJet_SF for Run 2, BJetShapePNet_SF for 2022/2023);
+            # this is also the key the 16 b-tag shape shifts in
+            # btag_variations.py write. The split _lf/_bc variations below are
+            # read only by the 2024/2025 BJetWPUParT_SF producer, so all three
+            # must be defined: dropping this one loses code generation for eight
+            # of the ten eras (it is formatted into both shape-SF calls).
             "bjet_sf_variation": "central",
+            "bjet_sf_variation_lf": "central",
+            "bjet_sf_variation_bc": "central",
+            "bjet_btag_wp_name": "M",
         },
     )
 
     # SM 2018-v15 UParT b-tag branch. The isolated SM profile reads b-jets from
     # the reconstructed AK4-PUPPI collection and identifies them with the pinned
-    # UParTAK4 payload (validated at config time), replacing the legacy Run-2
+    # UParTAK4 payload (read at config time), replacing the legacy Run-2
     # DeepJet score column / WP / SF payload. These are *parameters only*: the
     # strict UParTAK4 working-point SF consumer producer is wired separately, so
     # the values below stage the payload for that producer. The NMSSM path keeps
@@ -1957,18 +1989,32 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
     use_sm_2018_v15 = _use_strict_upart_btag(profile, era)
     if use_sm_2018_v15:
         upart_wps = btag_payloads.load_upart_wps(btag_payloads.PINNED_BTV_2018_V15)
+        # The discriminant column AND the working point that thresholds it must be
+        # overridden together, in the same scopes and under the same gate. The b-tag
+        # flag producer (jets.JetIsBTagged) runs in the global scope as a member of
+        # the auxiliary `Jet` quantity group -- i.e. for every profile -- and resolves
+        # its threshold from {bjet_sf_file} / {bjet_sf_wp_name} / {bjet_btag_wp_name},
+        # so those go into GLOBAL_SCOPES too: leaving them at the era default here
+        # would threshold the UParT discriminant with the DeepJet working point.
+        # Conversely, staging the payload on a wider gate than the column (e.g. on the
+        # b-tag algorithm alone, which is also set on the payload-independent
+        # efficiency profile) thresholds a DeepJet discriminant with the UParT working
+        # point. "M" matches the numeric bjet_min_score staged here, both read from
+        # the same pinned payload. Profiles that do not take this branch keep the
+        # era-default tagger consistently across all four parameters.
         configuration.add_config_parameters(
             GLOBAL_SCOPES + SCOPES,
             {
                 "bjet_score_column": nanoAOD.Jet_btagUParTAK4B.name,
                 "bjet_min_score": upart_wps["M"],  # medium WP (UParTAK4)
+                "bjet_sf_file": btag_payloads.PINNED_BTV_2018_V15,
+                "bjet_sf_wp_name": btag_payloads.WP_VALUES_CORRECTION,
+                "bjet_btag_wp_name": "M",
             },
         )
         configuration.add_config_parameters(
             SCOPES,
             {
-                "bjet_sf_file": btag_payloads.PINNED_BTV_2018_V15,
-                "bjet_sf_wp_name": btag_payloads.WP_VALUES_CORRECTION,
                 "bjet_sf_name": btag_payloads.COMB_SF_CORRECTION,
                 "bjet_sf_bc_name": btag_payloads.COMB_SF_CORRECTION,
                 "bjet_sf_lf_name": btag_payloads.LIGHT_SF_CORRECTION,
@@ -2042,6 +2088,8 @@ def add_zpt_weight_config(configuration: Configuration):
     provided by the HLepRare group.
     """
     ## all scopes MET selection
+    # TODO Include 2025 corrections as soon as they are available. For now, 2024
+    # corrections are used.
     configuration.add_config_parameters(
         SCOPES,
         {
@@ -2059,13 +2107,14 @@ def add_zpt_weight_config(configuration: Configuration):
             "zpt_weight_file": EraModifier(
                 {
                     **{
-                        _era: f"data/hleprare/DYweightCorrlib/DY_pTll_weights_{_era}_v5.json.gz"
-                        for _era in ERAS_RUN3
-                    },
-                    **{
                         _era: "DOES_NOT_EXIST"  # placeholder for Run 2, for which corrections are provided in a different way
                         for _era in ERAS_RUN2
                     },
+                    **{
+                        _era: f"data/hleprare/DYweightCorrlib/DY_pTll_weights_{_era}_v5.json.gz"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": f"data/hleprare/DYweightCorrlib/DY_pTll_weights_2024_v5.json.gz",
                 },
             ),
             "zpt_weight_name": "DY_pTll_reweighting",
@@ -2102,6 +2151,8 @@ def add_met_corrections_config(configuration: Configuration):
 
     # Files containing the recoil corrections. We have ROOT files for Run 2 and
     # json.gz files for Run 3, which are processed using different producers.
+    # TODO Include 2025 corrections as soon as they are available. For now, 2024
+    # corrections are used.
     configuration.add_config_parameters(
         SCOPES,
         {
@@ -2115,8 +2166,9 @@ def add_met_corrections_config(configuration: Configuration):
                     },
                     **{
                         _era: f"data/hleprare/RecoilCorrlib/Recoil_corrections_{_era}_v5.json.gz"
-                        for _era in ERAS_RUN3
-                    }
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": "data/hleprare/RecoilCorrlib/Recoil_corrections_2024_v5.json.gz"
                 },
             ),
         },
@@ -2260,11 +2312,25 @@ def build_config(
     # Set sample flags manually
     # The configuration of is_data and is_embedding is set here for better readability, although
     # it has already been set in the Configuration class.
+    #
+    # These flags are added to *every* configured scope (global + all analysis
+    # scopes), not just the global scope: producers such as
+    # ``boson_corrections.GenBosonP4`` / ``GenVisBosonP4`` run in the analysis
+    # SCOPES and reference ``{is_data}`` in their call templates, so ``is_data``
+    # must be resolvable there. The framework's own ``_set_sample_parameters``
+    # already injects ``is_${sampletype}`` into all scopes for every type in
+    # ``available_sample_types``; for the full legacy surface (NMSSM) that means
+    # ``is_data``/``is_embedding`` are already present in every scope and
+    # re-adding them here is a value-identical no-op. On an MC-only reduced
+    # surface (the SM b-tag efficiency profile), ``data``/``embedding`` are not
+    # in ``available_sample_types``, so the framework never creates
+    # ``is_data``/``is_embedding`` at all -- this manual all-scope addition is
+    # what makes the DY/W gen-boson producers resolvable there.
     is_data = sample == "data"
     is_embedding = sample == "embedding"
     is_mc = sample not in ["data", "embedding"]
     configuration.add_config_parameters(
-        GLOBAL_SCOPES,
+        configuration.scopes,
         {
             "is_data": is_data,
             "is_embedding": is_embedding,
@@ -2287,6 +2353,22 @@ def build_config(
         """
         return [s for s in samples if s in available_sample_types]
 
+    def add_rule(scope, rule):
+        """Add a modification rule, skipping it when ``profile_samples`` has
+        emptied its sample list on a reduced surface.
+
+        A ``profile_samples``-wrapped rule that names only samples absent from
+        the active surface (e.g. the ``data``/``embedding`` SF-removal rules on
+        the MC-only b-tag efficiency surface) becomes a no-op, but the Rule
+        machinery rejects an empty ``samples``/``exclude_samples`` list -- so
+        such a rule is skipped rather than added. On the full legacy surface no
+        wrapped list is emptied, so every rule is added exactly as before
+        (byte-identical for NMSSM).
+        """
+        if not rule.samples and not rule.exclude_samples:
+            return
+        configuration.add_modification_rule(scope, rule)
+
     # The SM v15 surface carries the DY and W processes as the single merged
     # sample-type names ``dyjets`` / ``wjets`` (the legacy per-generator
     # subtypes -- dyjets_madgraph, wjets_amcatnlo, ... -- are absent). Those
@@ -2301,6 +2383,50 @@ def build_config(
     # because NMSSM uses the subtypes for the DY/W physics).
     sm_merged_dyw = ["dyjets", "wjets"] if profile.use_2018_v15_jet_path else []
     sm_merged_dy = ["dyjets"] if profile.use_2018_v15_jet_path else []
+
+    # The b-tag efficiency-measurement profile
+    # (``SM_BTAG_EFFICIENCY_PROFILE``, the only profile that sets
+    # ``enable_probe_jet_collection``) writes a payload-independent UParT
+    # probe-jet collection INSTEAD of the analysis b-jet layer. It strips the
+    # whole DeepFlav/UParT-scored analysis b-jet chain (spec): the b-tag SF
+    # weight producer (+ its ``id_wgt_bjet`` output), the b-tag shape
+    # systematic variations, the b-tagged event filter (already disabled), the
+    # selected bb pair (its four-vectors, di-b-jet kinematics, and gen-matched
+    # di-b-jet quantities), the b-jet multiplicity, and the tautau+bb combined
+    # quantities -- while keeping the SM object / trigger / tau-pair /
+    # noise-filter / JEC / JER surface untouched. NMSSM and the SM main profile
+    # never set the flag, so every branch below is byte-identical for them.
+    strip_analysis_bjets = profile.enable_probe_jet_collection
+
+    # Single-electron trigger scale factor producer for the et/ee/em scopes.
+    # The default ``SingleEleTriggerSF`` evaluates the EGM ``Electron-HLT-SF``
+    # correction, which only exists (with the schema the C++ evaluator expects)
+    # in the Run-3 EGM ``electronHlt.json.gz`` payloads. On the Run-2 UL path the
+    # EGM ``electron.json.gz`` ships no HLT-trigger correction, so that load
+    # aborts the job at setup (correctionlib ``CorrectionSet::at`` ->
+    # ``std::out_of_range``). The MC-only b-tag efficiency profile (2018 UL v15)
+    # therefore uses the unity variant, which emits the identical
+    # ``ele_trigger_sf`` output column(s) set to 1.0 -- keeping the exact
+    # preselection column contract without the (unavailable) Run-2 HLT SF. NMSSM
+    # and the SM main profile keep ``SingleEleTriggerSF`` unchanged
+    # (byte-identical), so their Run-2 electron-trigger-SF physics decision is
+    # untouched.
+    single_ele_trigger_sf = (
+        scalefactors.SingleEleTriggerSFUnity
+        if strip_analysis_bjets
+        else scalefactors.SingleEleTriggerSF
+    )
+
+    # The isolated SM 2018-v15 path reads NanoAOD v15 (2018 UL reprocessing)
+    # instead of the legacy v9. v15 drops the v9 EGamma electron-energy branches
+    # the Run-2 MC producer consumes (Electron_dEscale*/dEsigmaUp/dEsigmaDown)
+    # and instead ships the raw inputs the Run-3-style correctionlib scale+smear
+    # mechanism needs (Electron_deltaEtaSC, Electron_r9, ...). This predicate
+    # (same gating idiom as the v15 jet-ID / jet-selection paths below) switches
+    # the electron energy correction to that Run-3 mechanism with the pinned
+    # 2018-UL-v15 EGM payload. NMSSM (use_2018_v15_jet_path=False) never sets it,
+    # so the v9 Run-2 electron path stays byte-identical.
+    use_sm_2018_v15_inputs = profile.use_2018_v15_jet_path and era == "2018"
 
     # noise filters
     add_noise_filters_config(configuration)
@@ -2331,36 +2457,6 @@ def build_config(
 
     # b jet selection, identification, and corrections
     add_bjet_config(configuration, era, available_sample_types, profile)
-
-    # Strict validated-payload gate (SM production path only). Before any
-    # producer referencing the efficiency payload is scheduled (i.e. before
-    # ANY code generation happens), assert that the per-scope payload
-    # installed at profile.btag_payload_dir was produced by the validated
-    # chain (sm_btag_efficiency_config -> TauFakeFactors -> install), has not
-    # been tampered with (SHA256 vs its own provenance manifest), and carries
-    # every expected sample_type category. Only applies when ALL of:
-    #  - the strict UParT consumer would actually be scheduled
-    #    (_use_strict_upart_btag: upart_2018_v15, era 2018, enable_btag_sf);
-    #  - the profile opts into the gate (require_validated_btag_payload --
-    #    True only for SM_PROFILE; NMSSM and the b-tag-efficiency-measurement
-    #    profile never set it, so they never reach this branch);
-    #  - the sample requires a b-tag MC efficiency lookup at all. This is
-    #    NOT plain `is_mc`: `is_mc = sample not in ["data", "embedding"]`
-    #    (kept as-is -- other NMSSM code depends on that exact semantics)
-    #    classifies "embedding_mc" as MC, but embedding_mc jobs -- like
-    #    "embedding" -- never evaluate a b-tag MC efficiency SF and must not
-    #    require the payload to exist on disk either.
-    requires_btag_payload = is_mc and sample != "embedding_mc"
-    if (
-        _use_strict_upart_btag(profile, era)
-        and profile.require_validated_btag_payload
-        and requires_btag_payload
-    ):
-        payload_dir = btag_payloads.resolve_payload_dir(profile.btag_payload_dir)
-        channel_scopes = [s for s in HAD_TAU_SCOPES if s in scopes]
-        btag_payloads.require_validated_payload(
-            payload_dir, channel_scopes, btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
-        )
 
     # Z pt reweighting
     add_zpt_weight_config(configuration)
@@ -2413,6 +2509,7 @@ def build_config(
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronSS_EtDependent.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronSS_EtDependent.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronSS_EtDependent.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/electronSS_EtDependent.json.gz",
                 }
             ),
             "ele_es_sf_name": EraModifier(
@@ -2453,6 +2550,23 @@ def build_config(
             ),
         },
     )
+
+    # SM 2018-v15 electron energy correction: point the Run-3-style MC producer
+    # (ElectronPtCorrectionMCRun3, selected below) at the pinned 2018-UL-v15 EGM
+    # scale+smearing payload. Its "SmearAndSyst" correction is structurally
+    # identical to the Run-3 payloads (inputs syst/pt/r9/ScEta; syst categories
+    # smear/esmear/escale/...), so the existing Run-3 C++ mechanism evaluates it
+    # unchanged. The DATED payload directory is pinned deliberately -- never the
+    # rolling "latest" symlink. These overrides fire only on the SM 2018-v15
+    # surface; NMSSM 2018 keeps the v9 Run-2 producer + Run-2 EGM_ScaleUnc file.
+    if use_sm_2018_v15_inputs:
+        configuration.add_config_parameters(
+            GLOBAL_SCOPES,
+            {
+                "ele_es_file": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv15/2025-12-05/electronSS_EtDependent.json.gz",
+                "ele_es_sf_mc_name": "SmearAndSyst",
+            },
+        )
 
     # AK8 X->bb jet identification
     # configuration.add_config_parameters(
@@ -2634,13 +2748,22 @@ def build_config(
     # - In Run 2, a fix must be applied to the already corrected electron pt.
     # - In Run 3, the electon pt is not corrected at NanoAOD level, the full correction is applied
     #   based on correctionlib files.
-    electron_pt_correction_mc_producer = get_for_era(
-        {
-            tuple(ERAS_RUN2): electrons.ElectronPtCorrectionMCRun2,
-            tuple(ERAS_RUN3): electrons.ElectronPtCorrectionMCRun3,
-        },
-        era,
-    )
+    # The isolated SM 2018-v15 path uses the Run-3-style correctionlib MC
+    # producer (ElectronPtCorrectionMCRun3) even though 2018 is a Run-2 era:
+    # v15 2018 UL NanoAOD does not ship the v9 Electron_dEsigmaUp/dEsigmaDown
+    # branches the legacy Run-2 producer reads, but does ship the raw inputs
+    # (Electron_deltaEtaSC, Electron_r9) the Run-3 producer needs. NMSSM keeps
+    # the v9 Run-2 producer via get_for_era.
+    if use_sm_2018_v15_inputs:
+        electron_pt_correction_mc_producer = electrons.ElectronPtCorrectionMCRun3
+    else:
+        electron_pt_correction_mc_producer = get_for_era(
+            {
+                tuple(ERAS_RUN2): electrons.ElectronPtCorrectionMCRun2,
+                tuple(ERAS_RUN3): electrons.ElectronPtCorrectionMCRun3,
+            },
+            era,
+        )
 
     # Electron pt correction for data
     # - In Run 2, the pt is already corrected, so this is just 
@@ -2655,13 +2778,18 @@ def build_config(
     # Jet ID producer
     # For a detailed description, see producers/jets.py
     #
-    # The isolated SM 2018-v15 AK4-PUPPI path recomputes the tight jet ID from
-    # the v15 composition branches: NanoAOD v15 drops the precomputed Jet_jetId
-    # branch that the legacy v9 rename producer reads, and its Jet collection is
-    # AK4 PUPPI. Before wiring the reconstructed producer in, verify that its
-    # pinned formula is still validated against its boundary fixture. NMSSM
-    # (use_2018_v15_jet_path=False) never reaches this gate and keeps the v9
-    # rename producer via get_for_era.
+    # The jet ID is not a standalone config-level producer any more: it is the
+    # first member of the auxiliary `Jet` quantity group below. The isolated SM
+    # 2018-v15 AK4-PUPPI path therefore substitutes that member instead of
+    # scheduling its own producer (two producers defining `Jet_ID` would only
+    # surface as an RDataFrame redefinition at run time). It recomputes the
+    # tight jet ID from the v15 composition branches: NanoAOD v15 drops the
+    # precomputed Jet_jetId branch that the legacy v9 rename producer reads, and
+    # its Jet collection is AK4 PUPPI. Before wiring the reconstructed producer
+    # in, verify that its pinned formula is still validated against its boundary
+    # fixture. NMSSM (use_2018_v15_jet_path=False) never reaches this gate and
+    # keeps the v9 rename producer.
+    jet_id_overrides = {}
     if profile.use_2018_v15_jet_path and era == "2018":
         jetid_v15_fixture_path = os.path.join(
             os.path.dirname(__file__),
@@ -2680,18 +2808,26 @@ def build_config(
                 "2018-v15 jet ID formula not pinned/validated — SM entry "
                 "points are blocked"
             )
-        JetID = jets.JetIDTight2018PuppiV15
-    else:
-        JetID = get_for_era(jets.JetID, era)
+        jet_id_overrides["2018"] = jets.JetIDTight2018PuppiV15
 
-    # Calibrated jets used for Type-I MET corrections
-    # For a detailed descriptions, see producers/jets.py
-    Type1JECData = get_for_era(jets.Type1JetEnergyCorrectionData, era)
-    Type1JECSimulation = get_for_era(jets.Type1JetEnergyCorrectionMC, era)
+    # Producers of auxiliary jet collection quantities (mainly used for
+    # selection and JEC). For a detailed description, see producers/jets.py
+    AuxJetCollectionQuantities = get_for_era(
+        jets.aux_jet_collection_quantities(jet_id_overrides), era
+    )
+    AuxCorrT1METJetCollectionQuantities = get_for_era(jets.AuxCorrT1METJetCollectionQuantities, era)
 
     # MET global quantities producer
     # For a detailed description, see producers/met.py
-    MetGlobal = get_for_era(met.MetGlobal, era)
+    # The SM 2018-v15 path takes the MET covariance from PuppiMET, because v15
+    # 2018 UL renames the PF MET collection (MET_* -> PFMET_*) and drops the
+    # v9/v12 MET_covXX/XY/YY branches the Run-2 MetCov reads. All other Run-2
+    # MET producers read branches present in v15, so only the covariance source
+    # changes. NMSSM 2018 keeps the era-selected Run-2 MetGlobal.
+    if use_sm_2018_v15_inputs:
+        MetGlobal = met.MetGlobalSM2018V15
+    else:
+        MetGlobal = get_for_era(met.MetGlobal, era)
 
     # MET scope quantities producer
     # For a detailed description, see producers/met.py
@@ -2715,10 +2851,7 @@ def build_config(
                 tuple(ERAS_RUN2): [
                     jets.BaseJetSelectionWithPUID,
                 ],
-                ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): [
-                    jets.BaseJetSelectionWithoutPUID,
-                ],
-                "2024": [
+                tuple(ERAS_RUN3): [
                     jets.BaseJetSelectionWithoutPUID,
                 ],
             },
@@ -2765,8 +2898,8 @@ def build_config(
     bjet_id_sf_producer = get_for_era(
         {
             tuple(ERAS_RUN2): scalefactors.BJetShapeDeepJet_SF,
-            tuple(["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]): scalefactors.BJetShapePNet_SF,
-            "2024": scalefactors.BJetWPUParT_SF,
+            ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): scalefactors.BJetShapePNet_SF,
+            ("2024", "2025"): scalefactors.BJetWPUParT_SF,
         },
         era,
         default=[]
@@ -2804,21 +2937,6 @@ def build_config(
                 upart_btag_variations, upart_btag_wp_values
             )
         )
-
-    # B jet pair quantities
-    # Run 3 does not include b jet regression variables, so the producers for the b jet pair
-    # quantities differ for both eras.
-    bb_jet_pair_quantity_producers = get_for_era(
-        {
-            tuple(ERAS_RUN2): [
-                pairquantities_bbpair.DiBjetPairQuantitiesRun2,
-            ],
-            tuple(ERAS_RUN3): [
-                pairquantities_bbpair.DiBjetPairQuantitiesRun3,
-            ]
-        },
-        era,
-    )
 
     # Z boson pt reweighting
     # - TODO For Run 2, the corrections are provided in ROOT files and require a dedicated producer chain.
@@ -2897,7 +3015,9 @@ def build_config(
             # fatjets.GoodFatJets,
             event.DiLeptonVeto,
             MetGlobal,
-            JetID,
+            AuxJetCollectionQuantities,
+            AuxCorrT1METJetCollectionQuantities,
+            jets.Type1JetCollection,
         ]
         + prefire_weight_producers
         + base_jet_selection_producers
@@ -2907,43 +3027,67 @@ def build_config(
             electron_pt_correction_mc_producer,
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
+            jets.JetEnergyCorrectionMCRegressed,
+            jets.Type1JetEnergyCorrectionMC,
             # fatjets.FatJetEnergyCorrection,
         ]
     )
-    if era in ERAS_RUN3:
-        configuration.add_producers(GLOBAL_SCOPES, [Type1JECSimulation])
 
     # Producers common to all scopes with at least one hadronic tau
-    configuration.add_producers(
-        SCOPES,
-        [
-            # fatjets.FatJetCollection,
-            # fatjets.FatJetCollectionWithoutVeto,
-            # fatjets.BasicFatJetQuantities,
-            jets.JetSelection,
-            jets.BasicJetQuantities,
+    common_scope_producers = [
+        # fatjets.FatJetCollection,
+        # fatjets.FatJetCollectionWithoutVeto,
+        # fatjets.BasicFatJetQuantities,
+        jets.JetSelection,
+        jets.BasicJetQuantities,
+    ]
+    if not strip_analysis_bjets:
+        # Analysis b-jet layer: b-jet multiplicity, the selected bb pair and
+        # its four-vectors, and the gen-matched di-b-jet quantities. Dropped
+        # for the payload-independent probe-jet profile (see
+        # strip_analysis_bjets above).
+        common_scope_producers += [
             jets.BasicBJetQuantities,
-            pairselection.BBPairSelection,
-            # pairselection.GoodBBPairFilter,
-            pairselection.LVbjet1,
-            pairselection.LVbjet2,
+            pairquantities_bbpair.AllBBPairProducers,
             genparticles.GenDiBjetPairQuantities,
-            # fatjets.FindFatjetMatchingBjet,
-            # fatjets.BasicMatchedFatJetQuantities,
-            # fatjets.FindXbbFatjet,
-            # fatjets.BasicXbbFatJetQuantities,
-            # fatjets.LeadingFatJetQuantities,
-            bjet_id_sf_producer,
-            # TODO Need to properly handle recoil producer for Run 2 (ROOT file-based)
-            MetScopes,
-            met.MetQuantities,
-            pairquantities.DiTauPairMETQuantities,
-            genparticles.GenMatching,
         ]
-        # + xbb_sf_producers
-        # + fj_genjet_producers
-        + bb_jet_pair_quantity_producers,
-    )
+    # fatjets.FindFatjetMatchingBjet,
+    # fatjets.BasicMatchedFatJetQuantities,
+    # fatjets.FindXbbFatjet,
+    # fatjets.BasicXbbFatJetQuantities,
+    # fatjets.LeadingFatJetQuantities,
+    if not strip_analysis_bjets:
+        # b-tag scale-factor weight producer (not applied when measuring the
+        # efficiency it would be derived from).
+        common_scope_producers += [bjet_id_sf_producer]
+    common_scope_producers += [
+        # TODO Need to properly handle recoil producer for Run 2 (ROOT file-based)
+        MetScopes,
+        met.MetQuantities,
+        # The tautau+bb combination needs the selected bb pair, so the
+        # probe-jet profile uses the reduced ditau+MET quantities group.
+        pairquantities.DiTauPairMETQuantitiesNoBB
+        if strip_analysis_bjets
+        else pairquantities.DiTauPairMETQuantities,
+        genparticles.GenMatching,
+    ]
+    # + xbb_sf_producers
+    # + fj_genjet_producers
+    configuration.add_producers(SCOPES, common_scope_producers)
+
+    # Payload-independent UParT probe-jet collection (efficiency profile
+    # only): selected on kinematics + tight jet ID + deltaR against both pair
+    # legs, independent of the analysis b-jet collection, no b-tag SF.
+    if strip_analysis_bjets:
+        configuration.add_producers(HAD_TAU_SCOPES, [jets.BtagProbeJetVectors])
+        configuration.add_config_parameters(
+            HAD_TAU_SCOPES,
+            {
+                "btag_probe_min_pt": 20.0,
+                "btag_probe_max_abs_eta": 2.4,
+                "btag_probe_min_delta_r": 0.4,
+            },
+        )
 
     # Producers for quantities in all scopes with hadronic taus
     configuration.add_producers(
@@ -2974,7 +3118,7 @@ def build_config(
             scalefactors.EleID_SF,
             triggers.SingleEleTriggerFlags,
             triggers.DoubleEleTauTriggerFlags,
-            scalefactors.SingleEleTriggerSF,
+            single_ele_trigger_sf,
             # scalefactors.DoubleEleTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
             # TODO rework trigger setup before enabling this
             # triggers.ETGenerateCrossTriggerFlags,
@@ -3122,13 +3266,13 @@ def build_config(
 
     # For DY samples, add producer for flag indicating the flavor of the decay products
     if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
-        configuration.add_modification_rule(
+        add_rule(
             GLOBAL_SCOPES,
             AppendProducer(
                 [
                     event.LHEDrellYanEMuFilter,
                 ],
-                samples=["dyjets_amcatnlo_ll"],
+                samples=profile_samples("dyjets_amcatnlo_ll"),
             )
         )
 
@@ -3139,7 +3283,7 @@ def build_config(
         *sm_merged_dyw,
     )
     if _gen_boson_samples:
-        configuration.add_modification_rule(
+        add_rule(
             SCOPES,
             AppendProducer(
                 [boson_corrections.GenBosonQuantities],
@@ -3160,7 +3304,7 @@ def build_config(
         *sm_merged_dy,
     )
     if _zpt_samples:
-        configuration.add_modification_rule(
+        add_rule(
             SCOPES,
             AppendProducer(
                 z_pt_reweighting_producers,
@@ -3197,25 +3341,25 @@ def build_config(
             producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
             samples=list(available_sample_types),
         )
-    configuration.add_modification_rule(SCOPES, _recoil_rename_rule)
+    add_rule(SCOPES, _recoil_rename_rule)
 
     # Remove DeepTau ID scale factor producers from data samples
-    configuration.add_modification_rule(
+    add_rule(
         HAD_TAU_SCOPES,
         RemoveProducer(
             producers=[scalefactors.TauIDSF],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
     # Remove trigger scale factor producers from data and embedding samples in mt scope
-    configuration.add_modification_rule(
+    add_rule(
         ELECTRON_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.SingleEleTriggerSF,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         ),
     )
     # TODO fix for Run 2, SF seem to not be available
@@ -3231,13 +3375,13 @@ def build_config(
 
 
     # Remove trigger scale factor producers from data and embedding samples in mt scope
-    configuration.add_modification_rule(
+    add_rule(
         MUON_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.SingleMuTriggerSF,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         )
     )
     # TODO fix for Run 2, SF seem to not be available
@@ -3252,24 +3396,24 @@ def build_config(
     # )
 
     # Remove muon ID and isolation scale factor producers from data and embedding samples in mt scope
-    configuration.add_modification_rule(
+    add_rule(
         MT_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.MuonIDIso_SF,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         )
     )
 
     # Remove trigger scale factor producers from data and embedding samples in tt scope
-    configuration.add_modification_rule(
+    add_rule(
         TT_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.TauTauTriggerSF,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         ),
     )
 
@@ -3287,13 +3431,13 @@ def build_config(
     #)
 
     # Remove b tagging scale factor producers from data and embedding samples in all scopes 
-    configuration.add_modification_rule(
+    add_rule(
         SCOPES,
         RemoveProducer(
             producers=[
                 bjet_id_sf_producer,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         ),
     )
 
@@ -3318,32 +3462,46 @@ def build_config(
     # )
 
     # Remove the pileup weights from data and embedding samples
-    configuration.add_modification_rule(
+    add_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
             producers=[event.PUweights],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         ),
     )
 
     # Replace jet energy correction for data and embedding
-    configuration.add_modification_rule(
+    add_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[jets.JetEnergyCorrectionMC, jets.JetEnergyCorrectionData],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
+        ),
+    )
+
+    # Replace regressed jet energy correction for data and embedding
+    add_rule(
+        GLOBAL_SCOPES,
+        ReplaceProducer(
+            producers=[
+                jets.JetEnergyCorrectionMCRegressed,
+                jets.JetEnergyCorrectionDataRegressed,
+            ],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         ),
     )
 
     # Replace jet energy correction for type-I correction jets for data and embedding
-    if era in ERAS_RUN3:
-        configuration.add_modification_rule(
-            GLOBAL_SCOPES,
-            ReplaceProducer(
-                producers=[Type1JECSimulation, Type1JECData],
-                samples=["data", "embedding", "embedding_mc"],
-            ),
-        )
+    add_rule(
+        GLOBAL_SCOPES,
+        ReplaceProducer(
+            producers=[
+                jets.Type1JetEnergyCorrectionMC,
+                jets.Type1JetEnergyCorrectionData,
+            ],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
+        ),
+    )
 
     # Replace fat jet energy correction for data
     # configuration.add_modification_rule(
@@ -3366,31 +3524,31 @@ def build_config(
     #     ),
     # )
 
-    # Replace electron pt correction for data, as the correction is computed differently in data and
-    # MC
-    configuration.add_modification_rule(
+    # Replace electron pt correction for data, as the correction is computed
+    # differently in data and MC
+    add_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[
                 electron_pt_correction_mc_producer,
                 electron_pt_correction_data_producer,
             ],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
     # Replace the tau energy correction producer for data samples
-    configuration.add_modification_rule(
+    add_rule(
         HAD_TAU_SCOPES,
         ReplaceProducer(
             producers=[taus.TauEnergyCorrectionMC, taus.TauEnergyCorrectionData],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
-    # The number of partons is only defined for MC samples and only important to know for EW
-    # process samples
-    configuration.add_modification_rule(
+    # The number of partons is only defined for MC samples and only important to
+    # know for EW process samples
+    add_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
             producers=[event.npartons],
@@ -3409,19 +3567,20 @@ def build_config(
         ),
     )
 
-    # for whatever reason, the diboson samples do not have these weights in the ntuple....
-    configuration.add_modification_rule(
+    # For whatever reason, the diboson samples do not have these weights in the
+    # ntuple....
+    add_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
             producers=[event.LHE_Scale_weight],
-            samples=list(profile.lhe_scale_weight_excluded_samples),
+            samples=profile_samples(*profile.lhe_scale_weight_excluded_samples),
         ),
     )
 
-    # for whatever reason, the nmssm samples have one less entry of the weights and therefore need
-    # special treatment
+    # For whatever reason, the NMSSM samples have one less entry of the weights
+    # and therefore need special treatment
     if profile.nmssm_lhe_scale_weight_samples:
-        configuration.add_modification_rule(
+        add_rule(
             GLOBAL_SCOPES,
             ReplaceProducer(
                 producers=[event.LHE_Scale_weight, event.NMSSM_LHE_Scale_weight],
@@ -3430,33 +3589,34 @@ def build_config(
         )
 
     # Remove the generator-level tau matching producers from data samples
-    configuration.add_modification_rule(
+    add_rule(
         SCOPES,
         RemoveProducer(
             producers=[
                 genparticles.GenMatching,
             ],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
-    # Remove the generator-level b jet pair quantities from data and embedding samples
-    configuration.add_modification_rule(
+    # Remove the generator-level b jet pair quantities from data and embedding
+    # samples
+    add_rule(
         SCOPES,
         RemoveProducer(
             producers=[
                 genparticles.GenDiBjetPairQuantities,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
         ),
     )
 
     # For ttbar samples, top pt weights should be produced
-    configuration.add_modification_rule(
+    add_rule(
         SCOPES,
         AppendProducer(
             producers=[event.TopPtReweighting],
-            samples=["ttbar"],
+            samples=profile_samples("ttbar"),
         ),
     )
 
@@ -3469,65 +3629,65 @@ def build_config(
     #)
 
     # Add Golden JSON filter for data and embedding samples
-    configuration.add_modification_rule(
+    add_rule(
         GLOBAL_SCOPES,
         AppendProducer(
             producers=[event.JSONFilter],
-            samples=["data", "embedding"],
+            samples=profile_samples("data", "embedding"),
         ),
     )
 
     # Remove generator-level tau quantities in et scope
-    configuration.add_modification_rule(
+    add_rule(
         ET_SCOPES,
         RemoveProducer(
             producers=[genparticles.ETGenDiTauPairQuantities],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
     # Remove generator-level tau quantities in mt scope
-    configuration.add_modification_rule(
+    add_rule(
         MT_SCOPES,
         RemoveProducer(
             producers=[genparticles.MTGenDiTauPairQuantities],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
     # Remove generator-level tau quantities in tt scope
-    configuration.add_modification_rule(
+    add_rule(
         TT_SCOPES,
         RemoveProducer(
             producers=[genparticles.TTGenDiTauPairQuantities],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
     # Remove generator-level dilepton quantities in ee scope
-    configuration.add_modification_rule(
+    add_rule(
         EE_SCOPES,
         RemoveProducer(
             producers=[genparticles.ElElGenPairQuantities],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
     # Remove generator-level dilepton quantities in mm scope
-    configuration.add_modification_rule(
+    add_rule(
         MM_SCOPES,
         RemoveProducer(
             producers=[genparticles.MuMuGenPairQuantities],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
     # Remove generator-level dilepton quantities in mm scope
-    configuration.add_modification_rule(
+    add_rule(
         EM_SCOPES,
         RemoveProducer(
             producers=[genparticles.EMGenDiTauPairQuantities],
-            samples=["data"],
+            samples=profile_samples("data"),
         ),
     )
 
@@ -3544,60 +3704,28 @@ def build_config(
     #)
 
     # Output columns for all scopes
-    configuration.add_outputs(
-        SCOPES,
-        [
-            q.is_data,
-            q.is_embedding,
-            q.is_mc,
-            nanoAOD.run,
-            q.lumi,
-            q.npartons,
-            nanoAOD.event,
-            q.puweight,
-            q.lhe_scale_weight,
-            q.pt_1,
-            q.pt_2,
-            q.eta_1,
-            q.eta_2,
-            q.phi_1,
-            q.phi_2,
-            # q.nfatjets,
-            # q.fj_pt_1,
-            # q.fj_eta_1,
-            # q.fj_phi_1,
-            # q.fj_mass_1,
-            # q.fj_msoftdrop_1,
-            # q.fj_particleNet_XbbvsQCD_1,
-            # q.fj_nsubjettiness_2over1_1,
-            # q.fj_nsubjettiness_3over2_1,
-            # q.fj_pt_2,
-            # q.fj_eta_2,
-            # q.fj_phi_2,
-            # q.fj_mass_2,
-            # q.fj_msoftdrop_2,
-            # q.fj_particleNet_XbbvsQCD_2,
-            # q.fj_nsubjettiness_2over1_2,
-            # q.fj_nsubjettiness_3over2_2,
-            # q.fj_matched_pt,
-            # q.fj_matched_eta,
-            # q.fj_matched_phi,
-            # q.fj_matched_mass,
-            # q.fj_matched_msoftdrop,
-            # q.fj_matched_particleNet_XbbvsQCD,
-            # q.fj_matched_nsubjettiness_2over1,
-            # q.fj_matched_nsubjettiness_3over2,
-            # q.fj_Xbb_pt,
-            # q.fj_Xbb_eta,
-            # q.fj_Xbb_phi,
-            # q.fj_Xbb_mass,
-            # q.fj_Xbb_msoftdrop,
-            # q.fj_Xbb_particleNet_XbbvsQCD,
-            # q.fj_Xbb_nsubjettiness_2over1,
-            # q.fj_Xbb_nsubjettiness_3over2,
-            # q.fj_Xbb_hadflavor,
-            # q.fj_Xbb_nBhad,
-            # q.fj_Xbb_nChad,
+    scope_outputs = [
+        q.is_data,
+        q.is_embedding,
+        q.is_mc,
+        nanoAOD.run,
+        q.lumi,
+        q.npartons,
+        nanoAOD.event,
+        q.puweight,
+        q.lhe_scale_weight,
+        q.pt_1,
+        q.pt_2,
+        q.eta_1,
+        q.eta_2,
+        q.phi_1,
+        q.phi_2,
+    ]
+    # Analysis b-jet layer outputs: the selected bb pair kinematics and the
+    # gen-matched di-b-jet quantities. Dropped for the payload-independent
+    # probe-jet profile (see strip_analysis_bjets).
+    if not strip_analysis_bjets:
+        scope_outputs += [
             q.bpair_pt_1,
             q.bpair_pt_2,
             q.bpair_eta_1,
@@ -3611,6 +3739,21 @@ def build_config(
             q.bpair_m_inv,
             q.bpair_deltaR,
             q.bpair_pt_dijet,
+            q.bpair_pt_regressed_1,
+            q.bpair_pt_regressed_2,
+            q.bpair_eta_regressed_1,
+            q.bpair_eta_regressed_2,
+            q.bpair_phi_regressed_1,
+            q.bpair_phi_regressed_2,
+            q.bpair_mass_regressed_1,
+            q.bpair_mass_regressed_2,
+            q.bpair_btag_value_regressed_1,
+            q.bpair_btag_value_regressed_2,
+            q.bpair_pt_resolution_regressed_1,
+            q.bpair_pt_resolution_regressed_2,
+            q.bpair_m_inv_regressed,
+            q.bpair_deltaR_regressed,
+            q.bpair_pt_dijet_regressed,
             q.genjet_pt_1,
             q.genjet_eta_1,
             q.genjet_phi_1,
@@ -3622,96 +3765,122 @@ def build_config(
             q.genjet_mass_2,
             q.genjet_hadFlavour_2,
             q.genjet_m_inv,
-            q.n_jets,
-            # q.jet_pt,
-            # q.jet_eta,
-            # q.jet_phi,
-            # q.jet_mass,
-            # TODO fix jet ID type
-            # q.jet_id,
-            # q.jet_deepjet_b_score,
-            # q.jet_pnet_b_score,
-            # q.jet_deepjet_b_tagged_medium,
-            # q.jet_pnet_b_tagged_medium,
-            # q.jet_pt_pnet,
-            # q.jet_pt_pnet_with_neutrino,
-            # q.jet_pt_pnet_resolution,
-            # q.jet_pt_nanoaod,
-            # q.jet_pt_raw_factor,
-            q.jpt_1,
-            q.jpt_2,
-            q.jeta_1,
-            q.jeta_2,
-            q.jphi_1,
-            q.jphi_2,
-            q.jtag_value_1,
-            q.jtag_value_2,
-            q.jpt_nano_1,
-            q.jpt_nano_2,
-            q.jpt_raw_1,
-            q.jpt_raw_2,
-            q.mjj,
-            q.m_vis,
-            q.deltaR_ditaupair,
-            q.pt_vis,
+        ]
+    scope_outputs += [
+        q.n_jets,
+        # q.jet_pt,
+        # q.jet_eta,
+        # q.jet_phi,
+        # q.jet_mass,
+        # TODO fix jet ID type
+        # q.jet_id,
+        # q.jet_deepjet_b_score,
+        # q.jet_pnet_b_score,
+        # q.jet_deepjet_b_tagged_medium,
+        # q.jet_pnet_b_tagged_medium,
+        # q.jet_pt_pnet,
+        # q.jet_pt_pnet_with_neutrino,
+        # q.jet_pt_pnet_resolution,
+        # q.jet_pt_nanoaod,
+        # q.jet_pt_raw_factor,
+        q.jpt_1,
+        q.jpt_2,
+        q.jeta_1,
+        q.jeta_2,
+        q.jphi_1,
+        q.jphi_2,
+        q.jtag_value_1,
+        q.jtag_value_2,
+        q.jpt_nano_1,
+        q.jpt_nano_2,
+        q.jpt_raw_1,
+        q.jpt_raw_2,
+        # regressed leading-jet quantities are produced by
+        # jets.BasicJetQuantities, which is scheduled for every profile, so
+        # these stay outside the analysis-b-jet gate below
+        q.jpt_regressed_1,
+        q.jpt_regressed_2,
+        q.jpt_regressed_resolution_1,
+        q.jpt_regressed_resolution_2,
+        q.mjj,
+        q.m_vis,
+        q.deltaR_ditaupair,
+        q.pt_vis,
+    ]
+    # b-jet multiplicity and the b-tag SF weight column: dropped for the
+    # probe-jet profile (no b-jet selection, no b-tag SF).
+    if not strip_analysis_bjets:
+        scope_outputs += [
             q.n_bjets,
-            # q.bpt_1,
-            # q.bpt_2,
-            # q.beta_1,
-            # q.beta_2,
-            # q.bphi_1,
-            # q.bphi_2,
-            # q.btag_value_1,
-            # q.btag_value_2,
             q.id_wgt_bjet,
-            q.mass_1,
-            q.mass_2,
-            q.dxy_1,
-            q.dxy_2,
-            q.dz_1,
-            q.dz_2,
-            q.q_1,
-            q.q_2,
-            q.iso_1,
-            q.iso_2,
-            q.gen_pt_1,
-            q.gen_eta_1,
-            q.gen_phi_1,
-            q.gen_mass_1,
-            q.gen_pdgid_1,
-            q.gen_pt_2,
-            q.gen_eta_2,
-            q.gen_phi_2,
-            q.gen_mass_2,
-            q.gen_pdgid_2,
-            q.gen_m_vis,
-            q.met,
-            q.metphi,
-            q.met_raw,
-            q.metphi_raw,
-            q.metSumEt_raw,
-            q.met_uncorrected,
-            q.metphi_uncorrected,
-            q.metSumEt,
-            q.metcov00,
-            q.metcov01,
-            q.metcov10,
-            q.metcov11,
-            q.pzetamissvis,
-            q.mTdileptonMET,
-            q.mt_1,
-            q.mt_2,
-            q.pt_tautau,
-            # q.pt_ttjj,
+        ]
+    scope_outputs += [
+        q.mass_1,
+        q.mass_2,
+        q.dxy_1,
+        q.dxy_2,
+        q.dz_1,
+        q.dz_2,
+        q.q_1,
+        q.q_2,
+        q.iso_1,
+        q.iso_2,
+        q.gen_pt_1,
+        q.gen_eta_1,
+        q.gen_phi_1,
+        q.gen_mass_1,
+        q.gen_pdgid_1,
+        q.gen_pt_2,
+        q.gen_eta_2,
+        q.gen_phi_2,
+        q.gen_mass_2,
+        q.gen_pdgid_2,
+        q.gen_m_vis,
+        q.met,
+        q.metphi,
+        q.met_raw,
+        q.metphi_raw,
+        q.metSumEt_raw,
+        q.met_uncorrected,
+        q.metphi_uncorrected,
+        q.metSumEt,
+        q.metcov00,
+        q.metcov01,
+        q.metcov10,
+        q.metcov11,
+        q.pzetamissvis,
+        q.mTdileptonMET,
+        q.mt_1,
+        q.mt_2,
+        q.pt_tautau,
+    ]
+    # tautau+bb combined quantities need the selected bb pair.
+    if not strip_analysis_bjets:
+        scope_outputs += [
             q.pt_tautaubb,
             q.mass_tautaubb,
-            q.mt_tot,
-            q.gen_match_1,
-            q.gen_match_2,
-            q.pt_dijet,
-            q.jet_hemisphere,
-        ],
-    )
+        ]
+    scope_outputs += [
+        q.mt_tot,
+        q.gen_match_1,
+        q.gen_match_2,
+        q.pt_dijet,
+        q.jet_hemisphere,
+    ]
+    configuration.add_outputs(SCOPES, scope_outputs)
+
+    # Payload-independent UParT probe-jet vectors (efficiency profile only).
+    # Added on the hadronic-tau scopes, where the probe producers run.
+    if strip_analysis_bjets:
+        configuration.add_outputs(
+            HAD_TAU_SCOPES,
+            [
+                q.btag_probe_jet_pt,
+                q.btag_probe_jet_eta,
+                q.btag_probe_jet_hadron_flavour,
+                q.btag_probe_jet_upart,
+            ],
+        )
     # if era in ["2018"] and sample not in ["data", "embedding", "embedding_mc"]:
     #     # in 2018, we have the Xbb tagging scale factors
     #     configuration.add_outputs(
@@ -3808,7 +3977,7 @@ def build_config(
             pairquantities.VsEleTauIDFlag_2.output_group,
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.SingleEleTriggerFlags.output_group,
-            scalefactors.SingleEleTriggerSF.output_group,
+            single_ele_trigger_sf.output_group,
             # triggers.DoubleEleTauTriggerFlags.output_group,
             # [
             #     p
@@ -4042,7 +4211,7 @@ def build_config(
                 },
                 producers={"mt": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4054,7 +4223,7 @@ def build_config(
                 },
                 producers={"mt": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4066,7 +4235,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4078,7 +4247,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4090,7 +4259,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4102,7 +4271,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4114,7 +4283,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4126,7 +4295,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4138,7 +4307,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4150,7 +4319,7 @@ def build_config(
                 },
                 producers={"et": [taus.TauPtCorrectionMC]},
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
 
     #########################
@@ -4165,16 +4334,13 @@ def build_config(
                     ("global"): {"ele_es_variation": "resolutionUp"},
                 },
                 producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
+                    # Rerun the same nominal MC producer selected above, so the
+                    # SM 2018-v15 path varies the Run-3 correctionlib mechanism
+                    # while NMSSM/Run-2 varies the v9 Run-2 producer.
+                    ("global"): [electron_pt_correction_mc_producer],
                 },
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4183,16 +4349,13 @@ def build_config(
                     ("global"): {"ele_es_variation": "resolutionDown"},
                 },
                 producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
+                    # Rerun the same nominal MC producer selected above, so the
+                    # SM 2018-v15 path varies the Run-3 correctionlib mechanism
+                    # while NMSSM/Run-2 varies the v9 Run-2 producer.
+                    ("global"): [electron_pt_correction_mc_producer],
                 },
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4201,16 +4364,13 @@ def build_config(
                     ("global"): {"ele_es_variation": "scaleUp"},
                 },
                 producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
+                    # Rerun the same nominal MC producer selected above, so the
+                    # SM 2018-v15 path varies the Run-3 correctionlib mechanism
+                    # while NMSSM/Run-2 varies the v9 Run-2 producer.
+                    ("global"): [electron_pt_correction_mc_producer],
                 },
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
         configuration.add_shift(
             SystematicShift(
@@ -4219,16 +4379,13 @@ def build_config(
                     ("global"): {"ele_es_variation": "scaleDown"},
                 },
                 producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
+                    # Rerun the same nominal MC producer selected above, so the
+                    # SM 2018-v15 path varies the Run-3 correctionlib mechanism
+                    # while NMSSM/Run-2 varies the v9 Run-2 producer.
+                    ("global"): [electron_pt_correction_mc_producer],
                 },
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
         )
 
     #########################
@@ -4243,7 +4400,7 @@ def build_config(
             },
             scopes=["global"],
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
     configuration.add_shift(
         SystematicShiftByQuantity(
@@ -4254,7 +4411,7 @@ def build_config(
             },
             scopes=["global"],
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
     #########################
     # Prefiring Shifts
@@ -4367,7 +4524,7 @@ def build_config(
                 ],
             },
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
 
     configuration.add_shift(
@@ -4383,7 +4540,7 @@ def build_config(
                 ],
             },
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
 
     #########################
@@ -4436,7 +4593,7 @@ def build_config(
                 ],
             },
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
     configuration.add_shift(
         SystematicShift(
@@ -4451,7 +4608,7 @@ def build_config(
                 ],
             },
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
     configuration.add_shift(
         SystematicShift(
@@ -4466,7 +4623,7 @@ def build_config(
                 ],
             },
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
     configuration.add_shift(
         SystematicShift(
@@ -4481,7 +4638,7 @@ def build_config(
                 ],
             },
         ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
+        exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
     )
 
     #########################
@@ -4510,7 +4667,7 @@ def build_config(
                     },
                     producers={("et"): scalefactors.SingleEleTriggerSF},
                 ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
+                exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
             )
 
     #
@@ -4571,7 +4728,7 @@ def build_config(
                         ],
                     },
                 ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
+                exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
             )
 
     #
@@ -4597,7 +4754,7 @@ def build_config(
                     },
                     producers={("mt"): scalefactors.SingleMuTriggerSF},
                 ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
+                exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
             )
 
     #
@@ -4639,7 +4796,7 @@ def build_config(
                         ],
                     },
                 ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
+                exclude_samples=profile_samples("data", "embedding", "embedding_mc"),
             )
 
     #configuration.add_shift(
@@ -4716,7 +4873,10 @@ def build_config(
     # {bjet_sf_variation}) do not apply to the strict UParTAK4 consumer, whose
     # systematic variations are emitted as ordinary weight-only columns instead
     # of shifts. Skip them on the SM UParT path; NMSSM keeps them unchanged.
-    if not use_strict_upart_btag:
+    # The b-tag efficiency-measurement profile applies no b-tag SF at all
+    # (enable_btag_sf=False, so the shape SF producer is not even scheduled),
+    # so its shape variations are skipped too.
+    if profile.enable_btag_sf and not use_strict_upart_btag:
         add_btagVariations(configuration, bjet_id_sf_producer)
 
     #########################

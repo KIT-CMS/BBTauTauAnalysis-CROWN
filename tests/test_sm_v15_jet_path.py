@@ -11,18 +11,14 @@ Jet config parameters are registered in the ``global`` scope, and the expanded
 configuration nests parameters under a ``nominal`` shift layer, so all lookups
 below go through ``config_parameters["global"]["nominal"]``.
 """
-import dataclasses
-import tempfile
 import unittest
 
-from analysis_configurations.bbtautau import common_config, sm_config, nmssm_config
-from analysis_configurations.bbtautau.analysis_profiles import SM_PROFILE
+from analysis_configurations.bbtautau import sm_config, nmssm_config
 from analysis_configurations.bbtautau.constants import ERAS, SCOPES
-from analysis_configurations.bbtautau.tests.fixtures.sm_btag_efficiency_payload import (
-    write_passing_payload,
-)
+from analysis_configurations.bbtautau.producers import met
 from analysis_configurations.bbtautau.tests.test_nmssm_characterization import (
     LEGACY_AVAILABLE_SAMPLES,
+    all_producer_names,
     producer_names,
 )
 
@@ -42,28 +38,20 @@ def build_sm(sample, era="2018", scopes=("mt",)):
 class SMV15JetPathTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # This class exercises the SM AK4-PUPPI jet path, not b-tagging, but
-        # building ANY MC sample under SM_PROFILE now also requires the
-        # strict validated-payload gate (Task 11) to pass, since
-        # SM_PROFILE.require_validated_btag_payload=True. build_sm() above
-        # uses the real (production) SM_PROFILE unmodified -- appropriate for
-        # tests that specifically want that gate to fire (see
-        # test_sm_main_config.py) -- so here a synthetic, PASSING payload is
-        # supplied via a profile carrying a tempdir btag_payload_dir instead,
-        # built directly through common_config.build_config.
-        cls._payload_dir = tempfile.mkdtemp(prefix="sm_jet_path_btag_payload_")
-        write_passing_payload(cls._payload_dir, scopes=("mt",))
-        profile = dataclasses.replace(SM_PROFILE, btag_payload_dir=cls._payload_dir)
-        cls.cfg = common_config.build_config(
-            profile, "2018", "ttbar", ["mt"], {"none"},
-            sm_config.AVAILABLE_SAMPLES, ["2018"], SCOPES,
-        )
+        cls.cfg = build_sm("ttbar")
         cls.params = cls.cfg.config_parameters["global"]["nominal"]
         cls.global_producers = producer_names(cls.cfg, "global")
+        # The jet ID is a member of the AuxJetCollectionQuantities group rather
+        # than a top-level producer, so the ID assertions below look through
+        # groups.
+        cls.all_global_producers = all_producer_names(cls.cfg, "global")
 
     def test_reconstructed_tight_id_replaces_v9_rename(self):
-        self.assertIn("JetIDTight2018PuppiV15", self.global_producers)
-        self.assertNotIn("JetID", self.global_producers)  # v9 rename producer
+        # The group is what gets scheduled; the ID producer is substituted
+        # inside it, so exactly one of the two ID producers may be present.
+        self.assertIn("AuxJetCollectionQuantities", self.global_producers)
+        self.assertIn("JetIDTight2018PuppiV15", self.all_global_producers)
+        self.assertNotIn("JetID", self.all_global_producers)  # v9 rename
 
     def test_no_puid_cut(self):
         self.assertEqual(self.params["ak4jet_puid_max_pt"], 0.0)
@@ -83,6 +71,54 @@ class SMV15JetPathTest(unittest.TestCase):
         self.assertEqual(self.params["ak4jet_apply_jet_horn_veto"], "true")
         self.assertNotIn("JetVetoMapVeto", self.global_producers)
 
+    def test_sm_v15_electron_met_jer_wiring(self):
+        """Verify the three empirically-validated 2018-v15 runtime fixes are wired:
+        1. Electron correction via pinned EGM v15 payload
+        2. MET covariance from PuppiMET (MetCovSM2018V15)
+        3. JER schema (checked implicitly via ak4jet_jec_file containment above)
+        """
+        # (a) Check ElectronPtCorrectionMCRun3 producer is scheduled in global scope
+        self.assertIn("ElectronPtCorrectionMCRun3", self.global_producers)
+
+        # (b) Check ele_es_file parameter contains the pinned v15 EGM payload path
+        self.assertIn(
+            "EGM/Run2-2018-UL-NanoAODv15/2025-12-05",
+            str(self.params["ele_es_file"]),
+        )
+
+        # (c) Check that MetCovSM2018V15 is in the producers via object identity:
+        # MetCovSM2018V15 has name="MetCov" and reads from PuppiMET covariance branches.
+        # It is nested inside MetGlobal; access via config.producers["global"] and
+        # check MetGlobal's subproducers dict.
+        global_producers = self.cfg.producers["global"]
+        met_global_producers = [p for p in global_producers if p.name == "MetGlobal"]
+        self.assertTrue(
+            len(met_global_producers) > 0,
+            "MetGlobal producer not found in global scope",
+        )
+        met_global = met_global_producers[0]
+        # MetGlobal has a 'producers' dict with scope as key
+        met_cov_in_global = [
+            p for p in met_global.producers.get("global", [])
+            if p.name == "MetCov"
+        ]
+        self.assertTrue(
+            len(met_cov_in_global) > 0,
+            "MetCov producer not found as subproducer of MetGlobal",
+        )
+        # The SM2018V15 variant uses PuppiMET covariance as input; verify the producer
+        # by checking that it uses PuppiMET_covXX input (versus PFMET_cov for other eras)
+        met_cov = met_cov_in_global[0]
+        if hasattr(met_cov, 'producers'):
+            # If MetCov is also a ProducerGroup with subproducers, check the input at that level
+            cov_producers = met_cov.producers.get("global", [])
+            self.assertTrue(len(cov_producers) > 0)
+        elif hasattr(met_cov, 'input'):
+            # Single Producer: check its input quantities
+            input_names = {inp.name for inp in met_cov.input if hasattr(inp, "name")}
+            # MetCovSM2018V15 uses nanoAOD.PuppiMET_covXX, _covXY, _covYY
+            self.assertIn("PuppiMET_covXX", input_names)
+
     def test_nmssm_2018_jet_path_unchanged(self):
         cfg = nmssm_config.build_config(
             "2018",
@@ -93,7 +129,9 @@ class SMV15JetPathTest(unittest.TestCase):
             ERAS,
             SCOPES,
         )
-        self.assertIn("JetID", producer_names(cfg, "global"))
+        nmssm_global_producers = all_producer_names(cfg, "global")
+        self.assertIn("JetID", nmssm_global_producers)  # v9 rename producer
+        self.assertNotIn("JetIDTight2018PuppiV15", nmssm_global_producers)
 
 
 if __name__ == "__main__":

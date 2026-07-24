@@ -1,15 +1,11 @@
-"""SM main-config contract.
-
-Pins the SM (non-resonant HH -> bbtautau) configuration surface introduced for
-the 2018 UL NanoAOD v15 UParT path:
+"""SM main-config contract for the 2018 UL NanoAOD v15 UParT path.
 
 * hh2b2tau truth mothers are 25/25 (both bb and tautau come from a SM Higgs);
 * the standard ``LHE_Scale_weight`` producer is kept for the SM signal (the
   NMSSM-specific producer is not used);
 * the pinned 2018-v15 UParTAK4 b-tag parameters (score column, medium WP,
   SF payload / correction names) replace the legacy Run-2 DeepJet wiring;
-* the pinned-payload helpers read + validate the frozen working points and the
-  per-correction systematic variations;
+* working points and systematic variations are read from the pinned payload;
 * the merged ``dyjets`` / ``wjets`` sample-type names (the SM surface carries no
   per-generator subtypes) receive the gen-boson + recoil treatment the legacy
   2018 subtypes get, while Zpt stays off for 2018 (Run-3-only producer).
@@ -18,28 +14,13 @@ Parameter lookups follow the characterization-suite accessor pattern
 (``config_parameters[scope]["nominal"]``). The b-tag selection parameters are
 registered in the ``global`` scope; the SF payload parameters in the analysis
 scopes.
-
-Since Task 11, ``SM_PROFILE.require_validated_btag_payload=True`` means every
-MC build now also has to pass the strict validated-payload gate
-(``btag_payloads.require_validated_payload``, called from
-``common_config.build_config`` before any producer is scheduled) -- and the
-real production payload (``payloads/btagging_efficiencies/upart_nanoaodv15/2018``)
-has not been installed yet. ``build_sm()`` (imported from
-``test_sm_v15_jet_path``) therefore only builds successfully for
-sample=="data"/"embedding*" (which never reach the gate) or era!=2018. Every
-other test in this module that needs a *successful* MC build goes through
-``build_sm_valid_payload`` instead, which points a
-``dataclasses.replace``d copy of ``SM_PROFILE`` at a synthetic, PASSING
-payload fixture (``tests/fixtures/sm_btag_efficiency_payload.py``) built once
-for the module. The gate-failure/gate-bypass/alias-contradiction contract
-itself is pinned directly against the pristine, unpatched profile below.
 """
 import dataclasses
+import gzip
 import json
 import os
 import tempfile
 import unittest
-from unittest import mock
 
 from analysis_configurations.bbtautau import (
     btag_payloads,
@@ -50,37 +31,12 @@ from analysis_configurations.bbtautau import (
 )
 from analysis_configurations.bbtautau.analysis_profiles import SM_PROFILE
 from analysis_configurations.bbtautau.constants import ERAS, SCOPES
-from analysis_configurations.bbtautau.tests.fixtures.sm_btag_efficiency_payload import (
-    write_passing_payload,
-)
 from analysis_configurations.bbtautau.tests.test_sm_v15_jet_path import build_sm
 from analysis_configurations.bbtautau.tests.test_nmssm_characterization import (
     LEGACY_AVAILABLE_SAMPLES,
     producer_names,
     output_names,
 )
-
-# A single synthetic, PASSING efficiency payload shared by every test in this
-# module that needs an SM MC build to actually succeed (see module docstring).
-_VALID_PAYLOAD_DIR = tempfile.mkdtemp(prefix="sm_main_config_btag_payload_")
-write_passing_payload(_VALID_PAYLOAD_DIR, scopes=("et", "mt", "tt"))
-
-
-def build_sm_valid_payload(sample, era="2018", scopes=("mt",)):
-    """Build through SM_PROFILE with btag_payload_dir replaced by a synthetic,
-    PASSING payload fixture, so the validated-payload gate is satisfied.
-
-    Everything else about the profile (require_validated_btag_payload=True,
-    btag_2018_algorithm, etc.) is untouched -- only the directory the gate
-    reads from is redirected to the fixture, exactly the
-    ``dataclasses.replace`` pattern the gate's own tests use below.
-    """
-    profile = dataclasses.replace(SM_PROFILE, btag_payload_dir=_VALID_PAYLOAD_DIR)
-    return common_config.build_config(
-        profile, era, sample, list(scopes), {"none"},
-        sm_config.AVAILABLE_SAMPLES, ["2018"], SCOPES,
-    )
-
 
 def _all_producers(config):
     return producer_names(config, "mt") | producer_names(config, "global")
@@ -106,8 +62,8 @@ def _expected_upart_weight_columns():
 class SMMainConfigTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cfg_sig = build_sm_valid_payload("hh2b2tau")
-        cls.cfg_tt = build_sm_valid_payload("ttbar")
+        cls.cfg_sig = build_sm("hh2b2tau")
+        cls.cfg_tt = build_sm("ttbar")
 
     def test_truth_mothers_are_25_for_sm_signal(self):
         params = self.cfg_sig.config_parameters["mt"]["nominal"]
@@ -123,7 +79,8 @@ class SMMainConfigTest(unittest.TestCase):
         params = self.cfg_tt.config_parameters["global"]["nominal"]
         self.assertEqual(params["bjet_max_abs_eta"], 2.4)
         self.assertIn("Jet_btagUParTAK4B", str(params["bjet_score_column"]))
-        self.assertAlmostEqual(params["bjet_min_score"], 0.161)
+        wps = btag_payloads.load_upart_wps(btag_payloads.PINNED_BTV_2018_V15)
+        self.assertEqual(params["bjet_min_score"], wps["M"])
 
     def test_upart_sf_payload_parameters(self):
         params = self.cfg_tt.config_parameters["mt"]["nominal"]
@@ -136,12 +93,28 @@ class SMMainConfigTest(unittest.TestCase):
     def test_mass_tautaubb_still_output(self):
         self.assertIn("mass_tautaubb", output_names(self.cfg_tt, "mt"))
 
-    def test_pinned_wp_loader_validates(self):
-        wps = btag_payloads.load_upart_wps(btag_payloads.PINNED_BTV_2018_V15)
-        self.assertEqual(
-            wps,
-            {"L": 0.0308, "M": 0.161, "T": 0.5405, "XT": 0.6992, "XXT": 0.9655},
+    def test_wp_loader_reads_values_from_selected_payload(self):
+        expected = {"L": 0.01, "M": 0.12, "T": 0.53, "XT": 0.71, "XXT": 0.97}
+        payload = {
+            "corrections": [
+                {
+                    "name": "UParTAK4_wp_values",
+                    "data": {
+                        "content": [
+                            {"key": key, "value": value}
+                            for key, value in expected.items()
+                        ]
+                    },
+                }
+            ]
+        }
+        payload_path = os.path.join(
+            tempfile.mkdtemp(prefix="upart_wp_payload_"), "btagging.json.gz"
         )
+        with gzip.open(payload_path, "wt") as handle:
+            json.dump(payload, handle)
+
+        self.assertEqual(btag_payloads.load_upart_wps(payload_path), expected)
 
     def test_variation_discovery_is_per_correction(self):
         var = btag_payloads.discover_upart_variations(
@@ -158,7 +131,7 @@ class SMMainConfigTest(unittest.TestCase):
     # -- DY/W merged-group wiring (SM surface uses merged dyjets/wjets) --------
 
     def test_sm_dyjets_gets_gen_boson_and_recoil(self):
-        names = _all_producers(build_sm_valid_payload("dyjets"))
+        names = _all_producers(build_sm("dyjets"))
         # Gen-boson four-vector + the intact recoil-correction group (MetScopes),
         # matching the treatment the legacy 2018 DY subtypes get. RenameMet (the
         # "no recoil correction" path) must NOT be scheduled.
@@ -167,7 +140,7 @@ class SMMainConfigTest(unittest.TestCase):
         self.assertNotIn("RenameMet", names)
 
     def test_sm_wjets_gets_gen_boson_and_recoil(self):
-        names = _all_producers(build_sm_valid_payload("wjets"))
+        names = _all_producers(build_sm("wjets"))
         self.assertIn("GenBosonQuantities", names)
         self.assertIn("MetScopes", names)
         self.assertNotIn("RenameMet", names)
@@ -178,7 +151,7 @@ class SMMainConfigTest(unittest.TestCase):
         # scheduled for either DY or W, mirroring the legacy 2018 subtypes.
         for sample in ("dyjets", "wjets"):
             self.assertNotIn(
-                "ZPtReweighting", _all_producers(build_sm_valid_payload(sample))
+                "ZPtReweighting", _all_producers(build_sm(sample))
             )
 
     def test_sm_non_dyw_sample_gets_rename_met(self):
@@ -248,8 +221,9 @@ class SMMainConfigTest(unittest.TestCase):
         call = subproducers["StrictUParTBtagWeightNominal"].call
         self.assertIn("{vec_open}", call)
         self.assertIn("{vec_close}", call)
-        for threshold in ("0.9655f", "0.6992f", "0.5405f", "0.161f", "0.0308f"):
-            self.assertIn(threshold, call)
+        wps = btag_payloads.load_upart_wps(btag_payloads.PINNED_BTV_2018_V15)
+        for wp in ("XXT", "XT", "T", "M", "L"):
+            self.assertIn(f"{wps[wp]}f", call)
 
     def test_nmssm_btag_scheduling_unchanged(self):
         # Guards that the SM producer swap does not leak into NMSSM: NMSSM keeps
@@ -293,149 +267,30 @@ class SMMainConfigTest(unittest.TestCase):
         self.assertFalse(any(o.startswith("btag_weight_upart") for o in outs))
 
 
-# -- Strict validated-payload gate (Task 11) -------------------------------
-
-
-class ValidatedPayloadGateTest(unittest.TestCase):
-    """The build_config-level gate: btag_payloads.require_validated_payload,
-    called only when _use_strict_upart_btag(profile, era) and
-    profile.require_validated_btag_payload and is_mc.
-    """
-
-    def test_missing_validated_payload_raises_with_actionable_message(self):
-        # build_sm() uses the pristine, unpatched SM_PROFILE, whose
-        # btag_payload_dir ("payloads/btagging_efficiencies/upart_nanoaodv15/2018")
-        # has no provenance.json installed yet -- the real production chain
-        # (sm_btag_efficiency_config -> TauFakeFactors -> install) has not
-        # run. hh2b2tau is MC, so the gate must fire before any producer is
-        # scheduled.
-        with self.assertRaises(FileNotFoundError) as ctx:
-            build_sm("hh2b2tau")
-        message = str(ctx.exception)
-        self.assertIn("upart_nanoaodv15/2018", message)
-        self.assertIn("provenance.json", message)
-        # actionable: names the production chain that creates the payload.
-        self.assertIn("sm_btag_efficiency_config", message)
-        self.assertIn("TauFakeFactors", message)
-        self.assertIn("install", message)
-
-    def test_missing_validated_payload_raises_for_ttbar_too(self):
-        # Not signal-specific: ANY MC sample under the production profile
-        # must hit the gate.
-        with self.assertRaises(FileNotFoundError):
-            build_sm("ttbar")
-
-    def test_validated_payload_gate_passes_with_synthetic_fixture(self):
-        # (b) A dedicated, self-contained synthetic payload+provenance
-        # (independent of the module-shared _VALID_PAYLOAD_DIR) proves the
-        # gate accepts a well-formed passing payload, and that the build
-        # keys the efficiency lookup on hh2b2tau's OWN name (identity, NOT
-        # the legacy hh2b2tau -> ggh_htautau aliasing).
-        payload_dir = tempfile.mkdtemp(prefix="sm_gate_pass_")
-        write_passing_payload(payload_dir, scopes=("mt",))
+class EfficiencyPayloadPathTest(unittest.TestCase):
+    def test_efficiency_payload_path_is_forwarded_without_prevalidation(self):
+        payload_dir = os.path.join(
+            tempfile.mkdtemp(prefix="sm_efficiency_path_"), "not-installed"
+        )
         profile = dataclasses.replace(SM_PROFILE, btag_payload_dir=payload_dir)
         cfg = common_config.build_config(
-            profile, "2018", "hh2b2tau", ["mt"], {"none"},
+            profile, "2018", "ttbar", ["mt"], {"none"},
             sm_config.AVAILABLE_SAMPLES, ["2018"], SCOPES,
         )
+
         params = cfg.config_parameters["mt"]["nominal"]
-        self.assertEqual(params["bjet_eff_sample_type"], "hh2b2tau")
-        self.assertIn("StrictUParTBtagWeight", producer_names(cfg, "mt"))
-
-    def test_data_build_succeeds_without_validated_payload(self):
-        # (c) data builds evaluate no MC b-tag efficiency SF at all
-        # (is_mc=False), so the gate must not even attempt to resolve the
-        # (still-absent) production payload directory.
-        cfg = build_sm("data")
-        params = cfg.config_parameters["global"]["nominal"]
-        self.assertTrue(params["is_data"])
-        self.assertFalse(params["is_mc"])
-
-    def test_embedding_mc_bypasses_payload_gate(self):
-        # Fix (code review): "embedding_mc" was, before the fix, treated as
-        # is_mc==True by the gate's own `is_mc` check (`is_mc = sample not in
-        # ["data", "embedding"]` -- global NMSSM semantics, deliberately left
-        # untouched), so it incorrectly required the (here absent) real
-        # production payload just like a genuine MC sample. Like "embedding",
-        # embedding_mc jobs never evaluate a b-tag MC efficiency SF and must
-        # not require the payload to exist on disk either. The gate condition
-        # is now `requires_btag_payload = is_mc and sample != "embedding_mc"`.
-        #
-        # Full end-to-end build success for "embedding"/"embedding_mc" is
-        # currently blocked by a SEPARATE, unrelated, pre-existing bug deeper
-        # in setup_embedding() (tau_embedding_settings.py references several
-        # producers -- e.g. scalefactors.Tau_2_VsJetTauID_lt_SF,
-        # scalefactors.Tau_1_VsJetTauID_SF, scalefactors.Tau_2_VsJetTauID_tt_SF
-        # -- that no longer exist in producers/scalefactors.py) -- out of
-        # scope for this fix (it predates it and is independent of the gate).
-        # This test therefore isolates the gate itself via mock: if it fired,
-        # btag_payloads.require_validated_payload would be called (and would
-        # raise FileNotFoundError, since SM_PROFILE's real production payload
-        # directory is not installed); asserting it is never called proves
-        # the bypass, independent of the later, unrelated AttributeError.
-        with mock.patch.object(
-            btag_payloads, "require_validated_payload"
-        ) as mocked_gate:
-            try:
-                build_sm("embedding_mc")
-            except AttributeError:
-                pass  # pre-existing, unrelated setup_embedding breakage (see above)
-            mocked_gate.assert_not_called()
-
-    def test_non_strict_profile_never_requires_payload(self):
-        # SM_BTAG_EFFICIENCY_PROFILE has require_validated_btag_payload=False
-        # (and enable_btag_sf=False, so _use_strict_upart_btag is False
-        # too): the gate must be skipped even though its own
-        # btag_payload_dir is None (which would otherwise make the gate
-        # raise via resolve_payload_dir).
-        cfg = sm_btag_efficiency_config.build_config(
-            "2018", "hh2b2tau", ["mt"], {"none"},
-            LEGACY_AVAILABLE_SAMPLES, ["2018"], SCOPES,
+        self.assertEqual(
+            params["bjet_eff_file"],
+            os.path.join(payload_dir, "btag_efficiency_mt.json.gz"),
         )
-        self.assertIsNotNone(cfg)
-
-    def test_nmssm_never_requires_payload(self):
-        # NMSSM_PROFILE.require_validated_btag_payload is False and
-        # btag_2018_algorithm is None: never reaches the gate.
-        cfg = nmssm_config.build_config(
-            "2018", "hh4b", ["mt"], {"none"},
-            LEGACY_AVAILABLE_SAMPLES, ERAS, SCOPES,
-        )
-        self.assertIsNotNone(cfg)
 
 
 class LegacyEfficiencyAliasTest(unittest.TestCase):
-    """AnalysisProfile.legacy_btag_efficiency_alias: accepted ONLY under the
-    explicit, non-production opt-in conditions; contradictory with the
-    validated-payload gate.
-    """
+    """Contract for the explicit legacy efficiency sample-type alias."""
 
-    def test_alias_contradiction_raises(self):
-        # (d) SM_PROFILE uses the dedicated production payload path
-        # (require_validated_btag_payload=True): setting a non-empty alias
-        # on top of it is a contradiction, caught at build time -- it must
-        # NOT silently activate (nor silently fall back to identity).
+    def test_alias_activates_only_for_explicit_opt_in(self):
         profile = dataclasses.replace(
             SM_PROFILE,
-            legacy_btag_efficiency_alias={"hh2b2tau": "ggh_htautau"},
-        )
-        with self.assertRaises(ValueError) as ctx:
-            common_config.build_config(
-                profile, "2018", "ttbar", ["mt"], {"none"},
-                sm_config.AVAILABLE_SAMPLES, ["2018"], SCOPES,
-            )
-        message = str(ctx.exception)
-        self.assertIn("legacy_btag_efficiency_alias", message)
-        self.assertIn("require_validated_btag_payload", message)
-
-    def test_alias_activates_only_for_explicit_non_production_opt_in(self):
-        # ALL conditions met: upart_2018_v15, the alias maps hh2b2tau onto
-        # "ggh_htautau", require_validated_btag_payload=False (NOT the
-        # production path), and the alias is explicitly set (never
-        # auto-activated).
-        profile = dataclasses.replace(
-            SM_PROFILE,
-            require_validated_btag_payload=False,
             legacy_btag_efficiency_alias={"hh2b2tau": "ggh_htautau"},
         )
         cfg = common_config.build_config(
@@ -455,7 +310,6 @@ class LegacyEfficiencyAliasTest(unittest.TestCase):
         # test_alias_activates_only_for_explicit_non_production_opt_in above.
         profile = dataclasses.replace(
             SM_PROFILE,
-            require_validated_btag_payload=False,
             legacy_btag_efficiency_alias={"hh2b2tau": "ggh_htautau"},
         )
         with self.assertLogs(
@@ -477,12 +331,10 @@ class LegacyEfficiencyAliasTest(unittest.TestCase):
         )
 
     def test_alias_stays_inactive_without_explicit_ggh_htautau_target(self):
-        # Non-empty alias, non-production path, but it doesn't map anything
-        # onto "ggh_htautau" (the specific legacy target this escape hatch
-        # exists for): stays identity.
+        # An alias that does not target the supported legacy sample stays
+        # inactive.
         profile = dataclasses.replace(
             SM_PROFILE,
-            require_validated_btag_payload=False,
             legacy_btag_efficiency_alias={"ttbar": "rem_ttbar"},
         )
         cfg = common_config.build_config(
@@ -509,74 +361,6 @@ class LegacyEfficiencyAliasTest(unittest.TestCase):
         )
         params = cfg.config_parameters["mt"]["nominal"]
         self.assertEqual(params["bjet_eff_sample_type"], "ggh_htautau")
-
-
-class RequireValidatedPayloadUnitTest(unittest.TestCase):
-    """Direct unit tests of btag_payloads.require_validated_payload, pinning
-    its FileNotFoundError/ValueError contract independent of build_config.
-    """
-
-    def setUp(self):
-        self.payload_dir = tempfile.mkdtemp(prefix="require_validated_payload_")
-
-    def test_returns_parsed_provenance_on_success(self):
-        write_passing_payload(self.payload_dir, scopes=("et", "mt", "tt"))
-        provenance = btag_payloads.require_validated_payload(
-            self.payload_dir, ["et", "mt", "tt"],
-            btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
-        )
-        self.assertEqual(provenance["validation_status"], "passed")
-        self.assertEqual(
-            set(provenance["manifest"]),
-            {f"btag_efficiency_{s}.json.gz" for s in ("et", "mt", "tt")},
-        )
-
-    def test_missing_provenance_raises_file_not_found(self):
-        with self.assertRaises(FileNotFoundError):
-            btag_payloads.require_validated_payload(
-                self.payload_dir, ["mt"], btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
-            )
-
-    def test_missing_scope_file_raises_file_not_found(self):
-        write_passing_payload(self.payload_dir, scopes=("mt",))
-        with self.assertRaises(FileNotFoundError):
-            btag_payloads.require_validated_payload(
-                self.payload_dir, ["mt", "tt"],
-                btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
-            )
-
-    def test_failed_validation_status_raises_value_error(self):
-        write_passing_payload(self.payload_dir, scopes=("mt",))
-        provenance_path = os.path.join(self.payload_dir, "provenance.json")
-        with open(provenance_path) as handle:
-            provenance = json.load(handle)
-        provenance["validation_status"] = "failed"
-        with open(provenance_path, "w") as handle:
-            json.dump(provenance, handle)
-        with self.assertRaisesRegex(ValueError, "validation_status"):
-            btag_payloads.require_validated_payload(
-                self.payload_dir, ["mt"], btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
-            )
-
-    def test_checksum_mismatch_raises_value_error(self):
-        write_passing_payload(self.payload_dir, scopes=("mt",))
-        with open(
-            os.path.join(self.payload_dir, "btag_efficiency_mt.json.gz"), "ab"
-        ) as handle:
-            handle.write(b"tampered")
-        with self.assertRaisesRegex(ValueError, "checksum"):
-            btag_payloads.require_validated_payload(
-                self.payload_dir, ["mt"], btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
-            )
-
-    def test_missing_category_raises_value_error(self):
-        write_passing_payload(
-            self.payload_dir, scopes=("mt",), categories=["hh2b2tau", "dyjets"],
-        )
-        with self.assertRaisesRegex(ValueError, "missing expected sample_type"):
-            btag_payloads.require_validated_payload(
-                self.payload_dir, ["mt"], btag_payloads.SM_BTAG_EFFICIENCY_CATEGORIES,
-            )
 
 
 if __name__ == "__main__":

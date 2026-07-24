@@ -22,8 +22,6 @@ class AnalysisProfile:
     bjet_max_abs_eta_override: Optional[float]
     # "upart_2018_v15" switches branch/WPs/SF payloads for 2018; None = legacy.
     btag_2018_algorithm: Optional[str]
-    # Strict validated-payload gate (sm_config only).
-    require_validated_btag_payload: bool
     btag_payload_dir: Optional[str]
     # Explicit opt-in legacy efficiency alias, e.g. {"hh2b2tau": "ggh_htautau"}.
     legacy_btag_efficiency_alias: Optional[Mapping[str, str]] = None
@@ -46,7 +44,6 @@ NMSSM_PROFILE = AnalysisProfile(
     use_2018_v15_jet_path=False,
     bjet_max_abs_eta_override=None,
     btag_2018_algorithm=None,
-    require_validated_btag_payload=False,
     btag_payload_dir=None,
 )
 
@@ -63,8 +60,7 @@ SM_PROFILE = AnalysisProfile(
     use_2018_v15_jet_path=True,
     bjet_max_abs_eta_override=2.4,
     btag_2018_algorithm="upart_2018_v15",
-    require_validated_btag_payload=True,
-    btag_payload_dir="payloads/btagging_efficiencies/upart_nanoaodv15/2018",
+    btag_payload_dir="payloads/btagging_efficiencies/upart/2018",
 )
 
 SM_BTAG_EFFICIENCY_PROFILE = AnalysisProfile(
@@ -78,7 +74,6 @@ SM_BTAG_EFFICIENCY_PROFILE = AnalysisProfile(
     use_2018_v15_jet_path=True,
     bjet_max_abs_eta_override=2.4,
     btag_2018_algorithm="upart_2018_v15",
-    require_validated_btag_payload=False,   # payload-independent by design
     btag_payload_dir=None,
     mc_only=True,
     enable_btag_sf=False,

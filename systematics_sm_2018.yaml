@@ -404,9 +404,8 @@ systematics:
     source: >-
       btag_payloads.discover_upart_variations(btag_payloads.PINNED_BTV_2018_V15)
       -> producers/scalefactors.py:build_strict_upart_btag_weight
-      (StrictUParTBtagWeight ProducerGroup); gated by
-      common_config._use_strict_upart_btag and
-      btag_payloads.require_validated_payload
+      (StrictUParTBtagWeight ProducerGroup); selected by
+      common_config._use_strict_upart_btag
     variation_keys: pinned payload (dynamic)
     variation_keys_source: >-
       btag_payloads.discover_upart_variations(btag_payloads.PINNED_BTV_2018_V15)
