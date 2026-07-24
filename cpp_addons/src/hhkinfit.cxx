@@ -378,5 +378,161 @@ ROOT::RDF::RNode BestYHKinFit(
     return df7;
 }
 
+/**
+ * @brief Function to run the kinematic fit of a Standard-Model non-resonant
+ * HH -> bb tautau system with a single, fixed mass hypothesis
+ * m(H->bb) = 125 GeV and m(H->tautau) = 125 GeV. It reuses the SAME vendored
+ * fit engine (`YHKinFitMaster`) as `hhkinfit::YHKinFit`, but with exactly one
+ * hypothesis pair instead of the NMSSM Y-mass scan: the mass-hypothesis
+ * vectors are single-element (`{125}`), and no YToBB/YToTauTau selection is
+ * performed. `YHKinFitMaster::Fit` hard-codes the SM Higgs mass to 125 GeV
+ * and takes the other Higgs mass from the (single) Y-mass hypothesis, so
+ * `mY = 125` yields the desired 125/125 double-Higgs constraint regardless of
+ * the `Ytautau` flag (here fixed to `false`, i.e. the b-jet pair carries the
+ * scanned mass).
+ *
+ * The estimated di-Higgs mass `kinfit_mHH` is the invariant mass of the fully
+ * fitted four-object system, which the engine exposes as `mX` (identical
+ * quantity, SM-appropriate name).
+ *
+ * The per-jet b-energy regression resolution is taken from `b_reso_1` /
+ * `b_reso_2` (the ParticleNet regression resolutions, `bpair_reg_res_1/2` in
+ * the main SM ntuple) and passed into the `YHKinFitMaster` engine exactly as
+ * `hhkinfit::YHKinFit` does: unconverted, as the relative b-jet pt
+ * resolution (see `YHKinFitMaster::CalcBjetResolution`, which multiplies by
+ * the jet pt internally).
+ *
+ * @param df the input dataframe
+ * @param outputs names of the four output columns, in order:
+ * {kinfit_convergence, kinfit_chi2, kinfit_prob, kinfit_mHH}
+ * @param tau_p4_1 name of the Lorentz-vector column of the first tau
+ * @param tau_p4_2 name of the Lorentz-vector column of the second tau
+ * @param b_p4_1 name of the Lorentz-vector column of the first b-jet
+ * @param b_reso_1 name of the column containing the pt resolution of the
+ * first b-jet
+ * @param b_p4_2 name of the Lorentz-vector column of the second b-jet
+ * @param b_reso_2 name of the column containing the pt resolution of the
+ * second b-jet
+ * @param met_p4 name of the Lorentz-vector column of the missing transverse
+ * energy
+ * @param met_cov_xx name of the column containing the met covariance xx
+ * @param met_cov_xy name of the column containing the met covariance xy (= yx)
+ * @param met_cov_yy name of the column containing the met covariance yy
+ * @returns a dataframe with the four SM HH kinematic-fit outputs
+ */
+ROOT::RDF::RNode
+sm_hh_kinfit(ROOT::RDF::RNode df, const std::vector<std::string> &outputs,
+             const std::string &tau_p4_1, const std::string &tau_p4_2,
+             const std::string &b_p4_1, const std::string &b_reso_1,
+             const std::string &b_p4_2, const std::string &b_reso_2,
+             const std::string &met_p4, const std::string &met_cov_xx,
+             const std::string &met_cov_xy, const std::string &met_cov_yy) {
+    Logger::get("sm_hh_kinfit")
+        ->debug("Fitting bbtautau system with fixed 125/125 HH hypothesis to "
+                "get an estimation for the di-Higgs mass.");
+
+    auto kin_fit = [](const ROOT::Math::PtEtaPhiMVector &tau_p4_1,
+                      const ROOT::Math::PtEtaPhiMVector &tau_p4_2,
+                      const ROOT::Math::PtEtaPhiMVector &b_p4_1,
+                      const float &b_reso_1,
+                      const ROOT::Math::PtEtaPhiMVector &b_p4_2,
+                      const float &b_reso_2,
+                      const ROOT::Math::PtEtaPhiMVector &met_p4,
+                      const float &met_cov_xx, const float &met_cov_xy,
+                      const float &met_cov_yy) {
+        auto kinfit_mHH = -10.;
+        auto kinfit_chi2 = 999.;
+        auto kinfit_prob = 0.;
+        auto kinfit_convergence = -1.;
+
+        if ((tau_p4_1.Pt() > 0.) && (tau_p4_2.Pt() > 0.) &&
+            (b_p4_1.Pt() > 0.) && (b_p4_2.Pt() > 0.)) {
+            ROOT::Math::PtEtaPhiEVector tau_1 =
+                (ROOT::Math::PtEtaPhiEVector)tau_p4_1;
+            ROOT::Math::PtEtaPhiEVector tau_2 =
+                (ROOT::Math::PtEtaPhiEVector)tau_p4_2;
+            ROOT::Math::PtEtaPhiEVector b_1 =
+                (ROOT::Math::PtEtaPhiEVector)b_p4_1;
+            ROOT::Math::PtEtaPhiEVector b_2 =
+                (ROOT::Math::PtEtaPhiEVector)b_p4_2;
+
+            ROOT::Math::PtEtaPhiEVector met_LV =
+                (ROOT::Math::PtEtaPhiEVector)ROOT::Math::PtEtaPhiMVector(
+                    met_p4.Pt(), 0., met_p4.Phi(), 0.);
+            TMatrixD met_cov(2, 2);
+            met_cov[0][0] = met_cov_xx;
+            met_cov[1][0] = met_cov_xy;
+            met_cov[0][1] = met_cov_xy;
+            met_cov[1][1] = met_cov_yy;
+
+            // Single, fixed hypothesis pair: m(H->bb) = m(H->tautau) = 125 GeV.
+            // The engine hard-codes the SM Higgs mass (here the tautau side,
+            // Ytautau=false) to 125 and takes the other Higgs mass from the
+            // single-element Y-mass hypothesis, so {125} gives 125/125.
+            std::vector<int> hypo_mh = {125};
+            std::vector<int> hypo_mY = {125};
+
+            YHKinFitMaster kinFits = YHKinFitMaster(
+                b_1, b_reso_1, b_2, b_reso_2, tau_1, tau_2, met_LV, met_cov,
+                /*Ytautau=*/false);
+            kinFits.addMhHypothesis(hypo_mh);
+            kinFits.addMYHypothesis(hypo_mY);
+
+            kinFits.doFullFit();
+
+            std::pair<int, int> bestHypo = kinFits.getBestHypoFullFit();
+            Logger::get("sm_hh_kinfit")
+                ->debug("best hypothesis: tautau {}, bb {}", bestHypo.first,
+                        bestHypo.second);
+
+            if (bestHypo.second > 0) {
+                std::map<std::pair<int, int>, double> fit_results_chi2 =
+                    kinFits.getChi2FullFit();
+                std::map<std::pair<int, int>, double> fit_results_fitprob =
+                    kinFits.getFitProbFullFit();
+                std::map<std::pair<int, int>, double> fit_results_mX =
+                    kinFits.getMXFullFit();
+                std::map<std::pair<int, int>, int> fit_convergence =
+                    kinFits.getConvergenceFullFit();
+
+                kinfit_convergence = fit_convergence.at(bestHypo);
+                kinfit_mHH = fit_results_mX.at(bestHypo);
+                kinfit_chi2 = fit_results_chi2.at(bestHypo);
+                kinfit_prob = fit_results_fitprob.at(bestHypo);
+            }
+            Logger::get("sm_hh_kinfit")
+                ->debug("kinfit_convergence: {}", kinfit_convergence);
+            Logger::get("sm_hh_kinfit")->debug("kinfit_mHH: {}", kinfit_mHH);
+            Logger::get("sm_hh_kinfit")->debug("kinfit_chi2: {}", kinfit_chi2);
+            Logger::get("sm_hh_kinfit")->debug("kinfit_prob: {}", kinfit_prob);
+        }
+
+        ROOT::RVec<float> result = {(float)kinfit_convergence,
+                                    (float)kinfit_chi2, (float)kinfit_prob,
+                                    (float)kinfit_mHH};
+        return result;
+    };
+
+    std::string variation = "";
+    if (outputs.at(0).find("__") != std::string::npos) {
+        size_t pos = outputs.at(0).find("__");
+        variation = outputs.at(0).substr(pos);
+    }
+
+    std::string result_vec_name = "SMHHKinFit_vector_resolved" + variation;
+
+    auto df_out =
+        df.Define(result_vec_name, kin_fit,
+                  {tau_p4_1, tau_p4_2, b_p4_1, b_reso_1, b_p4_2, b_reso_2,
+                   met_p4, met_cov_xx, met_cov_xy, met_cov_yy});
+
+    for (std::size_t i = 0; i < outputs.size(); ++i) {
+        df_out = df_out.Define(outputs.at(i), hhkinfit::single_output(i),
+                               {result_vec_name});
+    }
+
+    return df_out;
+}
+
 } // namespace hhkinfit
 #endif /* GUARDHHKINFIT_H */

@@ -39,9 +39,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import sys
-import tempfile
 from pathlib import Path
 from typing import Dict, Iterable, List, Set, Tuple
 
@@ -199,28 +197,14 @@ def build_sm_registered_shifts(
     """Build the SM config with ``shifts={"all"}`` across ``samples`` and
     return the union of every ``crown_shift`` name registered in any scope.
 
-    Uses the same ``dataclasses.replace(SM_PROFILE, btag_payload_dir=...)`` +
-    synthetic-passing-payload pattern as
-    ``tests/test_sm_main_config.py::build_sm_valid_payload`` (and its
-    ``tests/fixtures/sm_btag_efficiency_payload.write_passing_payload``
-    fixture) so the strict validated-payload gate does not block the build
-    before any shift is registered.
+    The efficiency payload path is a runtime parameter and is not opened while
+    the configuration is built.
     """
-    from analysis_configurations.bbtautau import common_config
-    from analysis_configurations.bbtautau.analysis_profiles import SM_PROFILE
     from analysis_configurations.bbtautau.constants import SCOPES
-    from analysis_configurations.bbtautau.tests.fixtures import (
-        sm_btag_efficiency_payload as payload_fixture,
-    )
-
-    payload_dir = tempfile.mkdtemp(prefix="validate_systematics_inventory_")
-    payload_fixture.write_passing_payload(payload_dir, scopes=("et", "mt", "tt"))
-    profile = dataclasses.replace(SM_PROFILE, btag_payload_dir=payload_dir)
 
     registered: Set[str] = set()
     for sample in samples:
-        cfg = common_config.build_config(
-            profile,
+        cfg = sm_config.build_config(
             "2018",
             sample,
             list(SCOPES),

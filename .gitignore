@@ -133,3 +133,5 @@ dmypy.json
 
 # Ignore local .claude files
 .claude/
+# AI generated documentation folder
+docs/
