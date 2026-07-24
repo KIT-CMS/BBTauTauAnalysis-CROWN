@@ -1,53 +1,11 @@
-from __future__ import annotations  # needed for type annotations in > python 3.7
-from typing import List, Union
-from .producers import pairquantities as pairquantities
-from .quantities import output as q
-from code_generation.friend_trees import FriendTreeConfiguration
+"""NMSSM FastMTT friend-tree entry point (thin; body lives in fastmtt_common).
 
+Executable names/outputs are unchanged: the executable name derives from
+this module's name (`nmssm_fastmtt`), and the four outputs
+(`m/pt/eta/phi_fastmtt`) come from the shared builder below.
+"""
+from code_generation.friend_trees import FriendTreeConfiguration  # noqa: F401  (dispatcher check)
 
-def build_config(
-    era: str,
-    sample: str,
-    scopes: List[str],
-    shifts: List[str],
-    available_sample_types: List[str],
-    available_eras: List[str],
-    available_scopes: List[str],
-    quantities_map: Union[str, None] = None,
-):
+from . import fastmtt_common
 
-    configuration = FriendTreeConfiguration(
-        era,
-        sample,
-        scopes,
-        shifts,
-        available_sample_types,
-        available_eras,
-        available_scopes,
-        quantities_map,
-    )
-
-    configuration.add_producers(
-        ["mt", "et", "tt"],
-        [
-            pairquantities.FastMTTQuantities,
-        ],
-    )
-
-    configuration.add_outputs(
-        ["mt", "et", "tt"],
-        [
-            q.m_fastmtt,
-            q.pt_fastmtt,
-            q.eta_fastmtt,
-            q.phi_fastmtt,
-        ],
-    )
-
-    #########################
-    # Finalize and validate the configuration
-    #########################
-    configuration.optimize()
-    configuration.validate()
-    configuration.report()
-    return configuration.expanded_configuration()
+build_config = fastmtt_common.build_fastmtt_config

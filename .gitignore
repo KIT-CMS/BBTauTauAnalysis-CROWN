@@ -130,3 +130,6 @@ dmypy.json
 
 # VS code configuration
 .vscode/
+
+# AI generated documentation folder
+docs/

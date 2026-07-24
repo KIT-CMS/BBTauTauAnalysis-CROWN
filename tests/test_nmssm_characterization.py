@@ -34,6 +34,32 @@ def producer_names(config, scope):
     return {p.name for p in config.producers[scope]}
 
 
+def all_producer_names(config, scope):
+    """Producer names in ``scope`` including every nested subproducer.
+
+    Several producers that used to be scheduled at the top level are now
+    members of a producer group (e.g. the jet ID inside
+    ``AuxJetCollectionQuantities``), so an assertion about whether a producer
+    runs at all has to look through groups. A ``ProducerGroup`` exposes its
+    members as ``.producers``, a scope -> list mapping.
+    """
+    names = set()
+
+    def collect(producer):
+        if producer.name in names:
+            return
+        names.add(producer.name)
+        members = getattr(producer, "producers", None)
+        if isinstance(members, dict):
+            members = [p for group in members.values() for p in group]
+        for member in members or []:
+            collect(member)
+
+    for producer in config.producers[scope]:
+        collect(producer)
+    return names
+
+
 def output_names(config, scope):
     return {q.get_leaf(shift="", scope=scope) for q in config.outputs[scope]}
 

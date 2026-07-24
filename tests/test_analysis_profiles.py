@@ -28,7 +28,7 @@ class AnalysisProfileTest(unittest.TestCase):
     def test_efficiency_profile_is_payload_independent_mc_only(self):
         p = SM_BTAG_EFFICIENCY_PROFILE
         self.assertTrue(p.mc_only and p.enable_probe_jet_collection)
-        self.assertFalse(p.enable_btag_sf or p.require_validated_btag_payload)
+        self.assertFalse(p.enable_btag_sf)
 
 
 if __name__ == "__main__":

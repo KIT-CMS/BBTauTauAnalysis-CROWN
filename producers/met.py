@@ -4,7 +4,7 @@ from analysis_configurations.quantities import nanoAODv12_run3
 from code_generation.producer import Producer, ProducerGroup
 
 from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2, ERAS_RUN3
-from ..helpers import era_producer_groups
+from ..helpers import era_producer_groups, get_for_era
 
 #
 # HELPER FUNCTIONS
@@ -114,6 +114,28 @@ MetCov = {
         scopes=GLOBAL_SCOPES,
     ),
 }
+
+# MET covariance for the isolated SM 2018-v15 path. NanoAOD v15 (2018 UL
+# reprocessing) renames the PF MET collection MET_* -> PFMET_* and thus drops
+# the v9/v12 MET_covXX/XY/YY branches the Run-2 MetCov reads; the covariance is
+# instead available on PuppiMET (the collection this analysis already uses for
+# the MET four-vector). Output quantities are identical to the era-selected
+# MetCov -- only the input branches change -- so nothing downstream is affected.
+MetCovSM2018V15 = met_cov_producers(
+    name="MetCov",
+    input_quantities={
+        "met_cov_xx": nanoAOD.PuppiMET_covXX,
+        "met_cov_xy": nanoAOD.PuppiMET_covXY,
+        "met_cov_yy": nanoAOD.PuppiMET_covYY,
+    },
+    output_quantities={
+        "met_cov_00": q.metcov00,
+        "met_cov_01": q.metcov01,
+        "met_cov_10": q.metcov10,
+        "met_cov_11": q.metcov11,
+    },
+    scopes=GLOBAL_SCOPES,
+)
 
 # PuppiMET vector without recoil corrections and missing propagation of changes
 # in lepton and jet energy scale
@@ -262,6 +284,32 @@ MetGlobal = era_producer_groups(
         MetJetCorrection,
     ],
     GLOBAL_SCOPES,
+)
+
+# MetGlobal for the isolated SM 2018-v15 path: identical to the Run-2 MetGlobal
+# group (v15 ships all of its PuppiMET / RawPuppiMET inputs and the Run-2
+# PropagateToMET jet correction reads only branches present in v15) except the
+# covariance is taken from PuppiMET, because v15 drops the v9/v12 PFMET
+# covariance branches. Selected in common_config for use_sm_2018_v15_inputs;
+# NMSSM 2018 keeps the era-selected Run-2 MetGlobal.
+MetGlobalSM2018V15 = ProducerGroup(
+    name="MetGlobal",
+    call=None,
+    input=None,
+    output=None,
+    scopes=GLOBAL_SCOPES,
+    subproducers=[
+        MetCovSM2018V15,
+        MetVectorUncorrected,
+        MetPtUncorrected,
+        MetPhiUncorrected,
+        MetSumEt,
+        MetVectorRaw,
+        MetPtRaw,
+        MetPhiRaw,
+        MetSumEtRaw,
+        get_for_era(MetJetCorrection, "2018"),
+    ],
 )
 
 # Propagate changes in the lepton energy scales to MET
