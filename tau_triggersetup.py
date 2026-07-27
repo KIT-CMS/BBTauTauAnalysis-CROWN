@@ -159,7 +159,7 @@ def _add_electron_triggers(
                             # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIIISummary
                             ele_115_caloidvt_gsftrkidt_parameters,
                         ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                        for _era in ERAS_RUN3
                     },
                     "2018": [
                             # trigger:            HLT_Ele32_WPTight_Gsf
@@ -434,7 +434,7 @@ def _add_muon_triggers(
                             #                     - https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2024
                             high_pt_tk_mu_100_parameters,
                         ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                        for _era in ERAS_RUN3
                     },
                     "2018": [
                         # trigger:            HLT_IsoMu24
@@ -952,7 +952,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 "match_max_delta_r": 0.4,
                             }
                         ]
-                        for _era in ["2024"]
+                        for _era in ["2024", "2025"]
                     },
                     **{
                         _era: [
