@@ -736,6 +736,19 @@ def _add_tautau_triggers(
         {
             "tautaujet_trigger": EraModifier(
                 {
+                    "2025": [
+                        # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60
+                        # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
+                        # tau filter bit:   14
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
+                        double_pnet_26_eta2p3_jet_60_parameters,
+
+                        # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75
+                        # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # tau filter bit:   14
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
+                        double_pnet_26_eta2p3_jet_75_parameters,
+                    ],
                     "2024": [
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60
                         # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
