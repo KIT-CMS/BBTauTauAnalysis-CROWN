@@ -1208,6 +1208,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
         {
+            # TODO Update 2025 corrections as soon as dedicated corrections are available
             "e_trigger_sf_file": EraModifier(
                 {  # TODO clarify if we can actually just use the electron trigger SFs
                     "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
@@ -1219,6 +1220,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-03/electronHlt.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-03/electronHlt.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
                 }
             ),
             "ele_trigger_sf": [
@@ -1236,6 +1238,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                             "2023preBPix": "2023PromptC",
                             "2023postBPix": "2023PromptD",
                             "2024": "2024Prompt",
+                            "2025": "2024Prompt",  # TODO update as soon as dedicated corrections are available for 2025
                         }
                     ),
                     "e_trigger_sf_name": "Electron-HLT-SF",
@@ -1246,7 +1249,8 @@ def add_diTauTriggerSetup(configuration: Configuration):
         },
     )
 
-    # double electron trigger scale factors
+    # double electron-tau trigger scale factors
+    # TODO update scale factors for 2025 as soon as dedicated corrections are available
     configuration.add_config_parameters(
         ET_SCOPES,
         {
@@ -1264,6 +1268,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
                                 for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
                             },
+                            "2025": f"data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",
                         }
                     ),
                     "et_trigger_leg1_era": EraModifier(
@@ -1277,6 +1282,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                             "2023preBPix": "2023PromptC",
                             "2023postBPix": "2023PromptD",
                             "2024": "2024Prompt",
+                            "2025": "2024Prompt",
                         }
                     ),
                     "et_trigger_leg1_sf_name": "Electron-HLT-SF",
@@ -1311,6 +1317,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
     )
 
     # double muon-tau trigger scale factors
+    # TODO update scale factors for 2025 as soon as dedicated corrections are available
     configuration.add_config_parameters(
         MT_SCOPES,
         {
@@ -1327,6 +1334,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
                                 for _era in ERAS_RUN3
                             },
+                            "2025": f"data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json"
                         }
                     ),
                     "mt_trigger_leg1_flagname": "trg_wgt_double_mu20tau27_leg1",
@@ -1381,13 +1389,16 @@ def add_diTauTriggerSetup(configuration: Configuration):
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
-                    "2024": [
-                        {
-                            "tt_trigger_leg1_flagname": "trg_wgt_double_tau35_mediumpnet_leg1",
-                            "tt_trigger_flag": "trg_double_tau35_mediumpnet",
-                            **common_double_tautau_trigger_args,
-                        },
-                    ],
+                    **{
+                        _era: [
+                            {
+                                "tt_trigger_leg1_flagname": "trg_wgt_double_tau30_mediumpnet_leg1",
+                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
+                                **common_double_tautau_trigger_args,
+                            },
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
                 },
             ),
             "double_tautau_trigger_leg2_sf": EraModifier(
@@ -1415,13 +1426,16 @@ def add_diTauTriggerSetup(configuration: Configuration):
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
-                    "2024": [
-                        {
-                            "tt_trigger_leg2_flagname": "trg_wgt_double_tau35_mediumpnet_leg2",
-                            "tt_trigger_flag": "trg_double_tau35_mediumpnet",
-                            **common_double_tautau_trigger_args,
-                        },
-                    ],
+                    **{
+                        _era: [
+                            {
+                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau35_mediumpnet_leg2",
+                                "tt_trigger_flag": "trg_double_tau35_mediumpnet",
+                                **common_double_tautau_trigger_args,
+                            },
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
                 },
             ),
         },
