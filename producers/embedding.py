@@ -287,7 +287,7 @@ MTGenerateSingleMuonTriggerSF = ExtendedVectorProducer(
         """,
     input=[q.pt_1, q.eta_1],
     output="flagname",
-    scope=["mt", "mm"],
+    scopes=["mt", "mm"],
     vec_config="singlemuon_trigger_sf",
 )
 
@@ -406,7 +406,7 @@ ETGenerateSingleElectronTriggerSF = ExtendedVectorProducer(
         """,
     input=[q.pt_1, q.eta_1],
     output="flagname",
-    scope=["et", "ee"],
+    scopes=["et", "ee"],
     vec_config="singlelectron_trigger_sf",
 )
 
@@ -487,7 +487,7 @@ Tau_2_VsJetTauID_lt_SF = ExtendedVectorProducer(
         """,
     input=[q.pt_2, q.tau_decaymode_2, q.gen_match_2],
     output="tau_2_vsjet_sf_outputname",
-    scope=["et", "mt"],
+    scopes=["et", "mt"],
     vec_config="vsjet_tau_id_sf_embedding",
 )
 
@@ -510,7 +510,7 @@ Tau_1_VsJetTauID_tt_SF = ExtendedVectorProducer(
         """,
     input=[q.pt_1, q.tau_decaymode_1, q.gen_match_1],
     output="tau_1_vsjet_sf_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="vsjet_tau_id_sf_embedding",
 )
 
@@ -533,6 +533,6 @@ Tau_2_VsJetTauID_tt_SF = ExtendedVectorProducer(
         """,
     input=[q.pt_2, q.tau_decaymode_2, q.gen_match_2],
     output="tau_2_vsjet_sf_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="vsjet_tau_id_sf_embedding",
 )

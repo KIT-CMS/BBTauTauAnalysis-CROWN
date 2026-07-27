@@ -403,7 +403,7 @@ isoTauIDFlag_1 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.boostedTau_idMVAoldDM2017v2, q.boosteddileptonpair],
     output="boostedtau_1_iso_id_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="iso_boostedtau_id",
 )
 antiEleTauIDFlag_1 = ExtendedVectorProducer(
@@ -417,7 +417,7 @@ antiEleTauIDFlag_1 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.boostedTau_idAntiEle2018, q.boosteddileptonpair],
     output="boostedtau_1_antiele_id_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="antiele_boostedtau_id",
 )
 antiMuTauIDFlag_1 = ExtendedVectorProducer(
@@ -431,7 +431,7 @@ antiMuTauIDFlag_1 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.boostedTau_idAntiMu, q.boosteddileptonpair],
     output="boostedtau_1_antimu_id_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="antimu_boostedtau_id",
 )
 boosted_tau_q_2 = Producer(
@@ -466,7 +466,7 @@ isoTauIDFlag_2 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.boostedTau_idMVAoldDM2017v2, q.boosteddileptonpair],
     output="boostedtau_2_iso_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="iso_boostedtau_id",
 )
 antiEleTauIDFlag_2 = ExtendedVectorProducer(
@@ -480,7 +480,7 @@ antiEleTauIDFlag_2 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.boostedTau_idAntiEle2018, q.boosteddileptonpair],
     output="boostedtau_2_antiele_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="antiele_boostedtau_id",
 )
 antiMuTauIDFlag_2 = ExtendedVectorProducer(
@@ -494,7 +494,7 @@ antiMuTauIDFlag_2 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.boostedTau_idAntiMu, q.boosteddileptonpair],
     output="boostedtau_2_antimu_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="antimu_boostedtau_id",
 )
 

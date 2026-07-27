@@ -351,7 +351,7 @@ VsJetTauIDFlag_1 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.Tau_idDeepTau2018v2p5VSjet, q.dileptonpair],
     output="tau_1_vsjet_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="vsjet_tau_id",
 )
 VsEleTauIDFlag_1 = ExtendedVectorProducer(
@@ -365,7 +365,7 @@ VsEleTauIDFlag_1 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.Tau_idDeepTau2018v2p5VSe, q.dileptonpair],
     output="tau_1_vsele_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="vsele_tau_id",
 )
 VsMuTauIDFlag_1 = ExtendedVectorProducer(
@@ -379,7 +379,7 @@ VsMuTauIDFlag_1 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.Tau_idDeepTau2018v2p5VSmu, q.dileptonpair],
     output="tau_1_vsmu_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="vsmu_tau_id",
 )
 tau_decaymode_2 = Producer(
@@ -414,7 +414,7 @@ VsJetTauIDFlag_2 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.Tau_idDeepTau2018v2p5VSjet, q.dileptonpair],
     output="tau_2_vsjet_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="vsjet_tau_id",
 )
 VsEleTauIDFlag_2 = ExtendedVectorProducer(
@@ -428,7 +428,7 @@ VsEleTauIDFlag_2 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.Tau_idDeepTau2018v2p5VSe, q.dileptonpair],
     output="tau_2_vsele_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="vsele_tau_id",
 )
 VsMuTauIDFlag_2 = ExtendedVectorProducer(
@@ -442,7 +442,7 @@ VsMuTauIDFlag_2 = ExtendedVectorProducer(
         """,
     input=[nanoAOD.Tau_idDeepTau2018v2p5VSmu, q.dileptonpair],
     output="tau_2_vsmu_id_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="vsmu_tau_id",
 )
 UnrollMuLV1 = ProducerGroup(

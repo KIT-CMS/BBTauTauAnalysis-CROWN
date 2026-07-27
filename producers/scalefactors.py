@@ -195,7 +195,7 @@ def _create_tau_id_vsjet_sf_producer(
         call=f"{call_fn}({', '.join(parameters)})",
         input=input,
         output=output,
-        scope=scopes,
+        scopes=scopes,
         vec_config=vec_config,
     )
 
@@ -225,7 +225,7 @@ def _create_tau_id_vsele_sf_producer(
         """,
         input=input,
         output=output,
-        scope=scopes,
+        scopes=scopes,
         vec_config=vec_config,
     )
 
@@ -259,7 +259,7 @@ def _create_tau_id_vsmu_sf_producer(
         """,
         input=input,
         output=output,
-        scope=scopes,
+        scopes=scopes,
         vec_config=vec_config,
     )
 
@@ -354,7 +354,7 @@ Tau_1_oldIsoTauID_tt_SF = ExtendedVectorProducer(
     call='scalefactor::tau::id_mva_vsJet_tt({df}, correctionManager, {input}, {vec_open}{boostedtau_dms}{vec_close}, "{iso_boostedtau_id_WP}", "{boostedtau_sf_iso_tauDM0}", "{boostedtau_sf_iso_tauDM1}", "{boostedtau_sf_iso_tauDM10}", "{boostedtau_sf_iso_tauDM11}", "{boostedtau_iso_sf_dependence}", "", {output}, "{boostedtau_sf_file}", "{boostedtau_id_discriminator}")',
     input=[q.boosted_pt_1, q.boosted_tau_decaymode_1, q.boosted_gen_match_1],
     output="boostedtau_1_iso_sf_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="iso_boostedtau_id",
 )
 Tau_1_antiEleTauID_SF = ExtendedVectorProducer(
@@ -373,7 +373,7 @@ Tau_1_antiEleTauID_SF = ExtendedVectorProducer(
         """,
     input=[q.boosted_eta_1, q.boosted_gen_match_1],
     output="boostedtau_1_antiele_sf_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="antiele_boostedtau_id",
 )
 Tau_1_antiMuTauID_SF = ExtendedVectorProducer(
@@ -394,7 +394,7 @@ Tau_1_antiMuTauID_SF = ExtendedVectorProducer(
         """,
     input=[q.boosted_eta_1, q.boosted_gen_match_1],
     output="boostedtau_1_antimu_sf_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="antimu_boostedtau_id",
 )
 Tau_2_oldIsoTauID_tt_SF = ExtendedVectorProducer(
@@ -402,7 +402,7 @@ Tau_2_oldIsoTauID_tt_SF = ExtendedVectorProducer(
     call='scalefactor::tau::id_mva_vsJet_tt({df}, correctionManager, {input}, {vec_open}{boostedtau_dms}{vec_close}, "{iso_boostedtau_id_WP}", "{boostedtau_sf_iso_tauDM0}", "{boostedtau_sf_iso_tauDM1}", "{boostedtau_sf_iso_tauDM10}", "{boostedtau_sf_iso_tauDM11}", "{boostedtau_iso_sf_dependence}", "", {output}, "{boostedtau_sf_file}", "{boostedtau_id_discriminator}")',
     input=[q.boosted_pt_2, q.boosted_tau_decaymode_2, q.boosted_gen_match_2],
     output="boostedtau_2_iso_sf_outputname",
-    scope=["tt"],
+    scopes=["tt"],
     vec_config="iso_boostedtau_id",
 )
 Tau_2_oldIsoTauID_lt_SF = ExtendedVectorProducer(
@@ -410,7 +410,7 @@ Tau_2_oldIsoTauID_lt_SF = ExtendedVectorProducer(
     call='scalefactor::tau::id_mva_vsJet_lt({df}, correctionManager, {input}, {vec_open}{boostedtau_dms}{vec_close}, "{iso_boostedtau_id_WP}", "{boostedtau_sf_iso_tau30to35}", "{boostedtau_sf_iso_tau35to40}", "{boostedtau_sf_iso_tau40to500}", "{boostedtau_sf_iso_tau500to1000}", "{boostedtau_sf_iso_tau1000toinf}", "{boostedtau_iso_sf_dependence}", "", {output}, "{boostedtau_sf_file}", "{boostedtau_id_discriminator}")',
     input=[q.boosted_pt_2, q.boosted_tau_decaymode_2, q.boosted_gen_match_2],
     output="boostedtau_2_iso_sf_outputname",
-    scope=["et", "mt"],
+    scopes=["et", "mt"],
     vec_config="iso_boostedtau_id",
 )
 Tau_2_antiEleTauID_SF = ExtendedVectorProducer(
@@ -429,7 +429,7 @@ Tau_2_antiEleTauID_SF = ExtendedVectorProducer(
         """,
     input=[q.boosted_eta_2, q.boosted_gen_match_2],
     output="boostedtau_2_antiele_sf_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="antiele_boostedtau_id",
 )
 Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
@@ -450,7 +450,7 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
         """,
     input=[q.boosted_eta_2, q.boosted_gen_match_2],
     output="boostedtau_2_antimu_sf_outputname",
-    scope=["et", "mt", "tt"],
+    scopes=["et", "mt", "tt"],
     vec_config="antimu_boostedtau_id",
 )
 #BoostedTauID_SF = ProducerGroup(
@@ -642,7 +642,7 @@ SingleEleTriggerSF = ExtendedVectorProducer(
         q.eta_1,
     ],
     output="e_trigger_flagname",
-    scope=ELECTRON_SCOPES,
+    scopes=ELECTRON_SCOPES,
     vec_config="ele_trigger_sf",
 )
 
@@ -662,7 +662,7 @@ SingleMuTriggerSF = ExtendedVectorProducer(
         "em": [q.pt_2, q.eta_2],
     },
     output="m_trigger_flagname",
-    scope=MUON_SCOPES,
+    scopes=MUON_SCOPES,
     vec_config="mu_trigger_sf",
 )
 
@@ -681,7 +681,7 @@ DoubleMuTauTriggerLeg1SF = ExtendedVectorProducer(
         q.eta_1,
     ],
     output="mt_trigger_leg1_flagname",
-    scope=MT_SCOPES,
+    scopes=MT_SCOPES,
     vec_config="double_mutau_trigger_leg1_sf",
 )
 
@@ -694,7 +694,7 @@ DoubleMuTauTriggerLeg2SF = ExtendedVectorProducer(
         q.tau_decaymode_2,
     ],
     output="mt_trigger_leg2_flagname",
-    scope=MT_SCOPES,
+    scopes=MT_SCOPES,
     vec_config="double_mutau_trigger_leg2_sf",
 )
 
@@ -726,7 +726,7 @@ DoubleEleTauTriggerLeg1SF = ExtendedVectorProducer(
         q.eta_1,
     ],
     output="et_trigger_leg1_flagname",
-    scope=ET_SCOPES,
+    scopes=ET_SCOPES,
     vec_config="double_eletau_trigger_leg1_sf",
 )
 
@@ -739,7 +739,7 @@ DoubleEleTauTriggerLeg2SF = ExtendedVectorProducer(
         q.tau_decaymode_2,
     ],
     output="et_trigger_leg2_flagname",
-    scope=ET_SCOPES,
+    scopes=ET_SCOPES,
     vec_config="double_eletau_trigger_leg2_sf",
 )
 
@@ -771,7 +771,7 @@ TauTauTriggerLeg1SF = ExtendedVectorProducer(
         q.tau_decaymode_1,
     ],
     output="tt_trigger_leg1_flagname",
-    scope=TT_SCOPES,
+    scopes=TT_SCOPES,
     vec_config="double_tautau_trigger_leg1_sf",
 )
 
@@ -784,7 +784,7 @@ TauTauTriggerLeg2SF = ExtendedVectorProducer(
         q.tau_decaymode_2,
     ],
     output="tt_trigger_leg2_flagname",
-    scope=TT_SCOPES,
+    scopes=TT_SCOPES,
     vec_config="double_tautau_trigger_leg2_sf",
 )
 
@@ -807,7 +807,7 @@ BoostedMTGenerateSingleMuonTriggerSF_MC = ExtendedVectorProducer(
     call='scalefactor::muon::trigger({df}, correctionManager, {input}, "{muon_trg_sf_variation}", {output}, "{muon_sf_file}", "{muon_trigger_sf_name}")',
     input=[q.boosted_pt_1, q.boosted_eta_1],
     output="flagname",
-    scope=["mt"],
+    scopes=["mt"],
     vec_config="boosted_singlemuon_trigger_sf_mc",
 )
 
@@ -825,7 +825,7 @@ ETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
         """,
     input=[q.pt_1, q.eta_1],
     output="flagname",
-    scope=["et", "ee"],
+    scopes=["et", "ee"],
     vec_config="singlelectron_trigger_sf_mc",
 )
 BoostedETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
@@ -833,7 +833,7 @@ BoostedETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
     call='scalefactor::electron::trigger({df}, correctionManager, {input}, "{ele_trg_sf_variation}", {output}, "{ele_trg_sf_file}", "{ele_trg_sf_name}")',
     input=[q.boosted_pt_1, q.boosted_eta_1],
     output="flagname",
-    scope=["et"],
+    scopes=["et"],
     vec_config="boosted_singleelectron_trigger_sf_mc",
 )
 
