@@ -1445,8 +1445,8 @@ def add_diTauTriggerSetup(configuration: Configuration):
                     **{
                         _era: [
                             {
-                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau35_mediumpnet_leg2",
-                                "tt_trigger_flag": "trg_double_tau35_mediumpnet",
+                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau30_mediumpnet_leg2",
+                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
                                 **common_double_tautau_trigger_args,
                             },
                         ]
