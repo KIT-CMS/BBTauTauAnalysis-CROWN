@@ -554,6 +554,7 @@ def _add_muon_triggers(
         },
     )
 
+
 def _add_tautau_triggers(
     configuration: Configuration,
 ):
@@ -601,21 +602,23 @@ def _add_tautau_triggers(
     ## ParticleNet trigger
 
     # HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3
-    double_medium_pnet_35_eta_2p3_parameters = _get_updated_dict(
+    double_medium_pnet_30_eta_2p3_parameters = _get_updated_dict(
         double_medium_deeptau_35_eta_2p1_2024_parameters,
         {
-            "flagname": "trg_double_tau35_mediumpnet",
+            "flagname": "trg_double_tau30_mediumpnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3",
+            "p1_min_pt": 35.,
+            "p2_min_pt": 35.,
             "p1_max_abs_eta": 2.3,
             "p2_max_abs_eta": 2.3,
         },
     )
 
     # HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3
-    double_tight_pnet_35_eta_2p3_parameters = _get_updated_dict(
-        double_medium_pnet_35_eta_2p3_parameters,
+    double_tight_pnet_30_eta_2p3_parameters = _get_updated_dict(
+        double_medium_pnet_30_eta_2p3_parameters,
         {
-            "flagname": "trg_double_tau35_tightpnet",
+            "flagname": "trg_double_tau30_tightpnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3",
         },
     )
@@ -793,6 +796,19 @@ def _add_tautau_triggers(
             ),
             "tautau_trigger": EraModifier(
                 {
+                    "2025": [
+                        # trigger:          HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3
+                        # final tau filter: hltDoublePFJets30PNetTauhTagMediumWPL2DoubleTau
+                        # tau filter bit:   11 (for NANOAODv15)
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2025
+                        double_medium_pnet_30_eta_2p3_parameters,
+
+                        # trigger:          HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3
+                        # final tau filter: hltDoublePFJets30PNetTauhTagTightWPL2DoubleTau
+                        # tau filter bit:   11 (for NANOAODv15)
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2025
+                        double_tight_pnet_30_eta_2p3_parameters,
+                    ],
                     "2024": [
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS35_L2NN_eta2p1
                         # final tau filter: hltHpsDoublePFTau35MediumDitauWPDeepTauL1HLTMatched
@@ -804,13 +820,13 @@ def _add_tautau_triggers(
                         # final tau filter: hltDoublePFJets30PNetTauhTagMediumWPL2DoubleTau
                         # tau filter bit:   11 (for NANOAODv15)
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
-                        double_medium_pnet_35_eta_2p3_parameters,
+                        double_medium_pnet_30_eta_2p3_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3
                         # final tau filter: hltDoublePFJets30PNetTauhTagTightWPL2DoubleTau
                         # tau filter bit:   11 (for NANOAODv15)
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
-                        double_tight_pnet_35_eta_2p3_parameters,
+                        double_tight_pnet_30_eta_2p3_parameters,
                     ],
                     **{
                         _era: [
