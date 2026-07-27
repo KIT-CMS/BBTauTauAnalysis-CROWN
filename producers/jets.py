@@ -58,7 +58,7 @@ JetID = {
         output=[q.Jet_ID],
         scopes=GLOBAL_SCOPES,
     ),
-    "2024": Producer(
+    ("2024", "2025"): Producer(
         name="JetID",
         call="""
         physicsobject::jet::quantity::ID(
@@ -220,7 +220,7 @@ CorrT1METJetEmEF = {
         output=[q.CorrT1METJet_EmEnergyFraction],
         scopes=GLOBAL_SCOPES,
     ),
-    "2024": Producer(
+    ("2024", "2025"): Producer(
         name="CorrT1METJetEmEFDummy",
         call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
         input=[nanoAOD.CorrT1METJet_EmEF],
