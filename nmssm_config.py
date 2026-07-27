@@ -197,6 +197,7 @@ def add_pileup_reweighting_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-23CSep23-Summer23-NanoAODv12/2024-01-31/puWeights.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-23DSep23-Summer23BPix-NanoAODv12/2024-01-31/puWeights.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-04-15/puWeights_BCDEFGHI.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-05/puWeights_2025pp_Golden_Summer24_25ns_69200ub.json.gz",
                 },
             ),
             "PU_reweighting_era": EraModifier(
@@ -210,6 +211,7 @@ def add_pileup_reweighting_config(configuration: Configuration):
                     "2023preBPix": "Collisions2023_366403_369802_eraBC_GoldenJson",
                     "2023postBPix": "Collisions2023_369803_370790_eraD_GoldenJson",
                     "2024": "Collisions24_BCDEFGHI_goldenJSON",
+                    "2025": "Collisions25_goldenJSON",
                 }
             ),
             "PU_reweighting_variation": "nominal",
@@ -907,7 +909,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
             "tau_id_sf_vsjet_tau_dm10_pt40toInf_shift": "nom",
             "tau_id_sf_vsjet_tau_dm11_pt20to40_shift": "nom",
             "tau_id_sf_vsjet_tau_dm11_pt40toInf_shift": "nom",
-            "tau_id_sf_vsjet_sf_dependence": "dm",  # or "dm" ("pt" is both dm and pt dependent)
+            "tau_id_sf_vsjet_sf_dependence": "dm",  # dm for dm- and pt-binned SFs, "pt" for high-pt SFs
         },
     )
 
@@ -1565,6 +1567,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": 0.1917,  # ParticleNet
                     "2023postBPix": 0.1919,  # ParticleNet
                     "2024": 0.1272,  # UParT
+                    "2025": 0.1272,  # UParT
                 },
             ),
         },
@@ -2416,10 +2419,7 @@ def build_config(
             tuple(ERAS_RUN2): [
                 jets.BaseJetSelectionWithPUID,
             ],
-            ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): [
-                jets.BaseJetSelectionWithoutPUID,
-            ],
-            "2024": [
+            tuple(ERAS_RUN3): [
                 jets.BaseJetSelectionWithoutPUID,
             ],
         },
@@ -2466,8 +2466,8 @@ def build_config(
     bjet_id_sf_producer = get_for_era(
         {
             tuple(ERAS_RUN2): scalefactors.BJetShapeDeepJet_SF,
-            tuple(["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]): scalefactors.BJetShapePNet_SF,
-            "2024": scalefactors.BJetWPUParT_SF,
+            ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): scalefactors.BJetShapePNet_SF,
+            ("2024", "2025"): scalefactors.BJetWPUParT_SF,
         },
         era,
         default=[]
@@ -3003,8 +3003,8 @@ def build_config(
     #     ),
     # )
 
-    # Replace electron pt correction for data, as the correction is computed differently in data and
-    # MC
+    # Replace electron pt correction for data, as the correction is computed
+    # differently in data and MC
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
@@ -3025,8 +3025,8 @@ def build_config(
         ),
     )
 
-    # The number of partons is only defined for MC samples and only important to know for EW
-    # process samples
+    # The number of partons is only defined for MC samples and only important to
+    # know for EW process samples
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
@@ -3046,7 +3046,8 @@ def build_config(
         ),
     )
 
-    # for whatever reason, the diboson samples do not have these weights in the ntuple....
+    # For whatever reason, the diboson samples do not have these weights in the
+    # ntuple....
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
@@ -3055,8 +3056,8 @@ def build_config(
         ),
     )
 
-    # for whatever reason, the nmssm samples have one less entry of the weights and therefore need
-    # special treatment
+    # For whatever reason, the NMSSM samples have one less entry of the weights
+    # and therefore need special treatment
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
@@ -3076,7 +3077,8 @@ def build_config(
         ),
     )
 
-    # Remove the generator-level b jet pair quantities from data and embedding samples
+    # Remove the generator-level b jet pair quantities from data and embedding
+    # samples
     configuration.add_modification_rule(
         SCOPES,
         RemoveProducer(
