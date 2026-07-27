@@ -656,6 +656,7 @@ def add_muon_config(configuration: Configuration):
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023postBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2024": "DOES_NOT_EXIST",  # TODO to be added when available
+                    "2025": "DOES_NOT_EXIST",  # TODO to be added when available
                 }
             ),
             "mc_muon_id_sf": "ID_pt_eta_bins",
