@@ -461,6 +461,7 @@ def add_electron_config(configuration: Configuration):
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023postBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2024": "DOES_NOT_EXIST",  # TODO to be added when available
+                    "2025": "DOES_NOT_EXIST",  # TODO to be added when available
                 },
             ),
             "mc_electron_id_sf": "ID90_pt_eta_bins",
@@ -1565,6 +1566,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": nanoAOD.Jet_btagUParTAK4B.name,
+                    "2025": nanoAOD.Jet_btagUParTAK4B.name,
                 },
             ),
             "bjet_min_score": EraModifier(  # medium WP
@@ -1744,7 +1746,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "UParTAK4_wp_values",
-                    "2024": "UParTAK4_wp_values",
+                    "2025": "UParTAK4_wp_values",
                 },
             ),
             "bjet_eff_sample_type": SampleModifier(
@@ -2164,6 +2166,7 @@ def build_config(
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronSS_EtDependent.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronSS_EtDependent.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronSS_EtDependent.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/electron.json.gz",
                 }
             ),
             "ele_es_sf_name": EraModifier(
