@@ -1,4 +1,11 @@
+import sys
+
 from code_generation.quantity import Quantity
+from ..constants import XYH_MASS_POINTS
+
+
+this_module = sys.modules[__name__]
+
 
 lumi = Quantity("lumi")
 puweight = Quantity("puweight")
@@ -744,3 +751,22 @@ ff_2_corr_closure_input_qcd = Quantity("ff_2_corr_closure_input_qcd")
 ff_2_corr_closure_input_tt = Quantity("ff_2_corr_closure_input_tt")
 fake_factor_2_raw = Quantity("fake_factor_2_raw")
 fake_factor_2 = Quantity("fake_factor_2")
+
+
+pnn_reco_inputs = Quantity("pnn_reco_inputs")
+
+# Neural network output
+
+for decay_mode in ["y2b_h2tau", "y2tau_h2b"]:
+    for m_x, m_y in XYH_MASS_POINTS:
+        for name in [
+            f"scores_{decay_mode}_mx{m_x}_my{m_y}",
+            f"max_score_index_{decay_mode}_mx{m_x}_my{m_y}",
+            f"max_score_{decay_mode}_mx{m_x}_my{m_y}",
+        ]:
+            setattr(this_module, name, Quantity(name))
+
+
+def get_quantity(name):
+    global this_module
+    return getattr(this_module, name)
