@@ -32,7 +32,7 @@ main () {
 
     # split the samples string into an array
     if [[ "${samples}" == "all" ]]; then
-        samples="data,nmssm_Ybb,ttbar,dyjets_amcatnlo_ll"
+        samples="data,nmssm_Ybb,ttbar,dyjets_amcatnlo"
     fi
     declare -a samples_list
     IFS="," read -ra samples_list <<< "${samples}"
@@ -47,7 +47,7 @@ main () {
     test_files_list[data]="root://cmsdcache-kit-disk.gridka.de//store/data/Run2024C/Muon0/NANOAOD/MINIv6NANOv15-v1/2530000/677e3bb0-8199-4ffb-83af-165410a7b7a6.root"
     test_files_list[nmssm_Ybb]="root://xrootd-cms.infn.it///store/mc/RunIII2024Summer24NanoAODv15/NMSSM-XtoYHto2B2Tau_Par-MX-1200-MY-800_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2540000/31703286-9c3f-4a8d-8265-b99c8e0ec2ed.root"
     test_files_list[ttbar]="root://xrootd-cms.infn.it//store/mc/RunIII2024Summer24NanoAODv15/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/2810000/f60b4a6c-2801-43b0-b542-6d933a71a396.root"
-    test_files_list[dyjets_amcatnlo_ll]="root://cmsdcache-kit-disk.gridka.de//store/mc/RunIII2024Summer24NanoAODv15/DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v4/2540000/4dd4d960-192a-47b9-9bb4-7a6513c1a1de.root"
+    test_files_list[dyjets_amcatnlo]="root://xrootd-cms.infn.it///store/mc/RunIII2024Summer24NanoAODv15/DYto2Tau-2Jets_Bin-0J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v4/130000/12ae785f-14fc-4685-a6c2-4241ac503bc9.root"
 
     # configure and compile the project
     if [[ "${steps}" == "build" || "${steps}" == "all" ]]; then
