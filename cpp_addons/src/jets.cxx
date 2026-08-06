@@ -322,6 +322,86 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
 }
 
 /**
+ * Compute the regressed jet pt using the UParT/ParticleNet regression factors.
+ * 
+ * The regressed jet pt is computed, based on the raw jet \$p_{\text{T}}\$,
+ * according to
+ * https://cms-jerc.web.cern.ch/JES/#remarks-on-getting-rawpt-and-mass-for-regular-pnet-and-upart-jets.
+ *
+ * @param df The input dataframe.
+ * @param outputname The name of the output column for the regressed jet pt or
+       mass.
+ * @param jet_quantity_raw The name of the input column for the raw jet pt or
+ *     mass.
+ * @param jet_reg_factor The name of the input column for the regression factor.
+ * @param jet_reg_factor_with_neutrino The name of the input column for the
+ *     regression factor including neutrinos (only applied to b-tagged jets).
+ * @param jet_is_btagged The name of the input column indicating whether the jet
+ *     is b-tagged.
+ * @param algo The regression algorithm to use ("UParTAK4" or "PNet"). The
+ *     formula for calculating the regressed p_T differs for these two
+ *     algorithms.
+ * @return A dataframe with a new column of regressed jet pt or mass.
+ */
+ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_reg_factor,
+                     const std::string &jet_reg_factor_with_neutrino,
+                    const std::string &jet_is_btagged,
+                    const std::string &algo
+                ) {
+
+    if (algo != "UParTAK4" and algo != "PNet") {
+        Logger::get("jet::jec::Regressed")->error("Invalid regression algorithm specified: {}. Possible values are 'UParTAK4' and 'PNet'.", algo);
+        throw std::runtime_error("Invalid regression algorithm specified");
+    }
+    
+    auto func = [algo] (
+        const ROOT::RVec<float> &jet_quantity_raw,
+        const ROOT::RVec<float> &jet_reg_factor,
+        const ROOT::RVec<float> &jet_reg_factor_with_neutrino,
+        const ROOT::RVec<int> &jet_is_btagged
+    ) {
+        return ROOT::VecOps::Map(
+            jet_quantity_raw,
+            jet_reg_factor,
+            jet_reg_factor_with_neutrino,
+            jet_is_btagged,
+            [algo] (
+                const float &jet_quantity_raw,
+                const float &jet_reg_factor,
+                const float &jet_reg_factor_with_neutrino,
+                const int &jet_is_btagged
+            ) {
+                float jet_quantity_regressed;
+                if (jet_is_btagged) {
+                    if (algo == "PNet") {
+                        jet_quantity_regressed = jet_quantity_raw * jet_reg_factor * jet_reg_factor_with_neutrino;
+                    } else if (algo == "UParTAK4") {
+                        jet_quantity_regressed = jet_quantity_raw * jet_reg_factor_with_neutrino;
+                    }
+                } else {
+                    jet_quantity_regressed = jet_quantity_raw * jet_reg_factor;
+                }
+                return jet_quantity_regressed;
+            }
+        );
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            jet_quantity_raw,
+            jet_reg_factor,
+            jet_reg_factor_with_neutrino,
+            jet_is_btagged
+        }
+    );
+}
+
+
+/**
  * @brief This function applies the full jet energy calibration (JEC) procedure
  * to MC according to the recommendations of the JME POG. The corrections are
  * implemented as a multi-step procedure, where the corrected jet \f$p_T\f$ of

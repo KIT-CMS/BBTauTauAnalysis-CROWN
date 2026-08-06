@@ -107,6 +107,13 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
                               const std::string &outputname,
                               const std::string &jet_quantity,
                               const std::string &jet_muon_subtr_factor);
+ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_reg_factor,
+                     const std::string &jet_reg_factor_with_neutrino,
+                    const std::string &jet_is_btagged,
+                    const std::string &algo
+                );
 ROOT::RDF::RNode
 PtCorrectionMC(ROOT::RDF::RNode df,
                correctionManager::CorrectionManager &correction_manager,
