@@ -2498,21 +2498,6 @@ def build_config(
         default=[]
     )
 
-    # B jet pair quantities
-    # Run 3 does not include b jet regression variables, so the producers for the b jet pair
-    # quantities differ for both eras.
-    bb_jet_pair_quantity_producers = get_for_era(
-        {
-            tuple(ERAS_RUN2): [
-                pairquantities_bbpair.DiBjetPairQuantitiesRun2,
-            ],
-            tuple(ERAS_RUN3): [
-                pairquantities_bbpair.DiBjetPairQuantitiesRun3,
-            ]
-        },
-        era,
-    )
-
     # Z boson pt reweighting
     # - TODO For Run 2, the corrections are provided in ROOT files and require a dedicated producer chain.
     # - For Run 3, the corrections are provided in correctionlib files.
@@ -2617,10 +2602,7 @@ def build_config(
             jets.JetSelection,
             jets.BasicJetQuantities,
             jets.BasicBJetQuantities,
-            pairselection.BBPairSelection,
-            # pairselection.GoodBBPairFilter,
-            pairselection.LVbjet1,
-            pairselection.LVbjet2,
+            pairquantities_bbpair.AllBBPairProducers,
             genparticles.GenDiBjetPairQuantities,
             # fatjets.FindFatjetMatchingBjet,
             # fatjets.BasicMatchedFatJetQuantities,
@@ -2636,7 +2618,6 @@ def build_config(
         ]
         # + xbb_sf_producers
         # + fj_genjet_producers
-        + bb_jet_pair_quantity_producers,
     )
 
     # Producers for quantities in all scopes with hadronic taus
@@ -3284,6 +3265,24 @@ def build_config(
             q.bpair_m_inv,
             q.bpair_deltaR,
             q.bpair_pt_dijet,
+            q.bpair_pt_regressed_1,
+            q.bpair_pt_regressed_2,
+            q.bpair_eta_regressed_1,
+            q.bpair_eta_regressed_2,
+            q.bpair_phi_regressed_1,
+            q.bpair_phi_regressed_2,
+            q.bpair_mass_regressed_1,
+            q.bpair_mass_regressed_2,
+            q.bpair_btag_value_regressed_1,
+            q.bpair_btag_value_regressed_2,
+            q.bpair_pt_resolution_regressed_1,
+            q.bpair_pt_resolution_regressed_2,
+            q.bpair_m_inv,
+            q.bpair_deltaR,
+            q.bpair_pt_dijet,
+            q.bpair_m_inv_regressed,
+            q.bpair_deltaR_regressed,
+            q.bpair_pt_dijet_regressed,
             q.genjet_pt_1,
             q.genjet_eta_1,
             q.genjet_phi_1,
