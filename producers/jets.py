@@ -767,6 +767,20 @@ LVJet1 = Producer(
     scopes=SCOPES,
 )
 
+LVJet1Regressed = Producer(
+    name="LVJet1Regressed",
+    call="lorentzvector::Build({df}, {output}, {input}, 0)",
+    input=[
+        q.Jet_correctedPtRegressed,
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.Jet_correctedMassRegressed,
+        q.good_jet_collection,
+    ],
+    output=[q.jet_p4_regressed_1],
+    scopes=SCOPES,
+)
+
 LVJet2 = Producer(
     name="LVJet2",
     call="lorentzvector::Build({df}, {output}, {input}, 1)",
@@ -778,6 +792,20 @@ LVJet2 = Producer(
         q.good_jet_collection,
     ],
     output=[q.jet_p4_2],
+    scopes=SCOPES,
+)
+
+LVJet2Regressed = Producer(
+    name="LVJet2Regressed",
+    call="lorentzvector::Build({df}, {output}, {input}, 1)",
+    input=[
+        q.Jet_correctedPtRegressed,
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.Jet_correctedMassRegressed,
+        q.good_jet_collection,
+    ],
+    output=[q.jet_p4_regressed_2],
     scopes=SCOPES,
 )
 
@@ -881,6 +909,34 @@ jpt_raw_2 = Producer(
     output=[q.jpt_raw_2],
     scopes=SCOPES,
 )
+jpt_regressed_1 = Producer(
+    name="jpt_regressed_1",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[q.Jet_correctedPtRegressed, q.good_jet_collection],
+    output=[q.jpt_regressed_1],
+    scopes=SCOPES,
+)
+jpt_regressed_2 = Producer(
+    name="jpt_regressed_2",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
+    input=[q.Jet_correctedPtRegressed, q.good_jet_collection],
+    output=[q.jpt_regressed_2],
+    scopes=SCOPES,
+)
+jpt_regressed_resolution_1 = Producer(
+    name="jpt_regressed_resolution_1",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[q.Jet_rawPtRegressedResolution, q.good_jet_collection],
+    output=[q.jpt_regressed_resolution_1],
+    scopes=SCOPES,
+)
+jpt_regressed_resolution_2 = Producer(
+    name="jpt_regressed_resolution_2",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
+    input=[q.Jet_rawPtRegressedResolution, q.good_jet_collection],
+    output=[q.jpt_regressed_resolution_2],
+    scopes=SCOPES,
+)
 mjj = Producer(
     name="m_jj",
     call="lorentzvector::GetMass({df}, {output}, {input})",
@@ -904,12 +960,16 @@ BasicJetQuantities = ProducerGroup(
         jtag_value_1,
         jpt_nano_1,
         jpt_raw_1,
+        jpt_regressed_1,
+        jpt_regressed_resolution_1,
         jpt_2,
         jeta_2,
         jphi_2,
         jtag_value_2,
         jpt_nano_2,
         jpt_raw_2,
+        jpt_regressed_2,
+        jpt_regressed_resolution_2,
         mjj,
     ],
 )
