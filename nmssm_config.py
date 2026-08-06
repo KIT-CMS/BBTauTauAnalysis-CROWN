@@ -1780,6 +1780,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     **{
                         sample_type: "ggh_htautau"
                         for sample_type in [
+                            "higgs",
                             "ggh_htautau",
                             "ggh_hbb",
                             "vbf_htautau",
