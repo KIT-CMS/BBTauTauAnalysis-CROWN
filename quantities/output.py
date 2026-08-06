@@ -709,6 +709,20 @@ Jet_l2l3resPt = Quantity("Jet_l2l3resPt")
 Jet_correctedPt = Quantity("Jet_correctedPt")
 Jet_correctedMass = Quantity("Jet_correctedMass")
 
+# Additional columns needed for JES/JER corrections after regression
+Jet_regPtRawCorr = Quantity("Jet_regPtRawCorr")
+Jet_regPtRawCorrNeutrino = Quantity("Jet_regPtRawCorrNeutrino")
+Jet_regPtRawRes = Quantity("Jet_regPtRawRes")
+Jet_rawPtRegressed = Quantity("Jet_rawPtRegressed")
+Jet_rawMassRegressed = Quantity("Jet_rawMassRegressed")
+Jet_jecResultRegressed = Quantity("Jet_jecResultRegressed")
+Jet_l1PtRegressed = Quantity("Jet_l1PtRegressed")
+Jet_l2relPtRegressed = Quantity("Jet_l2relPtRegressed")
+Jet_l2l3resPtRegressed = Quantity("Jet_l2l3resPtRegressed")
+Jet_correctedPtRegressed = Quantity("Jet_correctedPtRegressed")
+Jet_correctedMassRegressed = Quantity("Jet_correctedMassRegressed")
+Jet_rawPtRegressedResolution = Quantity("Jet_rawPtRegressedResolution")
+
 # ------------------------------------------------------------------------------
 # CorrT1METJet collection
 # ------------------------------------------------------------------------------

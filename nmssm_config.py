@@ -1275,7 +1275,17 @@ def add_ak4jet_config(configuration: Configuration):
                         for _era in ERAS_RUN3
                     },
                 },
-            )
+            ),
+            "ak4jet_reg_algo": EraModifier({
+                **{
+                    _era: "UParTAK4"
+                    for _era in ERAS_RUN2 + ["2024", "2025"]
+                },
+                **{
+                    _era: "PNet"
+                    for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                },
+            }),
         },
     )
 
@@ -1719,7 +1729,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
     )
 
     configuration.add_config_parameters(
-        SCOPES,
+        GLOBAL_SCOPES + SCOPES,
         {
             "bjet_sf_file": EraModifier(
                 {
@@ -1851,6 +1861,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                 },
             ),
             "bjet_sf_variation": "central",
+            "bjet_btag_wp_name": "M",
         },
     )
 
@@ -2589,6 +2600,7 @@ def build_config(
             electron_pt_correction_mc_producer,
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
+            jets.JetEnergyCorrectionMCRegressed,
             # fatjets.FatJetEnergyCorrection,
         ]
     )
@@ -2982,6 +2994,15 @@ def build_config(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[jets.JetEnergyCorrectionMC, jets.JetEnergyCorrectionData],
+            samples=["data", "embedding", "embedding_mc"],
+        ),
+    )
+
+    # Replace regressed jet energy correction for data and embedding
+    configuration.add_modification_rule(
+        GLOBAL_SCOPES,
+        ReplaceProducer(
+            producers=[jets.JetEnergyCorrectionMCRegressed, jets.JetEnergyCorrectionDataRegressed],
             samples=["data", "embedding", "embedding_mc"],
         ),
     )

@@ -264,6 +264,27 @@ AuxJetCollectionQuantities = era_producer_groups(
 )
 
 
+# ------------------------------------------------------------------------------
+# Jet energy scale and resolution corrections
+# ------------------------------------------------------------------------------
+
+
+# Seed for the random number generator for jet energy resolution smearing
+JERSmearingSeed = Producer(
+    name="JERSmearingSeed",
+    call="""
+    event::quantity::GenerateSeed(
+        {df},
+        {output},
+        {input},
+        {ak4jet_jer_master_seed}
+    )
+    """,
+    input=[nanoAOD.luminosityBlock, nanoAOD.run, nanoAOD.event],
+    output=[q.jet_seed],
+    scopes=GLOBAL_SCOPES,
+)
+
 # Jet pt correction producers for AK4 jets on data and simulation
 JetPtCorrectionData, JetPtCorrectionMC = stepwise_jerc_producer_factory(
     input={
@@ -293,6 +314,36 @@ JetPtCorrectionData, JetPtCorrectionMC = stepwise_jerc_producer_factory(
     config_parameter_prefix="ak4jet",
 )
 
+# Jet pt correction producers for AK4 jets with pt regression on data and
+# simulation
+JetPtCorrectionDataRegressed, JetPtCorrectionMCRegressed = stepwise_jerc_producer_factory(
+    input={
+        "jet_pt": q.Jet_rawPtRegressed,
+        "jet_eta": nanoAOD.Jet_eta,
+        "jet_phi": nanoAOD.Jet_phi,
+        "jet_mass": q.Jet_rawMassRegressed,
+        "jet_area": nanoAOD.Jet_area,
+        "jet_raw_factor": nanoAOD.Jet_rawFactor,
+        "jet_id": q.Jet_ID,
+        "jet_seed": q.jet_seed,
+        "genjet_pt": nanoAOD.GenJet_pt,
+        "genjet_eta": nanoAOD.GenJet_eta,
+        "genjet_phi": nanoAOD.GenJet_phi,
+        "rho": nanoAOD.Rho_fixedGridRhoFastjetAll,
+        "run": nanoAOD.run,
+    },
+    output={
+        "jet_jec_result": q.Jet_jecResultRegressed,
+        "jet_l1_pt": q.Jet_l1PtRegressed,
+        "jet_l2rel_pt": q.Jet_l2relPtRegressed,
+        "jet_l2l3res_pt": q.Jet_l2l3resPtRegressed,
+        "jet_corrected_pt": q.Jet_correctedPtRegressed,
+    },
+    scopes=GLOBAL_SCOPES,
+    producer_prefix="RegressedJet",
+    config_parameter_prefix="ak4jet",
+)
+
 # Mass correction resulting from the JEC prodcedure
 JetMassCorrection = Producer(
     name="JetMassCorrection",
@@ -309,6 +360,25 @@ JetMassCorrection = Producer(
         q.Jet_correctedPt,
     ],
     output=[q.Jet_correctedMass],
+    scopes=GLOBAL_SCOPES,
+)
+
+# Mass correction resulting from the JEC prodcedure for regressed jets
+JetMassCorrectionRegressed = Producer(
+    name="JetMassCorrectionRegressed",
+    call="""
+    physicsobject::jet::jec::MassCorrectionFromPt(
+        {df},
+        {output},
+        {input}
+    )
+    """,
+    input=[
+        q.Jet_rawMassRegressed,
+        q.Jet_rawPtRegressed,
+        q.Jet_correctedPtRegressed,
+    ],
+    output=[q.Jet_correctedMassRegressed],
     scopes=GLOBAL_SCOPES,
 )
 
@@ -338,6 +408,31 @@ JetEnergyCorrectionMC = ProducerGroup(
     ],
 )
 
+# Producer group for regression jet energy calibration on data
+JetEnergyCorrectionDataRegressed = ProducerGroup(
+    name="JECDataRegressed",
+    call=None,
+    input=None,
+    output=None,
+    scopes=GLOBAL_SCOPES,
+    subproducers=[
+        JetPtCorrectionDataRegressed,
+        JetMassCorrectionRegressed,
+    ],
+)
+
+# Producer group for regression jet energy calibration on MC
+JetEnergyCorrectionMCRegressed = ProducerGroup(
+    name="JECSimulationRegressed",
+    call=None,
+    input=None,
+    output=None,
+    scopes=GLOBAL_SCOPES,
+    subproducers=[
+        JetPtCorrectionMCRegressed,
+        JetMassCorrectionRegressed,
+    ],
+)
 
 #
 # JETS AND JET ENERGY CALIBRATION FOR MET TYPE-I CORRECTIONS

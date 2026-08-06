@@ -7,7 +7,7 @@ from .producers import jets as jets
 from .producers import fatjets as fatjets
 from .producers import scalefactors as scalefactors
 from .helpers import get_for_era
-from .constants import ERAS_RUN2, ERAS_RUN3
+from .constants import ERAS_RUN3
 
 
 def add_jetVariations(
@@ -16,12 +16,14 @@ def add_jetVariations(
     bjet_id_sf_producer: Producer,
 ):
     # Get the producers
-    JECSimulation = jets.JetEnergyCorrectionMC
-    Type1JECSimulation = get_for_era(jets.Type1JetEnergyCorrectionMC, era)
     producers = (
-        {JECSimulation, Type1JECSimulation} #, fatjets.FatJetEnergyCorrection}
+        {
+            jets.JetEnergyCorrectionMC,
+            jets.JetEnergyCorrectionMCRegressed,
+            get_for_era(jets.Type1JetEnergyCorrectionMC, era),
+        }
         if era in ERAS_RUN3 else
-        {JECSimulation}  # , fatjets.FatJetEnergyCorrection}
+        {jets.JetEnergyCorrectionMC}
     )
 
     #########################
