@@ -209,6 +209,13 @@ ROOT::RDF::RNode TightestWPPassed(
            const std::string &outputname, const std::string &btag_value,
            const std::string &sf_file, const std::string &sf_wp_name
 );
+ROOT::RDF::RNode IsBTagged(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name,
+           const std::string &btag_wp_name
+);
 
 ROOT::RDF::RNode JetPtPNetRegression(ROOT::RDF::RNode df,
                                      const std::string &outputname,

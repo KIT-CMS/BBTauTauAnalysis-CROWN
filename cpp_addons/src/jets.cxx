@@ -904,6 +904,60 @@ ROOT::RDF::RNode TightestWPPassed(
 }
 
 /**
+ * Evaluate whether a b jet passes a given tagger working point.
+ *
+ * @param df input dataframe
+ * @param correction_manager correction manager responsible for loading the b
+ * jet tagging score working point definitions
+ * @param outputname name of the output column storing the tightest WP passed
+ * @param btag_value name of the column containing the b jet tagging score
+ * @param sf_file path to the b jet tagging score working point definition file
+ * @param sf_wp_name name of the working point definition set in the correction
+ *     file
+ * @param btag_wp_name name of the working point to evaluate
+ * @return a dataframe with the new column
+ */
+ROOT::RDF::RNode IsBTagged(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name,
+           const std::string &btag_wp_name
+) {
+    // Set the logger name for better readability in debug messages
+    const std::string logger_name = "jet::quantities::IsBTagged";
+
+    // Debug messages for loading corrections
+    Logger::get(logger_name)
+        ->debug(
+            "Evaluate b jet tagging scores with respect to fixed WP {}",
+            btag_wp_name
+        );
+    Logger::get(logger_name)->debug("working point cset name {}", sf_wp_name);
+
+    // Get evaluator for WP definitions from correctionlib file
+    auto wp_evaluator = correction_manager.loadCorrection(sf_file, sf_wp_name);
+
+    // Get the b jet tagging score to cut on for the given working point
+    float btag_wp_cut = wp_evaluator->evaluate({btag_wp_name});
+
+    auto func = [btag_wp_cut] (ROOT::RVec<float> &btag_value) {
+        return ROOT::VecOps::Map(
+            btag_value,
+            [btag_wp_cut] (const float &score) { return static_cast<int>(score > btag_wp_cut); }
+        );
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            btag_value
+        }
+    );
+}
+
+/**
  * @brief Patch for wrong Jet ID values in Run3 NanoAOD v12 samples.
  *
  * The implementation follows the recipe by the [JME
