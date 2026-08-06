@@ -1,387 +1,483 @@
 from ..quantities import output as q
+from ..quantities import nanoAOD
 from code_generation.producer import Producer, ProducerGroup
-
+from code_generation.quantity import Quantity
+from itertools import product
 from ..constants import SCOPES
 
 
-####################
-# Set of general producers for BBPair Quantities
-####################
+# ------------------------------------------------------------------------------
+# Reconstruction of the H/Y -> b b candidate
+# ------------------------------------------------------------------------------
 
-bpair_pt_1 = Producer(
-    name="bpair_pt_1",
-    call="lorentzvector::GetPt({df}, {output}, {input})",
-    input=[q.bpair_p4_1],
-    output=[q.bpair_pt_1],
-    scopes=SCOPES,
-)
-bpair_pt_2 = Producer(
-    name="bpair_pt_2",
-    call="lorentzvector::GetPt({df}, {output}, {input})",
-    input=[q.bpair_p4_2],
-    output=[q.bpair_pt_2],
-    scopes=SCOPES,
-)
-bpair_eta_1 = Producer(
-    name="bpair_eta_1",
-    call="lorentzvector::GetEta({df}, {output}, {input})",
-    input=[q.bpair_p4_1],
-    output=[q.bpair_eta_1],
-    scopes=SCOPES,
-)
-bpair_eta_2 = Producer(
-    name="bpair_eta_2",
-    call="lorentzvector::GetEta({df}, {output}, {input})",
-    input=[q.bpair_p4_2],
-    output=[q.bpair_eta_2],
-    scopes=SCOPES,
-)
-bpair_phi_1 = Producer(
-    name="bpair_phi_1",
-    call="lorentzvector::GetPhi({df}, {output}, {input})",
-    input=[q.bpair_p4_1],
-    output=[q.bpair_phi_1],
-    scopes=SCOPES,
-)
-bpair_phi_2 = Producer(
-    name="bpair_phi_2",
-    call="lorentzvector::GetPhi({df}, {output}, {input})",
-    input=[q.bpair_p4_2],
-    output=[q.bpair_phi_2],
-    scopes=SCOPES,
-)
-bpair_mass_1 = Producer(
-    name="bpair_mass_1",
-    call="lorentzvector::GetMass({df}, {output}, {input})",
-    input=[q.bpair_p4_1],
-    output=[q.bpair_mass_1],
-    scopes=SCOPES,
-)
-bpair_mass_2 = Producer(
-    name="bpair_mass_2",
-    call="lorentzvector::GetMass({df}, {output}, {input})",
-    input=[q.bpair_p4_2],
-    output=[q.bpair_mass_2],
-    scopes=SCOPES,
-)
-bpair_btag_value_1 = Producer(
-    name="bpair_btag_value_1",
-    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 0)",
-    input=[q.dibjetpair],
-    output=[q.bpair_btag_value_1],
-    scopes=SCOPES,
-)
-bpair_btag_value_2 = Producer(
-    name="bpair_btag_value_2",
-    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 1)",
-    input=[q.dibjetpair],
-    output=[q.bpair_btag_value_2],
-    scopes=SCOPES,
-)
-p4_bpair = Producer(
-    name="p4_bpair",
-    call="lorentzvector::Sum({df}, {output}, {input})",
-    input=[q.bpair_p4_1, q.bpair_p4_2],
-    output=[q.p4_bpair],
-    scopes=SCOPES,
-)
-bpair_m_inv = Producer(
-    name="bpair_m_inv",
-    call="lorentzvector::GetMass({df}, {output}, {input})",
-    input=[q.p4_bpair],
-    output=[q.bpair_m_inv],
-    scopes=SCOPES,
-)
-bpair_pt_dijet = Producer(
-    name="bpair_pt_dijet",
-    call="lorentzvector::GetPt({df}, {output}, {input})",
-    input=[q.p4_bpair],
-    output=[q.bpair_pt_dijet],
-    scopes=SCOPES,
-)
-bpair_deltaR = Producer(
-    name="bpair_deltaR",
-    call="quantities::DeltaR({df}, {output}, {input})",
-    input=[q.bpair_p4_1, q.bpair_p4_2],
-    output=[q.bpair_deltaR],
-    scopes=SCOPES,
-)
 
-UnrollBjetLV1Run2 = ProducerGroup(
-    name="UnrollBjetLV1Run2",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_1,
-        bpair_eta_1,
-        bpair_phi_1,
-        bpair_mass_1,
-        bpair_btag_value_1,
-    ],
-)
-UnrollBjetLV2Run2 = ProducerGroup(
-    name="UnrollBjetLV2Run2",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_2,
-        bpair_eta_2,
-        bpair_phi_2,
-        bpair_mass_2,
-        bpair_btag_value_2,
-    ],
-)
-UnrollBjetLV1Run3 = ProducerGroup(
-    name="UnrollBjetLV1Run3",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_1,
-        bpair_eta_1,
-        bpair_phi_1,
-        bpair_mass_1,
-        bpair_btag_value_1,
-    ],
-)
-UnrollBjetLV2Run3 = ProducerGroup(
-    name="UnrollBjetLV2Run3",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_2,
-        bpair_eta_2,
-        bpair_phi_2,
-        bpair_mass_2,
-        bpair_btag_value_2,
-    ],
-)
-DiBjetPairQuantitiesRun2 = ProducerGroup(
-    name="DiBjetPairQuantitiesRun2",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        UnrollBjetLV1Run2,
-        UnrollBjetLV2Run2,
-        p4_bpair,
-        bpair_m_inv,
-        bpair_pt_dijet,
-        bpair_deltaR,
-    ],
-)
-DiBjetPairQuantitiesRun3 = ProducerGroup(
-    name="DiBjetPairQuantitiesRun3",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        UnrollBjetLV1Run3,
-        UnrollBjetLV2Run3,
-        p4_bpair,
-        bpair_m_inv,
-        bpair_pt_dijet,
-        bpair_deltaR,
-    ],
-)
+class BBPairSelectionMetaConfiguration():
 
-####################
-# Set of general producers for BBPair Quantities based on boosted tau pair
-####################
+    _default_inputs = {
+        "jet_pt": q.Jet_correctedPt,
+        "jet_eta": nanoAOD.Jet_eta,
+        "jet_phi": nanoAOD.Jet_phi,
+        "jet_mass": q.Jet_correctedMass,
+        "good_bjet_collection": q.good_bjet_collection,
+        "good_jet_collection": q.good_jet_collection,
+        "jet_btag_value": q.Jet_bTagValue,
+    }
 
-bpair_pt_1_boosted = Producer(
-    name="bpair_pt_1_boosted",
-    call="lorentzvector::GetPt({df}, {output}, {input})",
-    input=[q.bpair_p4_1_boosted],
-    output=[q.bpair_pt_1_boosted],
-    scopes=SCOPES,
-)
-bpair_pt_2_boosted = Producer(
-    name="bpair_pt_2_boosted",
-    call="lorentzvector::GetPt({df}, {output}, {input})",
-    input=[q.bpair_p4_2_boosted],
-    output=[q.bpair_pt_2_boosted],
-    scopes=SCOPES,
-)
-bpair_eta_1_boosted = Producer(
-    name="bpair_eta_1_boosted",
-    call="lorentzvector::GetEta({df}, {output}, {input})",
-    input=[q.bpair_p4_1_boosted],
-    output=[q.bpair_eta_1_boosted],
-    scopes=SCOPES,
-)
-bpair_eta_2_boosted = Producer(
-    name="bpair_eta_2_boosted",
-    call="lorentzvector::GetEta({df}, {output}, {input})",
-    input=[q.bpair_p4_2_boosted],
-    output=[q.bpair_eta_2_boosted],
-    scopes=SCOPES,
-)
-bpair_phi_1_boosted = Producer(
-    name="bpair_phi_1_boosted",
-    call="lorentzvector::GetPhi({df}, {output}, {input})",
-    input=[q.bpair_p4_1_boosted],
-    output=[q.bpair_phi_1_boosted],
-    scopes=SCOPES,
-)
-bpair_phi_2_boosted = Producer(
-    name="bpair_phi_2_boosted",
-    call="lorentzvector::GetPhi({df}, {output}, {input})",
-    input=[q.bpair_p4_2_boosted],
-    output=[q.bpair_phi_2_boosted],
-    scopes=SCOPES,
-)
-bpair_mass_1_boosted = Producer(
-    name="bpair_mass_1_boosted",
-    call="lorentzvector::GetMass({df}, {output}, {input})",
-    input=[q.bpair_p4_1_boosted],
-    output=[q.bpair_mass_1_boosted],
-    scopes=SCOPES,
-)
-bpair_mass_2_boosted = Producer(
-    name="bpair_mass_2_boosted",
-    call="lorentzvector::GetMass({df}, {output}, {input})",
-    input=[q.bpair_p4_2_boosted],
-    output=[q.bpair_mass_2_boosted],
-    scopes=SCOPES,
-)
-bpair_btag_value_1_boosted = Producer(
-    name="bpair_btag_value_1_boosted",
-    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 0)",
-    input=[q.dibjetpair_boosted],
-    output=[q.bpair_btag_value_1_boosted],
-    scopes=SCOPES,
-)
-bpair_btag_value_2_boosted = Producer(
-    name="bpair_btag_value_2_boosted",
-    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 1)",
-    input=[q.dibjetpair_boosted],
-    output=[q.bpair_btag_value_2_boosted],
-    scopes=SCOPES,
-)
-p4_bpair_boosted = Producer(
-    name="p4_bpair_boosted",
-    call="lorentzvector::Sum({df}, {output}, {input})",
-    input=[q.bpair_p4_1_boosted, q.bpair_p4_2_boosted],
-    output=[q.p4_bpair_boosted],
-    scopes=SCOPES,
-)
-bpair_m_inv_boosted = Producer(
-    name="bpair_m_inv_boosted",
-    call="lorentzvector::GetMass({df}, {output}, {input})",
-    input=[q.p4_bpair_boosted],
-    output=[q.bpair_m_inv_boosted],
-    scopes=SCOPES,
-)
-bpair_pt_dijet_boosted = Producer(
-    name="bpair_pt_dijet_boosted",
-    call="lorentzvector::GetPt({df}, {output}, {input})",
-    input=[q.p4_bpair_boosted],
-    output=[q.bpair_pt_dijet_boosted],
-    scopes=SCOPES,
-)
-bpair_deltaR_boosted = Producer(
-    name="bpair_deltaR_boosted",
-    call="quantities::DeltaR({df}, {output}, {input})",
-    input=[q.bpair_p4_1_boosted, q.bpair_p4_2_boosted],
-    output=[q.bpair_deltaR_boosted],
-    scopes=SCOPES,
-)
+    _default_outputs = {
+        "dibjetpair": q.dibjetpair,
+    }
 
-UnrollBjetLV1Run2_boosted = ProducerGroup(
-    name="UnrollBjetLV1_boosted",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_1_boosted,
-        bpair_eta_1_boosted,
-        bpair_phi_1_boosted,
-        bpair_mass_1_boosted,
-        bpair_btag_value_1_boosted,
-    ],
-)
-UnrollBjetLV2Run2_boosted = ProducerGroup(
-    name="UnrollBjetLV2_boosted",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_2_boosted,
-        bpair_eta_2_boosted,
-        bpair_phi_2_boosted,
-        bpair_mass_2_boosted,
-        bpair_btag_value_2_boosted,
-    ],
-)
-UnrollBjetLV1Run3_boosted = ProducerGroup(
-    name="UnrollBjetLV1_boosted",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_1_boosted,
-        bpair_eta_1_boosted,
-        bpair_phi_1_boosted,
-        bpair_mass_1_boosted,
-        bpair_btag_value_1_boosted,
-    ],
-)
-UnrollBjetLV2Run3_boosted = ProducerGroup(
-    name="UnrollBjetLV2_boosted",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        bpair_pt_2_boosted,
-        bpair_eta_2_boosted,
-        bpair_phi_2_boosted,
-        bpair_mass_2_boosted,
-        bpair_btag_value_2_boosted,
-    ],
-)
+    def __init__(
+        self,
+        input=None,
+        output=None,
+        scopes=None,
+    ):
 
-DiBjetPairQuantitiesRun2_boosted = ProducerGroup(
-    name="DiBjetPairQuantities_boosted",
-    call=None,
-    input=None,
-    output=None,
-    scopes=SCOPES,
-    subproducers=[
-        UnrollBjetLV1Run2_boosted,
-        UnrollBjetLV2Run2_boosted,
-        p4_bpair_boosted,
-        bpair_m_inv_boosted,
-        bpair_pt_dijet_boosted,
-        bpair_deltaR_boosted,
-    ],
-)
+        for key, value in self._default_inputs.items():
+            setattr(self, key, input.get(key, value) if input else value)
+        for key, value in self._default_outputs.items():
+            setattr(self, key, output.get(key, value) if output else value)
 
-DiBjetPairQuantitiesRun3_boosted = ProducerGroup(
-    name="DiBjetPairQuantities_boosted",
+        self.scopes = scopes
+
+    def producers(self, name: str):
+        return self._produce_bb_pair_selection(name=name)
+
+    def configuration_parameters(self):
+        return {
+            "scopes": self.scopes,
+            "parameters": {
+                "bb_pairselection_min_dR": 0.4,
+            },
+        }
+
+    def outputs(self):
+        return {
+            "scopes": [],
+            "outputs": [
+                self.dibjetpair,
+            ],
+        }
+
+    def _produce_bb_pair_selection(
+        self,
+        name: str,
+    ):
+        call = f"""
+        bb_pairselection::PairSelection(
+            {{df}},
+            {{input_vec}},
+            "{self.jet_btag_value.name}",
+            {{output}},
+            {{bb_pairselection_min_dR}},
+            {{bjet_min_score}}
+        )
+        """
+        return Producer(
+            name=name,
+            call=call,
+            input=[
+                self.jet_pt,
+                self.jet_eta,
+                self.jet_phi,
+                self.jet_mass,
+                self.good_bjet_collection,
+                self.good_jet_collection,
+            ],
+            output=[self.dibjetpair],
+            scopes=SCOPES,
+        )
+
+
+# bb pair selection meta producer using ordinary jet pt after JEC 
+BBPairSelection = BBPairSelectionMetaConfiguration(
+    input={
+        "jet_pt": q.Jet_correctedPt,
+        "jet_mass": q.Jet_correctedMass,
+    },
+    output={
+        "dibjetpair": q.dibjetpair,
+    },
+    scopes=SCOPES,
+).producers("BBPairSelection")
+
+
+# bb pair selection meta producer using PNet/UParT-regressed jet pt after JEC
+BBPairSelectionRegressed = BBPairSelectionMetaConfiguration(
+    input={
+        "jet_pt": q.Jet_correctedPtRegressed,
+        "jet_mass": q.Jet_correctedMassRegressed,
+    },
+    output={
+        "dibjetpair": q.dibjetpair_regressed,
+    },
+    scopes=SCOPES,
+).producers("BBPairSelectionRegressed")
+
+
+# ------------------------------------------------------------------------------
+# Single b jet quantities of the selected bb candidate 
+# ------------------------------------------------------------------------------
+
+
+class BQuantitiesMetaConfiguration():
+
+    _default_inputs = {
+        "jet_pt": q.Jet_correctedPt,
+        "jet_eta": nanoAOD.Jet_eta,
+        "jet_phi": nanoAOD.Jet_phi,
+        "jet_mass": q.Jet_correctedMass,
+        "jet_btag_value": q.Jet_bTagValue,
+        "dibjetpair": q.dibjetpair,
+    }
+
+    _default_outputs = {
+        "bpair_p4_1": q.bpair_p4_1,
+        "bpair_p4_2": q.bpair_p4_2,
+        "bpair_pt_1": q.bpair_pt_1,
+        "bpair_pt_2": q.bpair_pt_2,
+        "bpair_eta_1": q.bpair_eta_1,
+        "bpair_eta_2": q.bpair_eta_2,
+        "bpair_phi_1": q.bpair_phi_1,
+        "bpair_phi_2": q.bpair_phi_2,
+        "bpair_mass_1": q.bpair_mass_1,
+        "bpair_mass_2": q.bpair_mass_2,
+        "bpair_btag_value_1": q.bpair_btag_value_1,
+        "bpair_btag_value_2": q.bpair_btag_value_2,
+    }
+
+    def __init__(
+        self,
+        input=None,
+        output=None,
+        scopes=None,
+    ):
+
+        for key, value in self._default_inputs.items():
+            setattr(self, key, input.get(key, value) if input else value)
+        for key, value in input.items():
+            if key not in self._default_inputs:
+                setattr(self, key, value)
+        for key, value in self._default_outputs.items():
+            setattr(self, key, output.get(key, value) if output else value)
+        for key, value in output.items():
+            if key not in self._default_outputs:
+                setattr(self, key, value)
+
+        self.scopes = scopes
+
+    def producers(self, name: str) -> Producer | ProducerGroup:
+        return self._produce_quantities(name)
+
+    def _produce_get(
+        self,
+        name: str,
+        input_variable: Quantity,
+        output_variable: Quantity,
+        index: int,
+        dtype: str = "float",
+    ):
+        call = f"""
+        event::quantity::Get<{dtype}>(
+            {{df}},
+            {{output}},
+            {{input}},
+            {index}
+        )
+        """
+        return Producer(
+            name=name,
+            call=call,
+            input=[input_variable, self.dibjetpair],
+            output=[output_variable],
+            scopes=self.scopes,
+        )
+
+    def _produce_quantities(self, name: str):
+        # List of producers that constitute the producer group
+        producers = []
+
+        # Create producers for the four-momentum of each jet in the pair
+        for index in [0, 1]:
+            # Construct the function call
+            call = f"""
+            lorentzvector::Build({{df}}, {{output}}, {{input}}, {index})
+            """
+
+            # Append the producer to the list
+            producers.append(
+                Producer(
+                    name=f"{name}_bpair_p4_{index + 1}",
+                    call=call,
+                    input=[
+                        self.jet_pt,
+                        self.jet_eta,
+                        self.jet_phi,
+                        self.jet_mass,
+                        self.dibjetpair,
+                    ],
+                    output=[getattr(self, f"bpair_p4_{index + 1}")],
+                    scopes=self.scopes,
+                )
+            )
+
+        # Create producers for each observable and each jet in the pair
+        for variable, index in product(["pt", "eta", "phi", "mass", "btag_value"], [0, 1]):
+            # Get input and output variables
+            input_variable = getattr(self, f"jet_{variable}")
+            output_variable = getattr(self, f"bpair_{variable}_{index + 1}")
+
+            # Append the producer to the list
+            producers.append(
+                self._produce_get(
+                    name=f"{name}_bpair_{variable}_{index + 1}",
+                    input_variable=input_variable,
+                    output_variable=output_variable,
+                    index=index,
+                )
+            )
+
+        # Add jet pt resolution from the regression
+        base_variable = "bpair_pt_resolution_regressed"
+        for index in [0, 1]:
+            variable = f"{base_variable}_{index + 1}"
+            if hasattr(self, variable):
+                # Get input and output variables
+                input_variable = getattr(self, "jet_pt_resolution_regressed")
+                output_variable = getattr(self, variable)
+
+                producers.append(
+                    self._produce_get(
+                        name=f"{name}_{variable}",
+                        input_variable=input_variable,
+                        output_variable=output_variable,
+                        index=index,
+                    )
+                )
+
+        # Merge producers into a producer group
+        producer_group = ProducerGroup(
+            name=name,
+            call=None,
+            input=None,
+            output=None,
+            scopes=self.scopes,
+            subproducers=producers,
+        )
+
+        return producer_group
+
+
+BQuantities = BQuantitiesMetaConfiguration(
+    input={
+        "jet_pt": q.Jet_correctedPt,
+        "jet_mass": q.Jet_correctedMass,
+        "dibjetpair": q.dibjetpair,
+    },
+    output={
+        "bpair_p4_1": q.bpair_p4_1,
+        "bpair_p4_2": q.bpair_p4_2,
+        "bpair_pt_1": q.bpair_pt_1,
+        "bpair_pt_2": q.bpair_pt_2,
+        "bpair_eta_1": q.bpair_eta_1,
+        "bpair_eta_2": q.bpair_eta_2,
+        "bpair_phi_1": q.bpair_phi_1,
+        "bpair_phi_2": q.bpair_phi_2,
+        "bpair_mass_1": q.bpair_mass_1,
+        "bpair_mass_2": q.bpair_mass_2,
+        "bpair_btag_value_1": q.bpair_btag_value_1,
+        "bpair_btag_value_2": q.bpair_btag_value_2,
+    },
+    scopes=SCOPES,
+).producers("BQuantities")
+
+
+BQuantitiesRegressed = BQuantitiesMetaConfiguration(
+    input={
+        "jet_pt": q.Jet_correctedPtRegressed,
+        "jet_mass": q.Jet_correctedMassRegressed,
+        "jet_pt_resolution_regressed": q.Jet_rawPtRegressedResolution,
+        "dibjetpair": q.dibjetpair_regressed,
+    },
+    output={
+        "bpair_p4_1": q.bpair_p4_regressed_1,
+        "bpair_p4_2": q.bpair_p4_regressed_2,
+        "bpair_pt_1": q.bpair_pt_regressed_1,
+        "bpair_pt_2": q.bpair_pt_regressed_2,
+        "bpair_eta_1": q.bpair_eta_regressed_1,
+        "bpair_eta_2": q.bpair_eta_regressed_2,
+        "bpair_phi_1": q.bpair_phi_regressed_1,
+        "bpair_phi_2": q.bpair_phi_regressed_2,
+        "bpair_mass_1": q.bpair_mass_regressed_1,
+        "bpair_mass_2": q.bpair_mass_regressed_2,
+        "bpair_btag_value_1": q.bpair_btag_value_regressed_1,
+        "bpair_btag_value_2": q.bpair_btag_value_regressed_2,
+        "bpair_pt_resolution_regressed_1": q.bpair_pt_resolution_regressed_1,
+        "bpair_pt_resolution_regressed_2": q.bpair_pt_resolution_regressed_2,
+    },
+    scopes=SCOPES,
+).producers("BQuantitiesRegressed")
+
+
+# ------------------------------------------------------------------------------
+# Combined pair quantities of the selected bb candidate 
+# ------------------------------------------------------------------------------
+
+
+class BBPairQuantitiesMetaConfiguration():
+
+    _default_inputs = {
+        "bpair_p4_1": q.bpair_p4_1,
+        "bpair_p4_2": q.bpair_p4_2,
+    }
+
+    _default_outputs = {
+        "bpair_p4": q.bpair_p4,
+        "bpair_pt": q.bpair_pt_dijet,
+        "bpair_eta": q.bpair_eta,
+        "bpair_phi": q.bpair_phi,
+        "bpair_mass": q.bpair_m_inv,
+        "bpair_delta_r": q.bpair_deltaR,
+    }
+
+    def __init__(
+        self,
+        input=None,
+        output=None,
+        scopes=None,
+    ):
+
+        for key, value in self._default_inputs.items():
+            setattr(self, key, input.get(key, value) if input else value)
+        for key, value in self._default_outputs.items():
+            setattr(self, key, output.get(key, value) if output else value)
+
+        self.scopes = scopes
+
+    def producers(self, name: str) -> Producer | ProducerGroup:
+        return self._produce_quantities(name)
+
+    def _produce_quantities(self, name: str):
+        # List of producers that constitute the producer group
+        producers = []
+
+        # Sum the four-momenta of the two jets to get the four-momentum of the b-jet pair
+        producers.append(
+            Producer(
+                name=f"{name}_p4_bpair",
+                call="lorentzvector::Sum({df}, {output}, {input})",
+                input=[self.bpair_p4_1, self.bpair_p4_2],
+                output=[self.bpair_p4],
+                scopes=self.scopes,
+            )
+        )
+
+        # Get four-vector properties of the b-jet pair
+        for variable in ["pt", "eta", "phi", "mass"]:
+            # Construct the function call
+            call = f"""
+            lorentzvector::Get{variable.capitalize()}({{df}}, {{output}}, {{input}})
+            """
+
+            # Append the producer to the list
+            producers.append(
+                Producer(
+                    name=f"{name}_bpair_{variable}",
+                    call=call,
+                    input=[self.bpair_p4],
+                    output=[getattr(self, f"bpair_{variable}")],
+                    scopes=self.scopes,
+                )
+            )
+
+        # Calculate the deltaR between the two jets in the pair
+        producers.append(
+            Producer(
+                name=f"{name}_bpair_deltaR",
+                call="quantities::DeltaR({df}, {output}, {input})",
+                input=[self.bpair_p4_1, self.bpair_p4_2],
+                output=[self.bpair_delta_r],
+                scopes=self.scopes,
+            )
+        )
+
+        # Merge producers into a producer group
+        producer_group = ProducerGroup(
+            name=name,
+            call=None,
+            input=None,
+            output=None,
+            scopes=self.scopes,
+            subproducers=producers,
+        )
+
+        return producer_group
+
+
+BBPairQuantities = BBPairQuantitiesMetaConfiguration(
+    input={
+        "bpair_p4_1": q.bpair_p4_1,
+        "bpair_p4_2": q.bpair_p4_2,
+        "bpair_pt_1": q.bpair_pt_1,
+        "bpair_pt_2": q.bpair_pt_2,
+        "bpair_eta_1": q.bpair_eta_1,
+        "bpair_eta_2": q.bpair_eta_2,
+        "bpair_phi_1": q.bpair_phi_1,
+        "bpair_phi_2": q.bpair_phi_2,
+        "bpair_mass_1": q.bpair_mass_1,
+        "bpair_mass_2": q.bpair_mass_2,
+    },
+    output={
+        "bpair_p4": q.bpair_p4,
+        "bpair_pt": q.bpair_pt_dijet,
+        "bpair_eta": q.bpair_eta,
+        "bpair_phi": q.bpair_phi,
+        "bpair_mass": q.bpair_m_inv,
+        "bpair_delta_r": q.bpair_deltaR,
+    },
+    scopes=SCOPES,
+).producers("BBPairQuantities")
+
+
+BBPairQuantitiesRegressed = BBPairQuantitiesMetaConfiguration(
+    input={
+        "bpair_p4_1": q.bpair_p4_regressed_1,
+        "bpair_p4_2": q.bpair_p4_regressed_2,
+        "bpair_pt_1": q.bpair_pt_regressed_1,
+        "bpair_pt_2": q.bpair_pt_regressed_2,
+        "bpair_eta_1": q.bpair_eta_regressed_1,
+        "bpair_eta_2": q.bpair_eta_regressed_2,
+        "bpair_phi_1": q.bpair_phi_regressed_1,
+        "bpair_phi_2": q.bpair_phi_regressed_2,
+        "bpair_mass_1": q.bpair_mass_regressed_1,
+        "bpair_mass_2": q.bpair_mass_regressed_2,
+    },
+    output={
+        "bpair_p4": q.bpair_p4_regressed,
+        "bpair_pt": q.bpair_pt_dijet_regressed,
+        "bpair_eta": q.bpair_eta_regressed,
+        "bpair_phi": q.bpair_phi_regressed,
+        "bpair_mass": q.bpair_m_inv_regressed,
+        "bpair_delta_r": q.bpair_deltaR_regressed,
+    },
+    scopes=SCOPES,
+).producers("BBPairQuantitiesRegressed")
+
+
+# Combine all bb pair producers into a single producer group for convenience
+AllBBPairProducers = ProducerGroup(
+    name="AllBBPairProducers",
     call=None,
     input=None,
     output=None,
     scopes=SCOPES,
     subproducers=[
-        UnrollBjetLV1Run3_boosted,
-        UnrollBjetLV2Run3_boosted,
-        p4_bpair_boosted,
-        bpair_m_inv_boosted,
-        bpair_pt_dijet_boosted,
-        bpair_deltaR_boosted,
-    ],
+        BBPairSelection,
+        BBPairSelectionRegressed,
+        BQuantities,
+        BQuantitiesRegressed,
+        BBPairQuantities,
+        BBPairQuantitiesRegressed,
+    ]
 )
