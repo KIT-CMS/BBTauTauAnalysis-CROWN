@@ -114,6 +114,11 @@ ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
                     const std::string &jet_is_btagged,
                     const std::string &algo
                 );
+ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
+     const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_res_factor
+                );
 ROOT::RDF::RNode
 PtCorrectionMC(ROOT::RDF::RNode df,
                correctionManager::CorrectionManager &correction_manager,

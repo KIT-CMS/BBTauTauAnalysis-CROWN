@@ -324,7 +324,7 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
 /**
  * Compute the regressed jet pt using the UParT/ParticleNet regression factors.
  * 
- * The regressed jet pt is computed, based on the raw jet \$p_{\text{T}}\$,
+ * The regressed jet pt is computed, based on the raw jet \f$p_{\text{T}}\f$,
  * according to
  * https://cms-jerc.web.cern.ch/JES/#remarks-on-getting-rawpt-and-mass-for-regular-pnet-and-upart-jets.
  *
@@ -400,6 +400,39 @@ ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
     );
 }
 
+/**
+ * Calculate the absolute value of the pt resolution of the UParT/PNet jet pt
+ * regression.
+ *
+ * @param df The input dataframe.
+ * @param outputname The name of the output column for the smeared jet
+ *     \f$p_T\f$.
+ * @param jet_quantity_raw The name of the input column for the raw jet
+ *     \f$p_T\f$.
+ * @param jet_res_factor The name of the input column for the resolution factor.
+ * @return A dataframe with a new column of smeared jet pt.
+ */
+ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
+     const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_res_factor
+                ) {
+    auto func = [] (
+        const ROOT::RVec<float> &jet_quantity_raw,
+        const ROOT::RVec<float> &jet_res_factor
+    ) {
+        return jet_quantity_raw * jet_res_factor;
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            jet_quantity_raw,
+            jet_res_factor
+        }
+    );
+}
 
 /**
  * @brief This function applies the full jet energy calibration (JEC) procedure
