@@ -16,7 +16,11 @@ from ..helpers import era_producer_groups
 from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2
 
 
-# Produce the jet ID column
+# ------------------------------------------------------------------------------
+# Auxiliary quantities for the `Jet` collection
+# ------------------------------------------------------------------------------
+
+# Jet ID
 # - For run 2, the jet ID can just be taken from the corresponding column in
 #   nanoAOD.
 # - For 2022 and 2023, the jet ID in nanoAOD v12 has a bug which must be
@@ -85,28 +89,44 @@ JetID = {
     ),
 }
 
-# Seed for the random number generator for jet energy resolution smearing
-JERSmearingSeed = Producer(
-    name="JERSmearingSeed",
+# Value of the b jet tagger
+# - For 2022 and 2023, PNet is used
+# - For Run 2 and from 2024 on, UParT regression is used
+# The b jet tagger column is defined in the configuration
+JetBTagValue = Producer(
+    name="JetBTagValue",
     call="""
-    event::quantity::GenerateSeed(
+    event::quantity::Rename<ROOT::RVec<float>>(
         {df},
         {output},
-        {input},
-        {ak4jet_jer_master_seed}
+        \"{bjet_score_column}\"
     )
     """,
-    input=[nanoAOD.luminosityBlock, nanoAOD.run, nanoAOD.event],
-    output=[q.jet_seed],
+    input=[],
+    output=[q.Jet_bTagValue],
     scopes=GLOBAL_SCOPES,
 )
 
+# Flag for jet passing the b jet tagging requirement
+JetIsBTagged = Producer(
+    name="JetIsBTagged",
+    call="""
+    physicsobject::jet::quantities::IsBTagged(
+        {df},
+        correctionManager,
+        {output},
+        {input},
+        "{bjet_sf_file}",
+        "{bjet_sf_wp_name}",
+        "{bjet_btag_wp_name}"
+    )
+    """,
+    input=[q.Jet_bTagValue],
+    output=[q.Jet_isBTagged],
+    scopes=GLOBAL_SCOPES,
+)
 
-#
-# JET ENERGY CALIBRATION
-#
-
-# Producer for raw jet pt before JES corrections
+# Absolute raw jet pt before JES corrections
 JetRawPt = Producer(
     name="JetRawPt",
     call="physicsobject::jet::jec::Raw({df}, {output}, {input})",
@@ -115,7 +135,7 @@ JetRawPt = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-# Producer for raw jet mass before JES corrections
+# Absolute raw jet mass before JES corrections
 JetRawMass = Producer(
     name="JetRawMass",
     call="physicsobject::jet::jec::Raw({df}, {output}, {input})",
@@ -123,6 +143,126 @@ JetRawMass = Producer(
     output=[q.Jet_rawMass],
     scopes=GLOBAL_SCOPES,
 )
+
+# Jet pt correction factor for PNet/UParT-based regression
+# - For 2022 and 2023, the PNet regression is used
+# - For Run 2 and from 2024 on, the UParT regression is used
+JetRegPtRawCorr = {
+    ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): Producer(
+        name="JetRegPtRawCorr",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Jet_PNetRegPtRawCorr],
+        output=[q.Jet_regPtRawCorr],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN2) + ("2024", "2025"): Producer(
+        name="JetRegPtRawCorr",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Jet_UParTAK4RegPtRawCorr],
+        output=[q.Jet_regPtRawCorr],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
+
+# Jet pt correction factor for PNet/UParT-based regression, including neutrinos
+# - For 2022 and 2023, the PNet regression is used
+# - For Run 2 and from 2024 on, the UParT regression is used
+JetRegPtRawCorrNeutrino = {
+    ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): Producer(
+        name="JetRegPtRawCorrNeutrino",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Jet_PNetRegPtRawCorrNeutrino],
+        output=[q.Jet_regPtRawCorrNeutrino],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN2) + ("2024", "2025"): Producer(
+        name="JetRegPtRawCorrNeutrino",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Jet_UParTAK4RegPtRawCorrNeutrino],
+        output=[q.Jet_regPtRawCorrNeutrino],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
+
+# Common column for pt regression resolution
+# - For 2022 and 2023, the PNet regression is used
+# - For Run 2 and from 2024 on, the UParT regression is used
+JetRegPtRawRes = {
+    ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): Producer(
+        name="JetRegPtRawRes",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Jet_PNetRegPtRawRes],
+        output=[q.Jet_regPtRawRes],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN2) + ("2024", "2025"): Producer(
+        name="JetRegPtRawRes",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Jet_UParTAK4RegPtRawRes],
+        output=[q.Jet_regPtRawRes],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
+
+# Producer for absolute raw pt after PNet/UParT regression
+JetRawPtRegressed = Producer(
+    name="JetRawPtRegressed",
+    call="physicsobject::jet::jec::Regressed({df}, {output}, {input}, \"{ak4jet_reg_algo}\")",
+    input=[
+        q.Jet_rawPt,
+        q.Jet_regPtRawCorr,
+        q.Jet_regPtRawCorrNeutrino,
+        q.Jet_isBTagged,
+    ],
+    output=[q.Jet_rawPtRegressed],
+    scopes=GLOBAL_SCOPES,
+)
+
+# Producer for absolute mass after PNet/UParT regression
+JetRawMassRegressed = Producer(
+    name="JetRawMassRegressed",
+    call="physicsobject::jet::jec::Regressed({df}, {output}, {input}, \"{ak4jet_reg_algo}\")",
+    input=[
+        q.Jet_rawMass,
+        nanoAOD.Jet_UParTAK4RegPtRawCorr,
+        nanoAOD.Jet_UParTAK4RegPtRawCorrNeutrino,
+        q.Jet_isBTagged,
+    ],
+    output=[q.Jet_rawMassRegressed],
+    scopes=GLOBAL_SCOPES,
+)
+
+# Producer for absolute pt resolution of PNet/UParT regression
+JetRawPtRegressedResolution = Producer(
+    name="JetRawPtRegressedResolution",
+    call="physicsobject::jet::jec::RegResolution({df}, {output}, {input})",
+    input=[
+        q.Jet_rawPt,
+        q.Jet_regPtRawRes,
+    ],
+    output=[q.Jet_rawPtRegressedResolution],
+    scopes=GLOBAL_SCOPES,
+)
+
+# Group of auxiliary jet collection quantities
+AuxJetCollectionQuantities = era_producer_groups(
+    "AuxJetCollectionQuantities",
+    [
+        JetID,
+        JetBTagValue,
+        JetIsBTagged,
+        JetRawPt,
+        JetRawMass,
+        JetRegPtRawCorr,
+        JetRegPtRawCorrNeutrino,
+        JetRegPtRawRes,
+        JetRawPtRegressed,
+        JetRawMassRegressed,
+        JetRawPtRegressedResolution,
+    ],
+    GLOBAL_SCOPES,
+)
+
 
 # Jet pt correction producers for AK4 jets on data and simulation
 JetPtCorrectionData, JetPtCorrectionMC = stepwise_jerc_producer_factory(
@@ -180,8 +320,6 @@ JetEnergyCorrectionData = ProducerGroup(
     output=None,
     scopes=GLOBAL_SCOPES,
     subproducers=[
-        JetRawPt,
-        JetRawMass,
         JetPtCorrectionData,
         JetMassCorrection,
     ],
@@ -195,8 +333,6 @@ JetEnergyCorrectionMC = ProducerGroup(
     output=None,
     scopes=GLOBAL_SCOPES,
     subproducers=[
-        JetRawPt,
-        JetRawMass,
         JetPtCorrectionMC,
         JetMassCorrection,
     ],
@@ -373,26 +509,14 @@ GoodBJetsBaseWithoutPUID = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-# Tag whether a jet is b-tagged.
-# The NANOAOD column for the b tagging score is taken from the analysis
-# configuration.
-BTagCut = Producer(
-    name="BTagCut",
-    call="physicsobject::CutMin<float>({df}, {output}, \"{bjet_score_column}\", {bjet_min_score})",
-    input=[],
-    output=[q.Jet_is_btagged],
-    scopes=GLOBAL_SCOPES,
-)
-
 # Full b jet selection for run 2, including the b tagging requirement (CHS jets)
 GoodBJetsWithPUID = ProducerGroup(
     name="GoodBJetsWithPUID",
     call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
-    input=[],
+    input=[q.Jet_isBTagged],
     output=[q.good_bjets_mask],
     subproducers=[
         GoodBJetsBaseWithPUID,
-        BTagCut,
     ],
     scopes=GLOBAL_SCOPES,
 )
@@ -401,11 +525,10 @@ GoodBJetsWithPUID = ProducerGroup(
 GoodBJetsWithoutPUID = ProducerGroup(
     name="GoodBJetsWithoutPUID",
     call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
-    input=[],
+    input=[q.Jet_isBTagged],
     output=[q.good_bjets_mask],
     subproducers=[
         GoodBJetsBaseWithoutPUID,
-        BTagCut,
     ],
     scopes=GLOBAL_SCOPES,
 )
@@ -623,15 +746,15 @@ jphi_2 = Producer(
 )
 jtag_value_1 = Producer(
     name="jtag_value_1",
-    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 0)",
-    input=[q.good_jet_collection],
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[q.Jet_bTagValue, q.good_jet_collection],
     output=[q.jtag_value_1],
     scopes=SCOPES,
 )
 jtag_value_2 = Producer(
     name="jtag_value_2",
-    call="event::quantity::Get<float>({df}, {output}, \"{bjet_score_column}\", {input}, 1)",
-    input=[q.good_jet_collection],
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
+    input=[q.Jet_bTagValue, q.good_jet_collection],
     output=[q.jtag_value_2],
     scopes=SCOPES,
 )
