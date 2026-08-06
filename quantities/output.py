@@ -688,8 +688,16 @@ transformed_boosted_mt_1 = Quantity("transformed_boosted_mt_1")
 
 lhe_drell_yan_decay_flavor = Quantity("lhe_drell_yan_decay_flavor")
 
-# Additional columns for the Jet collection
+# ------------------------------------------------------------------------------
+# Jet collection
+# ------------------------------------------------------------------------------
+
+# Additional jet properties, calculated with producers
 Jet_ID = Quantity("Jet_ID")
+Jet_bTagValue = Quantity("Jet_bTagValue")
+Jet_isBTagged = Quantity("Jet_isBTagged")
+
+# Additional columns needed for JES/JER corrections
 Jet_rawPt = Quantity("Jet_rawPt")
 Jet_rawMuonSubtrPt = Quantity("Jet_rawMuonSubtrPt")
 Jet_EmEF = Quantity("Jet_EmEF")
@@ -700,6 +708,10 @@ Jet_l2relPt = Quantity("Jet_l2relPt")
 Jet_l2l3resPt = Quantity("Jet_l2l3resPt")
 Jet_correctedPt = Quantity("Jet_correctedPt")
 Jet_correctedMass = Quantity("Jet_correctedMass")
+
+# ------------------------------------------------------------------------------
+# CorrT1METJet collection
+# ------------------------------------------------------------------------------
 
 # Additional columns for the CorrT1METJet collection
 CorrT1METJet_rawMuonSubtrPt = Quantity("CorrT1METJet_rawMuonSubtrPt")

@@ -2408,7 +2408,7 @@ def build_config(
 
     # Jet ID producer
     # For a detailed description, see producers/jets.py
-    JetID = get_for_era(jets.JetID, era)
+    AuxJetCollectionQuantities = get_for_era(jets.AuxJetCollectionQuantities, era)
 
     # Calibrated jets used for Type-I MET corrections
     # For a detailed descriptions, see producers/jets.py
@@ -2579,7 +2579,7 @@ def build_config(
             # fatjets.GoodFatJets,
             event.DiLeptonVeto,
             MetGlobal,
-            JetID,
+            AuxJetCollectionQuantities,
         ]
         + prefire_weight_producers
         + base_jet_selection_producers
