@@ -203,6 +203,12 @@ ROOT::RDF::RNode CorrectJetIDRun3NanoV12(
     const std::string &jet_id, const std::string &jet_ne_hef,
     const std::string &jet_ne_em_ef, const std::string &jet_mu_ef,
     const std::string &jet_ch_em_ef);
+ROOT::RDF::RNode TightestWPPassed(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name
+);
 
 ROOT::RDF::RNode JetPtPNetRegression(ROOT::RDF::RNode df,
                                      const std::string &outputname,

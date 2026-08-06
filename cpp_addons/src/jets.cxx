@@ -843,6 +843,67 @@ ROOT::RDF::RNode MassCorrectionFromPt(ROOT::RDF::RNode df,
 namespace quantities {
 
 /**
+ * Evaluate the tightest b jet working point that a jet passes.
+ *
+ * @param df input dataframe
+ * @param correction_manager correction manager responsible for loading the b
+ * jet tagging score working point definitions
+ * @param outputname name of the output column storing the tightest WP passed
+ * @param btag_value name of the column containing the b jet tagging score
+ * @param sf_file path to the b jet tagging score working point definition file
+ * @param sf_wp_name name of the working point definition set in the correction
+ *     file
+ * @return a dataframe with the new column
+ */
+ROOT::RDF::RNode TightestWPPassed(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name
+) {
+    // Get evaluator for WP definitions from correctionlib file
+    auto wp_evaluator = correction_manager.loadCorrection(sf_file, sf_wp_name);
+
+    // Sort the working points in descending order to find the tightest WP passed
+    auto wp_names = std::vector<std::string>({"L", "M", "T", "XT", "XXT"});
+    auto wp_cuts = std::vector<float>(wp_names.size());
+    for (auto &wp_name : wp_names) {
+        wp_cuts.push_back(wp_evaluator->evaluate({wp_name}));
+    }
+
+    auto func = [wp_cuts, wp_names] (ROOT::RVec<float> &btag_value) {
+        return ROOT::VecOps::Map(
+            btag_value,
+            [wp_cuts, wp_names] (const float &btag_value) {
+                std::string tightest_wp = "U";
+                for (size_t i = 0; i < wp_cuts.size(); ++i) {
+                    if (btag_value > wp_cuts[i]) {
+                        // If the jet passes the current WP, store it as the
+                        // tightest WP passed
+                        tightest_wp = wp_names[i];
+                    } else {
+                        break; // Since wp_cuts are sorted in ascending order
+                    }
+                }
+                Logger::get("jet::quantities::TightestWPPassed")
+                    ->debug("Evaluated tightest WP for btag value {} to {}",
+                            btag_value,
+                            tightest_wp);
+                return tightest_wp;
+            }
+        );
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            btag_value
+        }
+    );
+}
+
+/**
  * @brief Patch for wrong Jet ID values in Run3 NanoAOD v12 samples.
  *
  * The implementation follows the recipe by the [JME
