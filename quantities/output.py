@@ -727,16 +727,23 @@ lhe_drell_yan_decay_flavor = Quantity("lhe_drell_yan_decay_flavor")
 # Jet collection
 # ------------------------------------------------------------------------------
 
+#region
+
 # Additional jet properties, calculated with producers
 Jet_ID = Quantity("Jet_ID")
 Jet_bTagValue = Quantity("Jet_bTagValue")
 Jet_isBTagged = Quantity("Jet_isBTagged")
-
-# Additional columns needed for JES/JER corrections
 Jet_rawPt = Quantity("Jet_rawPt")
+Jet_rawMass = Quantity("Jet_rawMass")
 Jet_rawMuonSubtrPt = Quantity("Jet_rawMuonSubtrPt")
 Jet_EmEF = Quantity("Jet_EmEF")
-Jet_rawMass = Quantity("Jet_rawMass")
+Jet_regPtRawCorr = Quantity("Jet_regPtRawCorr")
+Jet_regPtRawCorrNeutrino = Quantity("Jet_regPtRawCorrNeutrino")
+Jet_regPtRawRes = Quantity("Jet_regPtRawRes")
+Jet_rawPtRegressed = Quantity("Jet_rawPtRegressed")
+Jet_rawMassRegressed = Quantity("Jet_rawMassRegressed")
+
+# Outputs of the jet energy calibration
 Jet_jecResult = Quantity("Jet_jecResult")
 Jet_l1Pt = Quantity("Jet_l1Pt")
 Jet_l2relPt = Quantity("Jet_l2relPt")
@@ -744,12 +751,7 @@ Jet_l2l3resPt = Quantity("Jet_l2l3resPt")
 Jet_correctedPt = Quantity("Jet_correctedPt")
 Jet_correctedMass = Quantity("Jet_correctedMass")
 
-# Additional columns needed for JES/JER corrections after regression
-Jet_regPtRawCorr = Quantity("Jet_regPtRawCorr")
-Jet_regPtRawCorrNeutrino = Quantity("Jet_regPtRawCorrNeutrino")
-Jet_regPtRawRes = Quantity("Jet_regPtRawRes")
-Jet_rawPtRegressed = Quantity("Jet_rawPtRegressed")
-Jet_rawMassRegressed = Quantity("Jet_rawMassRegressed")
+# Outputs of the jet energy calibration including UParT/PNet jet pt regression
 Jet_jecResultRegressed = Quantity("Jet_jecResultRegressed")
 Jet_l1PtRegressed = Quantity("Jet_l1PtRegressed")
 Jet_l2relPtRegressed = Quantity("Jet_l2relPtRegressed")
@@ -758,14 +760,26 @@ Jet_correctedPtRegressed = Quantity("Jet_correctedPtRegressed")
 Jet_correctedMassRegressed = Quantity("Jet_correctedMassRegressed")
 Jet_rawPtRegressedResolution = Quantity("Jet_rawPtRegressedResolution")
 
+#endregion
+
 # ------------------------------------------------------------------------------
 # CorrT1METJet collection
 # ------------------------------------------------------------------------------
+
+#region
 
 # Additional columns for the CorrT1METJet collection
 CorrT1METJet_rawMuonSubtrPt = Quantity("CorrT1METJet_rawMuonSubtrPt")
 CorrT1METJet_ID = Quantity("CorrT1METJet_ID")
 CorrT1METJet_EmEnergyFraction = Quantity("CorrT1METJet_EmEnergyFraction")
+
+#endregion
+
+# ------------------------------------------------------------------------------
+# Type1Jet collection
+# ------------------------------------------------------------------------------
+
+# region
 
 # Type1Jet collection, which is the concatenation of the Jet and CorrT1METJet
 # collections
@@ -775,11 +789,15 @@ Type1Jet_phi = Quantity("Type1Jet_phi")
 Type1Jet_area = Quantity("Type1Jet_area")
 Type1Jet_ID = Quantity("Type1Jet_ID")
 Type1Jet_EmEF = Quantity("Type1Jet_EmEF")
+
+# Outputs of the jet energy calibration
 Type1Jet_jecResult = Quantity("Type1Jet_jecResult")
 Type1Jet_l1Pt = Quantity("Type1Jet_l1Pt")
 Type1Jet_l2relPt = Quantity("Type1Jet_l2relPt")
 Type1Jet_l2l3resPt = Quantity("Type1Jet_l2l3resPt")
 Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
+
+# endregion
 
 # ------------------------------------------------------------------------------
 # Fake factor quantities
