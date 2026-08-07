@@ -6,12 +6,8 @@ from ..quantities import output as q
 from ..quantities import nanoAOD
 from analysis_configurations.quantities import nanoAODv9_run2, nanoAODv12_run3
 from code_generation.producer import Producer, ProducerGroup
+from code_generation.quantity import Quantity
 
-from ._helpers import (
-    type1_jet_collection_producer_factory,
-    jerc_producer_factory,
-    stepwise_jerc_producer_factory,
-)
 from ..helpers import era_producer_groups
 from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2
 
@@ -458,6 +454,11 @@ Type1JetCollection = ProducerGroup(
 
 #endregion
 
+# ------------------------------------------------------------------------------
+# Jet energy scale and resolution corrections
+# ------------------------------------------------------------------------------
+
+#region
 
 class StepwiseJERCProducerMetaConfiguration():
 
@@ -507,21 +508,33 @@ class StepwiseJERCProducerMetaConfiguration():
         self.scopes = scopes
         self.config_parameter_prefix = config_parameter_prefix
 
-    def producers(self, name: str, data=False):
+    def producers(self, name: str, data=False, mass=True):
+        # Construct list of producers for the group
+        producers = []
+
+        # Pick the data or the MC JEC producer depending on the `data` flag
+        if data:
+            producers.append(
+                self._produce_jet_pt_correction_data(name + "Pt")
+            )
+        else:
+            producers.append(
+                self._produce_jet_pt_correction_mc(name + "Pt")
+            )
+
+        # Optionally add the mass correction
+        if mass:
+            producers.append(
+                self._produce_jet_mass_correction(name + "Mass"),
+            )
+
         return ProducerGroup(
             name=name,
             call=None,
             input=None,
             output=None,
             scopes=self.scopes,
-            subproducers=[
-                (
-                    self._produce_jet_pt_correction_data(name + "Pt")
-                    if data
-                    else self._produce_jet_pt_correction_mc(name + "Pt")
-                ),
-                self._produce_jet_mass_correction(name + "Mass"),
-            ],
+            subproducers=producers,
         )
 
     def _produce_jet_pt_correction_data(self, name: str):
@@ -633,27 +646,41 @@ class StepwiseJERCProducerMetaConfiguration():
         )
 
 
-# Jet pt and mass correction for AK4 jets in simulation
-JetEnergyCorrectionMC = StepwiseJERCProducerMetaConfiguration(
+# Seed for the random number generator for jet energy resolution smearing
+JERSmearingSeed = Producer(
+    name="JERSmearingSeed",
+    call="""
+    event::quantity::GenerateSeed(
+        {df},
+        {output},
+        {input},
+        {ak4jet_jer_master_seed}
+    )
+    """,
+    input=[nanoAOD.luminosityBlock, nanoAOD.run, nanoAOD.event],
+    output=[q.jet_seed],
     scopes=GLOBAL_SCOPES,
-).producers(
+)
+
+# Configuration template for the jet pt and mass correction
+JetEnergyCorrectionTemplate = StepwiseJERCProducerMetaConfiguration(
+    scopes=GLOBAL_SCOPES,
+)
+
+# Jet pt and mass correction for AK4 jets in simulation
+JetEnergyCorrectionMC = JetEnergyCorrectionTemplate.producers(
     "JetEnergyCorrectionMC",
     data=False,
 )
 
-
 # Jet pt and mass correction for AK4 jets in data
-JetEnergyCorrectionData = StepwiseJERCProducerMetaConfiguration(
-    scopes=GLOBAL_SCOPES,
-).producers(
+JetEnergyCorrectionData = JetEnergyCorrectionTemplate.producers(
     "JetEnergyCorrectionData",
     data=True,
 )
 
-
-# Jet pt and mass correction for AK4 jets after PNet/UParT regression in
-# simulation
-JetEnergyCorrectionMCRegressed = StepwiseJERCProducerMetaConfiguration(
+# Configuration template for jet pt and mass correction after regression
+JetEnergyCorrectionRegressedTemplate = StepwiseJERCProducerMetaConfiguration(
     input={
         "jet_raw_pt": q.Jet_rawPtRegressed,
         "jet_raw_mass": q.Jet_rawMassRegressed,
@@ -667,104 +694,30 @@ JetEnergyCorrectionMCRegressed = StepwiseJERCProducerMetaConfiguration(
         "jet_corrected_mass": q.Jet_correctedMassRegressed,
     },
     scopes=GLOBAL_SCOPES,
-).producers("JetEnergyCorrectionMCRegressed", data=False)
-
-
-# Jet pt and mass correction for AK4 jets after PNet/UParT regression in
-# simulation
-JetEnergyCorrectionDataRegressed = StepwiseJERCProducerMetaConfiguration(
-    input={
-        "jet_raw_pt": q.Jet_rawPtRegressed,
-        "jet_raw_mass": q.Jet_rawMassRegressed,
-    },
-    output={
-        "jet_jec_result": q.Jet_jecResultRegressed,
-        "jet_l1_pt": q.Jet_l1PtRegressed,
-        "jet_l2rel_pt": q.Jet_l2relPtRegressed,
-        "jet_l2l3res_pt": q.Jet_l2l3resPtRegressed,
-        "jet_corrected_pt": q.Jet_correctedPtRegressed,
-        "jet_corrected_mass": q.Jet_correctedMassRegressed,
-    },
-    scopes=GLOBAL_SCOPES,
-).producers("JetEnergyCorrectionDataRegressed", data=True)
-
-
-#
-# JETS AND JET ENERGY CALIBRATION FOR MET TYPE-I CORRECTIONS
-#
-
-# Dummy value or renaming of the EmEF column of CorrT1METJet collection
-# - For 2022 and 2023, the EmEF column of the CorrT1METJet collection does not
-#   exist. Dummy values of 0 are added, i.e., all CorrT1METJet objects are
-#   passing the EmEF < 0.9 criterion.
-# - For 2024, just rename the column.
-CorrT1METJetEmEF = {
-    tuple(ERAS_RUN2) + ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): Producer(
-        name="CorrT1METJetEmEFDummy",
-        call="event::quantity::Define<float>({df}, {output}, {input}, 0.0)",
-        input=[nanoAOD.nCorrT1METJet],
-        output=[q.CorrT1METJet_EmEnergyFraction],
-        scopes=GLOBAL_SCOPES,
-    ),
-    ("2024", "2025"): Producer(
-        name="CorrT1METJetEmEFDummy",
-        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
-        input=[nanoAOD.CorrT1METJet_EmEF],
-        output=[q.CorrT1METJet_EmEnergyFraction],
-        scopes=GLOBAL_SCOPES,
-    ),
-}
-
-# Concatenate Jet and CorrT1METJet collections for MET type-I corrections
-Type1JetCollection = type1_jet_collection_producer_factory(
-    input={
-        "jet_pt": nanoAOD.Jet_pt,
-        "jet_eta": nanoAOD.Jet_eta,
-        "jet_phi": nanoAOD.Jet_phi,
-        "jet_id": q.Jet_ID,
-        "jet_area": nanoAOD.Jet_area,
-        "jet_raw_factor": nanoAOD.Jet_rawFactor,
-        "jet_muon_subtr_factor": nanoAOD.Jet_muonSubtrFactor,
-        "jet_ch_em_ef": nanoAOD.Jet_chEmEF,
-        "jet_ne_em_ef": nanoAOD.Jet_neEmEF,
-        "corrt1metjet_raw_pt": nanoAOD.CorrT1METJet_rawPt,
-        "corrt1metjet_eta": nanoAOD.CorrT1METJet_eta,
-        "corrt1metjet_phi": nanoAOD.CorrT1METJet_phi,
-        "corrt1metjet_area": nanoAOD.CorrT1METJet_area,
-        "corrt1metjet_muon_subtr_factor": nanoAOD.CorrT1METJet_muonSubtrFactor,
-        "corrt1metjet_em_ef": q.CorrT1METJet_EmEnergyFraction,
-        "n_corrt1metjet": nanoAOD.nCorrT1METJet,
-    },
-    output={
-        "jet_raw_muon_subtr_pt": q.Jet_rawMuonSubtrPt,
-        "jet_em_ef": q.Jet_EmEF,
-        "corrt1metjet_raw_muon_subtr_pt": q.CorrT1METJet_rawMuonSubtrPt,
-        "corrt1metjet_id": q.CorrT1METJet_ID,
-        "t1jet_raw_muon_subtr_pt": q.Type1Jet_rawMuonSubtrPt,
-        "t1jet_eta": q.Type1Jet_eta,
-        "t1jet_phi": q.Type1Jet_phi,
-        "t1jet_area": q.Type1Jet_area,
-        "t1jet_id": q.Type1Jet_ID,
-        "t1jet_em_ef": q.Type1Jet_EmEF,
-    },
-    scopes=GLOBAL_SCOPES,
-    producer_prefix="Type1Jet",
 )
 
-# Jet pt correction producers for AK4 jets on data and simulation
-Type1JetPtCorrectionData, Type1JetPtCorrectionMC = stepwise_jerc_producer_factory(
+# Jet pt and mass correction for AK4 jets after PNet/UParT regression in
+# simulation
+JetEnergyCorrectionMCRegressed = JetEnergyCorrectionRegressedTemplate.producers("JetEnergyCorrectionMCRegressed", data=False)
+
+# Jet pt and mass correction for AK4 jets after PNet/UParT regression in
+# simulation
+JetEnergyCorrectionDataRegressed = JetEnergyCorrectionRegressedTemplate.producers("JetEnergyCorrectionDataRegressed", data=True)
+
+# Configuration template for type1 jet pt correction
+Type1JetEnergyCorrectionTemplate = StepwiseJERCProducerMetaConfiguration(
     input={
-        "jet_pt": q.Type1Jet_rawMuonSubtrPt,
+        "jet_raw_pt": q.Type1Jet_rawMuonSubtrPt,
         "jet_eta": q.Type1Jet_eta,
         "jet_phi": q.Type1Jet_phi,
         "jet_area": q.Type1Jet_area,
         "jet_id": q.Type1Jet_ID,
+        "jet_seed": q.jet_seed,
         "genjet_pt": nanoAOD.GenJet_pt,
         "genjet_eta": nanoAOD.GenJet_eta,
         "genjet_phi": nanoAOD.GenJet_phi,
         "rho": nanoAOD.Rho_fixedGridRhoFastjetAll,
         "run": nanoAOD.run,
-        "jet_seed": q.jet_seed,
     },
     output={
         "jet_jec_result": q.Type1Jet_jecResult,
@@ -774,32 +727,23 @@ Type1JetPtCorrectionData, Type1JetPtCorrectionMC = stepwise_jerc_producer_factor
         "jet_corrected_pt": q.Type1Jet_correctedPt,
     },
     scopes=GLOBAL_SCOPES,
-    producer_prefix="Type1Jet",
-    config_parameter_prefix="ak4jet",
 )
 
-# Producer group for type-I jet energy calibration on data
-Type1JetEnergyCorrectionData = era_producer_groups( 
-    "Type1JetEnergyCorrectionData",
-    [
-        CorrT1METJetEmEF,
-        Type1JetCollection,
-        Type1JetPtCorrectionData,
-    ],
-    GLOBAL_SCOPES,
-)
-
-# Producer group for type-I jet energy calibration on MC
-Type1JetEnergyCorrectionMC = era_producer_groups( 
+# Type1 jet pt and mass correction for AK4 jets in simulation
+Type1JetEnergyCorrectionMC = Type1JetEnergyCorrectionTemplate.producers(
     "Type1JetEnergyCorrectionMC",
-    [
-        CorrT1METJetEmEF,
-        Type1JetCollection,
-        Type1JetPtCorrectionMC,
-    ],
-    GLOBAL_SCOPES,
+    data=False,
+    mass=False,
 )
 
+# Type1 jet pt and mass correction for AK4 jets in data
+Type1JetEnergyCorrectionData = Type1JetEnergyCorrectionTemplate.producers(
+    "Type1JetEnergyCorrectionData",
+    data=True,
+    mass=False,
+)
+
+#endregion
 
 #
 # AK4 JET SELECTION
