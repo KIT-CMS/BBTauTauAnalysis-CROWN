@@ -44,10 +44,10 @@ main () {
 
     # build associative array of test files for different sample types
     declare -A test_files_list
-    test_files_list[data]="root://xrootd-cms.infn.it///store/data/Run2025C/Muon0/NANOAOD/PromptReco-v1/000/392/295/00000/5f01b0be-3b57-49bc-bd9c-b2489dd21a29.root"
-    test_files_list[nmssm_Ybb]="root://xrootd-cms.infn.it///store/mc/RunIII2024Summer24NanoAODv15/NMSSM-XtoYHto2B2Tau_Par-MX-1200-MY-800_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2540000/31703286-9c3f-4a8d-8265-b99c8e0ec2ed.root"
-    test_files_list[ttbar]="root://xrootd-cms.infn.it//store/mc/RunIII2024Summer24NanoAODv15/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/2810000/f60b4a6c-2801-43b0-b542-6d933a71a396.root"
-    test_files_list[dyjets_amcatnlo]="root://xrootd-cms.infn.it///store/mc/RunIII2024Summer24NanoAODv15/DYto2Tau-2Jets_Bin-0J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v4/130000/12ae785f-14fc-4685-a6c2-4241ac503bc9.root"
+    test_files_list[data]="root://cmsdcache-kit-disk.gridka.de//store/data/Run2025C/Muon0/NANOAOD/PromptReco-v1/000/392/295/00000/5f01b0be-3b57-49bc-bd9c-b2489dd21a29.root"
+    test_files_list[nmssm_Ybb]="root://cmsdcache-kit-disk.gridka.de//store/mc/RunIII2024Summer24NanoAODv15/NMSSM-XtoYHto2B2Tau_Par-MX-1200-MY-800_TuneCP5_13p6TeV_madgraph-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v2/2540000/31703286-9c3f-4a8d-8265-b99c8e0ec2ed.root"
+    test_files_list[ttbar]="root://cmsdcache-kit-disk.gridka.de//store/mc/RunIII2024Summer24NanoAODv15/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v3/2810000/f60b4a6c-2801-43b0-b542-6d933a71a396.root"
+    test_files_list[dyjets_amcatnlo]="root://cmsdcache-kit-disk.gridka.de//store/mc/RunIII2024Summer24NanoAODv15/DYto2Tau-2Jets_Bin-0J-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/150X_mcRun3_2024_realistic_v2-v4/130000/12ae785f-14fc-4685-a6c2-4241ac503bc9.root"
 
     # configure and compile the project
     if [[ "${steps}" == "build" || "${steps}" == "all" ]]; then
