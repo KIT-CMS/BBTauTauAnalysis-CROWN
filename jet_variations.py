@@ -4,7 +4,7 @@ from code_generation.configuration import Configuration
 from code_generation.systematics import SystematicShift
 from code_generation.producer import Producer
 from .producers import jets as jets
-from .producers import fatjets as fatjets
+# from .producers import fatjets as fatjets
 from .producers import scalefactors as scalefactors
 from .helpers import get_for_era
 from .constants import ERAS_RUN3

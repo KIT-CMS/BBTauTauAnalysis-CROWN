@@ -6,7 +6,7 @@ from .producers import electrons as electrons
 from .producers import event as event
 from .producers import genparticles as genparticles
 from .producers import jets as jets
-from .producers import fatjets as fatjets
+# from .producers import fatjets as fatjets
 from .producers import met as met
 from .producers import muons as muons
 from .producers import pairquantities as pairquantities
