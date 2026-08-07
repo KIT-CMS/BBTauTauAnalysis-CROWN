@@ -20,6 +20,8 @@ from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2
 # Auxiliary quantities for the `Jet` collection
 # ------------------------------------------------------------------------------
 
+#region
+
 # Jet ID
 # - For run 2, the jet ID can just be taken from the corresponding column in
 #   nanoAOD.
@@ -144,6 +146,31 @@ JetRawMass = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
+# Calculate raw and muon-subtracted jet pt
+JetRawMuonSubtrPt = Producer(
+    name="JetRawMuonSubtrPt",
+    call="physicsobject::jet::jec::RawMuonSubtr({df}, {output}, {input})",
+    input=[
+        nanoAOD.Jet_pt,
+        nanoAOD.Jet_rawFactor,
+        nanoAOD.Jet_muonSubtrFactor,
+    ],
+    output=[q.Jet_rawMuonSubtrPt],
+    scopes=GLOBAL_SCOPES,
+)
+
+# Sum the charged and neutral electromagnetic energy fractions
+JetEmEf = Producer(
+    name="JetEmEf",
+    call="event::quantity::SumVectors<float>({df}, {output}, {input})",
+    input=[
+        nanoAOD.Jet_chEmEF,
+        nanoAOD.Jet_neEmEF,
+    ],
+    output=[q.Jet_EmEF],
+    scopes=GLOBAL_SCOPES,
+)
+
 # Jet pt correction factor for PNet/UParT-based regression
 # - For 2022 and 2023, the PNet regression is used
 # - For Run 2 and from 2024 on, the UParT regression is used
@@ -244,7 +271,7 @@ JetRawPtRegressedResolution = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-# Group of auxiliary jet collection quantities
+# Group of auxiliary `Jet` collection quantities
 AuxJetCollectionQuantities = era_producer_groups(
     "AuxJetCollectionQuantities",
     [
@@ -253,6 +280,8 @@ AuxJetCollectionQuantities = era_producer_groups(
         JetIsBTagged,
         JetRawPt,
         JetRawMass,
+        JetRawMuonSubtrPt,
+        JetEmEf,
         JetRegPtRawCorr,
         JetRegPtRawCorrNeutrino,
         JetRegPtRawRes,
@@ -263,6 +292,7 @@ AuxJetCollectionQuantities = era_producer_groups(
     GLOBAL_SCOPES,
 )
 
+#endregion
 
 # ------------------------------------------------------------------------------
 # Jet energy scale and resolution corrections
