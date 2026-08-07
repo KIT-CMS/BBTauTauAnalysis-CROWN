@@ -2418,14 +2418,10 @@ def build_config(
         era,
     )
 
-    # Jet ID producer
-    # For a detailed description, see producers/jets.py
+    # Producers of auxiliary jet collection quantities (mainly used for
+    # selection and JEC). For a detailed description, see producers/jets.py
     AuxJetCollectionQuantities = get_for_era(jets.AuxJetCollectionQuantities, era)
-
-    # Calibrated jets used for Type-I MET corrections
-    # For a detailed descriptions, see producers/jets.py
-    Type1JECData = get_for_era(jets.Type1JetEnergyCorrectionData, era)
-    Type1JECSimulation = get_for_era(jets.Type1JetEnergyCorrectionMC, era)
+    AuxCorrT1METJetCollectionQuantities = get_for_era(jets.AuxCorrT1METJetCollectionQuantities, era)
 
     # MET global quantities producer
     # For a detailed description, see producers/met.py
@@ -2577,6 +2573,8 @@ def build_config(
             event.DiLeptonVeto,
             MetGlobal,
             AuxJetCollectionQuantities,
+            AuxCorrT1METJetCollectionQuantities,
+            jets.Type1JetCollection,
         ]
         + prefire_weight_producers
         + base_jet_selection_producers
@@ -2587,11 +2585,10 @@ def build_config(
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
             jets.JetEnergyCorrectionMCRegressed,
+            jets.Type1JetEnergyCorrectionMC,
             # fatjets.FatJetEnergyCorrection,
         ]
     )
-    if era in ERAS_RUN3:
-        configuration.add_producers(GLOBAL_SCOPES, [Type1JECSimulation])
 
     # Producers common to all scopes with at least one hadronic tau
     configuration.add_producers(
@@ -2994,7 +2991,7 @@ def build_config(
         configuration.add_modification_rule(
             GLOBAL_SCOPES,
             ReplaceProducer(
-                producers=[Type1JECSimulation, Type1JECData],
+                producers=[jets.Type1JetEnergyCorrectionMC, jets.Type1JetEnergyCorrectionData],
                 samples=["data", "embedding", "embedding_mc"],
             ),
         )

@@ -16,15 +16,11 @@ def add_jetVariations(
     bjet_id_sf_producer: Producer,
 ):
     # Get the producers
-    producers = (
-        {
-            jets.JetEnergyCorrectionMC,
-            jets.JetEnergyCorrectionMCRegressed,
-            get_for_era(jets.Type1JetEnergyCorrectionMC, era),
-        }
-        if era in ERAS_RUN3 else
-        {jets.JetEnergyCorrectionMC}
-    )
+    producers = [
+        jets.JetEnergyCorrectionMC,
+        jets.JetEnergyCorrectionMCRegressed,
+        jets.Type1JetEnergyCorrectionMC,
+    ]
 
     #########################
     # Jet energy resolution
