@@ -295,25 +295,168 @@ AuxJetCollectionQuantities = era_producer_groups(
 #endregion
 
 # ------------------------------------------------------------------------------
-# Jet energy scale and resolution corrections
+# Auxiliary quantities for the `CorrT1METJet` collection
 # ------------------------------------------------------------------------------
 
+#region
 
-# Seed for the random number generator for jet energy resolution smearing
-JERSmearingSeed = Producer(
-    name="JERSmearingSeed",
-    call="""
-    event::quantity::GenerateSeed(
-        {df},
-        {output},
-        {input},
-        {ak4jet_jer_master_seed}
-    )
-    """,
-    input=[nanoAOD.luminosityBlock, nanoAOD.run, nanoAOD.event],
-    output=[q.jet_seed],
+# Dummy value or renaming of the EmEF column of CorrT1METJet collection
+# - For eras up to 2023, the EmEF column of the CorrT1METJet collection does not
+#   exist. Dummy values of 0 are added, causing that all CorrT1METJet objects
+#   are passing the EmEF < 0.9 criterion.
+# - For 2024, just rename the column.
+CorrT1METJetEmEF = {
+    tuple(ERAS_RUN2) + (
+        "2022preEE",
+        "2022postEE",
+        "2023preBPix",
+        "2023postBPix",
+    ): Producer(
+        name="CorrT1METJetEmEF",
+        call="""
+        event::quantity::Define<float>({df}, {output}, {input}, 0.0)
+        """,
+        input=[nanoAOD.nCorrT1METJet],
+        output=[q.CorrT1METJet_EmEnergyFraction],
+        scopes=GLOBAL_SCOPES,
+    ),
+    ("2024", "2025"): Producer(
+        name="CorrT1METJetEmEF",
+        call="""
+        event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})
+        """,
+        input=[nanoAOD.CorrT1METJet_EmEF],
+        output=[q.CorrT1METJet_EmEnergyFraction],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
+
+# Calculate the muon-subtracted raw jet pt
+# Here, 'Raw' is used because the maths stays the same as for the calculation of
+# the raw jet pt from the nanoAOD jet pt:
+# pt_muon_subtr = pt_raw * (1 - muon_subtr_factor)
+CorrT1METJetRawMuonSubtrPt = Producer(
+    name="CorrT1METJetRawMuonSubtr",
+    call="physicsobject::jet::jec::Raw({df}, {output}, {input})",
+    input=[
+        nanoAOD.CorrT1METJet_rawPt,
+        nanoAOD.CorrT1METJet_muonSubtrFactor,
+    ],
+    output=[q.CorrT1METJet_rawMuonSubtrPt],
     scopes=GLOBAL_SCOPES,
 )
+
+# Create a dummy jet ID column for this collection
+# The jet ID is set to 2, meaning that all CorrT1METJet jets are set to pass the
+# tight jet ID working point.
+CorrT1METJetID = Producer(
+    name="CorrT1METJetID",
+    call="event::quantity::Define<int>({df}, {output}, {input}, 2)",
+    input=[nanoAOD.nCorrT1METJet],
+    output=[q.CorrT1METJet_ID],
+    scopes=GLOBAL_SCOPES,
+)
+
+# Group of auxiliary `CorrT1METJet` collection quantities
+AuxCorrT1METJetCollectionQuantities = era_producer_groups(
+    "AuxCorr1T1METJetCollectionQuantities",
+    [
+        CorrT1METJetRawMuonSubtrPt,
+        CorrT1METJetID,
+        CorrT1METJetEmEF,
+    ],
+    GLOBAL_SCOPES,
+)
+
+#endregion
+
+# ------------------------------------------------------------------------------
+# `Type1Jet` collection and their energy corrections
+# ------------------------------------------------------------------------------
+
+#region
+
+def _concatenate(
+    jet_input_variable: Quantity,
+    corrjet_input_variable: Quantity,
+    output_variable: Quantity,
+    dtype: str = "float",
+    scopes: str = None,
+):
+    """
+    Helper function for `Concatenate` producers for the `Type1Jet`
+    collection.
+    """
+
+    return Producer(
+        name=f"Concatenate{output_variable.name}",
+        call=f"""
+        event::quantity::Concatenate<{dtype}>(
+            {{df}},
+            {{output}},
+            {{input}}
+        )
+        """,
+        input=[jet_input_variable, corrjet_input_variable],
+        output=[output_variable],
+        scopes=scopes,
+    )
+
+# Concatenate producers for the `Type1Jet` collection
+Type1JetCollection = ProducerGroup(
+    name="Type1JetCollection",
+    call=None,
+    input=None,
+    output=None,
+    scopes=GLOBAL_SCOPES,
+    subproducers=[
+        _concatenate(
+            jet_input_variable,
+            corrjet_input_variable,
+            output_column,
+            data_type,
+            scopes=GLOBAL_SCOPES,
+        )
+        for (
+            (jet_input_variable, corrjet_input_variable),
+            output_column,
+            data_type,
+        ) in [
+            (
+                (q.Jet_rawMuonSubtrPt, q.CorrT1METJet_rawMuonSubtrPt),
+                q.Type1Jet_rawMuonSubtrPt,
+                "float",
+            ),
+            (
+                (nanoAOD.Jet_eta, nanoAOD.CorrT1METJet_eta),
+                q.Type1Jet_eta,
+                "float",
+            ),
+            (
+                (nanoAOD.Jet_phi, nanoAOD.CorrT1METJet_phi),
+                q.Type1Jet_phi,
+                "float",
+            ),
+            (
+                (nanoAOD.Jet_area, nanoAOD.CorrT1METJet_area),
+                q.Type1Jet_area,
+                "float",
+            ),
+            (
+                (q.Jet_ID, q.CorrT1METJet_ID),
+                q.Type1Jet_ID,
+                "int",
+            ),
+            (
+                (q.Jet_EmEF, q.CorrT1METJet_EmEnergyFraction),
+                q.Type1Jet_EmEF,
+                "float",
+            ),
+        ]
+    ],
+)
+
+#endregion
 
 
 class StepwiseJERCProducerMetaConfiguration():
