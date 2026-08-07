@@ -285,15 +285,15 @@ JERSmearingSeed = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-# Jet pt correction producers for AK4 jets on data and simulation
-JetPtCorrectionData, JetPtCorrectionMC = stepwise_jerc_producer_factory(
-    input={
-        "jet_pt": nanoAOD.Jet_pt,
+
+class StepwiseJERCProducerMetaConfiguration():
+
+    _default_inputs = {
+        "jet_raw_pt": q.Jet_rawPt,
         "jet_eta": nanoAOD.Jet_eta,
         "jet_phi": nanoAOD.Jet_phi,
-        "jet_mass": nanoAOD.Jet_mass,
+        "jet_raw_mass": q.Jet_rawMass,
         "jet_area": nanoAOD.Jet_area,
-        "jet_raw_factor": nanoAOD.Jet_rawFactor,
         "jet_id": q.Jet_ID,
         "jet_seed": q.jet_seed,
         "genjet_pt": nanoAOD.GenJet_pt,
@@ -301,36 +301,189 @@ JetPtCorrectionData, JetPtCorrectionMC = stepwise_jerc_producer_factory(
         "genjet_phi": nanoAOD.GenJet_phi,
         "rho": nanoAOD.Rho_fixedGridRhoFastjetAll,
         "run": nanoAOD.run,
-    },
-    output={
+    }
+
+    _default_outputs = {
         "jet_jec_result": q.Jet_jecResult,
         "jet_l1_pt": q.Jet_l1Pt,
         "jet_l2rel_pt": q.Jet_l2relPt,
         "jet_l2l3res_pt": q.Jet_l2l3resPt,
         "jet_corrected_pt": q.Jet_correctedPt,
-    },
+        "jet_corrected_mass": q.Jet_correctedMass,
+    }
+
+    def __init__(
+        self,
+        input=None,
+        output=None,
+        scopes=None,
+        config_parameter_prefix="ak4jet",
+    ):
+
+        for key, value in self._default_inputs.items():
+            setattr(self, key, input.get(key, value) if input else value)
+        for key, value in (input or {}).items():
+            if key not in self._default_inputs:
+                setattr(self, key, value)
+        for key, value in self._default_outputs.items():
+            setattr(self, key, output.get(key, value) if output else value)
+        for key, value in (output or {}).items():
+            if key not in self._default_outputs:
+                setattr(self, key, value)
+
+        self.scopes = scopes
+        self.config_parameter_prefix = config_parameter_prefix
+
+    def producers(self, name: str, data=False):
+        return ProducerGroup(
+            name=name,
+            call=None,
+            input=None,
+            output=None,
+            scopes=self.scopes,
+            subproducers=[
+                (
+                    self._produce_jet_pt_correction_data(name + "Pt")
+                    if data
+                    else self._produce_jet_pt_correction_mc(name + "Pt")
+                ),
+                self._produce_jet_mass_correction(name + "Mass"),
+            ],
+        )
+
+    def _produce_jet_pt_correction_data(self, name: str):
+        """Jet pt correction for data."""
+
+        # Construct the function call
+        call = f"""
+            physicsobject::jet::jec::PtCorrectionData(
+                {{df}},
+                correctionManager,
+                {{output}},
+                {{input}},
+                "{{{self.config_parameter_prefix}_jec_file}}",
+                "{{{self.config_parameter_prefix}_jec_algo}}",
+                "{{{self.config_parameter_prefix}_jes_tag_data}}",
+                {{{self.config_parameter_prefix}_reapply_jes}},
+                "{{era}}"
+            )
+            """
+
+        return Producer(
+            name=name,
+            call=call,
+            input=[
+                self.jet_raw_pt,
+                self.jet_eta,
+                self.jet_phi,
+                self.jet_area,
+                self.rho,
+                self.run,
+            ],
+            output=[
+                self.jet_jec_result,
+                self.jet_l1_pt,
+                self.jet_l2rel_pt,
+                self.jet_l2l3res_pt,
+                self.jet_corrected_pt,
+            ],
+            scopes=self.scopes,
+        )
+
+    def _produce_jet_pt_correction_mc(self, name: str):
+        """Jet pt correction for simulation."""
+
+        # Construct the function call
+        call=f"""
+        physicsobject::jet::jec::PtCorrectionMC(
+            {{df}},
+            correctionManager,
+            {{output}},
+            {{input}},
+            "{{{self.config_parameter_prefix}_jec_file}}",
+            "{{{self.config_parameter_prefix}_jec_algo}}",
+            "{{{self.config_parameter_prefix}_jes_tag_mc}}",
+            "{{{self.config_parameter_prefix}_jer_tag}}",
+            {{{self.config_parameter_prefix}_jes_sources}},
+            {{{self.config_parameter_prefix}_jes_shift_factor}},
+            "{{{self.config_parameter_prefix}_jer_shift}}",
+            {{{self.config_parameter_prefix}_reapply_jes}},
+            "{{era}}"
+        )
+        """
+
+        return Producer(
+            name=name,
+            call=call,
+            input=[
+                self.jet_raw_pt,
+                self.jet_eta,
+                self.jet_phi,
+                self.jet_area,
+                self.jet_id,
+                self.genjet_pt,
+                self.genjet_eta,
+                self.genjet_phi,
+                self.rho,
+                self.jet_seed,
+            ],
+            output=[
+                self.jet_jec_result,
+                self.jet_l1_pt,
+                self.jet_l2rel_pt,
+                self.jet_l2l3res_pt,
+                self.jet_corrected_pt,
+            ],
+            scopes=self.scopes,
+        )
+
+    def _produce_jet_mass_correction(self, name: str):
+        # Construct the function call
+        call = """
+        physicsobject::jet::jec::MassCorrectionFromPt(
+            {df},
+            {output},
+            {input}
+        )
+        """
+
+        return Producer(
+            name=name,
+            call=call,
+            input=[
+                self.jet_raw_mass,
+                self.jet_raw_pt,
+                self.jet_corrected_pt,
+            ],
+            output=[self.jet_corrected_mass],
+            scopes=GLOBAL_SCOPES,
+        )
+
+
+# Jet pt and mass correction for AK4 jets in simulation
+JetEnergyCorrectionMC = StepwiseJERCProducerMetaConfiguration(
     scopes=GLOBAL_SCOPES,
-    producer_prefix="Jet",
-    config_parameter_prefix="ak4jet",
+).producers(
+    "JetEnergyCorrectionMC",
+    data=False,
 )
 
-# Jet pt correction producers for AK4 jets with pt regression on data and
+
+# Jet pt and mass correction for AK4 jets in data
+JetEnergyCorrectionData = StepwiseJERCProducerMetaConfiguration(
+    scopes=GLOBAL_SCOPES,
+).producers(
+    "JetEnergyCorrectionData",
+    data=True,
+)
+
+
+# Jet pt and mass correction for AK4 jets after PNet/UParT regression in
 # simulation
-JetPtCorrectionDataRegressed, JetPtCorrectionMCRegressed = stepwise_jerc_producer_factory(
+JetEnergyCorrectionMCRegressed = StepwiseJERCProducerMetaConfiguration(
     input={
-        "jet_pt": q.Jet_rawPtRegressed,
-        "jet_eta": nanoAOD.Jet_eta,
-        "jet_phi": nanoAOD.Jet_phi,
-        "jet_mass": q.Jet_rawMassRegressed,
-        "jet_area": nanoAOD.Jet_area,
-        "jet_raw_factor": nanoAOD.Jet_rawFactor,
-        "jet_id": q.Jet_ID,
-        "jet_seed": q.jet_seed,
-        "genjet_pt": nanoAOD.GenJet_pt,
-        "genjet_eta": nanoAOD.GenJet_eta,
-        "genjet_phi": nanoAOD.GenJet_phi,
-        "rho": nanoAOD.Rho_fixedGridRhoFastjetAll,
-        "run": nanoAOD.run,
+        "jet_raw_pt": q.Jet_rawPtRegressed,
+        "jet_raw_mass": q.Jet_rawMassRegressed,
     },
     output={
         "jet_jec_result": q.Jet_jecResultRegressed,
@@ -338,101 +491,30 @@ JetPtCorrectionDataRegressed, JetPtCorrectionMCRegressed = stepwise_jerc_produce
         "jet_l2rel_pt": q.Jet_l2relPtRegressed,
         "jet_l2l3res_pt": q.Jet_l2l3resPtRegressed,
         "jet_corrected_pt": q.Jet_correctedPtRegressed,
+        "jet_corrected_mass": q.Jet_correctedMassRegressed,
     },
     scopes=GLOBAL_SCOPES,
-    producer_prefix="RegressedJet",
-    config_parameter_prefix="ak4jet",
-)
+).producers("JetEnergyCorrectionMCRegressed", data=False)
 
-# Mass correction resulting from the JEC prodcedure
-JetMassCorrection = Producer(
-    name="JetMassCorrection",
-    call="""
-    physicsobject::jet::jec::MassCorrectionFromPt(
-        {df},
-        {output},
-        {input}
-    )
-    """,
-    input=[
-        q.Jet_rawMass,
-        q.Jet_rawPt,
-        q.Jet_correctedPt,
-    ],
-    output=[q.Jet_correctedMass],
-    scopes=GLOBAL_SCOPES,
-)
 
-# Mass correction resulting from the JEC prodcedure for regressed jets
-JetMassCorrectionRegressed = Producer(
-    name="JetMassCorrectionRegressed",
-    call="""
-    physicsobject::jet::jec::MassCorrectionFromPt(
-        {df},
-        {output},
-        {input}
-    )
-    """,
-    input=[
-        q.Jet_rawMassRegressed,
-        q.Jet_rawPtRegressed,
-        q.Jet_correctedPtRegressed,
-    ],
-    output=[q.Jet_correctedMassRegressed],
+# Jet pt and mass correction for AK4 jets after PNet/UParT regression in
+# simulation
+JetEnergyCorrectionDataRegressed = StepwiseJERCProducerMetaConfiguration(
+    input={
+        "jet_raw_pt": q.Jet_rawPtRegressed,
+        "jet_raw_mass": q.Jet_rawMassRegressed,
+    },
+    output={
+        "jet_jec_result": q.Jet_jecResultRegressed,
+        "jet_l1_pt": q.Jet_l1PtRegressed,
+        "jet_l2rel_pt": q.Jet_l2relPtRegressed,
+        "jet_l2l3res_pt": q.Jet_l2l3resPtRegressed,
+        "jet_corrected_pt": q.Jet_correctedPtRegressed,
+        "jet_corrected_mass": q.Jet_correctedMassRegressed,
+    },
     scopes=GLOBAL_SCOPES,
-)
+).producers("JetEnergyCorrectionDataRegressed", data=True)
 
-# Producer group for jet energy calibration on data
-JetEnergyCorrectionData = ProducerGroup(
-    name="JECData",
-    call=None,
-    input=None,
-    output=None,
-    scopes=GLOBAL_SCOPES,
-    subproducers=[
-        JetPtCorrectionData,
-        JetMassCorrection,
-    ],
-)
-
-# Producer group for jet energy calibration on MC
-JetEnergyCorrectionMC = ProducerGroup(
-    name="JECSimulation",
-    call=None,
-    input=None,
-    output=None,
-    scopes=GLOBAL_SCOPES,
-    subproducers=[
-        JetPtCorrectionMC,
-        JetMassCorrection,
-    ],
-)
-
-# Producer group for regression jet energy calibration on data
-JetEnergyCorrectionDataRegressed = ProducerGroup(
-    name="JECDataRegressed",
-    call=None,
-    input=None,
-    output=None,
-    scopes=GLOBAL_SCOPES,
-    subproducers=[
-        JetPtCorrectionDataRegressed,
-        JetMassCorrectionRegressed,
-    ],
-)
-
-# Producer group for regression jet energy calibration on MC
-JetEnergyCorrectionMCRegressed = ProducerGroup(
-    name="JECSimulationRegressed",
-    call=None,
-    input=None,
-    output=None,
-    scopes=GLOBAL_SCOPES,
-    subproducers=[
-        JetPtCorrectionMCRegressed,
-        JetMassCorrectionRegressed,
-    ],
-)
 
 #
 # JETS AND JET ENERGY CALIBRATION FOR MET TYPE-I CORRECTIONS
