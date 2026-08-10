@@ -6,10 +6,12 @@ from .producers import pairquantities as pairquantities
 from .quantities import output as q
 from code_generation.friend_trees import FriendTreeConfiguration
 from code_generation.modifiers import EraModifier
+from code_generation.systematics import SystematicShift
 
 from .constants import TT_SCOPES, ERAS_RUN2, ERAS_RUN3, SL_SCOPES, FH_SCOPES
 
-FAKE_FACTOR_VERSION = "fake-factors-2026-06-10"
+
+FAKE_FACTOR_VERSION = "fake-factors-2026-07-28"
 
 
 def build_config(
@@ -154,7 +156,7 @@ def build_config(
     # -------------------------------------------------------------------------
 
     configuration.add_producers(
-        FH_SCOPES,
+        TT_SCOPES,
         [
             fakefactors.FakeFactorFullhadronicLeadingQCDInput,
             fakefactors.FakeFactorFullhadronicLeadingTTInput,
@@ -192,7 +194,7 @@ def build_config(
     # -------------------------------------------------------------------------
 
     configuration.add_outputs(
-        FH_SCOPES,
+        TT_SCOPES,
         [
             q.fake_factor_1_raw,
             q.fake_factor_1,
@@ -280,13 +282,15 @@ def build_config(
             for direction in ["Up", "Down"]:
                 value_with_direction = f"{value}{direction}"
                 configuration.add_shift(
-                    name=value_with_direction,
-                    shift_config={
-                        tuple(SL_SCOPES): {
-                            parameter: value_with_direction,
+                    SystematicShift(
+                        name=value_with_direction,
+                        shift_config={
+                            tuple(SL_SCOPES): {
+                                parameter: value_with_direction,
+                            },
                         },
-                    },
-                    producers=producers,
+                        producers={tuple(SL_SCOPES): producers},
+                    ),
                 )
 
     # -------------------------------------------------------------------------
@@ -431,13 +435,15 @@ def build_config(
             for direction in ["Up", "Down"]:
                 value_with_direction = f"{value}{direction}"
                 configuration.add_shift(
-                    name=value_with_direction,
-                    shift_config={
-                        tuple(FH_SCOPES): {
-                            parameter: value_with_direction,
+                    SystematicShift(
+                        name=value_with_direction,
+                        shift_config={
+                            tuple(TT_SCOPES): {
+                                parameter: value_with_direction,
+                            },
                         },
-                    },
-                    producers=producers,
+                        producers={tuple(TT_SCOPES): producers},
+                    )
                 )
 
     # -------------------------------------------------------------------------

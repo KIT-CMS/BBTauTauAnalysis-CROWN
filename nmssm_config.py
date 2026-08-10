@@ -148,6 +148,16 @@ def add_noise_filters_config(configuration: Configuration):
                         "Flag_eeBadScFilter",
                         "Flag_ecalBadCalibFilter",
                     ],
+                    "2025": [
+                        "Flag_goodVertices",
+                        "Flag_globalSuperTightHalo2016Filter",
+                        "Flag_EcalDeadCellTriggerPrimitiveFilter",
+                        "Flag_BadPFMuonFilter",
+                        "Flag_BadPFMuonDzFilter",
+                        "Flag_hfNoisyHitsFilter",
+                        "Flag_eeBadScFilter",
+                        "Flag_ecalBadCalibFilter",  # marked as "yellow" in TWiki
+                    ],
                 },
             ),
         },
@@ -197,6 +207,7 @@ def add_pileup_reweighting_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-23CSep23-Summer23-NanoAODv12/2024-01-31/puWeights.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-23DSep23-Summer23BPix-NanoAODv12/2024-01-31/puWeights.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-04-15/puWeights_BCDEFGHI.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-05/puWeights_2025pp_Golden_Summer24_25ns_69200ub.json.gz",
                 },
             ),
             "PU_reweighting_era": EraModifier(
@@ -210,6 +221,7 @@ def add_pileup_reweighting_config(configuration: Configuration):
                     "2023preBPix": "Collisions2023_366403_369802_eraBC_GoldenJson",
                     "2023postBPix": "Collisions2023_369803_370790_eraD_GoldenJson",
                     "2024": "Collisions24_BCDEFGHI_goldenJSON",
+                    "2025": "Collisions25_goldenJSON",
                 }
             ),
             "PU_reweighting_variation": "nominal",
@@ -262,6 +274,7 @@ def add_golden_json_config(configuration: Configuration):
                     "2023preBPix": "data/golden_json/Cert_Collisions2023_366442_370790_Golden.json",
                     "2023postBPix": "data/golden_json/Cert_Collisions2023_366442_370790_Golden.json",
                     "2024": "data/golden_json/Cert_Collisions2024_378981_386951_Golden.json",
+                    "2025": "data/golden_json/Cert_Collisions2025_391658_398903_Golden.json",
                 },
             ),
         },
@@ -397,6 +410,7 @@ def add_electron_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electron.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electron.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electron.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/electron.json.gz",
                 },
             ),
             "ele_sf_cset_name": EraModifier(
@@ -422,6 +436,7 @@ def add_electron_config(configuration: Configuration):
                     "2023preBPix": "2023PromptC",
                     "2023postBPix": "2023PromptD",
                     "2024": "2024Prompt",
+                    "2025": "2025Prompt",
                 }
             ),
             "ele_reco_sf_name": "RecoAbove20",  # TODO needs to be modified for 2022 and 2023
@@ -446,6 +461,7 @@ def add_electron_config(configuration: Configuration):
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023postBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2024": "DOES_NOT_EXIST",  # TODO to be added when available
+                    "2025": "DOES_NOT_EXIST",  # TODO to be added when available
                 },
             ),
             "mc_electron_id_sf": "ID90_pt_eta_bins",
@@ -592,6 +608,7 @@ def add_muon_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23CSep23-Summer23-NanoAODv12/2026-04-28/muon_Z.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-04-28/muon_Z.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-04-28/muon_Z.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-25Prompt-Summer24-NanoAODv15/2026-04-28/muon_Z.json.gz",
                 },
             ),
             "muon_reco_sf_name": EraModifier(
@@ -640,6 +657,7 @@ def add_muon_config(configuration: Configuration):
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023postBPix": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2024": "DOES_NOT_EXIST",  # TODO to be added when available
+                    "2025": "DOES_NOT_EXIST",  # TODO to be added when available
                 }
             ),
             "mc_muon_id_sf": "ID_pt_eta_bins",
@@ -790,8 +808,8 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
         },
     )
 
-    # correction files for tau identification/energy scale corrections and tau trigger scale factors
-    # TODO for now, preliminary corrections are used for 2022 and 2023, update them as soon as the official corrections are available
+    # Correction files for tau identification/energy scale corrections and tau trigger scale factors.
+    # TODO Update 2025 corrections as soon as they are available. For now, the 2024 corrections are used for 2025 as well.
     configuration.add_config_parameters(
         HAD_TAU_SCOPES,
         {
@@ -806,6 +824,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
                 }
             ),
             "tau_trigger_sf_file": EraModifier(
@@ -819,6 +838,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
                 }
             ),
             "tau_ES_json_name": "tau_energy_scale",
@@ -901,7 +921,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
             "tau_id_sf_vsjet_tau_dm10_pt40toInf_shift": "nom",
             "tau_id_sf_vsjet_tau_dm11_pt20to40_shift": "nom",
             "tau_id_sf_vsjet_tau_dm11_pt40toInf_shift": "nom",
-            "tau_id_sf_vsjet_sf_dependence": "dm",  # or "dm" ("pt" is both dm and pt dependent)
+            "tau_id_sf_vsjet_sf_dependence": "dm",  # dm for dm- and pt-binned SFs, "pt" for high-pt SFs
         },
     )
 
@@ -1264,11 +1284,13 @@ def add_ak4jet_config(configuration: Configuration):
         "2016preVFP": "Summer19UL16APV_V7",
         "2016postVFP": "Summer19UL16_V7",
         "2017": "Summer19UL17_V5",
+        "2018": "Summer19UL18_V5",
         "2022preEE": "Summer22_22Sep2023_V4",
         "2022postEE": "Summer22EE_22Sep2023_V4",
         "2023preBPix": "Summer23Prompt23_V4",
         "2023postBPix": "Summer23BPixPrompt23_V4",
         "2024": "Summer24Prompt24_V3",
+        "2025": "Summer24Prompt25_V3",
     }
 
     # AK4 jet energy calibration and resolution corrections
@@ -1292,6 +1314,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/jet_jerc.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/jet_jerc.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jet_jerc.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jet_jerc.json.gz",
                 },
             ),
             "ak4jet_jer_tag": EraModifier(
@@ -1305,32 +1328,12 @@ def add_ak4jet_config(configuration: Configuration):
                     "2023preBPix": "Summer23Prompt23_RunCv123_JRV2",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_JRV2",
                     "2024": "Summer24Prompt24_JRV1",
+                    "2025": "Summer24Prompt25_JRV2",
                 }
             ),
-            "ak4jet_jes_tag_data": EraModifier(
-                {
-                    **common_jes_tags,
-                    "2018": "Summer19UL18_V5",
-                },
-            ),
-            "ak4jet_jes_tag_mc": EraModifier(
-                {
-                    **common_jes_tags,
-                    "2018": "Summer19UL18_V5",
-                }
-            ),
-            "ak4jet_jec_algo": EraModifier(
-                {
-                    **{
-                        _era: "AK4PFchs"
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: "AK4PFPuppi"
-                        for _era in ERAS_RUN3
-                    }
-                }
-            )
+            "ak4jet_jes_tag_data": EraModifier(common_jes_tags),
+            "ak4jet_jes_tag_mc": EraModifier(common_jes_tags),
+            "ak4jet_jec_algo": "AK4PFPuppi",
         },
     )
 
@@ -1339,7 +1342,18 @@ def add_ak4jet_config(configuration: Configuration):
     configuration.add_config_parameters(
         "global",
         {
-            "ak4jet_id_file": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetid.json.gz",  # only needed for 2024
+            "ak4jet_id_file": EraModifier(
+                {
+                    **{
+                        era: "DOES_NOT_EXIST"
+                        for era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetid.json.gz",
+                        "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jetid.json.gz",
+                    }
+                }
+            ),
             "ak4jet_id_name": "AK4PUPPI",
         },
     )
@@ -1367,6 +1381,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/jetvetomaps.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/jetvetomaps.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jetvetomaps.json.gz",
                 },
             ),
             "jet_veto_map_name": EraModifier(
@@ -1380,6 +1395,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2023preBPix": "Summer23Prompt23_RunC_V1",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_V1",
                     "2024": "Summer24Prompt24_RunBCDEFGHI_V1",
+                    "2025": "Summer24Prompt25_RunCDEFG_V1",
                 },
             ),
             "jet_veto_map_type": "jetvetomap",
@@ -1432,6 +1448,7 @@ def add_ak8jet_config(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-05/fatJet_jerc.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/fatJet_jerc.json.gz",
                 },
             ),
             "ak8jet_jer_tag": EraModifier(
@@ -1445,6 +1462,7 @@ def add_ak8jet_config(configuration: Configuration):
                     "2023preBPix": "Summer23Prompt23_RunCv1234_JRV1_MC",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_JRV1_MC",
                     "2024": "Summer23BPixPrompt23_RunD_JRV1_MC",  # copied from 2023postBPix
+                    "2025": "Summer24Prompt25_JRV2_MC",
                 }
             ),
             "ak8jet_jes_tag_data": "\"\"",
@@ -1459,6 +1477,7 @@ def add_ak8jet_config(configuration: Configuration):
                     "2023preBPix": "Summer23Prompt23_V2_MC",
                     "2023postBPix": "Summer23BPixPrompt23_V3_MC",
                     "2024": "Summer24Prompt24_V2_MC",
+                    "2025": "Summer24Prompt25_V3_MC",
                 }
             ),
             "ak8jet_jec_algo": "AK8PFPuppi",  # TODO normally "AK8PFPuppi" would be used -> change to AK4 naming to get merged uncertainty scheme?
@@ -1470,7 +1489,18 @@ def add_ak8jet_config(configuration: Configuration):
     configuration.add_config_parameters(
         "global",
         {
-            "ak8jet_id_file": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetid.json.gz",  # only needed for 2024
+            "ak8jet_id_file": EraModifier(
+                {
+                    **{
+                        era: "DOES_NOT_EXIST"
+                        for era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-02/jetid.json.gz",
+                        "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jetid.json.gz",
+                    },
+                },
+            ),
             "ak8jet_id_name": "AK8PUPPI",
         },
     )
@@ -1536,6 +1566,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": nanoAOD.Jet_btagUParTAK4B.name,
+                    "2025": nanoAOD.Jet_btagUParTAK4B.name,
                 },
             ),
             "bjet_min_score": EraModifier(  # medium WP
@@ -1549,12 +1580,14 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": 0.1917,  # ParticleNet
                     "2023postBPix": 0.1919,  # ParticleNet
                     "2024": 0.1272,  # UParT
+                    "2025": 0.1272,  # UParT
                 },
             ),
         },
     )
 
     # corrections for b jet identification in et channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         ET_SCOPES,
         {
@@ -1569,12 +1602,14 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_et.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_et.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in mt channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         MT_SCOPES,
         {
@@ -1589,12 +1624,14 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mt.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mt.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in tt channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         TT_SCOPES,
         {
@@ -1609,12 +1646,14 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_tt.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_tt.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in em channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         EM_SCOPES,
         {
@@ -1629,12 +1668,14 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_em.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_em.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in ee channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         EE_SCOPES,
         {
@@ -1649,12 +1690,14 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_ee.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_ee.json.gz",
                 }
             ),
         },
     )
 
     # corrections for b jet identification in mm channel
+    # TODO update to 2025 efficiencies as soon as they are available
     configuration.add_config_parameters(
         MM_SCOPES,
         {
@@ -1669,6 +1712,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mm.json.gz",
+                    "2025": "payloads/btagging_efficiencies/btag_eff_fix_v2/2024/btag_efficiency_mm.json.gz",
                 }
             ),
         },
@@ -1688,6 +1732,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23CSep23-Summer23-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-03-10/btagging.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/btagging.json.gz",
                 }
             ),
             "bjet_sf_wp_name": EraModifier(
@@ -1701,6 +1746,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "TO_ADD",
                     "2023postBPix": "TO_ADD",
                     "2024": "UParTAK4_wp_values",
+                    "2025": "UParTAK4_wp_values",
                 },
             ),
             "bjet_eff_sample_type": SampleModifier(
@@ -1781,6 +1827,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": "UParTAK4_comb",  # UParT
+                    "2025": "UParTAK4_comb",  # UParT
                 },
             ),
             "bjet_sf_bc_name": EraModifier(
@@ -1790,6 +1837,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         for _era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": "UParTAK4_comb",  # UParT
+                    "2025": "UParTAK4_comb",  # UParT
                 },
             ),
             "bjet_sf_lf_name": EraModifier(
@@ -1799,6 +1847,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         for _era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2024": "UParTAK4_light",  # UParT
+                    "2025": "UParTAK4_light",  # UParT
                 },
             ),
             "bjet_sf_variation": "central",
@@ -1814,6 +1863,8 @@ def add_zpt_weight_config(configuration: Configuration):
     provided by the HLepRare group.
     """
     ## all scopes MET selection
+    # TODO Include 2025 corrections as soon as they are available. For now, 2024
+    # corrections are used.
     configuration.add_config_parameters(
         SCOPES,
         {
@@ -1831,13 +1882,14 @@ def add_zpt_weight_config(configuration: Configuration):
             "zpt_weight_file": EraModifier(
                 {
                     **{
-                        _era: f"data/hleprare/DYweightCorrlib/DY_pTll_weights_{_era}_v5.json.gz"
-                        for _era in ERAS_RUN3
-                    },
-                    **{
                         _era: "DOES_NOT_EXIST"  # placeholder for Run 2, for which corrections are provided in a different way
                         for _era in ERAS_RUN2
                     },
+                    **{
+                        _era: f"data/hleprare/DYweightCorrlib/DY_pTll_weights_{_era}_v5.json.gz"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2033postBPix", "2024"]
+                    },
+                    "2025": f"data/hleprare/DYweightCorrlib/DY_pTll_weights_2024_v5.json.gz",
                 },
             ),
             "zpt_weight_name": "DY_pTll_reweighting",
@@ -1874,6 +1926,8 @@ def add_met_corrections_config(configuration: Configuration):
 
     # Files containing the recoil corrections. We have ROOT files for Run 2 and
     # json.gz files for Run 3, which are processed using different producers.
+    # TODO Include 2025 corrections as soon as they are available. For now, 2024
+    # corrections are used.
     configuration.add_config_parameters(
         SCOPES,
         {
@@ -1887,8 +1941,9 @@ def add_met_corrections_config(configuration: Configuration):
                     },
                     **{
                         _era: f"data/hleprare/RecoilCorrlib/Recoil_corrections_{_era}_v5.json.gz"
-                        for _era in ERAS_RUN3
-                    }
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2033postBPix", "2024"]
+                    },
+                    "2025": f"data/hleprare/RecoilCorrlib/Recoil_corrections_2024_v5.json.gz"
                 },
             ),
         },
@@ -2111,6 +2166,7 @@ def build_config(
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronSS_EtDependent.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronSS_EtDependent.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronSS_EtDependent.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/electronSS_EtDependent.json.gz",
                 }
             ),
             "ele_es_sf_name": EraModifier(
@@ -2377,10 +2433,7 @@ def build_config(
             tuple(ERAS_RUN2): [
                 jets.BaseJetSelectionWithPUID,
             ],
-            ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): [
-                jets.BaseJetSelectionWithoutPUID,
-            ],
-            "2024": [
+            tuple(ERAS_RUN3): [
                 jets.BaseJetSelectionWithoutPUID,
             ],
         },
@@ -2427,8 +2480,8 @@ def build_config(
     bjet_id_sf_producer = get_for_era(
         {
             tuple(ERAS_RUN2): scalefactors.BJetShapeDeepJet_SF,
-            tuple(["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]): scalefactors.BJetShapePNet_SF,
-            "2024": scalefactors.BJetWPUParT_SF,
+            ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): scalefactors.BJetShapePNet_SF,
+            ("2024", "2025"): scalefactors.BJetWPUParT_SF,
         },
         era,
         default=[]
@@ -2964,8 +3017,8 @@ def build_config(
     #     ),
     # )
 
-    # Replace electron pt correction for data, as the correction is computed differently in data and
-    # MC
+    # Replace electron pt correction for data, as the correction is computed
+    # differently in data and MC
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
@@ -2986,8 +3039,8 @@ def build_config(
         ),
     )
 
-    # The number of partons is only defined for MC samples and only important to know for EW
-    # process samples
+    # The number of partons is only defined for MC samples and only important to
+    # know for EW process samples
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
@@ -3007,7 +3060,8 @@ def build_config(
         ),
     )
 
-    # for whatever reason, the diboson samples do not have these weights in the ntuple....
+    # For whatever reason, the diboson samples do not have these weights in the
+    # ntuple....
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
@@ -3016,8 +3070,8 @@ def build_config(
         ),
     )
 
-    # for whatever reason, the nmssm samples have one less entry of the weights and therefore need
-    # special treatment
+    # For whatever reason, the NMSSM samples have one less entry of the weights
+    # and therefore need special treatment
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
@@ -3037,7 +3091,8 @@ def build_config(
         ),
     )
 
-    # Remove the generator-level b jet pair quantities from data and embedding samples
+    # Remove the generator-level b jet pair quantities from data and embedding
+    # samples
     configuration.add_modification_rule(
         SCOPES,
         RemoveProducer(

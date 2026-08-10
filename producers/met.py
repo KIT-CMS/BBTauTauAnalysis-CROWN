@@ -98,7 +98,7 @@ MetCov = {
         },
         scopes=GLOBAL_SCOPES,
     ),
-    "2024": met_cov_producers(
+    ("2024", "2025"): met_cov_producers(
         name="MetCov",
         input_quantities={
             "met_cov_xx": nanoAOD.PuppiMET_covXX,

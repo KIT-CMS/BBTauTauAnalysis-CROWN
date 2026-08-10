@@ -159,7 +159,7 @@ def _add_electron_triggers(
                             # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIIISummary
                             ele_115_caloidvt_gsftrkidt_parameters,
                         ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                        for _era in ERAS_RUN3
                     },
                     "2018": [
                             # trigger:            HLT_Ele32_WPTight_Gsf
@@ -434,7 +434,7 @@ def _add_muon_triggers(
                             #                     - https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2024
                             high_pt_tk_mu_100_parameters,
                         ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                        for _era in ERAS_RUN3
                     },
                     "2018": [
                         # trigger:            HLT_IsoMu24
@@ -554,6 +554,7 @@ def _add_muon_triggers(
         },
     )
 
+
 def _add_tautau_triggers(
     configuration: Configuration,
 ):
@@ -601,21 +602,23 @@ def _add_tautau_triggers(
     ## ParticleNet trigger
 
     # HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3
-    double_medium_pnet_35_eta_2p3_parameters = _get_updated_dict(
+    double_medium_pnet_30_eta_2p3_parameters = _get_updated_dict(
         double_medium_deeptau_35_eta_2p1_2024_parameters,
         {
-            "flagname": "trg_double_tau35_mediumpnet",
+            "flagname": "trg_double_tau30_mediumpnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3",
+            "p1_min_pt": 35.,
+            "p2_min_pt": 35.,
             "p1_max_abs_eta": 2.3,
             "p2_max_abs_eta": 2.3,
         },
     )
 
     # HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3
-    double_tight_pnet_35_eta_2p3_parameters = _get_updated_dict(
-        double_medium_pnet_35_eta_2p3_parameters,
+    double_tight_pnet_30_eta_2p3_parameters = _get_updated_dict(
+        double_medium_pnet_30_eta_2p3_parameters,
         {
-            "flagname": "trg_double_tau35_tightpnet",
+            "flagname": "trg_double_tau30_tightpnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3",
         },
     )
@@ -736,6 +739,19 @@ def _add_tautau_triggers(
         {
             "tautaujet_trigger": EraModifier(
                 {
+                    "2025": [
+                        # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60
+                        # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
+                        # tau filter bit:   14
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
+                        double_pnet_26_eta2p3_jet_60_parameters,
+
+                        # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75
+                        # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # tau filter bit:   14
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
+                        double_pnet_26_eta2p3_jet_75_parameters,
+                    ],
                     "2024": [
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60
                         # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
@@ -780,6 +796,19 @@ def _add_tautau_triggers(
             ),
             "tautau_trigger": EraModifier(
                 {
+                    "2025": [
+                        # trigger:          HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3
+                        # final tau filter: hltDoublePFJets30PNetTauhTagMediumWPL2DoubleTau
+                        # tau filter bit:   11 (for NANOAODv15)
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2025
+                        double_medium_pnet_30_eta_2p3_parameters,
+
+                        # trigger:          HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3
+                        # final tau filter: hltDoublePFJets30PNetTauhTagTightWPL2DoubleTau
+                        # tau filter bit:   11 (for NANOAODv15)
+                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2025
+                        double_tight_pnet_30_eta_2p3_parameters,
+                    ],
                     "2024": [
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS35_L2NN_eta2p1
                         # final tau filter: hltHpsDoublePFTau35MediumDitauWPDeepTauL1HLTMatched
@@ -791,13 +820,13 @@ def _add_tautau_triggers(
                         # final tau filter: hltDoublePFJets30PNetTauhTagMediumWPL2DoubleTau
                         # tau filter bit:   11 (for NANOAODv15)
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
-                        double_medium_pnet_35_eta_2p3_parameters,
+                        double_medium_pnet_30_eta_2p3_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet30_Tight_L2NN_eta2p3
                         # final tau filter: hltDoublePFJets30PNetTauhTagTightWPL2DoubleTau
                         # tau filter bit:   11 (for NANOAODv15)
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
-                        double_tight_pnet_35_eta_2p3_parameters,
+                        double_tight_pnet_30_eta_2p3_parameters,
                     ],
                     **{
                         _era: [
@@ -923,7 +952,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 "match_max_delta_r": 0.4,
                             }
                         ]
-                        for _era in ["2024"]
+                        for _era in ["2024", "2025"]
                     },
                     **{
                         _era: [
@@ -1195,6 +1224,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
         {
+            # TODO Update 2025 corrections as soon as dedicated corrections are available
             "e_trigger_sf_file": EraModifier(
                 {  # TODO clarify if we can actually just use the electron trigger SFs
                     "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
@@ -1206,6 +1236,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-03/electronHlt.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-03/electronHlt.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
                 }
             ),
             "ele_trigger_sf": [
@@ -1223,6 +1254,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                             "2023preBPix": "2023PromptC",
                             "2023postBPix": "2023PromptD",
                             "2024": "2024Prompt",
+                            "2025": "2024Prompt",  # TODO update as soon as dedicated corrections are available for 2025
                         }
                     ),
                     "e_trigger_sf_name": "Electron-HLT-SF",
@@ -1233,7 +1265,8 @@ def add_diTauTriggerSetup(configuration: Configuration):
         },
     )
 
-    # double electron trigger scale factors
+    # double electron-tau trigger scale factors
+    # TODO update scale factors for 2025 as soon as dedicated corrections are available
     configuration.add_config_parameters(
         ET_SCOPES,
         {
@@ -1251,6 +1284,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
                                 for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
                             },
+                            "2025": f"data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",
                         }
                     ),
                     "et_trigger_leg1_era": EraModifier(
@@ -1264,6 +1298,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                             "2023preBPix": "2023PromptC",
                             "2023postBPix": "2023PromptD",
                             "2024": "2024Prompt",
+                            "2025": "2024Prompt",
                         }
                     ),
                     "et_trigger_leg1_sf_name": "Electron-HLT-SF",
@@ -1298,6 +1333,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
     )
 
     # double muon-tau trigger scale factors
+    # TODO update scale factors for 2025 as soon as dedicated corrections are available
     configuration.add_config_parameters(
         MT_SCOPES,
         {
@@ -1314,6 +1350,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
                                 for _era in ERAS_RUN3
                             },
+                            "2025": f"data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json"
                         }
                     ),
                     "mt_trigger_leg1_flagname": "trg_wgt_double_mu20tau27_leg1",
@@ -1368,13 +1405,16 @@ def add_diTauTriggerSetup(configuration: Configuration):
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
-                    "2024": [
-                        {
-                            "tt_trigger_leg1_flagname": "trg_wgt_double_tau35_mediumpnet_leg1",
-                            "tt_trigger_flag": "trg_double_tau35_mediumpnet",
-                            **common_double_tautau_trigger_args,
-                        },
-                    ],
+                    **{
+                        _era: [
+                            {
+                                "tt_trigger_leg1_flagname": "trg_wgt_double_tau30_mediumpnet_leg1",
+                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
+                                **common_double_tautau_trigger_args,
+                            },
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
                 },
             ),
             "double_tautau_trigger_leg2_sf": EraModifier(
@@ -1402,13 +1442,16 @@ def add_diTauTriggerSetup(configuration: Configuration):
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
-                    "2024": [
-                        {
-                            "tt_trigger_leg2_flagname": "trg_wgt_double_tau35_mediumpnet_leg2",
-                            "tt_trigger_flag": "trg_double_tau35_mediumpnet",
-                            **common_double_tautau_trigger_args,
-                        },
-                    ],
+                    **{
+                        _era: [
+                            {
+                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau30_mediumpnet_leg2",
+                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
+                                **common_double_tautau_trigger_args,
+                            },
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
                 },
             ),
         },
