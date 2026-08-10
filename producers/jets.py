@@ -247,8 +247,8 @@ JetRawMassRegressed = Producer(
     call="physicsobject::jet::jec::Regressed({df}, {output}, {input}, \"{ak4jet_reg_algo}\")",
     input=[
         q.Jet_rawMass,
-        nanoAOD.Jet_regPtRawCorr,
-        nanoAOD.Jet_regPtRawCorrNeutrino,
+        q.Jet_regPtRawCorr,
+        q.Jet_regPtRawCorrNeutrino,
         q.Jet_isBTagged,
     ],
     output=[q.Jet_rawMassRegressed],
