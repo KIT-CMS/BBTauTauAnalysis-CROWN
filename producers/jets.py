@@ -247,8 +247,8 @@ JetRawMassRegressed = Producer(
     call="physicsobject::jet::jec::Regressed({df}, {output}, {input}, \"{ak4jet_reg_algo}\")",
     input=[
         q.Jet_rawMass,
-        nanoAOD.Jet_UParTAK4RegPtRawCorr,
-        nanoAOD.Jet_UParTAK4RegPtRawCorrNeutrino,
+        nanoAOD.Jet_regPtRawCorr,
+        nanoAOD.Jet_regPtRawCorrNeutrino,
         q.Jet_isBTagged,
     ],
     output=[q.Jet_rawMassRegressed],
@@ -966,20 +966,6 @@ LVJet1 = Producer(
     scopes=SCOPES,
 )
 
-LVJet1Regressed = Producer(
-    name="LVJet1Regressed",
-    call="lorentzvector::Build({df}, {output}, {input}, 0)",
-    input=[
-        q.Jet_correctedPtRegressed,
-        nanoAOD.Jet_eta,
-        nanoAOD.Jet_phi,
-        q.Jet_correctedMassRegressed,
-        q.good_jet_collection,
-    ],
-    output=[q.jet_p4_regressed_1],
-    scopes=SCOPES,
-)
-
 LVJet2 = Producer(
     name="LVJet2",
     call="lorentzvector::Build({df}, {output}, {input}, 1)",
@@ -991,20 +977,6 @@ LVJet2 = Producer(
         q.good_jet_collection,
     ],
     output=[q.jet_p4_2],
-    scopes=SCOPES,
-)
-
-LVJet2Regressed = Producer(
-    name="LVJet2Regressed",
-    call="lorentzvector::Build({df}, {output}, {input}, 1)",
-    input=[
-        q.Jet_correctedPtRegressed,
-        nanoAOD.Jet_eta,
-        nanoAOD.Jet_phi,
-        q.Jet_correctedMassRegressed,
-        q.good_jet_collection,
-    ],
-    output=[q.jet_p4_regressed_2],
     scopes=SCOPES,
 )
 

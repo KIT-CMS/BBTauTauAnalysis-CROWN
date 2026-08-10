@@ -4,7 +4,7 @@
 main () {
     # Local path variables
     local is_zsh="$( [[ -n "${ZSH_VERSION}" ]] && echo "true" || echo "false" )"
-    local this_file="$( [[ "${is_zsh}" ]] && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]:-$0}" )"
+    local this_file="$( [[ "${is_zsh}" == "true" ]] && echo "${(%):-%x}" || echo "${BASH_SOURCE[0]:-$0}" )"
     local this_dir="$( cd "$( dirname "${this_file}" )" && pwd )"
     local crown_root="$( dirname "$( dirname "$(dirname "${this_dir}" )" )" )"
     local analysis_root="$(dirname "${this_dir}" )"

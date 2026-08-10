@@ -2990,14 +2990,13 @@ def build_config(
     )
 
     # Replace jet energy correction for type-I correction jets for data and embedding
-    if era in ERAS_RUN3:
-        configuration.add_modification_rule(
-            GLOBAL_SCOPES,
-            ReplaceProducer(
-                producers=[jets.Type1JetEnergyCorrectionMC, jets.Type1JetEnergyCorrectionData],
-                samples=["data", "embedding", "embedding_mc"],
-            ),
-        )
+    configuration.add_modification_rule(
+        GLOBAL_SCOPES,
+        ReplaceProducer(
+            producers=[jets.Type1JetEnergyCorrectionMC, jets.Type1JetEnergyCorrectionData],
+            samples=["data", "embedding", "embedding_mc"],
+        ),
+    )
 
     # Replace fat jet energy correction for data
     # configuration.add_modification_rule(
@@ -3278,9 +3277,6 @@ def build_config(
             q.bpair_btag_value_regressed_2,
             q.bpair_pt_resolution_regressed_1,
             q.bpair_pt_resolution_regressed_2,
-            q.bpair_m_inv,
-            q.bpair_deltaR,
-            q.bpair_pt_dijet,
             q.bpair_m_inv_regressed,
             q.bpair_deltaR_regressed,
             q.bpair_pt_dijet_regressed,

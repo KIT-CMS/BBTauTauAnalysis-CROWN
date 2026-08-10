@@ -979,7 +979,7 @@ ROOT::RDF::RNode TightestWPPassed(
 
     // Sort the working points in descending order to find the tightest WP passed
     auto wp_names = std::vector<std::string>({"L", "M", "T", "XT", "XXT"});
-    auto wp_cuts = std::vector<float>(wp_names.size());
+    auto wp_cuts = std::vector<float>();
     for (auto &wp_name : wp_names) {
         wp_cuts.push_back(wp_evaluator->evaluate({wp_name}));
     }
