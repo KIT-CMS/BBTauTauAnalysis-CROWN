@@ -1861,7 +1861,8 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2025": "UParTAK4_light",  # UParT
                 },
             ),
-            "bjet_sf_variation": "central",
+            "bjet_sf_variation_lf": "central",
+            "bjet_sf_variation_bc": "central",
             "bjet_btag_wp_name": "M",
         },
     )
