@@ -34,18 +34,18 @@ def collect_correction_files(configuration):
 def get_correction_version(correction_file):
     return os.path.basename(os.path.dirname(correction_file))
 
+
 def get_latest_correction_version(correction_file):
-    changes_file = os.path.join(
+    correction_versions = []
+    for correction_version in os.listdir(
         os.path.dirname(os.path.dirname(correction_file)),
-        "latest",
-        "changes.md",
-    )
-    with open(changes_file, "r") as f:
-        content = f.read()
-    m = re.search(r"^## Changes:\s(.+)\s\(", content)
-    if m is None:
-        raise ValueError(f"Could not extract latest version from {changes_file}")
-    return m.group(1)
+    ):
+        m = re.match(r"(\d{4})-(\d{2})-(\d{2})", correction_version)
+        if m is None:
+            continue
+        correction_versions.append((int(m.group(1)), int(m.group(2)), int(m.group(3))))
+    newest_correction = sorted(correction_versions)[-1]
+    return f"{newest_correction[0]:04d}-{newest_correction[1]:02d}-{newest_correction[2]:02d}"
 
 
 class CorrectionVersionTest(unittest.TestCase):
