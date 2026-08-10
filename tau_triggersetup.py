@@ -1350,7 +1350,8 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
                                 for _era in ERAS_RUN3
                             },
-                            "2025": f"data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json"
+                            # TODO update to 2025 correction as soon as it is available
+                            "2025": "data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json"
                         }
                     ),
                     "mt_trigger_leg1_flagname": "trg_wgt_double_mu20tau27_leg1",
@@ -1382,6 +1383,10 @@ def add_diTauTriggerSetup(configuration: Configuration):
         {
             "double_tautau_trigger_leg1_sf": EraModifier(
                 {
+                    # TODO fill 2016 and 2017
+                    "2016preVFP": [],
+                    "2016postVFP": [],
+                    "2017": [],
                     "2018": [
                         {
                             "tt_trigger_leg1_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg1",
@@ -1419,6 +1424,10 @@ def add_diTauTriggerSetup(configuration: Configuration):
             ),
             "double_tautau_trigger_leg2_sf": EraModifier(
                 {
+                    # TODO fill 2016 and 2017
+                    "2016preVFP": [],
+                    "2016postVFP": [],
+                    "2017": [],
                     "2018": [
                         {
                             "tt_trigger_leg2_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg2",

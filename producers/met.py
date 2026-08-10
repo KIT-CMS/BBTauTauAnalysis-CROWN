@@ -335,7 +335,7 @@ MetRecoilCorrection = {
             q.met_p4_leptoncorrected,
             q.gen_boson_p4,
             q.gen_vis_boson_p4,
-            q.Jet_correctedPt,
+            q.n_jets,
         ],
         output=[q.met_p4_recoilcorrected],
         scopes=SCOPES,

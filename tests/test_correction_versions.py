@@ -1,25 +1,10 @@
-from pathlib import Path
 import unittest
 from itertools import product
 import os
 import re
-import sys
 
 from analysis_configurations.bbtautau.nmssm_config import build_config
-from analysis_configurations.bbtautau.constants import ERAS_RUN3, SCOPES
-
-
-CROWN_ROOT = Path(__file__).resolve().parents[3]
-sys.path.append(CROWN_ROOT)
-ANALYSIS_ROOT = CROWN_ROOT / "analysis_configurations" / "bbtautau"
-BUILD_SCRIPTS = [
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2018.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2022preEE.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2022postEE.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2023preBPix.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2023postBPix.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2024.sh",
-]
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, ERAS_RUN3, SCOPES
 
 
 def collect_correction_files(configuration):
@@ -51,7 +36,7 @@ def get_latest_correction_version(correction_file):
 class CorrectionVersionTest(unittest.TestCase):
 
     def setUp(self):
-        eras = ["2018"] + ERAS_RUN3
+        eras = ERAS_RUN2 + ERAS_RUN3
         available_scopes = SCOPES
         samples = [
             "data",
