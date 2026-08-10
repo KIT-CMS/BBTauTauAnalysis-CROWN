@@ -19,6 +19,7 @@ def run(args):
         "rem_hww",
         "rem_hzz",
         "rem_higgs",
+        "higgs",
         "hh4b",
         "hh2b2tau",
         "hh4v",

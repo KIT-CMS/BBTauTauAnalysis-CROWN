@@ -1899,7 +1899,7 @@ def add_zpt_weight_config(configuration: Configuration):
                     },
                     **{
                         _era: f"data/hleprare/DYweightCorrlib/DY_pTll_weights_{_era}_v5.json.gz"
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2033postBPix", "2024"]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
                     },
                     "2025": f"data/hleprare/DYweightCorrlib/DY_pTll_weights_2024_v5.json.gz",
                 },
@@ -1953,9 +1953,9 @@ def add_met_corrections_config(configuration: Configuration):
                     },
                     **{
                         _era: f"data/hleprare/RecoilCorrlib/Recoil_corrections_{_era}_v5.json.gz"
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2033postBPix", "2024"]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
                     },
-                    "2025": f"data/hleprare/RecoilCorrlib/Recoil_corrections_2024_v5.json.gz"
+                    "2025": "data/hleprare/RecoilCorrlib/Recoil_corrections_2024_v5.json.gz"
                 },
             ),
         },

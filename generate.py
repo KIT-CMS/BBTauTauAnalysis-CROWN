@@ -9,6 +9,15 @@ def run(args):
     analysis_name = "bbtautau"
 
     available_samples = [
+        "ggh_htautau",
+        "ggh_hbb",
+        "vbf_htautau",
+        "vbf_hbb",
+        "rem_htautau",
+        "rem_hbb",
+        "rem_hww",
+        "rem_hzz",
+        "rem_higgs",
         "higgs",
         "hh4b",
         "hh2b2tau",
