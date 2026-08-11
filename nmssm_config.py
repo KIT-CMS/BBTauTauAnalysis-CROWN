@@ -21,6 +21,7 @@ from .quantities import output as q
 from .tau_triggersetup import add_diTauTriggerSetup
 from .tau_variations import add_tauVariations
 from .tau_embedding_settings import setup_embedding
+from .variations.met import add_unclustered_energy_shifts
 from .variations.jec import add_jec_shifts
 from .variations.bjet_tagging import (
     add_bjet_tagging_fixed_wp_shifts,
@@ -3908,31 +3909,6 @@ def build_config(
         )
 
     #########################
-    # MET Shifts
-    #########################
-    configuration.add_shift(
-        SystematicShiftByQuantity(
-            name="metUnclusteredEnUp",
-            quantity_change={
-                nanoAOD.PuppiMET_pt: "PuppiMET_ptUnclusteredUp",
-                nanoAOD.PuppiMET_phi: "PuppiMET_phiUnclusteredUp",
-            },
-            scopes=["global"],
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-    configuration.add_shift(
-        SystematicShiftByQuantity(
-            name="metUnclusteredEnDown",
-            quantity_change={
-                nanoAOD.PuppiMET_pt: "PuppiMET_ptUnclusteredDown",
-                nanoAOD.PuppiMET_phi: "PuppiMET_phiUnclusteredDown",
-            },
-            scopes=["global"],
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-    #########################
     # Prefiring Shifts
     #########################
     if era != "2018":
@@ -4391,6 +4367,13 @@ def build_config(
             jec_mc_producers,
         )
     #endregion
+
+    # --- Missing transverse momentum -----------------------------------------
+
+    add_unclustered_energy_shifts(
+        configuration,
+        era,
+    )
 
     # --- b jet tagging -------------------------------------------------------
 
