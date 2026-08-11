@@ -4358,7 +4358,31 @@ def build_config(
     #########################
     # Jet energy resolution and jet energy scale
     #########################
-    add_jec_shifts(configuration, era)
+
+
+    jec_mc_producers = [
+        jets.JetEnergyCorrectionMC,
+        jets.JetEnergyCorrectionMCRegressed,
+        jets.Type1JetEnergyCorrectionMC,
+    ]
+    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
+        # In 2022 and 2023, shape-based b jet tagging SFs are used. The
+        # corresponding JEC shifts need to be applied simultaneously to the
+        # JEC and the b jet tagging SFs.
+        add_jec_shifts(
+            configuration,
+            era,
+            jec_mc_producers,
+            bjet_tagging_sf_producer=scalefactors.BJetShapePNet_SF,
+        )
+    else:
+        # In Run 2 and 2024/2025, working point-based b jet tagging SFs are
+        # used. No special treatment for JEC uncertainties is necessary here.
+        add_jec_shifts(
+            configuration,
+            era,
+            jec_mc_producers,
+        )
 
     #########################
     # btagging scale factor shape variation
