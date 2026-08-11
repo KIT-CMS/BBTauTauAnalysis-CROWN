@@ -1,8 +1,9 @@
-
 from code_generation.configuration import Configuration
 from code_generation.producer import Producer, ProducerGroup
-
-from code_generation.systematics import SystematicShiftByQuantity
+from code_generation.systematics import (
+    SystematicShift,
+    SystematicShiftByQuantity,
+)
 
 
 def add_unclustered_energy_shifts(
@@ -27,3 +28,46 @@ def add_unclustered_energy_shifts(
             ),
             exclude_samples=["data", "embedding", "embedding_mc"],
         )
+
+
+def add_recoil_calibration_shifts(
+    configuration: Configuration,
+    era: str,
+    producer: Producer | ProducerGroup,
+    samples: list[str],
+):
+    """
+    Shifts in the recoil calibration of the missing transverse momentum.
+    """
+
+    # Get scopes from the producer
+    scopes = tuple(producer.scopes)
+
+    # Individual shift types performed for the recoil calibration producer
+    shifts = [
+        {
+            "correction_name": "Resp",
+            "cms_name": f"CMS_scale_met_RecoilCalibration_{era}",
+        },
+        {
+            "correction_name": "Resol",
+            "cms_name": f"CMS_res_met_RecoilCalibration_{era}",
+        },
+    ]
+
+    for shift in shifts:
+        for shift_direction in ["Up", "Down"]:
+            configuration.add_shift(
+                SystematicShift(
+                    name=f"{shift['correction_name']}{shift_direction}",
+                    shift_config={
+                        scopes: {
+                            "recoil_correction_variation": (
+                                f"{shift['correction_name']}{shift_direction}"
+                            ),
+                        },
+                    },
+                    producers={scopes: [producer]},
+                ),
+                samples=samples,
+            )
