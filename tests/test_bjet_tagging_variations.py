@@ -67,10 +67,10 @@ class AddBJetTaggingFixedWPShiftsTest(unittest.TestCase):
         shifts_expected = [
             f"{name}{direction}"
             for name in [
-                "btagBCCorrelated",
-                "btagLFCorrelated",
-                "btagBC2024",
-                "btagLF2024",
+                "CMS_btag_fixedWP_bc_correlated",
+                "CMS_btag_fixedWP_bc_uncorrelated_2024",
+                "CMS_btag_fixedWP_light_correlated",
+                "CMS_btag_fixedWP_light_uncorrelated_2024",
             ]
             for direction in ["Up", "Down"]
         ]
@@ -102,7 +102,7 @@ class AddBJetTaggingFixedWPShiftsTest(unittest.TestCase):
                 f"exclude_samples mismatch for shift {shift_info["shift"].shiftname}",
             )
 
-    def test_shape_total_shift_count(self):
+    def test_total_shift_count(self):
         """Test that WP-based shifts create the expected number of shifts."""
 
         # Create a configuration and add shape shifts
@@ -143,6 +143,7 @@ class AddBJetTaggingShapeShiftsTest(unittest.TestCase):
         configuration = CaptureConfiguration()
         add_bjet_tagging_shape_shifts(
             configuration,
+            "2024",
             self.shape_producer,
         )
         shift_names = [s["shift"].shiftname for s in configuration.shifts]
@@ -151,16 +152,14 @@ class AddBJetTaggingShapeShiftsTest(unittest.TestCase):
         shifts_expected = [
             f"{name}{direction}"
             for name in [
-                "btagHf",
-                "btagLf",
-                "btagHfstats1",
-                "btagHfstats2",
-                "btagLfstats1",
-                "btagLfstats2",
-                "btagCferr1",
-                "btagCferr2",
-                "btagCferr1",
-                "btagCferr2",
+                "CMS_btag_fullShape_hf",
+                "CMS_btag_fullShape_lf",
+                "CMS_btag_fullShape_cferr1",
+                "CMS_btag_fullShape_cferr2",
+                "CMS_btag_fullShape_hfstats1_2024",
+                "CMS_btag_fullShape_hfstats2_2024",
+                "CMS_btag_fullShape_lfstats1_2024",
+                "CMS_btag_fullShape_lfstats2_2024",
             ]
             for direction in ["Up", "Down"]
         ]
@@ -180,6 +179,7 @@ class AddBJetTaggingShapeShiftsTest(unittest.TestCase):
         configuration = CaptureConfiguration()
         add_bjet_tagging_shape_shifts(
             configuration,
+            "2024",
             self.shape_producer,
         )
 
@@ -192,13 +192,14 @@ class AddBJetTaggingShapeShiftsTest(unittest.TestCase):
                 f"exclude_samples mismatch for shift {shift_info["shift"].shiftname}",
             )
 
-    def test_shape_total_shift_count(self):
+    def test_total_shift_count(self):
         """Test that shape shifts create the expected number of shifts."""
 
         # Create a configuration and add shape shifts
         configuration = CaptureConfiguration()
         add_bjet_tagging_shape_shifts(
             configuration,
+            "2024",
             self.shape_producer,
         )
 
