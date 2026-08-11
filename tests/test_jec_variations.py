@@ -66,33 +66,32 @@ class AddJECShiftsTest(unittest.TestCase):
         shift_names = [s["shift"].shiftname for s in configuration.shifts]
 
         # Check for expected JES sources (up and down, reduced scheme)
-        names = [
-            "FlavorQCD",
-            "RelativeBal",
-            "HF",
-            "BBEC1",
-            "EC2",
-            "Absolute",
-            "BBEC12024",
-            "RelativeSample2024",
-            "EC22024",
-            "HF2024",
-            "Absolute2024",
-        ]
-        expected_jes_sources = [
-            f"jes{name}{direction}"
-            for name in names
+        expected_shifts = [
+            f"{name}{direction}"
+            for name in [
+                "CMS_scale_j_FlavorQCD",
+                "CMS_scale_j_RelativeBal",
+                "CMS_scale_j_HF",
+                "CMS_scale_j_BBEC1",
+                "CMS_scale_j_EC2",
+                "CMS_scale_j_Absolute",
+                "CMS_scale_j_BBEC1_2024",
+                "CMS_scale_j_RelativeSample_2024",
+                "CMS_scale_j_EC2_2024",
+                "CMS_scale_j_HF_2024",
+                "CMS_scale_j_Absolute_2024",
+            ]
             for direction in ["Up", "Down"]
         ]
 
         # Check if all expected JES sources are present in the configuration
         # shifts
-        for exp_name in expected_jes_sources:
+        for exp_shift in expected_shifts:
             self.assertIn(
-                f"__{exp_name}",
+                f"__{exp_shift}",
                 shift_names,
                 (
-                    f"Expected JES source {exp_name} not found in "
+                    f"Expected JES source {exp_shift} not found in "
                     + "configuration shifts"
                 ),
             )
@@ -113,11 +112,11 @@ class AddJECShiftsTest(unittest.TestCase):
         # shifts
         for direction in ["Up", "Down"]:
             self.assertIn(
-                f"__jerUnc{direction}",
+                f"__CMS_res_j_2024{direction}",
                 shift_names,
                 (
-                    f"Expected JER source 'jerUnc{direction}' not found in "
-                    + "configuration shifts"
+                    f"Expected JER source 'CMS_res_j_2024{direction}' not "
+                    + "found in configuration shifts"
                 ),
             )
 
@@ -138,10 +137,10 @@ class AddJECShiftsTest(unittest.TestCase):
         # Check that HEM issue uncertainties have been added
         for direction in ["Up", "Down"]:
             self.assertIn(
-                f"__jesHEMIssue{direction}",
+                f"__CMS_HEM_2018{direction}",
                 shift_names,
                 (
-                    f"Expected JES source jesHEMIssue{direction} not found in "
+                    f"Expected JES source CMS_HEM_2018{direction} not found in "
                     + "configuration shifts"
                 ),
             )
@@ -164,10 +163,10 @@ class AddJECShiftsTest(unittest.TestCase):
         # Check that HEM issue uncertainties have been added
         for direction in ["Up", "Down"]:
             self.assertNotIn(
-                f"__jesHEMIssue{direction}",
+                f"__CMS_HEM_2024{direction}",
                 shift_names,
                 (
-                    f"Unexpected JES source jesHEMIssue{direction} found in "
+                    f"Unexpected JES source CMS_HEM_2024{direction} found in "
                     + "configuration shifts"
                 ),
             )
@@ -273,6 +272,51 @@ class AddJECShiftsTest(unittest.TestCase):
         self.assertIn(
             "not consistent in their scope definition",
             str(context.exception),
+        )
+
+    def test_total_shift_count_2018(self):
+        """Test that function creates the expected number of shifts."""
+
+        # Create test config and add JEC shifts
+        configuration = CaptureConfiguration()
+        add_jec_shifts(
+            configuration,
+            "2018",
+            self.jec_producers,
+        )
+
+        # Expect 
+        # - 11 JES shifts in the reduced scheme
+        # - 1 additional JES shift for HEM issue
+        # - 1 JER shift
+        # Total: 13 shifts, each with up and down variations
+        expected_count = 26
+        self.assertEqual(
+            len(configuration.shifts),
+            expected_count,
+            f"Expected {expected_count} shifts, got {len(configuration.shifts)}",
+        )
+
+    def test_total_shift_count_not_2018(self):
+        """Test that function creates the expected number of shifts."""
+
+        # Create test config and add JEC shifts
+        configuration = CaptureConfiguration()
+        add_jec_shifts(
+            configuration,
+            "2024",
+            self.jec_producers,
+        )
+
+        # Expect 
+        # - 11 JES shifts in the reduced scheme
+        # - 1 JER shift
+        # Total: 12 shifts, each with up and down variations
+        expected_count = 24
+        self.assertEqual(
+            len(configuration.shifts),
+            expected_count,
+            f"Expected {expected_count} shifts, got {len(configuration.shifts)}",
         )
 
 
