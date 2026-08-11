@@ -21,7 +21,10 @@ from .quantities import output as q
 from .tau_triggersetup import add_diTauTriggerSetup
 from .tau_variations import add_tauVariations
 from .tau_embedding_settings import setup_embedding
-from .variations.met import add_unclustered_energy_shifts
+from .variations.met import (
+    add_unclustered_energy_shifts,
+    add_recoil_calibration_shifts,
+)
 from .variations.jec import add_jec_shifts
 from .variations.bjet_tagging import (
     add_bjet_tagging_fixed_wp_shifts,
@@ -35,6 +38,23 @@ from code_generation.systematics import SystematicShift, SystematicShiftByQuanti
 
 from .constants import ERAS_RUN2, ERAS_RUN3, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
 from .helpers import get_for_era
+
+
+def _get_recoil_calibration_samples():
+    """
+    Get list of samples which recoil calibration should is applied to.
+    """
+
+    return [
+        "dyjets",
+        "dyjets_madgraph",
+        "dyjets_amcatnlo",
+        "dyjets_amcatnlo_ll",
+        "dyjets_amcatnlo_tt",
+        "dyjets_powheg",
+        "wjets_madgraph",
+        "wjets_amcatnlo",
+    ]
 
 
 def add_noise_filters_config(configuration: Configuration):
@@ -2026,14 +2046,8 @@ def add_met_corrections_config(configuration: Configuration):
             ),
             "apply_recoil_correction": SampleModifier(
                 {
-                    "dyjets": True,
-                    "dyjets_madgraph": True,
-                    "dyjets_amcatnlo": True,
-                    "dyjets_amcatnlo_ll": True,
-                    "dyjets_amcatnlo_tt": True,
-                    "dyjets_powheg": True,
-                    "wjets_madgraph": True,
-                    "wjets_amcatnlo": True,
+                    k: True
+                    for k in _get_recoil_calibration_samples()
                 },
                 default=False,
             ),
@@ -3966,36 +3980,6 @@ def build_config(
     #         exclude_samples=["data", "embedding", "embedding_mc"],
     #     )
 
-    #########################
-    # MET Recoil Shifts
-    #########################
-    for shift_name in ["Resp", "Resol"]:
-        for shift_direction in ["Up", "Down"]:
-            configuration.add_shift(
-                SystematicShift(
-                    name=f"metRecoil{shift_name}{shift_direction}",
-                    shift_config={
-                        tuple(SCOPES): {
-                            "recoil_correction_variation": f"{shift_name}{shift_direction}",
-                        },
-                    },
-                    producers={
-                        tuple(SCOPES): [
-                            get_for_era(met.MetRecoilCorrection, era),
-                        ],
-                    },
-                ),
-                samples=[
-                    "dyjets",
-                    "dyjets_madgraph",
-                    "dyjets_amcatnlo",
-                    "dyjets_amcatnlo_ll",
-                    "dyjets_amcatnlo_tt",
-                    "dyjets_powheg",
-                    "wjets_madgraph",
-                    "wjets_amcatnlo",
-                ],
-            )
 
     #########################
     # Pileup Shifts
@@ -4343,6 +4327,7 @@ def build_config(
     # --- Jet energy calibration ----------------------------------------------
 
     #region
+
     jec_mc_producers = [
         jets.JetEnergyCorrectionMC,
         jets.JetEnergyCorrectionMCRegressed,
@@ -4366,18 +4351,33 @@ def build_config(
             era,
             jec_mc_producers,
         )
+
     #endregion
 
     # --- Missing transverse momentum -----------------------------------------
 
+    #region
+
+    # Propagation of unclustered energy shift to missing transverse momentum
     add_unclustered_energy_shifts(
         configuration,
         era,
     )
 
+    # Uncertainties in the recoil calibration
+    add_recoil_calibration_shifts(
+        configuration,
+        era,
+        get_for_era(met.MetRecoilCorrection, era),
+        _get_recoil_calibration_samples(),
+    )
+
+    #endregion
+
     # --- b jet tagging -------------------------------------------------------
 
     #region
+
     if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
         # In 2022 and 2023, shape-based b jet tagging SFs for ParticleNet are
         # used
@@ -4393,6 +4393,7 @@ def build_config(
             era,
             bjet_tagging_sf_producer=scalefactors.BJetWPUParT_SF,
         )
+
     #endregion
 
     # -------------------------------------------------------------------------
