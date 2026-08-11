@@ -14,19 +14,18 @@ def add_bjet_tagging_fixed_wp_shifts(
     Add systematic shifts for the working point (WP)-based b jet tagging scale
     factors.
 
-    The procedure follows the [BTV recommendations](https://btv-wiki.docs.cern.ch/PerformanceCalibration/SFUncertaintiesAndCorrelations/#ak4-working-point-based-sfs-fixedwp-sfs).
+    The procedure follows the
+    [BTV recommendations](https://btv-wiki.docs.cern.ch/PerformanceCalibration/SFUncertaintiesAndCorrelations/#ak4-working-point-based-sfs-fixedwp-sfs).
     Currently, a reduced uncertainty scheme (one era-correlated and one
     era-uncorrelated uncertainty for b/c and for light-flavor jets,
     respectively).
     """
 
     # Producers that the variations are applied to
-    producers = [
-        scalefactors.BJetWPUParT_SF,
-    ]
+    producer = scalefactors.BJetWPUParT_SF
 
     # Scopes that the variations are applied to
-    scopes = SCOPES
+    scopes = tuple(producer.scopes)
 
     # Samples to exclude (where b jet taggin already takes place on data jets)
     exclude_samples = ["data", "embedding", "embedding_mc"]
@@ -49,7 +48,7 @@ def add_bjet_tagging_fixed_wp_shifts(
                     shift_config={
                         f"bjet_sf_variation_{jet_flavor}": shift_value,
                     },
-                    producers={tuple(scopes): producers},
+                    producers={scopes: [producer]},
                 ),
                 exclude_samples=exclude_samples,
             )
@@ -68,7 +67,7 @@ def add_bjet_tagging_fixed_wp_shifts(
                     shift_config={
                         f"bjet_sf_variation_{jet_flavor}": shift_value,
                     },
-                    producers={tuple(scopes): producers},
+                    producers={scopes: producers},
                 ),
                 exclude_samples=exclude_samples,
             )
@@ -92,13 +91,11 @@ def add_bjet_tagging_shape_shifts(
     scale shifts.
     """
 
-    # Producers that the variations are applied to
-    producers = [
-        scalefactors.BJetShapePNet_SF,
-    ]
+    # Producer that the variations is applied to
+    producer = scalefactors.BJetShapePNet_SF
 
     # Scopes that the variations are applied to
-    scopes = SCOPES
+    scopes = tuple(producer.scopes)
 
     # Samples to exclude (where b jet taggin already takes place on data jets)
     exclude_samples = ["data", "embedding", "embedding_mc"]
@@ -128,10 +125,10 @@ def add_bjet_tagging_shape_shifts(
                 SystematicShift(
                     name=name,
                     shift_config={
-                        tuple(scopes): {"bjet_sf_variation": shift_value},
+                        scopes: {"bjet_sf_variation": shift_value},
                     },
                     producers={
-                        tuple(scopes): producers,
+                        scopes: [producer],
                     },
                 ),
                 exclude_samples=exclude_samples,

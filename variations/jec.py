@@ -127,6 +127,14 @@ def add_jec_shifts(
     [JES](https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1) and
     [JER](https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution_1)
     uncertainty treatment.
+
+    Notes
+    -----
+
+    If shape-based b jet tagging SF are used, the corresponding producer should
+    be varied simultaneously with the jet energy calibration shifts. In this
+    case, do not forget to add the `bjet_tagging_sf_producer` parameter to this
+    function.
     """
 
     # Get scopes of JEC producers, check for consistency
