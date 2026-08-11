@@ -4390,7 +4390,6 @@ def build_config(
         # used
         add_bjet_tagging_shape_shifts(
             configuration,
-            era,
             scalefactors.BJetShapePNet_SF,
         )
     else:
