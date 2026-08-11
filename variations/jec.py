@@ -1,6 +1,5 @@
 from __future__ import annotations  # needed for type annotations in > python 3.7
 
-import string
 import re
 
 from code_generation.configuration import Configuration
@@ -12,8 +11,7 @@ from ..producers import scalefactors as scalefactors
 
 def _add_jes_shift(
     configuration: Configuration,
-    era: str,
-    jes_source_fmt: str,
+    jes_source: str,
     jec_producers: list[Producer | ProducerGroup],
     jec_scopes: tuple[str],
     bjet_tagging_sf_producer: Producer | ProducerGroup | None = None,
@@ -24,25 +22,6 @@ def _add_jes_shift(
     Add up and down variations of a jet energy scale uncertainty source to
     the configuration.
     """
-
-    # Validate the format string for the JEC uncertainty source and validate
-    # that the only placeholder is 'era'
-    fmt_params = {
-        field_name
-        for _, field_name, _, _ in string.Formatter().parse(jes_source_fmt)
-        if field_name is not None
-    }
-    if len(fmt_params) > 0 and fmt_params != {"era"}:
-        raise ValueError(
-            f"JEC source format string '{jes_source_fmt}' cannot be "
-            + "evaluated. Format string is only allowed to contain the "
-            + "'era' placeholder."
-        )
-
-    # Evaluate the format string
-    jes_source = jes_source_fmt
-    if len(fmt_params) > 0:
-        jes_source = jes_source_fmt.format(era=era)
 
     # Define JES shift factors for 
     jes_shift_factor = {
@@ -163,31 +142,28 @@ def add_jec_shifts(
     # granular scheme. Here, the "default" recommendation is implemented.
     # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1
 
-    # Groups of uncertainty sources in jet energy scale corrections
+    # Groups of uncertainty sources in jet energy scale corrections. The
+    # HEMIssue uncertainty is only included in 2018
     jes_sources = [
-        "HEMIssue",  # only to be used in 2018
         "Regrouped_Absolute",
-        "Regrouped_Absolute_{era}",
+        f"Regrouped_Absolute_{era}",
         "Regrouped_FlavorQCD",
         "Regrouped_BBEC1",
-        "Regrouped_BBEC1_{era}",
+        f"Regrouped_BBEC1_{era}",
         "Regrouped_HF",
-        "Regrouped_HF_{era}",
+        f"Regrouped_HF_{era}",
         "Regrouped_EC2",
-        "Regrouped_EC2_{era}",
+        f"Regrouped_EC2_{era}",
         "Regrouped_RelativeBal",
-        "Regrouped_RelativeSample_{era}",
+        f"Regrouped_RelativeSample_{era}",
     ]
+    if era == "2018":
+        jes_sources.append("HEMIssue")  
 
     for jes_source in jes_sources:
-        # The HEMIssue shift is only applied in 2018
-        if jes_source == "HEMIssue" and era != "2018":
-            continue
-
         # Add up and down variation to the configuration
         _add_jes_shift(
             configuration,
-            era,
             jes_source,
             jec_producers,
             jec_scopes=jec_scopes,
