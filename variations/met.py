@@ -59,7 +59,7 @@ def add_recoil_calibration_shifts(
         for shift_direction in ["Up", "Down"]:
             configuration.add_shift(
                 SystematicShift(
-                    name=f"{shift['correction_name']}{shift_direction}",
+                    name=f"{shift['cms_name']}{shift_direction}",
                     shift_config={
                         scopes: {
                             "recoil_correction_variation": (
