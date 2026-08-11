@@ -1164,7 +1164,7 @@ BJetWPUParT_SF = Producer(
         {input},
         "{bjet_sf_file}",
         "{bjet_sf_bc_name}",
-        "{bjet_sf_lf_name}",
+        "{bjet_sf_light_name}",
         "{bjet_sf_wp_name}",
         "{bjet_eff_file}",
         "{bjet_eff_name}",

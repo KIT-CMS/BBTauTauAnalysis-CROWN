@@ -1856,7 +1856,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2025": "UParTAK4_comb",  # UParT
                 },
             ),
-            "bjet_sf_lf_name": EraModifier(
+            "bjet_sf_light_name": EraModifier(
                 {
                     **{
                         _era: "DOES_NOT_EXIST" 
