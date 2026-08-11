@@ -31,56 +31,44 @@ def add_bjet_tagging_fixed_wp_shifts(
     exclude_samples = ["data", "embedding", "embedding_mc"]
 
     # Add variations for b/c and for light-flavor jets independently
-    for jet_flavor in ["bc", "lf"]:
-        for direction in ["up", "down"]:
+    for jet_flavor in ["bc", "light"]:
+        for corr_type in ["correlated", "uncorrelated"]:
+            for direction in ["up", "down"]:
 
-            # Common uncertainty group correlated across eras
-            name = (
-                "btag"
-                + jet_flavor.upper()
-                + "Correlated"
-                + direction.capitalize()
-            )
-            shift_value = f"{direction}_correlated"
-            configuration.add_shift(
-                SystematicShift(
-                    name=name,
-                    shift_config={
-                        f"bjet_sf_variation_{jet_flavor}": shift_value,
-                    },
-                    producers={scopes: [producer]},
-                ),
-                exclude_samples=exclude_samples,
-            )
+                # Set value of the 'bjet_sf_variation_{jet_flavor}' parameter
+                # for this shift
+                shift_key = f"bjet_sf_variation_{jet_flavor}"
+                shift_value = f"{direction}_{corr_type}"
 
-            # Common uncertainty group that is uncorrelated across era
-            name = (
-                "btag"
-                + jet_flavor.upper()
-                + era
-                + direction.capitalize()
-            )
-            shift_value = f"{direction}_uncorrelated"
-            configuration.add_shift(
-                SystematicShift(
-                    name=name,
-                    shift_config={
-                        f"bjet_sf_variation_{jet_flavor}": shift_value,
-                    },
-                    producers={scopes: [producer]},
-                ),
-                exclude_samples=exclude_samples,
-            )
+                # Construct the shift name
+                shift_name = f"CMS_btag_fixedWP_{jet_flavor}_{corr_type}"
+                if corr_type == "uncorrelated":
+                    shift_name += f"_{era}"
+                shift_name += direction.capitalize()
+
+                # Add the shift to the configuration
+                configuration.add_shift(
+                    SystematicShift(
+                        name=shift_name,
+                        shift_config={
+                            shift_key: shift_value,
+                        },
+                        producers={scopes: [producer]},
+                    ),
+                    exclude_samples=exclude_samples,
+                )
 
 
 def add_bjet_tagging_shape_shifts(
     configuration: Configuration,
+    era: str,
     producer: Producer | ProducerGroup,
 ):
     """
     Add systematic shifts for shape-based b jet tagging scale factors.
 
-    The procedure follows the [BTV recommendations](https://btv-wiki.docs.cern.ch/PerformanceCalibration/SFUncertaintiesAndCorrelations/#ak4-shape-correction-sfs-iterativefit).
+    The procedure follows the
+    [BTV recommendations](https://btv-wiki.docs.cern.ch/PerformanceCalibration/SFUncertaintiesAndCorrelations/#ak4-shape-correction-sfs-iterativefit).
 
     Notes
     -----
@@ -100,32 +88,50 @@ def add_bjet_tagging_shape_shifts(
     # Samples to exclude (where b jet taggin already takes place on data jets)
     exclude_samples = ["data", "embedding", "embedding_mc"]
 
-    # Sources of b jet tagging uncertainties for different jet flavors
-    unc_groups = [
+    # Individual b jet tagging shifts, correlated between eras
+    btag_shifts_correlated = [
         "hf",
         "lf",
-        "hfstats1",
-        "hfstats2",
-        "lfstats1",
-        "lfstats2",
         "cferr1",
         "cferr2",
     ]
 
+    # Individual b jet tagging shifts, uncorrelated between eras
+    btag_shifts_uncorrelated = [
+        "hfstats1",
+        "hfstats2",
+        "lfstats1",
+        "lfstats2",
+    ]
+
+    # Convenience function to add shift to config
+    def _add_shift(name: str, shift_value: str):
+        return configuration.add_shift(
+            SystematicShift(
+                name=name,
+                shift_config={
+                    scopes: {"bjet_sf_variation": shift_value},
+                },
+                producers={
+                    scopes: [producer],
+                },
+            ),
+            exclude_samples=exclude_samples,
+        )
+
     # Add up and down variations for each uncertainty group
     for direction in ["up", "down"]:
-        for source in unc_groups:
-            name = f"btag{source.capitalize()}{direction.capitalize()}"
-            shift_value = f"{direction}_{source}"
-            configuration.add_shift(
-                SystematicShift(
-                    name=name,
-                    shift_config={
-                        scopes: {"bjet_sf_variation": shift_value},
-                    },
-                    producers={
-                        scopes: [producer],
-                    },
-                ),
-                exclude_samples=exclude_samples,
+
+        # Add correlated shifts (without era suffix)
+        for shift in btag_shifts_correlated:
+            _add_shift(
+                f"CMS_btag_fullShape_{shift}{direction.capitalize()}",
+                f"{direction}_{shift}",
+            )
+
+        # Add uncorrelated shifts (without era suffix)
+        for shift in btag_shifts_uncorrelated:
+            _add_shift(
+                f"CMS_btag_fullShape_{shift}_{era}{direction.capitalize()}",
+                f"{direction}_{shift}",
             )
