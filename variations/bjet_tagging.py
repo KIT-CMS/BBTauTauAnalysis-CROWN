@@ -8,6 +8,7 @@ from .constants import SCOPES
 def add_bjet_tagging_fixed_wp_shifts(
     configuration: Configuration,
     era: str,
+    producer: Producer | ProducerList,
 ):
     """
     Add systematic shifts for the working point (WP)-based b jet tagging scale
