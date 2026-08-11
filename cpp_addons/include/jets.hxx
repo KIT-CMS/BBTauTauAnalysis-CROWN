@@ -107,6 +107,18 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
                               const std::string &outputname,
                               const std::string &jet_quantity,
                               const std::string &jet_muon_subtr_factor);
+ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_reg_factor,
+                     const std::string &jet_reg_factor_with_neutrino,
+                    const std::string &jet_is_btagged,
+                    const std::string &algo
+                );
+ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
+     const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_res_factor
+                );
 ROOT::RDF::RNode
 PtCorrectionMC(ROOT::RDF::RNode df,
                correctionManager::CorrectionManager &correction_manager,
@@ -203,6 +215,19 @@ ROOT::RDF::RNode CorrectJetIDRun3NanoV12(
     const std::string &jet_id, const std::string &jet_ne_hef,
     const std::string &jet_ne_em_ef, const std::string &jet_mu_ef,
     const std::string &jet_ch_em_ef);
+ROOT::RDF::RNode TightestWPPassed(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name
+);
+ROOT::RDF::RNode IsBTagged(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name,
+           const std::string &btag_wp_name
+);
 
 ROOT::RDF::RNode JetPtPNetRegression(ROOT::RDF::RNode df,
                                      const std::string &outputname,

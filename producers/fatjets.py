@@ -2,15 +2,19 @@
 Producers for AK8 jet energy scale and resolution corrections, object selections, overlap vetoes, and quantities to be stored.
 """
 
-
-
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from analysis_configurations.quantities import nanoAODv12_run3
 from code_generation.producer import Producer, ProducerGroup
 
-from ._helpers import jerc_producer_factory
 from ..constants import SCOPES, GLOBAL_SCOPES
+
+
+def jerc_producer_factory(*args, **kwargs):
+    raise NotImplementedError(
+        "The implementation of jerc_producer_factory has been reworked. "
+        + "The code needs to be refactored."
+    )
 
 
 #

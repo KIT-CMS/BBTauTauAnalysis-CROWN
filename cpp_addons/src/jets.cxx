@@ -322,6 +322,119 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
 }
 
 /**
+ * Compute the regressed jet pt using the UParT/ParticleNet regression factors.
+ * 
+ * The regressed jet pt is computed, based on the raw jet \f$p_{\text{T}}\f$,
+ * according to
+ * https://cms-jerc.web.cern.ch/JES/#remarks-on-getting-rawpt-and-mass-for-regular-pnet-and-upart-jets.
+ *
+ * @param df The input dataframe.
+ * @param outputname The name of the output column for the regressed jet pt or
+       mass.
+ * @param jet_quantity_raw The name of the input column for the raw jet pt or
+ *     mass.
+ * @param jet_reg_factor The name of the input column for the regression factor.
+ * @param jet_reg_factor_with_neutrino The name of the input column for the
+ *     regression factor including neutrinos (only applied to b-tagged jets).
+ * @param jet_is_btagged The name of the input column indicating whether the jet
+ *     is b-tagged.
+ * @param algo The regression algorithm to use ("UParTAK4" or "PNet"). The
+ *     formula for calculating the regressed p_T differs for these two
+ *     algorithms.
+ * @return A dataframe with a new column of regressed jet pt or mass.
+ */
+ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_reg_factor,
+                     const std::string &jet_reg_factor_with_neutrino,
+                    const std::string &jet_is_btagged,
+                    const std::string &algo
+                ) {
+
+    if (algo != "UParTAK4" and algo != "PNet") {
+        Logger::get("jet::jec::Regressed")->error("Invalid regression algorithm specified: {}. Possible values are 'UParTAK4' and 'PNet'.", algo);
+        throw std::runtime_error("Invalid regression algorithm specified");
+    }
+    
+    auto func = [algo] (
+        const ROOT::RVec<float> &jet_quantity_raw,
+        const ROOT::RVec<float> &jet_reg_factor,
+        const ROOT::RVec<float> &jet_reg_factor_with_neutrino,
+        const ROOT::RVec<int> &jet_is_btagged
+    ) {
+        return ROOT::VecOps::Map(
+            jet_quantity_raw,
+            jet_reg_factor,
+            jet_reg_factor_with_neutrino,
+            jet_is_btagged,
+            [algo] (
+                const float &jet_quantity_raw,
+                const float &jet_reg_factor,
+                const float &jet_reg_factor_with_neutrino,
+                const int &jet_is_btagged
+            ) {
+                float jet_quantity_regressed;
+                if (jet_is_btagged) {
+                    if (algo == "PNet") {
+                        jet_quantity_regressed = jet_quantity_raw * jet_reg_factor * jet_reg_factor_with_neutrino;
+                    } else if (algo == "UParTAK4") {
+                        jet_quantity_regressed = jet_quantity_raw * jet_reg_factor_with_neutrino;
+                    }
+                } else {
+                    jet_quantity_regressed = jet_quantity_raw * jet_reg_factor;
+                }
+                return jet_quantity_regressed;
+            }
+        );
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            jet_quantity_raw,
+            jet_reg_factor,
+            jet_reg_factor_with_neutrino,
+            jet_is_btagged
+        }
+    );
+}
+
+/**
+ * Calculate the absolute value of the pt resolution of the UParT/PNet jet pt
+ * regression.
+ *
+ * @param df The input dataframe.
+ * @param outputname The name of the output column for the smeared jet
+ *     \f$p_T\f$.
+ * @param jet_quantity_raw The name of the input column for the raw jet
+ *     \f$p_T\f$.
+ * @param jet_res_factor The name of the input column for the resolution factor.
+ * @return A dataframe with a new column of smeared jet pt.
+ */
+ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
+     const std::string &outputname,
+                     const std::string &jet_quantity_raw,
+                    const std::string &jet_res_factor
+                ) {
+    auto func = [] (
+        const ROOT::RVec<float> &jet_quantity_raw,
+        const ROOT::RVec<float> &jet_res_factor
+    ) {
+        return jet_quantity_raw * jet_res_factor;
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            jet_quantity_raw,
+            jet_res_factor
+        }
+    );
+}
+
+/**
  * @brief This function applies the full jet energy calibration (JEC) procedure
  * to MC according to the recommendations of the JME POG. The corrections are
  * implemented as a multi-step procedure, where the corrected jet \f$p_T\f$ of
@@ -841,6 +954,121 @@ ROOT::RDF::RNode MassCorrectionFromPt(ROOT::RDF::RNode df,
 } // end namespace jec
 
 namespace quantities {
+
+/**
+ * Evaluate the tightest b jet working point that a jet passes.
+ *
+ * @param df input dataframe
+ * @param correction_manager correction manager responsible for loading the b
+ * jet tagging score working point definitions
+ * @param outputname name of the output column storing the tightest WP passed
+ * @param btag_value name of the column containing the b jet tagging score
+ * @param sf_file path to the b jet tagging score working point definition file
+ * @param sf_wp_name name of the working point definition set in the correction
+ *     file
+ * @return a dataframe with the new column
+ */
+ROOT::RDF::RNode TightestWPPassed(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name
+) {
+    // Get evaluator for WP definitions from correctionlib file
+    auto wp_evaluator = correction_manager.loadCorrection(sf_file, sf_wp_name);
+
+    // Sort the working points in descending order to find the tightest WP passed
+    auto wp_names = std::vector<std::string>({"L", "M", "T", "XT", "XXT"});
+    auto wp_cuts = std::vector<float>();
+    for (auto &wp_name : wp_names) {
+        wp_cuts.push_back(wp_evaluator->evaluate({wp_name}));
+    }
+
+    auto func = [wp_cuts, wp_names] (ROOT::RVec<float> &btag_value) {
+        return ROOT::VecOps::Map(
+            btag_value,
+            [wp_cuts, wp_names] (const float &btag_value) {
+                std::string tightest_wp = "U";
+                for (size_t i = 0; i < wp_cuts.size(); ++i) {
+                    if (btag_value > wp_cuts[i]) {
+                        // If the jet passes the current WP, store it as the
+                        // tightest WP passed
+                        tightest_wp = wp_names[i];
+                    } else {
+                        break; // Since wp_cuts are sorted in ascending order
+                    }
+                }
+                Logger::get("jet::quantities::TightestWPPassed")
+                    ->debug("Evaluated tightest WP for btag value {} to {}",
+                            btag_value,
+                            tightest_wp);
+                return tightest_wp;
+            }
+        );
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            btag_value
+        }
+    );
+}
+
+/**
+ * Evaluate whether a b jet passes a given tagger working point.
+ *
+ * @param df input dataframe
+ * @param correction_manager correction manager responsible for loading the b
+ * jet tagging score working point definitions
+ * @param outputname name of the output column storing the tightest WP passed
+ * @param btag_value name of the column containing the b jet tagging score
+ * @param sf_file path to the b jet tagging score working point definition file
+ * @param sf_wp_name name of the working point definition set in the correction
+ *     file
+ * @param btag_wp_name name of the working point to evaluate
+ * @return a dataframe with the new column
+ */
+ROOT::RDF::RNode IsBTagged(
+           ROOT::RDF::RNode df,
+           correctionManager::CorrectionManager &correction_manager,
+           const std::string &outputname, const std::string &btag_value,
+           const std::string &sf_file, const std::string &sf_wp_name,
+           const std::string &btag_wp_name
+) {
+    // Set the logger name for better readability in debug messages
+    const std::string logger_name = "jet::quantities::IsBTagged";
+
+    // Debug messages for loading corrections
+    Logger::get(logger_name)
+        ->debug(
+            "Evaluate b jet tagging scores with respect to fixed WP {}",
+            btag_wp_name
+        );
+    Logger::get(logger_name)->debug("working point cset name {}", sf_wp_name);
+
+    // Get evaluator for WP definitions from correctionlib file
+    auto wp_evaluator = correction_manager.loadCorrection(sf_file, sf_wp_name);
+
+    // Get the b jet tagging score to cut on for the given working point
+    float btag_wp_cut = wp_evaluator->evaluate({btag_wp_name});
+
+    auto func = [btag_wp_cut] (ROOT::RVec<float> &btag_value) {
+        return ROOT::VecOps::Map(
+            btag_value,
+            [btag_wp_cut] (const float &score) { return static_cast<int>(score > btag_wp_cut); }
+        );
+    };
+
+    return df.Define(
+        outputname,
+        func,
+        {
+            btag_value
+        }
+    );
+}
 
 /**
  * @brief Patch for wrong Jet ID values in Run3 NanoAOD v12 samples.

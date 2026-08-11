@@ -116,8 +116,6 @@ fatjet_overlap_veto_mask_boosted = Quantity("fatjet_overlap_veto_mask_boosted")
 FatJet_pt_corrected = Quantity("FatJet_pt_corrected")
 FatJet_mass_corrected = Quantity("FatJet_mass_corrected")
 FatJet_ID_corrected = Quantity("FatJet_ID_corrected")
-dibjetpair = Quantity("dibjetpair")
-dibjetpair_boosted = Quantity("dibjetpair_boosted")
 gen_dibjetpair = Quantity("gen_dibjetpair")
 gen_truebpair = Quantity("gen_truebpair")
 gen_truetaupair = Quantity("gen_truetaupair")
@@ -242,7 +240,13 @@ muon_ntrackerlayers_2 = Quantity("muon_ntrackerlayers_2")
 muon_pterr_1 = Quantity("muon_pterr_1")
 muon_pterr_2 = Quantity("muon_pterr_2")
 
-# b-pair quantities bpair_reg_res_2_boosted
+# ------------------------------------------------------------------------------
+# bb candidate
+# ------------------------------------------------------------------------------
+
+dibjetpair = Quantity("dibjetpair")
+dibjetpair_regressed = Quantity("dibjetpair_regressed")
+dibjetpair_boosted = Quantity("dibjetpair_boosted")
 bpair_p4_1 = Quantity("bpair_p4_1")
 bpair_p4_2 = Quantity("bpair_p4_2")
 bpair_pt_1 = Quantity("bpair_pt_1")
@@ -251,16 +255,41 @@ bpair_phi_1 = Quantity("bpair_phi_1")
 bpair_mass_1 = Quantity("bpair_mass_1")
 bpair_btag_value_1 = Quantity("bpair_btag_value_1")
 bpair_reg_res_1 = Quantity("bpair_reg_res_1")
+bpair_p4_regressed_1 = Quantity("bpair_p4_regressed_1")
+bpair_pt_regressed_1 = Quantity("bpair_pt_regressed_1")
+bpair_eta_regressed_1 = Quantity("bpair_eta_regressed_1")
+bpair_phi_regressed_1 = Quantity("bpair_phi_regressed_1")
+bpair_mass_regressed_1 = Quantity("bpair_mass_regressed_1")
+bpair_btag_value_regressed_1 = Quantity("bpair_btag_value_regressed_1")
+bpair_pt_resolution_regressed_1 = Quantity("bpair_pt_resolution_regressed_1")
 bpair_pt_2 = Quantity("bpair_pt_2")
 bpair_eta_2 = Quantity("bpair_eta_2")
 bpair_phi_2 = Quantity("bpair_phi_2")
 bpair_mass_2 = Quantity("bpair_mass_2")
 bpair_btag_value_2 = Quantity("bpair_btag_value_2")
 bpair_reg_res_2 = Quantity("bpair_reg_res_2")
-p4_bpair = Quantity("p4_bpair")
-bpair_deltaR = Quantity("bpair_deltaR")
-bpair_m_inv = Quantity("bpair_m_inv")
+bpair_p4_regressed_2 = Quantity("bpair_p4_regressed_2")
+bpair_pt_regressed_2 = Quantity("bpair_pt_regressed_2")
+bpair_eta_regressed_2 = Quantity("bpair_eta_regressed_2")
+bpair_phi_regressed_2 = Quantity("bpair_phi_regressed_2")
+bpair_mass_regressed_2 = Quantity("bpair_mass_regressed_2")
+bpair_btag_value_regressed_2 = Quantity("bpair_btag_value_regressed_2")
+bpair_pt_resolution_regressed_2 = Quantity("bpair_pt_resolution_regressed_2")
+bpair_p4 = Quantity("bpair_p4")
 bpair_pt_dijet = Quantity("bpair_pt_dijet")
+bpair_eta = Quantity("bpair_eta")
+bpair_phi = Quantity("bpair_phi")
+bpair_m_inv = Quantity("bpair_m_inv")
+bpair_deltaR = Quantity("bpair_deltaR")
+bpair_p4_regressed = Quantity("bpair_p4_regressed")
+bpair_pt_dijet_regressed = Quantity("bpair_pt_dijet_regressed")
+bpair_eta_regressed = Quantity("bpair_eta_regressed")
+bpair_phi_regressed = Quantity("bpair_phi_regressed")
+bpair_m_inv_regressed = Quantity("bpair_m_inv_regressed")
+bpair_deltaR_regressed = Quantity("bpair_deltaR_regressed")
+
+# -------------------------------------------------------------------------------
+
 genjet_p4_1 = Quantity("genjet_p4_1")
 genjet_p4_2 = Quantity("genjet_p4_2")
 genjet_pt_1 = Quantity("genjet_pt_1")
@@ -344,16 +373,22 @@ n_jets_boosted = Quantity("n_jets_boosted")
 n_bjets = Quantity("n_bjets")
 n_bjets_boosted = Quantity("n_bjets_boosted")
 jet_p4_1 = Quantity("jet_p4_1")
+jet_p4_regressed_1 = Quantity("jet_p4_regressed_1")
 jpt_1 = Quantity("jpt_1")
 jpt_nano_1 = Quantity("jpt_nano_1")
 jpt_raw_1 = Quantity("jpt_raw_1")
+jpt_regressed_1 = Quantity("jpt_regressed_1")
+jpt_regressed_resolution_1 = Quantity("jpt_regressed_resolution_1")
 jeta_1 = Quantity("jeta_1")
 jphi_1 = Quantity("jphi_1")
 jtag_value_1 = Quantity("jtag_value_1")
 jet_p4_2 = Quantity("jet_p4_2")
+jet_p4_regressed_2 = Quantity("jet_p4_regressed_2")
 jpt_2 = Quantity("jpt_2")
 jpt_nano_2 = Quantity("jpt_nano_2")
 jpt_raw_2 = Quantity("jpt_raw_2")
+jpt_regressed_2 = Quantity("jpt_regressed_2")
+jpt_regressed_resolution_2 = Quantity("jpt_regressed_resolution_2")
 jeta_2 = Quantity("jeta_2")
 jphi_2 = Quantity("jphi_2")
 jtag_value_2 = Quantity("jtag_value_2")
@@ -688,12 +723,27 @@ transformed_boosted_mt_1 = Quantity("transformed_boosted_mt_1")
 
 lhe_drell_yan_decay_flavor = Quantity("lhe_drell_yan_decay_flavor")
 
-# Additional columns for the Jet collection
+# ------------------------------------------------------------------------------
+# Jet collection
+# ------------------------------------------------------------------------------
+
+#region
+
+# Additional jet properties, calculated with producers
 Jet_ID = Quantity("Jet_ID")
+Jet_bTagValue = Quantity("Jet_bTagValue")
+Jet_isBTagged = Quantity("Jet_isBTagged")
 Jet_rawPt = Quantity("Jet_rawPt")
+Jet_rawMass = Quantity("Jet_rawMass")
 Jet_rawMuonSubtrPt = Quantity("Jet_rawMuonSubtrPt")
 Jet_EmEF = Quantity("Jet_EmEF")
-Jet_rawMass = Quantity("Jet_rawMass")
+Jet_regPtRawCorr = Quantity("Jet_regPtRawCorr")
+Jet_regPtRawCorrNeutrino = Quantity("Jet_regPtRawCorrNeutrino")
+Jet_regPtRawRes = Quantity("Jet_regPtRawRes")
+Jet_rawPtRegressed = Quantity("Jet_rawPtRegressed")
+Jet_rawMassRegressed = Quantity("Jet_rawMassRegressed")
+
+# Outputs of the jet energy calibration
 Jet_jecResult = Quantity("Jet_jecResult")
 Jet_l1Pt = Quantity("Jet_l1Pt")
 Jet_l2relPt = Quantity("Jet_l2relPt")
@@ -701,10 +751,35 @@ Jet_l2l3resPt = Quantity("Jet_l2l3resPt")
 Jet_correctedPt = Quantity("Jet_correctedPt")
 Jet_correctedMass = Quantity("Jet_correctedMass")
 
+# Outputs of the jet energy calibration including UParT/PNet jet pt regression
+Jet_jecResultRegressed = Quantity("Jet_jecResultRegressed")
+Jet_l1PtRegressed = Quantity("Jet_l1PtRegressed")
+Jet_l2relPtRegressed = Quantity("Jet_l2relPtRegressed")
+Jet_l2l3resPtRegressed = Quantity("Jet_l2l3resPtRegressed")
+Jet_correctedPtRegressed = Quantity("Jet_correctedPtRegressed")
+Jet_correctedMassRegressed = Quantity("Jet_correctedMassRegressed")
+Jet_rawPtRegressedResolution = Quantity("Jet_rawPtRegressedResolution")
+
+#endregion
+
+# ------------------------------------------------------------------------------
+# CorrT1METJet collection
+# ------------------------------------------------------------------------------
+
+#region
+
 # Additional columns for the CorrT1METJet collection
 CorrT1METJet_rawMuonSubtrPt = Quantity("CorrT1METJet_rawMuonSubtrPt")
 CorrT1METJet_ID = Quantity("CorrT1METJet_ID")
 CorrT1METJet_EmEnergyFraction = Quantity("CorrT1METJet_EmEnergyFraction")
+
+#endregion
+
+# ------------------------------------------------------------------------------
+# Type1Jet collection
+# ------------------------------------------------------------------------------
+
+# region
 
 # Type1Jet collection, which is the concatenation of the Jet and CorrT1METJet
 # collections
@@ -714,11 +789,15 @@ Type1Jet_phi = Quantity("Type1Jet_phi")
 Type1Jet_area = Quantity("Type1Jet_area")
 Type1Jet_ID = Quantity("Type1Jet_ID")
 Type1Jet_EmEF = Quantity("Type1Jet_EmEF")
+
+# Outputs of the jet energy calibration
 Type1Jet_jecResult = Quantity("Type1Jet_jecResult")
 Type1Jet_l1Pt = Quantity("Type1Jet_l1Pt")
 Type1Jet_l2relPt = Quantity("Type1Jet_l2relPt")
 Type1Jet_l2l3resPt = Quantity("Type1Jet_l2l3resPt")
 Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
+
+# endregion
 
 # ------------------------------------------------------------------------------
 # Fake factor quantities

@@ -14,7 +14,7 @@ from ..constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, SL_SCOPES, ELECTRON_SCO
 
 Muon_1_ID_SF = Producer(
     name="MuonID_SF",
-    call="""physicsobject::muon::scalefactor::Id(
+    call="""physicsobject::muon::scalefactor::IsoAndID(
         {df}, 
         correctionManager, 
         {output}, 
@@ -29,7 +29,7 @@ Muon_1_ID_SF = Producer(
 )
 Muon_1_Iso_SF = Producer(
     name="MuonIso_SF",
-    call="""physicsobject::muon::scalefactor::Iso(
+    call="""physicsobject::muon::scalefactor::IsoAndID(
         {df}, 
         correctionManager, 
         {output}, 
@@ -44,7 +44,7 @@ Muon_1_Iso_SF = Producer(
 )
 Muon_2_ID_SF = Producer(
     name="MuonID_SF",
-    call="""physicsobject::muon::scalefactor::Id(
+    call="""physicsobject::muon::scalefactor::IsoAndID(
         {df}, 
         correctionManager, 
         {output}, 
@@ -59,7 +59,7 @@ Muon_2_ID_SF = Producer(
 )
 Muon_2_Iso_SF = Producer(
     name="MuonIso_SF",
-    call="""physicsobject::muon::scalefactor::Iso(
+    call="""physicsobject::muon::scalefactor::IsoAndID(
         {df}, 
         correctionManager, 
         {output}, 
@@ -105,7 +105,7 @@ Muon_1_Reco_SF_boosted = Producer(
 )
 Muon_1_ID_SF_boosted = Producer(
     name="MuonID_SF_boosted",
-    call="""physicsobject::muon::scalefactor::Id(
+    call="""physicsobject::muon::scalefactor::IsoAndID(
         {df}, 
         correctionManager, 
         {output}, 
@@ -120,7 +120,7 @@ Muon_1_ID_SF_boosted = Producer(
 )
 Muon_1_Iso_SF_boosted = Producer(
     name="MuonIso_SF_boosted",
-    call="""physicsobject::muon::scalefactor::Iso(
+    call="""physicsobject::muon::scalefactor::IsoAndID(
         {df}, 
         correctionManager, 
         {output}, 
@@ -1169,7 +1169,8 @@ BJetWPUParT_SF = Producer(
         "{bjet_eff_file}",
         "{bjet_eff_name}",
         "{bjet_eff_sample_type}",
-        "{bjet_sf_variation}"
+        "{bjet_sf_variation_bc}",
+        "{bjet_sf_variation_lf}"
     )
     """,
     input=[

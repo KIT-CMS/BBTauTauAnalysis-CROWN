@@ -2,8 +2,6 @@
 Constant definitions.
 """
 
-import enum
-
 __all__ = [
     "GLOBAL_SCOPES",
     "ET_SCOPES",
@@ -20,8 +18,6 @@ __all__ = [
     "HAD_TAU_SCOPES",
     "SCOPES",
     "ERAS",
-    "AvailableBJetIDs",
-    "BJET_ID_ALGORITHM",
 ]
 
 
