@@ -20,9 +20,12 @@ from .quantities import nanoAOD, nanoAOD_run2
 from .quantities import output as q
 from .tau_triggersetup import add_diTauTriggerSetup
 from .tau_variations import add_tauVariations
-from .variations.jec import add_jec_shifts
 from .tau_embedding_settings import setup_embedding
-from .btag_variations import add_btagVariations
+from .variations.jec import add_jec_shifts
+from .variations.bjet_tagging import (
+    add_bjet_tagging_fixed_wp_shifts,
+    add_bjet_tagging_shape_shifts,
+)
 # from .jec_data import add_jetCorrectionData
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier, SampleModifier
@@ -4348,18 +4351,22 @@ def build_config(
     #########################
     # Import triggersetup   #
     #########################
+
     add_diTauTriggerSetup(configuration)
+
     #########################
     # Add additional producers and SFs related to embedded samples
     #########################
     if sample == "embedding" or sample == "embedding_mc":
         setup_embedding(configuration, HAD_TAU_SCOPES)
 
-    #########################
-    # Jet energy resolution and jet energy scale
-    #########################
+    # -------------------------------------------------------------------------
+    # Systematic shifts
+    # -------------------------------------------------------------------------
 
+    # --- Jet energy calibration ----------------------------------------------
 
+    #region
     jec_mc_producers = [
         jets.JetEnergyCorrectionMC,
         jets.JetEnergyCorrectionMCRegressed,
@@ -4383,21 +4390,40 @@ def build_config(
             era,
             jec_mc_producers,
         )
+    #endregion
 
-    #########################
-    # btagging scale factor shape variation
-    #########################
-    add_btagVariations(configuration, bjet_id_sf_producer)
+    # --- b jet tagging -------------------------------------------------------
 
-    #########################
-    # Jet energy correction for data
-    #########################
-    # add_jetCorrectionData(configuration, era)
+    #region
+    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
+        # In 2022 and 2023, shape-based b jet tagging SFs for ParticleNet are
+        # used
+        add_bjet_tagging_shape_shifts(
+            configuration,
+            era,
+            scalefactors.BJetShapePNet_SF,
+        )
+    else:
+        # In Run 2 and 2024/2025, working point-based b jet tagging SFs for
+        # UParT are used
+        add_bjet_tagging_fixed_wp_shifts(
+            configuration,
+            era,
+            bjet_tagging_sf_producer=scalefactors.BJetWPUParT_SF,
+        )
+    #endregion
 
-    #########################
-    # Finalize and validate the configuration
-    #########################
+    # -------------------------------------------------------------------------
+    # Optimization and validation
+    # -------------------------------------------------------------------------
+
+    #region
+
     configuration.optimize()
     configuration.validate()
     configuration.report()
+
+    #endregion
+
     return configuration.expanded_configuration()
+
