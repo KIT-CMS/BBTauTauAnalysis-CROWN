@@ -12,9 +12,13 @@ from .producers import scalefactors as scalefactors
 
 def _add_jes_shift(
     configuration: Configuration,
-    producers: list[Producer | ProducerGroup],
-    jes_source_fmt: str,
     era: str,
+    jes_source_fmt: str,
+    jec_producers: list[Producer | ProducerGroup],
+    jec_scopes: tuple[str],
+    bjet_tagging_sf_producer: Producer | ProducerGroup | None = None,
+    bjet_tagging_sf_scopes: tuple[str] | None = None,
+    exclude_samples: list[str] | None = None,
 ):
     """
     Add up and down variations of a jet energy scale uncertainty source to
@@ -46,10 +50,14 @@ def _add_jes_shift(
     }
 
     for direction in ["up", "down"]:
-
         # Construct the shift's name: Remove 'Regrouped_' prefix, remove
         # underscore before era, and add direction. add a 'jes' prefix
         m = re.match(r"(Regrouped_)?([^_]*)(_(.*))?", jes_source)
+        if m is None:
+            raise ValueError(
+                "Name of jet energy scale uncertainty source '{jes_source}' "
+                + "could not be parsed."
+            )
         name = (
             "jes"
             + (m.group(2) or jes_source)
@@ -57,25 +65,55 @@ def _add_jes_shift(
             + direction.capitalize()
         )
 
+        # Construct the shift configuration and the producers that are affected
+        shift_config = {
+            jec_scopes: {
+                "ak4jet_jes_shift_factor": jes_shift_factor[direction],
+                "ak4jet_jes_sources": jes_source,
+            },
+        },
+        producers = {jec_scopes: jec_producers},
+
+        # Check if b jet tagging SF producer has been passed. If yes, add the
+        # producer and the corresponding shift
+        if (
+            bjet_tagging_sf_producer is not None
+            and bjet_tagging_sf_scopes is not None
+        ):
+            # Sanitize scope variable and construct name of the shift passed
+            # to the b jet tagging SF producer
+            shift_value = (
+                direction
+                + "_jes"
+                + m.group(2)
+                + (m.group(3) or '')
+            )
+
+            # Extend dictionaries for producers and shift config. Prevent that
+            # JEC definitions are overwritten.
+            shift_config.setdefault(bjet_tagging_sf_scopes, {}).update({
+                "bjet_sf_variation": shift_value,
+            })
+            producers.setdefault(bjet_tagging_sf_scopes, []).append(
+                bjet_tagging_sf_producer
+            )
+
         # Add shift to the configuration
         configuration.add_shift(
             SystematicShift(
                 name=name,
-                shift_config={
-                    "global": {
-                        "ak4jet_jes_shift_factor": jes_shift_factor[direction],
-                        "ak4jet_jes_sources": jes_source,
-                    },
-                },
-                producers={"global": producers},
+                shift_config=shift_config,
+                producers=producers,
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=exclude_samples,
         )
 
 
 def add_jec_shifts(
     configuration: Configuration,
     era: str,
+    jec_producers: list[Producer | ProducerGroup],
+    bjet_tagging_sf_producer: Producer | ProducerGroup = None,
 ):
     """
     Add systematic uncertainties related to the jet energy calibration (JEC)
@@ -84,14 +122,26 @@ def add_jec_shifts(
     The function adds a systematic up and down shift for each uncertainty
     source in the jet energy scale (reduced scheme) and for the
     jet energy resolution (one inclusive uncertainty).
+
+    The prodedure follows the JME recommentations for
+    [JES](https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1) and
+    [JER](https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution_1)
+    uncertainty treatment.
     """
 
-    # Producers that jet energy correction shifts are applied to
-    producers = [
-        jets.JetEnergyCorrectionMC,
-        jets.JetEnergyCorrectionMCRegressed,
-        jets.Type1JetEnergyCorrectionMC,
-    ]
+    # Get scopes of JEC producers, check for consistency
+    jec_scopes = {set(p.scopes) for p in jec_producers}
+    if len(jec_scopes) != 1:
+        raise ValueError(
+            "JEC producers passed to add_jec_shifts are not consistent in "
+            + "their scope definition."
+        )
+    jec_scopes = tuple(jec_scopes.pop())
+
+    # Get scopes of b jet tagging SF producer
+    bjet_tagging_sf_scopes = None
+    if bjet_tagging_sf_producer is not None:
+        bjet_tagging_sf_scopes = tuple(bjet_tagging_sf_producer.scopes)
 
     # Samples to exclude (where jets are already taken from data)
     exclude_samples = ["data", "embedding", "embedding_mc"]
@@ -126,7 +176,16 @@ def add_jec_shifts(
             continue
 
         # Add up and down variation to the configuration
-        _add_jes_shift(configuration, era)
+        _add_jes_shift(
+            configuration,
+            era,
+            jes_source,
+            jec_producers,
+            jec_scopes=jec_scopes,
+            bjet_tagging_sf_producer=bjet_tagging_sf_producer,
+            bjet_tagging_sf_scopes=bjet_tagging_sf_scopes,
+            exclude_samples=exclude_samples,
+        )
 
     # -------------------------------------------------------------------------
     # Jet energy resolution
@@ -143,12 +202,12 @@ def add_jec_shifts(
             SystematicShift(
                 name=f"jerUnc{direction.capitalize()}",
                 shift_config={
-                    "global": {
+                    jec_scopes: {
                         "ak4jet_jer_shift": direction,
                     },
                 },
                 producers={
-                    "global": producers,
+                    jec_scopes: jec_producers,
                 },
             ),
             exclude_samples=exclude_samples,
