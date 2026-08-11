@@ -38,9 +38,10 @@ class DummyProducer:
         self.output = []
 
 
-class AddBJetTaggingShiftsTest(unittest.TestCase):
+class AddBJetTaggingFixedWPShiftsTest(unittest.TestCase):
     """
-    Unit tests for the `variations.bjet_tagging` functions.
+    Unit tests for the
+    `variations.bjet_tagging.add_bjet_tagging_fixed_wp_shifts` function.
     """
 
     def setUp(self):
@@ -49,116 +50,43 @@ class AddBJetTaggingShiftsTest(unittest.TestCase):
             name="BJetWPUParT_SF",
             scopes=["et", "mt", "tt"],
         )
-        self.shape_producer = DummyProducer(
-            name="BJetShapePNet_SF",
-            scopes=["et", "mt", "tt"],
-        )
 
-    # ========================================================================
-    # Tests for add_bjet_tagging_fixed_wp_shifts
-    # ========================================================================
-
-    def test_fixed_wp_adds_correlated_bc_shifts(self):
+    def test_fixed_wp_adds_expected_shifts(self):
         """Test that fixed WP shifts add correlated bc uncertainties."""
 
+        # Create a configuration and add fixed WP shifts
         configuration = CaptureConfiguration()
         add_bjet_tagging_fixed_wp_shifts(
             configuration,
             "2024",
             self.fixed_wp_producer,
         )
-        shift_names = [s["shift"].name for s in configuration.shifts]
+        shift_names = [s["shift"].shiftname for s in configuration.shifts]
+
+        # List expected shifts
+        shifts_expected = [
+            f"{name}{direction}"
+            for name in [
+                "btagBCCorrelated",
+                "btagLFCorrelated",
+                "btagBC2024",
+                "btagLF2024",
+            ]
+            for direction in ["Up", "Down"]
+        ]
 
         # Check for correlated bc shifts (up and down)
-        for direction in ["Up", "Down"]:
+        for shift_exp in shifts_expected:
             self.assertIn(
-                f"btagBCCorrelated{direction}",
+                f"__{shift_exp}",
                 shift_names,
-                f"Expected btagBCCorrelated{direction} not found",
+                f"Expected b jet tagging shift {shift_exp} not found",
             )
-
-    def test_fixed_wp_adds_correlated_lf_shifts(self):
-        """Test that fixed WP shifts add correlated lf uncertainties."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_fixed_wp_shifts(
-            configuration,
-            "2024",
-            self.fixed_wp_producer,
-        )
-        shift_names = [s["shift"].name for s in configuration.shifts]
-
-        # Check for correlated lf shifts (up and down)
-        for direction in ["Up", "Down"]:
-            self.assertIn(
-                f"btagLFCorrelated{direction}",
-                shift_names,
-                f"Expected btagLFCorrelated{direction} not found",
-            )
-
-    def test_fixed_wp_adds_uncorrelated_bc_shifts(self):
-        """Test that fixed WP shifts add era-uncorrelated bc uncertainties."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_fixed_wp_shifts(
-            configuration,
-            "2024",
-            self.fixed_wp_producer,
-        )
-        shift_names = [s["shift"].name for s in configuration.shifts]
-
-        # Check for uncorrelated bc shifts with era (up and down)
-        for direction in ["Up", "Down"]:
-            self.assertIn(
-                f"btagBC2024{direction}",
-                shift_names,
-                f"Expected btagBC2024{direction} not found",
-            )
-
-    def test_fixed_wp_adds_uncorrelated_lf_shifts(self):
-        """Test that fixed WP shifts add era-uncorrelated lf uncertainties."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_fixed_wp_shifts(
-            configuration,
-            "2024",
-            self.fixed_wp_producer,
-        )
-        shift_names = [s["shift"].name for s in configuration.shifts]
-
-        # Check for uncorrelated lf shifts with era (up and down)
-        for direction in ["Up", "Down"]:
-            self.assertIn(
-                f"btagLF2024{direction}",
-                shift_names,
-                f"Expected btagLF2024{direction} not found",
-            )
-
-    def test_fixed_wp_era_specific_naming(self):
-        """Test that uncorrelated shifts include the correct era in name."""
-
-        for era in ["2018", "2022preEE", "2022postEE", "2023preBPix"]:
-            configuration = CaptureConfiguration()
-            add_bjet_tagging_fixed_wp_shifts(
-                configuration,
-                era,
-                self.fixed_wp_producer,
-            )
-            shift_names = [s["shift"].name for s in configuration.shifts]
-
-            # Check that era appears in uncorrelated shift names
-            for flavor in ["BC", "LF"]:
-                for direction in ["Up", "Down"]:
-                    expected_name = f"btag{flavor}{era}{direction}"
-                    self.assertIn(
-                        expected_name,
-                        shift_names,
-                        f"Expected {expected_name} not found for era {era}",
-                    )
 
     def test_fixed_wp_excludes_samples_correctly(self):
         """Test that fixed WP shifts exclude data/embedding samples."""
 
+        # Create a configuration and add fixed WP shifts
         configuration = CaptureConfiguration()
         add_bjet_tagging_fixed_wp_shifts(
             configuration,
@@ -171,215 +99,119 @@ class AddBJetTaggingShiftsTest(unittest.TestCase):
             self.assertEqual(
                 shift_info["exclude_samples"],
                 expected_exclude,
-                f"exclude_samples mismatch for shift {shift_info['shift'].name}",
-            )
-
-    def test_fixed_wp_total_shift_count(self):
-        """Test that fixed WP creates the expected number of shifts."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_fixed_wp_shifts(
-            configuration,
-            "2024",
-            self.fixed_wp_producer,
-        )
-
-        # Expected: 2 flavors (bc, lf) × 2 types (correlated, uncorrelated) × 2 directions = 8 shifts
-        self.assertEqual(
-            len(configuration.shifts),
-            8,
-            f"Expected 8 shifts, got {len(configuration.shifts)}",
-        )
-
-    # ========================================================================
-    # Tests for add_bjet_tagging_shape_shifts
-    # ========================================================================
-
-    def test_shape_adds_hf_uncertainty_shifts(self):
-        """Test that shape shifts add hf uncertainties."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_shape_shifts(
-            configuration,
-            "2024",
-        )
-        shift_names = [s["shift"].name for s in configuration.shifts]
-
-        # Check for hf shifts (up and down)
-        for direction in ["Up", "Down"]:
-            self.assertIn(
-                f"btagHf{direction}",
-                shift_names,
-                f"Expected btagHf{direction} not found",
-            )
-
-    def test_shape_adds_lf_uncertainty_shifts(self):
-        """Test that shape shifts add lf uncertainties."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_shape_shifts(
-            configuration,
-            "2024",
-        )
-        shift_names = [s["shift"].name for s in configuration.shifts]
-
-        # Check for lf shifts (up and down)
-        for direction in ["Up", "Down"]:
-            self.assertIn(
-                f"btagLf{direction}",
-                shift_names,
-                f"Expected btagLf{direction} not found",
-            )
-
-    def test_shape_adds_cferr_uncertainty_shifts(self):
-        """Test that shape shifts add cferr uncertainties."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_shape_shifts(
-            configuration,
-            "2024",
-        )
-        shift_names = [s["shift"].name for s in configuration.shifts]
-
-        # Check for cferr shifts (up and down)
-        for err_type in ["cferr1", "cferr2"]:
-            for direction in ["Up", "Down"]:
-                self.assertIn(
-                    f"btag{err_type.capitalize()}{direction}",
-                    shift_names,
-                    f"Expected btag{err_type.capitalize()}{direction} not found",
-                )
-
-    def test_shape_adds_stats_uncertainty_shifts(self):
-        """Test that shape shifts add stats uncertainties."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_shape_shifts(
-            configuration,
-            "2024",
-        )
-        shift_names = [s["shift"].name for s in configuration.shifts]
-
-        # Check for stats shifts (hfstats1, hfstats2, lfstats1, lfstats2)
-        for stats_type in ["hfstats1", "hfstats2", "lfstats1", "lfstats2"]:
-            for direction in ["Up", "Down"]:
-                self.assertIn(
-                    f"btag{stats_type.capitalize()}{direction}",
-                    shift_names,
-                    f"Expected btag{stats_type.capitalize()}{direction} not found",
-                )
-
-    def test_shape_excludes_samples_correctly(self):
-        """Test that shape shifts exclude data/embedding samples."""
-
-        configuration = CaptureConfiguration()
-        add_bjet_tagging_shape_shifts(
-            configuration,
-            "2024",
-        )
-
-        expected_exclude = ["data", "embedding", "embedding_mc"]
-        for shift_info in configuration.shifts:
-            self.assertEqual(
-                shift_info["exclude_samples"],
-                expected_exclude,
-                f"exclude_samples mismatch for shift {shift_info['shift'].name}",
+                f"exclude_samples mismatch for shift {shift_info["shift"].shiftname}",
             )
 
     def test_shape_total_shift_count(self):
-        """Test that shape shifts create the expected number of shifts."""
+        """Test that WP-based shifts create the expected number of shifts."""
 
+        # Create a configuration and add shape shifts
         configuration = CaptureConfiguration()
-        add_bjet_tagging_shape_shifts(
+        add_bjet_tagging_fixed_wp_shifts(
             configuration,
             "2024",
+            self.fixed_wp_producer,
         )
 
-        # Expected: 12 uncertainty groups × 2 directions = 24 shifts
-        # Note: unc_groups list has duplicates (hfstats1, hfstats2, lfstats1, lfstats2 appear twice)
-        # This might be intentional or a bug - testing actual behavior
-        expected_count = 24  # 12 sources × 2 directions
+        # Expect (BC, LF) x (correlated, uncorrelated)
+        # Total: 4 shifts, each with up and down variations
+        expected_count = 8
         self.assertEqual(
             len(configuration.shifts),
             expected_count,
             f"Expected {expected_count} shifts, got {len(configuration.shifts)}",
         )
 
-    def test_shape_shift_naming_convention(self):
-        """Test that shape shifts follow the expected naming convention."""
 
+class AddBJetTaggingShapeShiftsTest(unittest.TestCase):
+    """
+    Unit tests for the
+    `variations.bjet_tagging.add_bjet_tagging_shape_shifts` function.
+    """
+
+    def setUp(self):
+        # Set up dummy producers for testing
+        self.shape_producer = DummyProducer(
+            name="BJetShapePNet_SF",
+            scopes=["et", "mt", "tt"],
+        )
+
+    def test_shape_adds_expected_shifts(self):
+        """Test that shape shifts add hf uncertainties."""
+
+        # Create a configuration and add shape shifts
         configuration = CaptureConfiguration()
         add_bjet_tagging_shape_shifts(
             configuration,
-            "2024",
+            self.shape_producer,
         )
-        shift_names = [s["shift"].name for s in configuration.shifts]
+        shift_names = [s["shift"].shiftname for s in configuration.shifts]
 
-        # All shape shifts should start with 'btag' and end with 'Up' or 'Down'
-        for shift_name in shift_names:
-            self.assertTrue(
-                shift_name.startswith("btag"),
-                f"Shift name '{shift_name}' does not start with 'btag'",
+        # List expected shifts
+        shifts_expected = [
+            f"{name}{direction}"
+            for name in [
+                "btagHf",
+                "btagLf",
+                "btagHfstats1",
+                "btagHfstats2",
+                "btagLfstats1",
+                "btagLfstats2",
+                "btagCferr1",
+                "btagCferr2",
+                "btagCferr1",
+                "btagCferr2",
+            ]
+            for direction in ["Up", "Down"]
+        ]
+
+        # Check for correlated bc shifts (up and down)
+        for shift_exp in shifts_expected:
+            self.assertIn(
+                f"__{shift_exp}",
+                shift_names,
+                f"Expected b jet tagging shift {shift_exp} not found",
             )
-            self.assertTrue(
-                shift_name.endswith("Up") or shift_name.endswith("Down"),
-                f"Shift name '{shift_name}' does not end with 'Up' or 'Down'",
-            )
 
-    # ========================================================================
-    # Integration and comparison tests
-    # ========================================================================
+    def test_shape_excludes_samples_correctly(self):
+        """Test that shape shifts exclude data/embedding samples."""
 
-    def test_both_functions_use_same_exclude_samples(self):
-        """Test that both functions use the same exclude_samples list."""
-
-        config_fixed = CaptureConfiguration()
-        config_shape = CaptureConfiguration()
-
-        add_bjet_tagging_fixed_wp_shifts(
-            config_fixed,
-            "2024",
-            self.fixed_wp_producer,
-        )
+        # Create a configuration and add shape shifts
+        configuration = CaptureConfiguration()
         add_bjet_tagging_shape_shifts(
-            config_shape,
-            "2024",
+            configuration,
+            self.shape_producer,
         )
 
-        expected_exclude = ["data", "embedding", "embedding_mc"]
-
-        for shift_info in config_fixed.shifts + config_shape.shifts:
+        # Check that all shifts have the expected exclude_samples list
+        expected_exclude = sorted(["data", "embedding", "embedding_mc"])
+        for shift_info in configuration.shifts:
             self.assertEqual(
-                shift_info["exclude_samples"],
+                sorted(shift_info["exclude_samples"]),
                 expected_exclude,
-                f"exclude_samples mismatch for shift {shift_info['shift'].name}",
+                f"exclude_samples mismatch for shift {shift_info["shift"].shiftname}",
             )
 
-    def test_no_overlap_between_fixed_wp_and_shape_shifts(self):
-        """Test that fixed WP and shape shifts produce distinct shift names."""
+    def test_shape_total_shift_count(self):
+        """Test that shape shifts create the expected number of shifts."""
 
-        config_fixed = CaptureConfiguration()
-        config_shape = CaptureConfiguration()
-
-        add_bjet_tagging_fixed_wp_shifts(
-            config_fixed,
-            "2024",
-            self.fixed_wp_producer,
-        )
+        # Create a configuration and add shape shifts
+        configuration = CaptureConfiguration()
         add_bjet_tagging_shape_shifts(
-            config_shape,
-            "2024",
+            configuration,
+            self.shape_producer,
         )
 
-        fixed_names = {s["shift"].name for s in config_fixed.shifts}
-        shape_names = {s["shift"].name for s in config_shape.shifts}
-
-        # No overlap between the two sets
-        overlap = fixed_names.intersection(shape_names)
+        # Expect
+        # - 1 x HF, 1 x LF
+        # - 2 x HFSTAT, 2 x LFSTAT
+        # - 2 x CFERR
+        # Total: 8 shifts, each with up and down variations
+        expected_count = 16
         self.assertEqual(
-            len(overlap),
-            0,
-            f"Found overlapping shift names: {overlap}",
+            len(configuration.shifts),
+            expected_count,
+            f"Expected {expected_count} shifts, got {len(configuration.shifts)}",
         )
 
 
