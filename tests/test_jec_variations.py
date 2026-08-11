@@ -1,14 +1,6 @@
-from pathlib import Path
 import unittest
 
-
-from analysis_configurations.bbtautau.variations.jec import (
-    add_jec_shifts,
-    _add_jes_shift,
-)
-
-
-ANALYSIS_ROOT = Path(__file__).resolve().parent
+from analysis_configurations.bbtautau.variations.jec import add_jec_shifts
 
 
 class CaptureConfiguration:
@@ -31,6 +23,7 @@ class CaptureConfiguration:
 
 
 class DummyProducer:
+    """Dummy producer class to simulate a producer for testing purposes."""
 
     def __init__(self, name, scopes):
         self.name = name
@@ -43,6 +36,9 @@ class DummyProducer:
 
 
 class AddJECShiftsTest(unittest.TestCase):
+    """
+    Unit tests for the `variations.jec.add_jec_shifts` function.
+    """
 
     def setUp(self):
         # Set up dummy JEC producers for testing
