@@ -9,7 +9,8 @@ from ..producers import scalefactors as scalefactors
 
 def _add_jes_shift(
     configuration: Configuration,
-    jes_source: str,
+    shift_name: str,
+    jes_source_name: str,
     jec_producers: list[Producer | ProducerGroup],
     jec_scopes: tuple[str],
     bjet_tagging_sf_producer: Producer | ProducerGroup | None = None,
@@ -30,24 +31,18 @@ def _add_jes_shift(
     for direction in ["up", "down"]:
         # Construct the shift's name: Remove 'Regrouped_' prefix, remove
         # underscore before era, and add direction. add a 'jes' prefix
-        m = re.match(r"(Regrouped_)?([^_]*)(_(.*))?", jes_source)
+        m = re.match(r"(Regrouped_)?([^_]*)(_(.*))?", jes_source_name)
         if m is None:
             raise ValueError(
                 "Name of jet energy scale uncertainty source '{jes_source}' "
                 + "could not be parsed."
             )
-        name = (
-            "jes"
-            + (m.group(2) or jes_source)
-            + (m.group(4) or "")
-            + direction.capitalize()
-        )
 
         # Construct the shift configuration and the producers that are affected
         shift_config = {
             jec_scopes: {
                 "ak4jet_jes_shift_factor": jes_shift_factor[direction],
-                "ak4jet_jes_sources": jes_source,
+                "ak4jet_jes_sources": jes_source_name,
             },
         }
         producers = {jec_scopes: jec_producers}
@@ -79,7 +74,7 @@ def _add_jes_shift(
         # Add shift to the configuration
         configuration.add_shift(
             SystematicShift(
-                name=name,
+                name=f"{shift_name}{direction.capitalize()}",
                 shift_config=shift_config,
                 producers=producers,
             ),
@@ -143,26 +138,63 @@ def add_jec_shifts(
     # Groups of uncertainty sources in jet energy scale corrections. The
     # HEMIssue uncertainty is only included in 2018
     jes_sources = [
-        "Regrouped_Absolute",
-        f"Regrouped_Absolute_{era}",
-        "Regrouped_FlavorQCD",
-        "Regrouped_BBEC1",
-        f"Regrouped_BBEC1_{era}",
-        "Regrouped_HF",
-        f"Regrouped_HF_{era}",
-        "Regrouped_EC2",
-        f"Regrouped_EC2_{era}",
-        "Regrouped_RelativeBal",
-        f"Regrouped_RelativeSample_{era}",
+        {
+            "correction_name": "Regrouped_Absolute",
+            "cms_name": "CMS_scale_j_Absolute",
+        },
+        {
+            "correction_name": f"Regrouped_Absolute_{era}",
+            "cms_name": f"CMS_scale_j_Absolute_{era}",
+        },
+        {
+            "correction_name": "Regrouped_FlavorQCD",
+            "cms_name": "CMS_scale_j_FlavorQCD",
+        },
+        {
+            "correction_name": "Regrouped_BBEC1",
+            "cms_name": "CMS_scale_j_BBEC1",
+        },
+        {
+            "correction_name": f"Regrouped_BBEC1_{era}",
+            "cms_name": f"CMS_scale_j_BBEC1_{era}",
+        },
+        {
+            "correction_name": "Regrouped_HF",
+            "cms_name": "CMS_scale_j_HF",
+        },
+        {
+            "correction_name": f"Regrouped_HF_{era}",
+            "cms_name": f"CMS_scale_j_HF_{era}",
+        },
+        {
+            "correction_name": "Regrouped_EC2",
+            "cms_name": "CMS_scale_j_EC2",
+        },
+        {
+            "correction_name": f"Regrouped_EC2_{era}",
+            "cms_name": f"CMS_scale_j_EC2_{era}",
+        },
+        {
+            "correction_name": "Regrouped_RelativeBal",
+            "cms_name": "CMS_scale_j_RelativeBal",
+        },
+        {
+            "correction_name": f"Regrouped_RelativeSample_{era}",
+            "cms_name": f"CMS_scale_j_RelativeSample_{era}",
+        },
     ]
     if era == "2018":
-        jes_sources.append("HEMIssue")  
+        jes_sources.append({
+            "correction_name": "HEMIssue",
+            "cms_name": f"CMS_HEM_{era}",
+        })
 
     for jes_source in jes_sources:
         # Add up and down variation to the configuration
         _add_jes_shift(
             configuration,
-            jes_source,
+            jes_source["cms_name"],
+            jes_source["correction_name"],
             jec_producers,
             jec_scopes=jec_scopes,
             bjet_tagging_sf_producer=bjet_tagging_sf_producer,
@@ -183,7 +215,7 @@ def add_jec_shifts(
         # Add shift to the configuration
         configuration.add_shift(
             SystematicShift(
-                name=f"jerUnc{direction.capitalize()}",
+                name=f"CMS_res_j_{era}{direction.capitalize()}",
                 shift_config={
                     jec_scopes: {
                         "ak4jet_jer_shift": direction,
