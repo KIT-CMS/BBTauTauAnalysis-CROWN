@@ -73,7 +73,7 @@ def _add_jes_shift(
         )
 
 
-def add_jec_variations(
+def add_jec_shifts(
     configuration: Configuration,
     era: str,
 ):
