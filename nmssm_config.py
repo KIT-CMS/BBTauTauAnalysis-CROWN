@@ -20,7 +20,7 @@ from .quantities import nanoAOD, nanoAOD_run2
 from .quantities import output as q
 from .tau_triggersetup import add_diTauTriggerSetup
 from .tau_variations import add_tauVariations
-from .jet_variations import add_jetVariations
+from .variations.jec import add_jec_variations
 from .tau_embedding_settings import setup_embedding
 from .btag_variations import add_btagVariations
 # from .jec_data import add_jetCorrectionData
@@ -4358,7 +4358,7 @@ def build_config(
     #########################
     # Jet energy resolution and jet energy scale
     #########################
-    add_jetVariations(configuration, era, bjet_id_sf_producer)
+    add_jec_variations(configuration, era)
 
     #########################
     # btagging scale factor shape variation
