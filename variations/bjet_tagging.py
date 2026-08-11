@@ -1,14 +1,14 @@
 from code_generation.configuration import Configuration
+from code_generation.producer import Producer, ProducerGroup
 from code_generation.systematics import SystematicShift
 
-from .producers import scalefactors as scalefactors
-from .constants import SCOPES
+from ..producers import scalefactors as scalefactors
 
 
 def add_bjet_tagging_fixed_wp_shifts(
     configuration: Configuration,
     era: str,
-    producer: Producer | ProducerList,
+    producer: Producer | ProducerGroup,
 ):
     """
     Add systematic shifts for the working point (WP)-based b jet tagging scale
@@ -67,7 +67,7 @@ def add_bjet_tagging_fixed_wp_shifts(
                     shift_config={
                         f"bjet_sf_variation_{jet_flavor}": shift_value,
                     },
-                    producers={scopes: producers},
+                    producers={scopes: [producer]},
                 ),
                 exclude_samples=exclude_samples,
             )
@@ -75,7 +75,7 @@ def add_bjet_tagging_fixed_wp_shifts(
 
 def add_bjet_tagging_shape_shifts(
     configuration: Configuration,
-    era: str,
+    producer: Producer | ProducerGroup,
 ):
     """
     Add systematic shifts for shape-based b jet tagging scale factors.
@@ -110,10 +110,6 @@ def add_bjet_tagging_shape_shifts(
         "lfstats2",
         "cferr1",
         "cferr2",
-        "hfstats1",
-        "hfstats2",
-        "lfstats1",
-        "lfstats2",
     ]
 
     # Add up and down variations for each uncertainty group
@@ -133,6 +129,3 @@ def add_bjet_tagging_shape_shifts(
                 ),
                 exclude_samples=exclude_samples,
             )
-
-    # Search for JES uncertainties
-    for 
