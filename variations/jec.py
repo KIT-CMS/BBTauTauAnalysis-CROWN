@@ -6,8 +6,8 @@ import re
 from code_generation.configuration import Configuration
 from code_generation.systematics import SystematicShift
 from code_generation.producer import Producer, ProducerGroup
-from .producers import jets as jets
-from .producers import scalefactors as scalefactors
+from ..producers import jets as jets
+from ..producers import scalefactors as scalefactors
 
 
 def _add_jes_shift(
@@ -30,8 +30,9 @@ def _add_jes_shift(
     fmt_params = {
         field_name
         for _, field_name, _, _ in string.Formatter().parse(jes_source_fmt)
+        if field_name is not None
     }
-    if not fmt_params < {"era"}:
+    if len(fmt_params) > 0 and fmt_params != {"era"}:
         raise ValueError(
             f"JEC source format string '{jes_source_fmt}' cannot be "
             + "evaluated. Format string is only allowed to contain the "
@@ -71,8 +72,8 @@ def _add_jes_shift(
                 "ak4jet_jes_shift_factor": jes_shift_factor[direction],
                 "ak4jet_jes_sources": jes_source,
             },
-        },
-        producers = {jec_scopes: jec_producers},
+        }
+        producers = {jec_scopes: jec_producers}
 
         # Check if b jet tagging SF producer has been passed. If yes, add the
         # producer and the corresponding shift
@@ -138,7 +139,7 @@ def add_jec_shifts(
     """
 
     # Get scopes of JEC producers, check for consistency
-    jec_scopes = {set(p.scopes) for p in jec_producers}
+    jec_scopes = {tuple(sorted(p.scopes)) for p in jec_producers}
     if len(jec_scopes) != 1:
         raise ValueError(
             "JEC producers passed to add_jec_shifts are not consistent in "
