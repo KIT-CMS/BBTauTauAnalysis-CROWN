@@ -50,9 +50,7 @@ def add_bjet_tagging_fixed_wp_shifts(
                 configuration.add_shift(
                     SystematicShift(
                         name=shift_name,
-                        shift_config={
-                            shift_key: shift_value,
-                        },
+                        shift_config={scopes: {shift_key: shift_value}},
                         producers={scopes: [producer]},
                     ),
                     exclude_samples=exclude_samples,
