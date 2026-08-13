@@ -19,7 +19,11 @@ from .producers import triggers as triggers
 from .quantities import nanoAOD, nanoAOD_run2
 from .quantities import output as q
 from .tau_triggersetup import add_diTauTriggerSetup
-from .tau_variations import add_tauVariations
+from .tau_variations import (
+    add_tauVariations,
+    add_tau_id_vs_jet_shifts,
+    add_tau_es_shifts
+)
 from .tau_embedding_settings import setup_embedding
 from .variations.met import (
     add_unclustered_energy_shifts,
@@ -4356,6 +4360,36 @@ def build_config(
 
     #endregion
 
+
+    # --- Hadronic tau identification & energy scale correction ---------------
+
+    #region
+
+    # Add hadronic tau ID SF shifts to semileptonic scopes (one producer)
+    add_tau_id_vs_jet_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsJetSF2],
+        SL_SCOPES,
+    )
+
+    # Hadronic tau ID SF shifts to fullhadronic scopes (two producers)
+    add_tau_id_vs_jet_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
+        TT_SCOPES,
+    )
+
+    # Shifts for hadronic tau energy scale corrections
+    add_tau_es_shifts(
+        configuration,
+        era,
+        taus.TauPtCorrectionMC,
+    )
+
+    #endregion
+
     # --- Missing transverse momentum -----------------------------------------
 
     #region
@@ -4385,6 +4419,7 @@ def build_config(
         # used
         add_bjet_tagging_shape_shifts(
             configuration,
+            era,
             scalefactors.BJetShapePNet_SF,
         )
     else:
@@ -4393,7 +4428,7 @@ def build_config(
         add_bjet_tagging_fixed_wp_shifts(
             configuration,
             era,
-            bjet_tagging_sf_producer=scalefactors.BJetWPUParT_SF,
+            scalefactors.BJetWPUParT_SF,
         )
 
     #endregion
