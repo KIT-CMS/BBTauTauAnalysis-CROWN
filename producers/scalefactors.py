@@ -175,19 +175,12 @@ def _create_tau_id_vsjet_sf_producer(
         "\"{tau_ides_sf_file}\"",
         "\"{discriminator}\"", 
     ]
-    call_fn = "physicsobject::tau::scalefactor::Id_vsJet"
+    call_fn = "physicsobject::tau::scalefactor::experimental::Id_vsJet"
     parameters.extend([
         f"\"{{{vsjet_wp}}}\"", 
         f"\"{{{tau_ides_sf_vsele_wp}}}\"", 
-        f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm0_pt20to40_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm0_pt40toInf_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm1_pt20to40_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm1_pt40toInf_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm10_pt20to40_shift}\"",
-        "\"{tau_id_sf_vsjet_tau_dm10_pt40toInf_shift}\"",
-        "\"{tau_id_sf_vsjet_tau_dm11_pt20to40_shift}\"",
-        "\"{tau_id_sf_vsjet_tau_dm11_pt40toInf_shift}\"",
+        f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"",
+        "\"{tau_id_sf_vsjet_variation}\""
     ])
 
     return ExtendedVectorProducer(
