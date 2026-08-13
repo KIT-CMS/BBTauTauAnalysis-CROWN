@@ -870,15 +870,16 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
             "tau_ES_json_name": "tau_energy_scale",
             "tau_id_algorithm": tau_id,
             "tau_es_vs_jet_wp": "Medium",
-            "tau_ES_shift_DM0": "nom",
-            "tau_ES_shift_DM1": "nom",
-            "tau_ES_shift_DM10": "nom",
-            "tau_ES_shift_DM11": "nom",
-            "tau_elefake_es_DM0_barrel": "nom",
-            "tau_elefake_es_DM0_endcap": "nom",
-            "tau_elefake_es_DM1_barrel": "nom",
-            "tau_elefake_es_DM1_endcap": "nom",
-            "tau_mufake_es": "nom",
+            "tau_ES_shift_DM0": "nom",  # old
+            "tau_ES_shift_DM1": "nom",  # old
+            "tau_ES_shift_DM10": "nom",  # old
+            "tau_ES_shift_DM11": "nom",  # old
+            "tau_elefake_es_DM0_barrel": "nom",  # old
+            "tau_elefake_es_DM0_endcap": "nom",  # old
+            "tau_elefake_es_DM1_barrel": "nom",  # old
+            "tau_elefake_es_DM1_endcap": "nom",  # old
+            "tau_mufake_es": "nom",  # old
+            "tau_es_variation": "nom",  # experimental, to replace old variation definitions
         },
     )
 
@@ -939,14 +940,15 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
     configuration.add_config_parameters(
         HAD_TAU_SCOPES,
         {
-            "tau_id_sf_vsjet_tau_dm0_pt20to40_shift": "nom",
-            "tau_id_sf_vsjet_tau_dm0_pt40toInf_shift": "nom",
-            "tau_id_sf_vsjet_tau_dm1_pt20to40_shift": "nom",
-            "tau_id_sf_vsjet_tau_dm1_pt40toInf_shift": "nom",
-            "tau_id_sf_vsjet_tau_dm10_pt20to40_shift": "nom",
-            "tau_id_sf_vsjet_tau_dm10_pt40toInf_shift": "nom",
-            "tau_id_sf_vsjet_tau_dm11_pt20to40_shift": "nom",
-            "tau_id_sf_vsjet_tau_dm11_pt40toInf_shift": "nom",
+            "tau_id_sf_vsjet_tau_dm0_pt20to40_shift": "nom",  # old
+            "tau_id_sf_vsjet_tau_dm0_pt40toInf_shift": "nom",  # old
+            "tau_id_sf_vsjet_tau_dm1_pt20to40_shift": "nom",  # old
+            "tau_id_sf_vsjet_tau_dm1_pt40toInf_shift": "nom",  # old
+            "tau_id_sf_vsjet_tau_dm10_pt20to40_shift": "nom",  # old
+            "tau_id_sf_vsjet_tau_dm10_pt40toInf_shift": "nom",  # old
+            "tau_id_sf_vsjet_tau_dm11_pt20to40_shift": "nom",  # old
+            "tau_id_sf_vsjet_tau_dm11_pt40toInf_shift": "nom",  # old
+            "tau_id_sf_vsjet_variation": "nom",  # experimental, to replace old variation definitions
             "tau_id_sf_vsjet_sf_dependence": "dm",  # dm for dm- and pt-binned SFs, "pt" for high-pt SFs
         },
     )
