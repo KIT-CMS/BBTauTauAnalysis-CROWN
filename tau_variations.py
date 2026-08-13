@@ -121,6 +121,75 @@ def add_tau_id_vs_jet_shifts(
             )
 
 
+def add_tau_es_shifts(
+    configuration: Configuration,
+    era: str,
+    producer: Producer | ProducerGroup,
+    tau_id_algorithm: str = "DeepTau2018v2p5",
+):
+    """
+    Add shifts for tau energy scale (TES) for the given era.
+
+    The shifts follow the uncertainty scheme
+    [recommended by the TAU POG](https://tau-wiki.docs.cern.ch/Corrections/#energy-scale).
+    """
+
+    # Get scopes from the producer object
+    scopes = tuple(producer.scopes)
+
+    # Specify properties of the shifts
+    shifts = [
+        # Shifts for genuine taus decaying hadronically
+        *[
+            {
+                "shift_key": "tau_es_variation",
+                "shift_value": f"{{direction}}_custom_genTau_dm{dm}",
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genTau_{era}",
+            }
+            for dm in [0, 1, 10, 11]
+        ],
+
+        # Shifts for electrons faking hadronic taus
+        *[
+            {
+                "shift_key": "tau_es_variation",
+                "shift_value": f"{{direction}}_custom_genEle_dm{dm}_{eta_region}",
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genElectron_{era}",
+            }
+            for dm in [0, 1, 10, 11]
+            for eta_region in ["barrel", "endcap"]
+        ],
+
+        # Shifts for muons faking hadronic taus
+        *[
+            {
+                "shift_key": "tau_es_variation",
+                "shift_value": "{direction}_custom_genMu",
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genMuon_{era}",
+            }
+            for dm in [0, 1, 10, 11]
+        ],
+    ]
+
+    # Add up and down variation for each shift 
+    for shift in shifts:
+        shift_key = shift["shift_key"]
+        cms_name = shift["cms_name"]
+        for direction in ["up", "down"]:
+            shift_value = shift["shift_value"].format(direction=direction)
+            configuration.add_shift(
+                SystematicShift(
+                    name=f"{cms_name}{direction.capitalize()}",
+                    shift_config={
+                        tuple(scopes): {
+                            shift_key: shift_value,
+                        },
+                    },
+                    producers={tuple(scopes): [producer]},
+                )
+            )
+
+
 def add_tauVariations(
     configuration: Configuration,
     tau_id_vs_jet_sf_1_producer: Producer,
