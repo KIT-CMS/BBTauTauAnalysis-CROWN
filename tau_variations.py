@@ -117,8 +117,62 @@ def add_tau_id_vs_jet_shifts(
                         },
                     },
                     producers={tuple(scopes): producers},
-                ),
+                )
             )
+
+
+def add_tau_id_vs_e_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup],
+    scopes: list[str],
+    tau_id_algorithm: str = "DeepTau2018v2p5",
+):
+    """
+    Add shifts for tau ID vs electron scale factors for the given era.
+     
+    The shifts follow the uncertainty scheme
+    [recommended by the TAU POG](https://tau-wiki.docs.cern.ch/Corrections/#corrections-for-electrons-misidentidfied-as-taus).
+
+    The corrections have been calculated binned in hadronic tau decay modes
+    (0, 1, 10, 11) and absolute pseudorapidity (representing ECAL barrel and
+    ECAL endcaps). Shifts are performed independently for each of these 2D bins.
+    
+    For 2025 scale factors, this
+    [presentation by Filip Bilandzija](https://indico.cern.ch/event/1655000/contributions/7072679/attachments/3268245/5837611/E-%3ETau%20FR%20measurement%202025%20-%20final%20update.pdf)
+    documents the derivation of the scale factors and shows the associated
+    uncertainties.
+    """
+
+    # Independent shifts of the tau ID vs electron scale factor. Independent
+    # shifts are performed for each 2D bin in DM x (barrel, endcap).
+    shifts = [
+        {
+            "cms_name": f"CMS_fake_t_{tau_id_algorithm}_VSe_DM{dm}_{eta_region}_{era}",
+            "shift_key": "tau_id_sf_vsele_variation",
+            "shift_value": f"{{direction}}_custom_dm{dm}_{eta_region}",
+        }
+        for dm in [0, 1, 10, 11]
+        for eta_region in ["barrel", "endcap"]
+    ]
+
+    # Add up and down variation for each shift
+    for shift in shifts:
+        for direction in ["up", "down"]:
+            configuration.add_shift(
+                SystematicShift(
+                    name=f"{shift['cms_name']}{direction.capitalize()}",
+                    shift_config={
+                        tuple(scopes): {
+                            shift["shift_key"]: shift["shift_value"].format(
+                                direction=direction
+                            ),
+                        },
+                    },
+                    producers={tuple(scopes): producers},
+                )
+            )
+
 
 
 def add_tau_es_shifts(
