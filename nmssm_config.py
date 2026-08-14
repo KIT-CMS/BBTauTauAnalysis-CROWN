@@ -22,6 +22,7 @@ from .tau_triggersetup import add_diTauTriggerSetup
 from .tau_variations import (
     add_tauVariations,
     add_tau_id_vs_jet_shifts,
+    add_tau_id_vs_e_shifts,
     add_tau_es_shifts
 )
 from .tau_embedding_settings import setup_embedding
@@ -4365,7 +4366,8 @@ def build_config(
 
     #region
 
-    # Add hadronic tau ID SF shifts to semileptonic scopes (one producer)
+    # Add hadronic tau ID vs jet SF shifts to semileptonic scopes (producer for
+    # second lepton candidate in pair)
     add_tau_id_vs_jet_shifts(
         configuration,
         era,
@@ -4373,11 +4375,30 @@ def build_config(
         SL_SCOPES,
     )
 
-    # Hadronic tau ID SF shifts to fullhadronic scopes (two producers)
+    # Add hadronic tau ID vs jet SF shifts to fullhadronic scopes (producers for
+    # first and second lepton candidate in pair)
     add_tau_id_vs_jet_shifts(
         configuration,
         era,
         [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
+        TT_SCOPES,
+    )
+
+    # Add hadronic tau ID vs electron SF shifts to semileptonic scopes (producer
+    # for second lepton candidate in pair)
+    add_tau_id_vs_e_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsEleSF2],
+        SL_SCOPES,
+    )
+
+    # Add hadronic tau ID vs electron SF shifts to fullhadronic scopes
+    # (producers for first and second lepton candidate in pair)
+    add_tau_id_vs_e_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsEleSF1, scalefactors.TauIDVsEleSF2],
         TT_SCOPES,
     )
 
