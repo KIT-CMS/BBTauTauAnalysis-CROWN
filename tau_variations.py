@@ -174,6 +174,52 @@ def add_tau_id_vs_e_shifts(
             )
 
 
+def add_tau_id_vs_mu_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup],
+    scopes: list[str],
+    tau_id_algorithm: str = "DeepTau2018v2p5",
+):
+    """
+    Add shifts for tau ID vs muon scale factors for the given era.
+     
+    The shifts follow the uncertainty scheme
+    [recommended by the TAU POG](https://tau-wiki.docs.cern.ch/Corrections/#corrections-for-muons-misidentidfied-as-taus).
+
+    The corrections have been calculated binned in the absolute pseudorapidity
+    (representing the muon wheels). Shifts are performed independently in
+    these bins.
+    """
+
+    # Independent shifts of the tau ID vs muon scale factor. Shifts are
+    # decorrelated between the different muon wheel regions. 
+    shifts = [
+        {
+            "cms_name": f"CMS_fake_t_{tau_id_algorithm}_VSmu_{eta_region}_{era}",
+            "shift_key": "tau_id_sf_vsele_variation",
+            "shift_value": f"{{direction}}_custom_{eta_region}",
+        }
+        for eta_region in ("wheel{i}" for i in range(1, 6))
+    ]
+
+    # Add up and down variation for each shift
+    for shift in shifts:
+        for direction in ["up", "down"]:
+            configuration.add_shift(
+                SystematicShift(
+                    name=f"{shift['cms_name']}{direction.capitalize()}",
+                    shift_config={
+                        tuple(scopes): {
+                            shift["shift_key"]: shift["shift_value"].format(
+                                direction=direction
+                            ),
+                        },
+                    },
+                    producers={tuple(scopes): producers},
+                )
+            )
+
 
 def add_tau_es_shifts(
     configuration: Configuration,
