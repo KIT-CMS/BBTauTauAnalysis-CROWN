@@ -20,6 +20,7 @@ from .quantities import nanoAOD, nanoAOD_run2
 from .quantities import output as q
 from .tau_triggersetup import add_diTauTriggerSetup
 from .tau_variations import (
+    add_tauVariations,
     add_tau_id_vs_jet_shifts,
     add_tau_id_vs_e_shifts,
     add_tau_id_vs_mu_shifts,
@@ -4299,6 +4300,21 @@ def build_config(
     #    ),
     #    exclude_samples=["data", "embedding", "embedding_mc"],
     #)
+
+    #########################
+    # TauID scale factor shifts, channel dependent # Tau energy scale shifts, dm dependent
+    #########################
+    add_tauVariations(
+        configuration,
+        scalefactors.TauIDVsJetSF1,
+        scalefactors.TauIDVsJetSF2,
+        scalefactors.TauIDVsEleSF1,
+        scalefactors.TauIDVsEleSF2,
+        scalefactors.TauIDVsMuSF1,
+        scalefactors.TauIDVsMuSF2,
+        taus.TauPtCorrectionMC,
+        sample,
+    )
 
     #########################
     # Import triggersetup   #
