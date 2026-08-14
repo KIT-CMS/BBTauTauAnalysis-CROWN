@@ -6,7 +6,6 @@ from .producers import electrons as electrons
 from .producers import event as event
 from .producers import genparticles as genparticles
 from .producers import jets as jets
-# from .producers import fatjets as fatjets
 from .producers import met as met
 from .producers import muons as muons
 from .producers import pairquantities as pairquantities
@@ -19,23 +18,23 @@ from .producers import triggers as triggers
 from .quantities import nanoAOD, nanoAOD_run2
 from .quantities import output as q
 from .tau_triggersetup import add_diTauTriggerSetup
-from .tau_variations import (
-    add_tau_id_vs_jet_shifts,
-    add_tau_id_vs_e_shifts,
-    add_tau_id_vs_mu_shifts,
-    add_tau_es_shifts
-)
 from .tau_embedding_settings import setup_embedding
+from .variations.bjet_tagging import (
+    add_bjet_tagging_fixed_wp_shifts,
+    add_bjet_tagging_shape_shifts,
+)
 from .variations.met import (
     add_unclustered_energy_shifts,
     add_recoil_calibration_shifts,
 )
 from .variations.jec import add_jec_shifts
-from .variations.bjet_tagging import (
-    add_bjet_tagging_fixed_wp_shifts,
-    add_bjet_tagging_shape_shifts,
+from .variations.taus import (
+    add_tau_id_vs_jet_shifts,
+    add_tau_id_vs_e_shifts,
+    add_tau_id_vs_mu_shifts,
+    add_tau_es_shifts
 )
-# from .jec_data import add_jetCorrectionData
+
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier, SampleModifier
 from code_generation.rules import AppendProducer, RemoveProducer, ReplaceProducer
@@ -4345,7 +4344,6 @@ def build_config(
         )
 
     #endregion
-
 
     # --- Hadronic tau identification & energy scale correction ---------------
 
