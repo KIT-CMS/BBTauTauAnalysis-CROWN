@@ -256,7 +256,7 @@ def add_tau_es_shifts(
         # Shifts for electrons faking hadronic taus
         *[
             {
-                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genElectron_{era}",
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genElectron_{eta_region}_{era}",
                 "shift_key": "tau_es_variation",
                 "shift_value": f"{{direction}}_custom_genEle_dm{dm}_{eta_region}",
             }
@@ -267,11 +267,11 @@ def add_tau_es_shifts(
         # Shifts for muons faking hadronic taus
         *[
             {
-                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_genMuon_{era}",
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_genMuon_{eta_region}_{era}",
                 "shift_key": "tau_es_variation",
                 "shift_value": f"{{direction}}_custom_genMu_{eta_region}",
             }
-            for eta_region in ["wheel1", "wheel2", "wheel3", "wheel4", "wheel5"]
+            for eta_region in (f"wheel{i}" for i in range(1, 6))
         ],
     ]
 
