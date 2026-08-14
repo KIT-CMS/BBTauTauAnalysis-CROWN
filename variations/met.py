@@ -5,6 +5,8 @@ from code_generation.systematics import (
     SystematicShiftByQuantity,
 )
 
+from ._util import add_systematic_shift, KeyValueShift
+
 
 def add_unclustered_energy_shifts(
     configuration: Configuration,
@@ -40,34 +42,19 @@ def add_recoil_calibration_shifts(
     Shifts in the recoil calibration of the missing transverse momentum.
     """
 
-    # Get scopes from the producer
-    scopes = tuple(producer.scopes)
-
     # Individual shift types performed for the recoil calibration producer
     shifts = [
-        {
-            "correction_name": "Resp",
-            "cms_name": f"CMS_scale_met_RecoilCalibration_{era}",
-        },
-        {
-            "correction_name": "Resol",
-            "cms_name": f"CMS_res_met_RecoilCalibration_{era}",
-        },
+        KeyValueShift(
+            name=f"CMS_scale_met_RecoilCalibration_{era}",
+            key="recoil_correction_variation",
+            value="Resp{Direction}",
+        ),
+        KeyValueShift(
+            name=f"CMS_res_met_RecoilCalibration_{era}",
+            key="recoil_correction_variation",
+            value="Resol{Direction}",
+        ),
     ]
 
     for shift in shifts:
-        for shift_direction in ["Up", "Down"]:
-            configuration.add_shift(
-                SystematicShift(
-                    name=f"{shift['cms_name']}{shift_direction}",
-                    shift_config={
-                        scopes: {
-                            "recoil_correction_variation": (
-                                f"{shift['correction_name']}{shift_direction}"
-                            ),
-                        },
-                    },
-                    producers={scopes: [producer]},
-                ),
-                samples=samples,
-            )
+        add_systematic_shift(configuration, shift, producer)
