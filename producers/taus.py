@@ -26,7 +26,6 @@ TauPtCorrectionMC = Producer(
             "{tau_id_algorithm}",
             "{tau_ides_sf_vsjet_wp}",
             "{tau_ides_sf_vsele_wp}",
-            {vec_open}{tight_tau_decay_modes}{vec_close},
             "{tau_es_variation}"
         )
     """,
