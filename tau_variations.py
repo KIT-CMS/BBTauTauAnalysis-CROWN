@@ -186,6 +186,12 @@ def add_tau_es_shifts(
 
     The shifts follow the uncertainty scheme
     [recommended by the TAU POG](https://tau-wiki.docs.cern.ch/Corrections/#energy-scale).
+
+    For energy scale variations of genuine hadronic tau decays, variations
+    between different DMs are decorrelated. For energy scale variations of
+    $\\text{e} \\to \\tau{\\text{h}}$ and $\\mu \\to \\tau{\\text{h}}$ fakes,
+    the correlation scheme from the corresponding tau ID (`VSe` and `VSmu`) is
+    adopted.
     """
 
     # Get scopes from the producer object
@@ -196,9 +202,9 @@ def add_tau_es_shifts(
         # Shifts for genuine taus decaying hadronically
         *[
             {
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genTau_{era}",
                 "shift_key": "tau_es_variation",
                 "shift_value": f"{{direction}}_custom_genTau_dm{dm}",
-                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genTau_{era}",
             }
             for dm in [0, 1, 10, 11]
         ],
@@ -206,9 +212,9 @@ def add_tau_es_shifts(
         # Shifts for electrons faking hadronic taus
         *[
             {
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genElectron_{era}",
                 "shift_key": "tau_es_variation",
                 "shift_value": f"{{direction}}_custom_genEle_dm{dm}_{eta_region}",
-                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genElectron_{era}",
             }
             for dm in [0, 1, 10, 11]
             for eta_region in ["barrel", "endcap"]
@@ -217,11 +223,11 @@ def add_tau_es_shifts(
         # Shifts for muons faking hadronic taus
         *[
             {
+                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_genMuon_{era}",
                 "shift_key": "tau_es_variation",
-                "shift_value": "{direction}_custom_genMu",
-                "cms_name": f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genMuon_{era}",
+                "shift_value": f"{{direction}}_custom_genMu_{eta_region}",
             }
-            for dm in [0, 1, 10, 11]
+            for eta_region in ["wheel1", "wheel2", "wheel3", "wheel4", "wheel5"]
         ],
     ]
 
@@ -240,6 +246,12 @@ def add_tau_es_shifts(
                         },
                     },
                     producers={tuple(scopes): [producer]},
+                    # TODO understand why these producers need to be ignored
+                    ignore_producers={
+                        "et": [pairselection.LVEl1, electrons.VetoElectrons],
+                        "mt": [pairselection.LVMu1, muons.VetoMuons],
+                        "tt": [],
+                    },
                 )
             )
 
