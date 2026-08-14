@@ -76,6 +76,13 @@ def add_systematic_shift(
         if "{direction}" in shift_value:
             shift_value = shift_value.format(direction=direction)
 
+        # Replace {Direction} placeholder if it is present in shift_key or
+        # shift_value
+        if "{Direction}" in shift_key:
+            shift_key = shift_key.format(Direction=direction.capitalize())
+        if "{Direction}" in shift_value:
+            shift_value = shift_value.format(Direction=direction.capitalize())
+
         # Add shift for the given direction to the configuration
         name = f"{shift.name}{direction.capitalize()}"
         configuration.add_shift(
