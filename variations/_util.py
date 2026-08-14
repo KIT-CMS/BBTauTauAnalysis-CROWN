@@ -54,7 +54,11 @@ def add_systematic_shift(
     add_kwargs: dict[str, Any] = None,
 ):
     # If scopes are not provided, get them from the producers
-    scopes = scopes if scopes is not None else _get_producer_scopes(producers)
+    scopes = (
+        tuple(scopes)
+        if scopes is not None
+        else _get_producer_scopes(producers)
+    )
 
     # Convert producers to a list if it's a single Producer or ProducerGroup
     if isinstance(producers, (Producer, ProducerGroup)):
