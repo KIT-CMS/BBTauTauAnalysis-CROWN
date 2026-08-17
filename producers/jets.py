@@ -590,7 +590,7 @@ class StepwiseJERCProducerMetaConfiguration():
             "{{{self.config_parameter_prefix}_jec_algo}}",
             "{{{self.config_parameter_prefix}_jes_tag_mc}}",
             "{{{self.config_parameter_prefix}_jer_tag}}",
-            {{{self.config_parameter_prefix}_jes_sources}},
+            "{{{self.config_parameter_prefix}_jes_source}}",
             {{{self.config_parameter_prefix}_jes_shift_factor}},
             "{{{self.config_parameter_prefix}_jer_shift}}",
             {{{self.config_parameter_prefix}_reapply_jes}},

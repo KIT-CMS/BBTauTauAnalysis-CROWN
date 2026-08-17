@@ -49,24 +49,23 @@ float apply_jes_l2l3res(const float &jet_pt, const float &jet_eta,
                         const correction::Correction *jes_l2l3res_evaluator);
 float apply_jes_shifts(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
-    const UChar_t &jet_id, const std::vector<std::string> &jes_shift_sources,
+    const UChar_t &jet_id, const std::string &jes_shift_source,
     const int &jes_shift_factor,
     const std::vector<correction::Correction *> &jes_shift_evaluators);
-float apply_jer(const float &jet_pt, const float &jet_eta, const float &jet_phi,
-                const float &rho, const ROOT::RVec<float> &genjet_pt,
-                const ROOT::RVec<float> &genjet_eta,
-                const ROOT::RVec<float> &genjet_phi,
-                const correction::Correction *jer_resolution_evaluator,
-                const correction::Correction *jer_scalefactor_evaluator,
-                const correction::Correction *jer_scalefactor_uncertainty_evaluator,
-                const std::string &jer_shift, const float &jet_radius,
-                const std::string &era, TRandom3 randgen);
+float apply_jer(
+    const float &jet_pt, const float &jet_eta, const float &jet_phi,
+    const float &rho, const ROOT::RVec<float> &genjet_pt,
+    const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
+    const correction::Correction *jer_resolution_evaluator,
+    const correction::Correction *jer_scalefactor_evaluator,
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator,
+    const std::string &jer_shift, const float &jet_radius,
+    const std::string &era, TRandom3 randgen);
 JECResult apply_full_jec_mc(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const UChar_t &jet_id, const float &jet_area, const float &rho,
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
-    const ROOT::RVec<float> &genjet_phi,
-    const std::vector<std::string> &jes_shift_sources,
+    const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
     const float &jet_radius, const std::string &era, TRandom3 randgen,
     const correction::Correction *jes_l1_evaluator,
@@ -74,20 +73,18 @@ JECResult apply_full_jec_mc(
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
     const correction::Correction *jer_scalefactor_evaluator,
-    const correction::Correction *jer_scalefactor_uncertainty_evaluator
-    );
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator);
 JECResult apply_jes_shifts_and_jer_mc(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const UChar_t &jet_id, const float &rho, const ROOT::RVec<float> &genjet_pt,
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
-    const std::vector<std::string> &jes_shift_sources,
-    const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, TRandom3 randgen,
+    const std::string &jes_shift_source, const int &jes_shift_factor,
+    const std::string &jer_shift, const float &jet_radius,
+    const std::string &era, TRandom3 randgen,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
     const correction::Correction *jer_scalefactor_evaluator,
-    const correction::Correction *jer_scalefactor_uncertainty_evaluator
-    );
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator);
 JECResult
 apply_full_jec_data(const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_area,
@@ -108,17 +105,15 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
                               const std::string &jet_quantity,
                               const std::string &jet_muon_subtr_factor);
 ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
-                     const std::string &jet_quantity_raw,
-                    const std::string &jet_reg_factor,
-                     const std::string &jet_reg_factor_with_neutrino,
-                    const std::string &jet_is_btagged,
-                    const std::string &algo
-                );
+                           const std::string &jet_quantity_raw,
+                           const std::string &jet_reg_factor,
+                           const std::string &jet_reg_factor_with_neutrino,
+                           const std::string &jet_is_btagged,
+                           const std::string &algo);
 ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
-     const std::string &outputname,
-                     const std::string &jet_quantity_raw,
-                    const std::string &jet_res_factor
-                );
+                               const std::string &outputname,
+                               const std::string &jet_quantity_raw,
+                               const std::string &jet_res_factor);
 ROOT::RDF::RNode
 PtCorrectionMC(ROOT::RDF::RNode df,
                correctionManager::CorrectionManager &correction_manager,
@@ -132,8 +127,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                const std::string &genjet_phi, const std::string &rho,
                const std::string &jer_seed, const std::string &jec_file,
                const std::string &jec_algo, const std::string &jes_tag,
-               const std::string &jer_tag,
-               const std::vector<std::string> &jes_shift_sources,
+               const std::string &jer_tag, const std::string &jes_shift_source,
                const int &jes_shift_factor, const std::string &jer_shift,
                const bool &reapply_jes, const std::string &era);
 ROOT::RDF::RNode
@@ -215,19 +209,17 @@ ROOT::RDF::RNode CorrectJetIDRun3NanoV12(
     const std::string &jet_id, const std::string &jet_ne_hef,
     const std::string &jet_ne_em_ef, const std::string &jet_mu_ef,
     const std::string &jet_ch_em_ef);
-ROOT::RDF::RNode TightestWPPassed(
-           ROOT::RDF::RNode df,
-           correctionManager::CorrectionManager &correction_manager,
-           const std::string &outputname, const std::string &btag_value,
-           const std::string &sf_file, const std::string &sf_wp_name
-);
-ROOT::RDF::RNode IsBTagged(
-           ROOT::RDF::RNode df,
-           correctionManager::CorrectionManager &correction_manager,
-           const std::string &outputname, const std::string &btag_value,
-           const std::string &sf_file, const std::string &sf_wp_name,
-           const std::string &btag_wp_name
-);
+ROOT::RDF::RNode
+TightestWPPassed(ROOT::RDF::RNode df,
+                 correctionManager::CorrectionManager &correction_manager,
+                 const std::string &outputname, const std::string &btag_value,
+                 const std::string &sf_file, const std::string &sf_wp_name);
+ROOT::RDF::RNode
+IsBTagged(ROOT::RDF::RNode df,
+          correctionManager::CorrectionManager &correction_manager,
+          const std::string &outputname, const std::string &btag_value,
+          const std::string &sf_file, const std::string &sf_wp_name,
+          const std::string &btag_wp_name);
 
 ROOT::RDF::RNode JetPtPNetRegression(ROOT::RDF::RNode df,
                                      const std::string &outputname,

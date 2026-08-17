@@ -1482,7 +1482,7 @@ def add_ak8jet_config(configuration: Configuration):
             "ak8jet_id_wp": 2,  # tight & tightLepVeto
             "ak8jet_apply_jet_horn_veto": "true",
             "ak8jet_reapply_jes": True,
-            "ak8jet_jes_sources": '{""}',
+            "ak8jet_jes_source": "nominal",
             "ak8jet_jes_shift_factor": 0,
             "ak8jet_jer_master_seed": 43,
             "ak8jet_jer_shift": "nom",  # or '"up"', '"down"'
