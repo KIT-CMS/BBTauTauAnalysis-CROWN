@@ -38,6 +38,7 @@ from .variations.taus import (
     add_tau_es_shifts
 )
 from .variations.theory import add_qcd_scale_shifts
+from .variations.triggers import add_double_tautau_trigger_shifts, add_single_electron_trigger_shifts, add_single_muon_trigger_shifts
 
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier, SampleModifier
@@ -3636,28 +3637,6 @@ def build_config(
     #    )
 
     #########################
-    # Prefiring Shifts
-    #########################
-    if era != "2018":
-        configuration.add_shift(
-            SystematicShiftByQuantity(
-                name="prefiringDown",
-                quantity_change={
-                    nanoAOD_run2.L1PreFiringWeight_Nom: nanoAOD_run2.L1PreFiringWeight_Dn,
-                },
-                scopes=["global"],
-            )
-        )
-        configuration.add_shift(
-            SystematicShiftByQuantity(
-                name="prefiringUp",
-                quantity_change={
-                    nanoAOD_run2.L1PreFiringWeight_Nom: nanoAOD_run2.L1PreFiringWeight_Up,
-                },
-                scopes=["global"],
-            )
-        )
-    #########################
     # particleNet Xbb scale factor uncertainties
     #########################
 
@@ -3697,31 +3676,6 @@ def build_config(
     #########################
     # Trigger shifts
     #########################
-
-    #
-    # systematic shifts for single electron trigger corrections
-    #
-
-    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
-        for _variation in ["up", "down"]:
-            configuration.add_shift(
-                SystematicShift(
-                    name=f"singleEleTriggerSF{_variation.upper()}",
-                    shift_config={
-                        ("et"): {
-                            "ele_trigger_sf": [
-                                {
-                                    "e_trigger_flagname": "trg_wgt_single_ele30",
-                                    "e_trigger_sf_name": "HLT_SF_Ele30_MVAiso90ID",
-                                    "e_trigger_variation": f"sf{_variation}",
-                                },
-                            ],
-                        }
-                    },
-                    producers={("et"): scalefactors.SingleEleTriggerSF},
-                ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
-            )
 
     #
     # systematic shifts for double electron-tau trigger corrections
@@ -4057,16 +4011,45 @@ def build_config(
 
     #endregion
 
+    # --- Triggers ------------------------------------------------------------
+
+    #region
+
+    # Add shifts for single electron trigger SFs to scopes with at least one
+    # electron
+    for scope in ELECTRON_SCOPES:
+        add_single_electron_trigger_shifts(
+            configuration,
+            era,
+            [scalefactors.SingleEleTriggerSF],
+            scope,
+        )
+
+    # Add shifts for single muon trigger SFs to scopes with at least one muon
+    for scope in MUON_SCOPES:
+        add_single_muon_trigger_shifts(
+            configuration,
+            era,
+            [scalefactors.SingleMuTriggerSF],
+            scope,
+        )
+
+    # Add shifts for double tau trigger SFs in tt scope
+    add_double_tautau_trigger_shifts(
+        configuration,
+        era,
+        [scalefactors.TauTauTriggerSF],
+        "tt",
+    )
+
+    #endregion
+
     # --- QCD scale -----------------------------------------------------------
 
     #region
 
     # Add QCD scale (renormalization and factorization scales) shifts
-    add_qcd_scale_shifts(
-        configuration,
-        era,
-        event.LHE_Scale_weight,
-    )
+    add_qcd_scale_shifts(configuration, era, event.LHE_Scale_weight)
 
     #endregion
 
