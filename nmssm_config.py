@@ -27,6 +27,7 @@ from .variations.met import (
     add_unclustered_energy_shifts,
     add_recoil_calibration_shifts,
 )
+from .variations.muons import add_muon_id_iso_shifts
 from .variations.jec import add_jec_shifts
 from .variations.taus import (
     add_tau_id_vs_jet_shifts,
@@ -3933,71 +3934,6 @@ def build_config(
     )
 
     #########################
-    # Muon id/iso sf shifts
-    #########################
-
-    configuration.add_shift(
-        SystematicShift(
-            name="muonIdSFUp",
-            scopes=["mt"],
-            shift_config={
-                ("mt"): {"muon_id_sf_variation": "systup"},
-            },
-            producers={
-                ("mt"): [
-                    scalefactors.MuonIDIso_SF,
-                ],
-            },
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-    configuration.add_shift(
-        SystematicShift(
-            name="muonIdSFDown",
-            scopes=["mt"],
-            shift_config={
-                ("mt"): {"muon_id_sf_variation": "systdown"},
-            },
-            producers={
-                ("mt"): [
-                    scalefactors.MuonIDIso_SF,
-                ],
-            },
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-    configuration.add_shift(
-        SystematicShift(
-            name="muonIsoSFUp",
-            scopes=["mt"],
-            shift_config={
-                ("mt"): {"muon_iso_sf_variation": "syst_up"},
-            },
-            producers={
-                ("mt"): [
-                    scalefactors.MuonIDIso_SF,
-                ],
-            },
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-    configuration.add_shift(
-        SystematicShift(
-            name="muonIsoSFDown",
-            scopes=["mt"],
-            shift_config={
-                ("mt"): {"muon_iso_sf_variation": "syst_down"},
-            },
-            producers={
-                ("mt"): [
-                    scalefactors.MuonIDIso_SF,
-                ],
-            },
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-
-    #########################
     # Trigger shifts
     #########################
 
@@ -4219,6 +4155,19 @@ def build_config(
             era,
             jec_mc_producers,
         )
+
+    #endregion
+
+    # --- Muon identification & isolation -------------------------------------
+
+    #region
+
+    # Add muon ID and isolation SF shifts
+    add_muon_id_iso_shifts(
+        configuration,
+        era,
+        [scalefactors.MuonIDIso_SF],
+    )
 
     #endregion
 
