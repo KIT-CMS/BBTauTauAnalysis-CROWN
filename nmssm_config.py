@@ -23,6 +23,7 @@ from .variations.bjet_tagging import (
     add_bjet_tagging_fixed_wp_shifts,
     add_bjet_tagging_shape_shifts,
 )
+from .variations.electrons import add_electron_es_shifts, add_electron_id_shifts
 from .variations.met import (
     add_unclustered_energy_shifts,
     add_recoil_calibration_shifts,
@@ -3729,84 +3730,6 @@ def build_config(
         )
 
     #########################
-    # Electron energy correction shifts
-    #########################
-
-    if era in ERAS_RUN2:
-        configuration.add_shift(
-            SystematicShift(
-                name="eleEsResoUp",
-                shift_config={
-                    ("global"): {"ele_es_variation": "resolutionUp"},
-                },
-                producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
-                },
-            ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
-        )
-        configuration.add_shift(
-            SystematicShift(
-                name="eleEsResoDown",
-                shift_config={
-                    ("global"): {"ele_es_variation": "resolutionDown"},
-                },
-                producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
-                },
-            ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
-        )
-        configuration.add_shift(
-            SystematicShift(
-                name="eleEsScaleUp",
-                shift_config={
-                    ("global"): {"ele_es_variation": "scaleUp"},
-                },
-                producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
-                },
-            ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
-        )
-        configuration.add_shift(
-            SystematicShift(
-                name="eleEsScaleDown",
-                shift_config={
-                    ("global"): {"ele_es_variation": "scaleDown"},
-                },
-                producers={
-                    ("global"): [
-                        (
-                            electrons.ElectronPtCorrectionMCRun2
-                            if era in ERAS_RUN2
-                            else electrons.ElectronPtCorrectionMCRun3
-                        )
-                    ],
-                },
-            ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
-        )
-
-    #########################
     # Prefiring Shifts
     #########################
     if era != "2018":
@@ -3898,39 +3821,6 @@ def build_config(
             },
         ),
         exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-
-    #########################
-    # Electron id/iso sf shifts
-    #########################
-
-    configuration.add_shift(
-        SystematicShift(
-            name="electronIdSFUp",
-            scopes=["et"],
-            shift_config={
-                ("et"): {"ele_sf_variation": "sfup"},
-            },
-            producers={
-                ("et"): [
-                    scalefactors.EleID_SF,
-                ],
-            },
-        )
-    )
-    configuration.add_shift(
-        SystematicShift(
-            name="electronIdSFDown",
-            scopes=["et"],
-            shift_config={
-                ("et"): {"ele_sf_variation": "sfdown"},
-            },
-            producers={
-                ("et"): [
-                    scalefactors.EleID_SF,
-                ],
-            },
-        )
     )
 
     #########################
@@ -4158,7 +4048,27 @@ def build_config(
 
     #endregion
 
-    # --- Muon identification & isolation -------------------------------------
+    # --- Electron identification & energy scale correction -------------------
+
+    #region
+
+    # Add electron ID SF shifts
+    add_electron_id_shifts(
+        configuration,
+        era,
+        [scalefactors.ElectronIDIso_SF],
+    )
+
+    # Add energy scale correction shifts for electrons
+    add_electron_es_shifts(
+        configuration,
+        era,
+        electrons.ElectronPtCorrectionMC,
+    )
+
+    #endregion
+
+    # --- Muon identification & isolation scale factors -----------------------
 
     #region
 
@@ -4294,4 +4204,3 @@ def build_config(
     #endregion
 
     return configuration.expanded_configuration()
-
