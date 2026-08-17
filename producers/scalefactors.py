@@ -203,7 +203,7 @@ def _create_tau_id_vsele_sf_producer(
     return ExtendedVectorProducer(
         name=name,
         call="""
-            physicsobject::tau::scalefactor::Id_vsEle(
+            physicsobject::tau::scalefactor::experimental::Id_vsEle(
                 {df},
                 correctionManager,
                 {output},
@@ -212,8 +212,7 @@ def _create_tau_id_vsele_sf_producer(
                 "{discriminator}",
                 "{vsele_wp}",
                 "{era}",
-                "{tau_id_sf_vsele_barrel_shift}",
-                "{tau_id_sf_vsele_endcap_shift}"
+                "{tau_id_sf_vsele_variation}"
             )
         """,
         input=input,
@@ -232,7 +231,7 @@ def _create_tau_id_vsmu_sf_producer(
 ):
     return ExtendedVectorProducer(
         name=name,
-        call="""physicsobject::tau::scalefactor::Id_vsMu(
+        call="""physicsobject::tau::scalefactor::experimental::Id_vsMu(
             {df}, 
             correctionManager, 
             {output}, 
@@ -243,11 +242,7 @@ def _create_tau_id_vsmu_sf_producer(
             "{vsmu_vsele_wp}", 
             "{vsmu_vsjet_wp}", 
             "{era}", 
-            "{tau_id_sf_vsmu_wheel1_shift}", 
-            "{tau_id_sf_vsmu_wheel2_shift}", 
-            "{tau_id_sf_vsmu_wheel3_shift}", 
-            "{tau_id_sf_vsmu_wheel4_shift}", 
-            "{tau_id_sf_vsmu_wheel5_shift}"
+            "{tau_id_sf_vsmu_variation}"
         )
         """,
         input=input,

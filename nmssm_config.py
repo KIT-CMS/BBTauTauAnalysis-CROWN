@@ -953,7 +953,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
             "tau_id_sf_vsjet_tau_dm11_pt20to40_shift": "nom",  # old
             "tau_id_sf_vsjet_tau_dm11_pt40toInf_shift": "nom",  # old
             "tau_id_sf_vsjet_variation": "nom",  # experimental, to replace old variation definitions
-            "tau_id_sf_vsjet_sf_dependence": "dm",  # dm for dm- and pt-binned SFs, "pt" for high-pt SFs
+            "tau_id_sf_vsjet_sf_dependence": "dm",  # 'dm': low- and medium-pt; 'pt': high-pt
         },
     )
 
@@ -986,8 +986,9 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
             ],
 
             # systematic variations
-            "tau_id_sf_vsele_barrel_shift": "nom",  # or "up"/"down" for up/down variation
-            "tau_id_sf_vsele_endcap_shift": "nom",  # or "up"/"down" for up/down variation
+            "tau_id_sf_vsele_barrel_shift": "nom",  # old
+            "tau_id_sf_vsele_endcap_shift": "nom",  # old
+            "tau_id_sf_vsele_variation": "nom",     # experimental, to replace old variation definitions
         },
     )
 
@@ -1060,11 +1061,12 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
         HAD_TAU_SCOPES,
         {
             # systematic variations
-            "tau_id_sf_vsmu_wheel1_shift": "nom",  # or "up"/"down" for up/down variation
-            "tau_id_sf_vsmu_wheel2_shift": "nom",  # or "up"/"down" for up/down variation
-            "tau_id_sf_vsmu_wheel3_shift": "nom",  # or "up"/"down" for up/down variation
-            "tau_id_sf_vsmu_wheel4_shift": "nom",  # or "up"/"down" for up/down variation
-            "tau_id_sf_vsmu_wheel5_shift": "nom",  # or "up"/"down" for up/down variation
+            "tau_id_sf_vsmu_wheel1_shift": "nom",  # old
+            "tau_id_sf_vsmu_wheel2_shift": "nom",  # old
+            "tau_id_sf_vsmu_wheel3_shift": "nom",  # old
+            "tau_id_sf_vsmu_wheel4_shift": "nom",  # old
+            "tau_id_sf_vsmu_wheel5_shift": "nom",  # old
+            "tau_id_sf_vsmu_variation": "nom",     # experimental, to replace old variation definitions
         },
     )
 
