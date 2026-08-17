@@ -51,7 +51,7 @@ def _get_2024_2025_tau_id_vs_jet_shifts(
 
     # Set DMs and pt bin edges to the ones used in the scale factor measurement
     dm_bins = [0, 1, 10, 11]
-    pt_edges = [20, 40, 60, 200]
+    pt_edges = [20, 40, 60, "Inf"]
 
     return [
         KeyValueShift(
@@ -199,15 +199,17 @@ def add_tau_es_shifts(
     """
 
     # Specify properties of the shifts
+    pt_edges = [20, 40, 60, "Inf"]
     shifts = [
         # Shifts for genuine taus decaying hadronically
         *[
             KeyValueShift(
-                name=f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genTau_{era}",
+                name=f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_pt{pt_start}to{pt_stop}_genTau_{era}",
                 key="tau_es_variation",
-                value=f"{{direction}}_custom_genTau_dm{dm}",
+                value=f"{{direction}}_custom_genTau_dm{dm}_pt{pt_start}to{pt_stop}",
             )
             for dm in [0, 1, 10, 11]
+            for pt_start, pt_stop in zip(pt_edges[:-1], pt_edges[1:])
         ],
 
         # Shifts for electrons faking hadronic taus

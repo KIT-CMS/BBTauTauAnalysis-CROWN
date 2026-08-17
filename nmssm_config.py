@@ -1348,7 +1348,7 @@ def add_ak4jet_config(configuration: Configuration):
         GLOBAL_SCOPES + SCOPES, #"global",
         {
             "ak4jet_reapply_jes": True,
-            "ak4jet_jes_sources": '{""}',
+            "ak4jet_jes_source": "nominal",
             "ak4jet_jes_shift_factor": 0,
             "ak4jet_jer_master_seed": 42,
             "ak4jet_jer_shift": "nom",  # or '"up"', '"down"'
