@@ -13,8 +13,8 @@ def add_electron_id_shifts(
     Add shifts for electron ID scale factors for the given era.
     """
 
-    # Exclude data, as well as embedding samples, which have their own electron ID
-    # and isolation scale factors
+    # Exclude data, as well as embedding samples, which have their own electron
+    # ID scale factors
     exclude_samples = ["data", "embedding", "embedding_mc"]
 
     # List if shifts for the total systematic shift of the electron ID and isolation
