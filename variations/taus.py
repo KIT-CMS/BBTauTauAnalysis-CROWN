@@ -1,10 +1,8 @@
 from code_generation.configuration import Configuration
 from code_generation.producer import Producer, ProducerGroup
-from ..producers import scalefactors as scalefactors
 from ..producers import pairselection as pairselection
 from ..producers import muons as muons
 from ..producers import electrons as electrons
-from ..producers import taus as taus
 
 from ..constants import ERAS_RUN2
 
