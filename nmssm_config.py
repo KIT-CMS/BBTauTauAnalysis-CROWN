@@ -3672,170 +3672,19 @@ def build_config(
     #         exclude_samples=["data", "embedding", "embedding_mc"],
     #     )
 
+    # --- Trigger setup -------------------------------------------------------
 
-    #########################
-    # Trigger shifts
-    #########################
+    #region
 
-    #
-    # systematic shifts for double electron-tau trigger corrections
-    #
-
-    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
-        for _variation in ["up", "down"]:
-            configuration.add_shift(
-                SystematicShift(
-                    name=f"doubleEleTauTriggerSF{_variation.upper()}",
-                    shift_config={
-                        ("et"): {
-                            "double_eletau_trigger_leg1_sf": [
-                                {
-                                    "et_trigger_leg1_flagname": "trg_wgt_double_ele24tau30_leg1",
-                                    "et_trigger_leg1_sf_file": EraModifier(
-                                        {
-                                            **{
-                                                _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
-                                                for _era in ERAS_RUN2
-                                            },
-                                            **{
-                                                _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
-                                                for _era in ERAS_RUN3
-                                            },
-                                        }
-                                    ),
-                                    "et_trigger_leg1_era": EraModifier(
-                                        {
-                                            **{
-                                                _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras as correctionlib
-                                                for _era in ERAS_RUN2
-                                            },
-                                            "2022preEE": "2022Re-recoBCD",
-                                            "2022postEE": "2022Re-recoE+PromptFG ",
-                                            "2023preBPix": "2023PromptC",
-                                            "2023postBPix": "2023PromptD",
-                                        }
-                                    ),
-                                    "et_trigger_leg1_sf_name": "Electron-HLT-SF",
-                                    "et_trigger_leg1_path_id_name": "HLT_SF_Ele30_MVAiso90ID",
-                                    "et_trigger_leg1_variation": f"sf{_variation}",
-                                },
-                            ],
-                            "double_eletau_trigger_leg2_sf": [
-                                {
-                                    "et_trigger_leg2_flagname": "trg_wgt_double_ele24tau30_leg2",
-                                    "et_trigger_leg2_sf_name": "etau",
-                                    "et_trigger_leg2_variation": _variation,
-                                },
-                            ]
-                        },
-                    },
-                    producers={
-                        ("et"): [
-                            scalefactors.DoubleEleTauTriggerSF,
-                        ],
-                    },
-                ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
-            )
-
-    #
-    # systematic shifts for single muon trigger corrections
-    #
-
-    # TODO check run 2 eras
-    if era in ["2016preVFP", "2016postVFP", "2017", "2018", "2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
-        for _variation in ["up", "down"]:
-            configuration.add_shift(
-                SystematicShift(
-                    name=f"singleMuTriggerSF{_variation.upper()}",
-                    shift_config={
-                        ("mt"): {
-                            "mu_trigger_sf": [
-                                {
-                                    "m_trigger_flagname": "trg_wgt_single_mu24",
-                                    "m_trigger_sf_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
-                                    "m_trigger_variation": f"syst{_variation}",
-                                },
-                            ],
-                        }
-                    },
-                    producers={("mt"): scalefactors.SingleMuTriggerSF},
-                ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
-            )
-
-    #
-    # systematic shifts for double muon-tau trigger corrections
-    #
-
-    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
-        for _variation in ["up", "down"]:
-            configuration.add_shift(
-                SystematicShift(
-                    name=f"doubleMuTauTriggerSF{_variation.upper()}",
-                    shift_config={
-                        ("mt"): {
-                            "double_mutau_trigger_leg1_sf": [
-                                {
-                                    "mt_trigger_leg1_sf_file": EraModifier(
-                                        {
-                                            _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
-                                            for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                                        }
-                                    ),
-                                    "mt_trigger_leg1_flagname": "trg_wgt_double_mu20tau27_leg1",
-                                    "mt_trigger_leg1_sf_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight",
-                                    "mt_trigger_leg1_variation": f"syst{_variation}",
-                                },
-                            ],
-                            "double_mutau_trigger_leg2_sf": [
-                                {
-                                    "mt_trigger_leg2_flagname": "trg_wgt_double_mu20tau27_leg2",
-                                    "mt_trigger_leg2_sf_name": "mutau",
-                                    "mt_trigger_leg2_variation": _variation,
-                                },
-                            ],
-                        },
-                    },
-                    producers={
-                        ("mt"): [
-                            scalefactors.DoubleMuTauTriggerSF,
-                        ],
-                    },
-                ),
-                exclude_samples=["data", "embedding", "embedding_mc"],
-            )
-
-    #configuration.add_shift(
-    #    SystematicShift(
-    #        name="ditauTriggerSFUp",
-    #        shift_config={("tt"): {"ditau_trigger_syst": "up"}},
-    #        producers={
-    #            ("tt"): scalefactors.TTGenerateDoubleTauTriggerSF_MC,
-    #        },
-    #    ),
-    #    exclude_samples=["data", "embedding", "embedding_mc"],
-    #)
-    #configuration.add_shift(
-    #    SystematicShift(
-    #        name="ditauTriggerSFDown",
-    #        shift_config={("tt"): {"ditau_trigger_syst": "down"}},
-    #        producers={
-    #            ("tt"): scalefactors.TTGenerateDoubleTauTriggerSF_MC,
-    #        },
-    #    ),
-    #    exclude_samples=["data", "embedding", "embedding_mc"],
-    #)
-
-    #########################
-    # Import triggersetup   #
-    #########################
-
+    # Add configuration of trigger producers
     add_diTauTriggerSetup(configuration)
+
+    #endregion
 
     #########################
     # Add additional producers and SFs related to embedded samples
     #########################
+
     if sample == "embedding" or sample == "embedding_mc":
         setup_embedding(configuration, HAD_TAU_SCOPES)
 
