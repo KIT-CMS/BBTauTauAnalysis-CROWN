@@ -11,7 +11,7 @@ from code_generation.systematics import SystematicShift
 class KeyValueShift:
     name: str
     key: str
-    value: Any
+    value: Any | dict[str, Any]
 
 
 def _get_producer_scopes(
@@ -68,6 +68,16 @@ def add_systematic_shift(
         # Get the shift key and value template
         shift_key = shift.key
         shift_value = shift.value
+
+        # If shift_value is a dictionary, choose the value corresponding to the
+        # current direction
+        if isinstance(shift_value, dict):
+            shift_value = shift_value.get(direction, None)
+            if shift_value is None:
+                raise ValueError(
+                    f"Direction '{direction}' not found in shift value "
+                    + "dictionary."
+                )
 
         # Replace {direction} placeholder if it is present in shift_key or
         # shift_value
