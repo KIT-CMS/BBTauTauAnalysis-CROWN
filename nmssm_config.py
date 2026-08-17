@@ -36,6 +36,7 @@ from .variations.taus import (
     add_tau_id_vs_mu_shifts,
     add_tau_es_shifts
 )
+from .variations.theory import add_qcd_scale_shifts
 
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier, SampleModifier
@@ -3634,102 +3635,6 @@ def build_config(
     #    )
 
     #########################
-    # LHE Scale Weight variations
-    # up is muR=2.0, muF=2.0
-    # down is muR=0.5, muF=0.5
-    #########################
-    if sample in ["ggh", "qqh"]:
-        configuration.add_shift(
-            SystematicShift(
-                "muRWeightUp",
-                shift_config={
-                    "global": {
-                        "muR": 2.0,
-                    }
-                },
-                producers={"global": [event.LHE_Scale_weight]},
-            )
-        )
-        configuration.add_shift(
-            SystematicShift(
-                "muRWeightDown",
-                shift_config={
-                    "global": {
-                        "muR": 0.5,
-                    }
-                },
-                producers={"global": [event.LHE_Scale_weight]},
-            )
-        )
-        configuration.add_shift(
-            SystematicShift(
-                "muFWeightUp",
-                shift_config={
-                    "global": {
-                        "muF": 2.0,
-                    }
-                },
-                producers={"global": [event.LHE_Scale_weight]},
-            )
-        )
-        configuration.add_shift(
-            SystematicShift(
-                "muFWeightDown",
-                shift_config={
-                    "global": {
-                        "muF": 0.5,
-                    }
-                },
-                producers={"global": [event.LHE_Scale_weight]},
-            )
-        )
-    if sample in ["nmssm_Ybb", "nmssm_Ytautau"]:
-        configuration.add_shift(
-            SystematicShift(
-                "muRWeightUp",
-                shift_config={
-                    "global": {
-                        "muR": 2.0,
-                    }
-                },
-                producers={"global": [event.NMSSM_LHE_Scale_weight]},
-            )
-        )
-        configuration.add_shift(
-            SystematicShift(
-                "muRWeightDown",
-                shift_config={
-                    "global": {
-                        "muR": 0.5,
-                    }
-                },
-                producers={"global": [event.NMSSM_LHE_Scale_weight]},
-            )
-        )
-        configuration.add_shift(
-            SystematicShift(
-                "muFWeightUp",
-                shift_config={
-                    "global": {
-                        "muF": 2.0,
-                    }
-                },
-                producers={"global": [event.NMSSM_LHE_Scale_weight]},
-            )
-        )
-        configuration.add_shift(
-            SystematicShift(
-                "muFWeightDown",
-                shift_config={
-                    "global": {
-                        "muF": 0.5,
-                    }
-                },
-                producers={"global": [event.NMSSM_LHE_Scale_weight]},
-            )
-        )
-
-    #########################
     # Prefiring Shifts
     #########################
     if era != "2018":
@@ -4188,6 +4093,19 @@ def build_config(
             era,
             scalefactors.BJetWPUParT_SF,
         )
+
+    #endregion
+
+    # --- QCD scale -----------------------------------------------------------
+
+    #region
+
+    # Add QCD scale (renormalization and factorization scales) shifts
+    add_qcd_scale_shifts(
+        configuration,
+        era,
+        event.LHE_Scale_weight,
+    )
 
     #endregion
 
