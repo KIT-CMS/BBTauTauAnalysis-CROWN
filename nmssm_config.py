@@ -24,6 +24,7 @@ from .variations.bjet_tagging import (
     add_bjet_tagging_shape_shifts,
 )
 from .variations.electrons import add_electron_es_shifts, add_electron_id_shifts
+from .variations.pileup_prefiring import add_pileup_shifts, add_prefiring_shifts
 from .variations.met import (
     add_unclustered_energy_shifts,
     add_recoil_calibration_shifts,
@@ -3694,41 +3695,6 @@ def build_config(
 
 
     #########################
-    # Pileup Shifts
-    #########################
-    configuration.add_shift(
-        SystematicShift(
-            name="PileUpUp",
-            scopes=["global"],
-            shift_config={
-                ("global"): {"PU_reweighting_variation": "up"},
-            },
-            producers={
-                "global": [
-                    event.PUweights,
-                ],
-            },
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-
-    configuration.add_shift(
-        SystematicShift(
-            name="PileUpDown",
-            scopes=["global"],
-            shift_config={
-                ("global"): {"PU_reweighting_variation": "down"},
-            },
-            producers={
-                "global": [
-                    event.PUweights,
-                ],
-            },
-        ),
-        exclude_samples=["data", "embedding", "embedding_mc"],
-    )
-
-    #########################
     # Trigger shifts
     #########################
 
@@ -3923,6 +3889,94 @@ def build_config(
     # Systematic shifts
     # -------------------------------------------------------------------------
 
+    # --- Electron identification & energy scale correction -------------------
+
+    #region
+
+    # Add electron ID SF shifts
+    add_electron_id_shifts(configuration, era, [scalefactors.EleID_SF])
+
+    # Add energy scale correction shifts for electrons
+    add_electron_es_shifts(configuration, era, [ElectronPtCorrectionMC])
+
+    #endregion
+
+    # --- Muon identification & isolation scale factors -----------------------
+
+    #region
+
+    # Add muon ID and isolation SF shifts
+    add_muon_id_iso_shifts(configuration, era, [scalefactors.MuonIDIso_SF])
+
+    #endregion
+
+    # --- Hadronic tau identification & energy scale correction ---------------
+
+    #region
+
+    # Add hadronic tau ID vs jet SF shifts to semileptonic scopes (producer for
+    # second lepton candidate in pair)
+    add_tau_id_vs_jet_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsJetSF2],
+        scopes=SL_SCOPES,
+    )
+
+    # Add hadronic tau ID vs jet SF shifts to fullhadronic scopes (producers for
+    # first and second lepton candidate in pair)
+    add_tau_id_vs_jet_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
+        scopes=TT_SCOPES,
+    )
+
+    # Add hadronic tau ID vs electron SF shifts to semileptonic scopes (producer
+    # for second lepton candidate in pair)
+    add_tau_id_vs_e_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsEleSF2],
+        scopes=SL_SCOPES,
+    )
+
+    # Add hadronic tau ID vs electron SF shifts to fullhadronic scopes
+    # (producers for first and second lepton candidate in pair)
+    add_tau_id_vs_e_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsEleSF1, scalefactors.TauIDVsEleSF2],
+        scopes=TT_SCOPES,
+    )
+
+    # Add hadronic tau ID vs muon SF shifts to semileptonic scopes (producer
+    # for second lepton candidate in pair)
+    add_tau_id_vs_mu_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsMuSF2],
+        scopes=SL_SCOPES,
+    )
+
+    # Add hadronic tau ID vs muon SF shifts to fullhadronic scopes
+    # (producers for first and second lepton candidate in pair)
+    add_tau_id_vs_mu_shifts(
+        configuration,
+        era,
+        [scalefactors.TauIDVsMuSF1, scalefactors.TauIDVsMuSF2],
+        scopes=TT_SCOPES,
+    )
+
+    # Shifts for hadronic tau energy scale corrections
+    add_tau_es_shifts(
+        configuration,
+        era,
+        taus.TauPtCorrectionMC,
+    )
+
+    #endregion
+
     # --- Jet energy calibration ----------------------------------------------
 
     #region
@@ -3946,130 +4000,7 @@ def build_config(
         # In Run 2 and 2024/2025, working point-based b jet tagging SFs are
         # used. No special treatment for JEC uncertainties is necessary here.
         add_jec_shifts(
-            configuration,
-            era,
-            jec_mc_producers,
-        )
-
-    #endregion
-
-    # --- Electron identification & energy scale correction -------------------
-
-    #region
-
-    # Add electron ID SF shifts
-    add_electron_id_shifts(
-        configuration,
-        era,
-        [scalefactors.EleID_SF],
-    )
-
-    # Add energy scale correction shifts for electrons
-    add_electron_es_shifts(
-        configuration,
-        era,
-        [ElectronPtCorrectionMC],
-    )
-
-    #endregion
-
-    # --- Muon identification & isolation scale factors -----------------------
-
-    #region
-
-    # Add muon ID and isolation SF shifts
-    add_muon_id_iso_shifts(
-        configuration,
-        era,
-        [scalefactors.MuonIDIso_SF],
-    )
-
-    #endregion
-
-    # --- Hadronic tau identification & energy scale correction ---------------
-
-    #region
-
-    # Add hadronic tau ID vs jet SF shifts to semileptonic scopes (producer for
-    # second lepton candidate in pair)
-    add_tau_id_vs_jet_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsJetSF2],
-        SL_SCOPES,
-    )
-
-    # Add hadronic tau ID vs jet SF shifts to fullhadronic scopes (producers for
-    # first and second lepton candidate in pair)
-    add_tau_id_vs_jet_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
-        TT_SCOPES,
-    )
-
-    # Add hadronic tau ID vs electron SF shifts to semileptonic scopes (producer
-    # for second lepton candidate in pair)
-    add_tau_id_vs_e_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsEleSF2],
-        SL_SCOPES,
-    )
-
-    # Add hadronic tau ID vs electron SF shifts to fullhadronic scopes
-    # (producers for first and second lepton candidate in pair)
-    add_tau_id_vs_e_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsEleSF1, scalefactors.TauIDVsEleSF2],
-        TT_SCOPES,
-    )
-
-    # Add hadronic tau ID vs muon SF shifts to semileptonic scopes (producer
-    # for second lepton candidate in pair)
-    add_tau_id_vs_mu_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsMuSF2],
-        SL_SCOPES,
-    )
-
-    # Add hadronic tau ID vs muon SF shifts to fullhadronic scopes
-    # (producers for first and second lepton candidate in pair)
-    add_tau_id_vs_mu_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsMuSF1, scalefactors.TauIDVsMuSF2],
-        TT_SCOPES,
-    )
-
-    # Shifts for hadronic tau energy scale corrections
-    add_tau_es_shifts(
-        configuration,
-        era,
-        taus.TauPtCorrectionMC,
-    )
-
-    #endregion
-
-    # --- Missing transverse momentum -----------------------------------------
-
-    #region
-
-    # Propagation of unclustered energy shift to missing transverse momentum
-    add_unclustered_energy_shifts(
-        configuration,
-        era,
-    )
-
-    # Uncertainties in the recoil calibration
-    add_recoil_calibration_shifts(
-        configuration,
-        era,
-        get_for_era(met.MetRecoilCorrection, era),
-        _get_recoil_calibration_samples(),
-    )
+            configuration, era, jec_mc_producers)
 
     #endregion
 
@@ -4093,6 +4024,36 @@ def build_config(
             era,
             scalefactors.BJetWPUParT_SF,
         )
+
+    #endregion
+
+    # --- Missing transverse momentum -----------------------------------------
+
+    #region
+
+    # Propagation of unclustered energy shift to missing transverse momentum
+    add_unclustered_energy_shifts(configuration, era)
+
+    # Uncertainties in the recoil calibration
+    add_recoil_calibration_shifts(
+        configuration,
+        era,
+        get_for_era(met.MetRecoilCorrection, era),
+        _get_recoil_calibration_samples(),
+    )
+
+    #endregion
+
+    # --- Pileup and prefiring ------------------------------------------------
+
+    #region
+
+    # Add shifts for pileup reweighting
+    add_pileup_shifts(configuration, era, event.PUweights)
+
+    # Add shifts for prefiring (in 2016 and 2017)
+    if era in ["2016preVFP", "2016postVFP", "2017"]:
+        add_prefiring_shifts(configuration, era)
 
     #endregion
 
