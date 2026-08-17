@@ -64,11 +64,11 @@ def add_systematic_shift(
     if isinstance(producers, (Producer, ProducerGroup)):
         producers = [producers]
 
-    # Get the shift key and value template
-    shift_key = shift.key
-    shift_value = shift.value
-
     for direction in ["up", "down"]:
+        # Get the shift key and value template
+        shift_key = shift.key
+        shift_value = shift.value
+
         # Replace {direction} placeholder if it is present in shift_key or
         # shift_value
         if "{direction}" in shift_key:
