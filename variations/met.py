@@ -6,6 +6,7 @@ from code_generation.systematics import (
 )
 
 from ._util import add_systematic_shift, KeyValueShift
+from ..quantities import nanoAOD
 
 
 def add_unclustered_energy_shifts(
@@ -23,8 +24,14 @@ def add_unclustered_energy_shifts(
             SystematicShiftByQuantity(
                 name=f"CMS_scale_met_unclustered_energy_{era}{direction}",
                 quantity_change={
-                    "PuppiMET_pt": f"PuppiMET_ptUnclustered{direction}",
-                    "PuppiMET_phi": f"PuppiMET_phiUnclustered{direction}",
+                    nanoAOD.PuppiMET_pt: getattr(
+                        nanoAOD,
+                        f"PuppiMET_ptUnclustered{direction}",
+                    ),
+                    nanoAOD.PuppiMET_phi: getattr(
+                        nanoAOD,
+                        f"PuppiMET_phiUnclustered{direction}",
+                    ),
                 },
                 scopes=["global"],
             ),

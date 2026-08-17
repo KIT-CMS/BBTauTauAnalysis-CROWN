@@ -55,12 +55,12 @@ def add_electron_es_shifts(
         KeyValueShift(
             name=f"CMS_scale_e_{era}",
             key="ele_es_variation",
-            value="scale_{direction}",
+            value="scale{Direction}",
         ),
         KeyValueShift(
             name=f"CMS_res_e_{era}",
             key="ele_es_variation",
-            value="smear_{direction}",
+            value="resolution{Direction}",
         ),
     ]
 
