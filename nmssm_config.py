@@ -2431,7 +2431,7 @@ def build_config(
     # - In Run 2, a fix must be applied to the already corrected electron pt.
     # - In Run 3, the electon pt is not corrected at NanoAOD level, the full correction is applied
     #   based on correctionlib files.
-    electron_pt_correction_mc_producer = get_for_era(
+    ElectronPtCorrectionMC = get_for_era(
         {
             tuple(ERAS_RUN2): electrons.ElectronPtCorrectionMCRun2,
             tuple(ERAS_RUN3): electrons.ElectronPtCorrectionMCRun3,
@@ -2441,7 +2441,7 @@ def build_config(
 
     # Electron pt correction for data
     # - In Run 2, the pt is already corrected, so this is just 
-    electron_pt_correction_data_producer = get_for_era(
+    ElectronPtCorrectionData = get_for_era(
         {
             tuple(ERAS_RUN2): electrons.RenameElectronPt,
             tuple(ERAS_RUN3): electrons.ElectronPtCorrectionDataRun3,
@@ -2612,7 +2612,7 @@ def build_config(
         # + fat_jet_id_producers
         + jet_veto_map_producers
         + [
-            electron_pt_correction_mc_producer,
+            ElectronPtCorrectionMC,
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
             jets.JetEnergyCorrectionMCRegressed,
@@ -3053,8 +3053,8 @@ def build_config(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[
-                electron_pt_correction_mc_producer,
-                electron_pt_correction_data_producer,
+                ElectronPtCorrectionMC,
+                ElectronPtCorrectionData,
             ],
             samples=["data"],
         ),
@@ -4056,14 +4056,14 @@ def build_config(
     add_electron_id_shifts(
         configuration,
         era,
-        [scalefactors.ElectronIDIso_SF],
+        [scalefactors.EleID_SF],
     )
 
     # Add energy scale correction shifts for electrons
     add_electron_es_shifts(
         configuration,
         era,
-        electrons.ElectronPtCorrectionMC,
+        [ElectronPtCorrectionMC],
     )
 
     #endregion

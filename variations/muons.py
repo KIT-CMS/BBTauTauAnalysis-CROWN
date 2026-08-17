@@ -15,7 +15,7 @@ def add_muon_id_iso_shifts(
 
     # Exclude data, as well as embedding samples, which have their own muon ID
     # and isolation scale factors
-    exclude_samples = ["data", "embedding", "embedding_mc"],
+    exclude_samples = ["data", "embedding", "embedding_mc"]
 
     # List if shifts for the total systematic shift of the muon ID and isolation
     # scale factors 
