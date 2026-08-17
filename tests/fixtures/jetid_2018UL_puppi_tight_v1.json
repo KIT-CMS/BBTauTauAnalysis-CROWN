@@ -1,0 +1,90 @@
+{
+  "formula_version": "jetid_2018UL_puppi_tight_v1",
+  "description": "JME-approved tight PF jet ID for AK4 PUPPI jets, 2017/2018 Ultra Legacy (RUN2ULPUPPI working point). Recomputed from NanoAODv15 per-jet composition branches because NanoAODv15 drops the precomputed Jet_jetId branch that existed in NanoAODv9. Boundary cases with expected_pass=null document scope limits, not physical criteria; consumers MUST skip those cases when validating.",
+  "jet_collection": "AK4 PUPPI (JEC payload AK4PFPuppi)",
+  "working_point": "tight",
+  "quality_enum": "TIGHT",
+  "version_enum": "RUN2ULPUPPI",
+  "applicable_eras": ["2017_UL", "2018_UL"],
+  "note_2016": "2016 UL uses a distinct, looser working point (enum RUN2UL16PUPPI) with different central-region and forward cuts; NOT interchangeable with 2017/2018 UL (RUN2ULPUPPI). This fixture covers 2018 UL only.",
+  "production_relevant_region": "|eta| < 2.4 (acceptance end for probe and SM b-jet objects in this analysis); the fixture and doc additionally cover the full |eta| <= 2.6 and 2.6 < |eta| <= 2.7 region structure for completeness, per the primary source's own region boundaries.",
+  "source": {
+    "primary_attempted": {
+      "url": "https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVUL",
+      "status": "UNREACHABLE",
+      "detail": "CERN SSO auth wall on /bin/view, /bin/viewauth and /bin/pub; /bin/genpdf returns a rendered 'access not allowed on this web' (topic_access/VIEW) PDF. Confirmed 2026-07-23 via 4 independent access methods (view, viewauth redirect, pub, genpdf). No public mirror or web-archive snapshot could be retrieved in this environment."
+    },
+    "primary_used": {
+      "url": "https://github.com/cms-sw/cmssw/blob/d4e03cec37717df5d238b3d468490e0bac09b5dd/PhysicsTools/SelectorUtils/interface/PFJetIDSelectionFunctor.h",
+      "repo": "cms-sw/cmssw",
+      "path": "PhysicsTools/SelectorUtils/interface/PFJetIDSelectionFunctor.h",
+      "revision": "d4e03cec37717df5d238b3d468490e0bac09b5dd",
+      "revision_date": "2024-01-16 (last commit touching this file; unchanged through master b8fdcd5f6d1e240d3966e67d062d3880c2a33eea)",
+      "retrieved": "2026-07-23",
+      "description": "PFJetIDSelectionFunctor: the CMSSW selector functor whose RUN2ULPUPPI/TIGHT branch is the authoritative encoding of the 2017/2018 UL AK4/AK8 PUPPI tight jet ID (the formula that filled the dropped NanoAODv9 Jet_jetId bit for PUPPI-clustered jets)."
+    },
+    "cross_checks": [
+      {
+        "url": "https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_29/PhysicsTools/NanoAOD/python/jets_cff.py",
+        "revision": "da759f0633310f9b429e82be4484627c165847e1 (tag CMSSW_10_6_29)",
+        "revision_date": "2021-06-08",
+        "retrieved": "2026-07-23",
+        "description": "Historical NanoAODv9-era jets_cff.py: for era modifiers run2_nanoAOD_106Xv1/106Xv2 (Run2 UL nanoAOD production) combined with run2_jme_2017/2018 (i.e. NOT run2_jme_2016), tightJetIdAK8.filterParams.version is set to RUN2ULPUPPI (quality TIGHT/TIGHTLEPVETO); the CHS 'Jet' collection uses RUN2ULCHS. Confirms RUN2ULPUPPI is exactly the 2017/2018-UL PUPPI recipe, distinct from RUN2UL16PUPPI (2016)."
+      },
+      {
+        "url": "https://github.com/cms-sw/cmssw/blob/d89e747a246aefeb5d0cdeb30ab621ccf0af8bbd/DQMOffline/JetMET/python/jetAnalyzer_cfi.py",
+        "revision": "d89e747a246aefeb5d0cdeb30ab621ccf0af8bbd",
+        "revision_date": "2026-03-04",
+        "retrieved": "2026-07-23",
+        "description": "jetDQMAnalyzerAk4PFCHSPuppiCleanedMiniAOD (jetsrc='slimmedJetsPuppi', i.e. AK4 PUPPI specifically, not just AK8) sets JetIDVersion='RUN2ULPUPPI', JetIDQuality='TIGHT' with comment '#for PUPPI jets: RUN2ULPUPPI from 11_1_X onwards'. Confirms RUN2ULPUPPI applies to AK4 PUPPI, not only AK8 PUPPI."
+      },
+      {
+        "url": "data/jsonpog-integration/POG/JME/2022_Summer22/jetid.json.gz (local submodule, correction AK4PUPPI_Tight)",
+        "description": "Run3 (RUN3PUPPIrunsBCDEprompt) correctionlib encoding of the sibling PFJetIDSelectionFunctor branch, cross-checked structurally: independently confirms chMultiplicity>=1 and nConstituents>=2 are genuine POG-published criteria for PUPPI central-region tight ID (not a CHS-only artifact of the C++), corroborating the same unconditional CHF/NCH block also applied to RUN2ULPUPPI. No 2018_UL jetid.json.gz exists in jsonpog-integration (confirms NanoAODv15/2018UL AK4 PUPPI jet ID has no correctionlib shortcut and must be recomputed, matching the premise of this task)."
+      }
+    ]
+  },
+  "criteria": {
+    "eta_lt_2p6": [
+      {"variable": "Jet_chHEF", "op": ">", "value": 0.0},
+      {"variable": "Jet_chMultiplicity", "op": ">", "value": 0},
+      {"variable": "Jet_nConstituents", "op": ">", "value": 1},
+      {"variable": "Jet_neEmEF", "op": "<", "value": 0.9},
+      {"variable": "Jet_neHEF", "op": "<", "value": 0.9}
+    ],
+    "eta_2p6_to_2p7": [
+      {"variable": "Jet_neHEF", "op": "<", "value": 0.9},
+      {"variable": "Jet_neEmEF", "op": "<", "value": 0.99}
+    ]
+  },
+  "region_convention": "Region selection uses |eta| <= 2.6 for 'eta_lt_2p6' (inclusive upper edge: eta==2.6 is IN this region) and 2.6 < |eta| <= 2.7 for 'eta_2p6_to_2p7' (inclusive upper edge: eta==2.7 is IN this region). |eta| > 2.7 is outside the region structure encoded in this fixture (the full formula continues into 2.7-3.0 'EC' and >3.0 'FW' regions per the primary source, recorded in the doc for completeness but out of scope for this fixture/production, since only |eta|<2.4 is production-relevant); such jets are marked with expected_pass=null and region='out_of_scope' by fixture convention, documenting scope limits not physical criteria. Consumers MUST skip cases with expected_pass=null when validating.",
+  "cut_convention": "All cuts in this formula are strict inequalities (> or <) in the primary source; there are no <=/>= cuts anywhere in the TIGHT working point for RUN2ULPUPPI. A value exactly equal to a threshold therefore FAILS that specific cut.",
+  "boundary_cases": [
+    {"name": "chHEF_at_cut_fails", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.0, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": false},
+    {"name": "chHEF_just_inside_passes", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.01, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": true},
+
+    {"name": "chMultiplicity_at_cut_fails", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 0, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": false},
+    {"name": "chMultiplicity_just_inside_passes", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 1, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": true},
+
+    {"name": "nConstituents_at_cut_fails", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 1}, "expected_pass": false},
+    {"name": "nConstituents_just_inside_passes", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 2}, "expected_pass": true},
+
+    {"name": "neEmEF_at_cut_fails", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.9, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": false},
+    {"name": "neEmEF_just_inside_passes", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.89, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": true},
+
+    {"name": "neHEF_at_cut_fails", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.9, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": false},
+    {"name": "neHEF_just_inside_passes", "inputs": {"Jet_eta": 1.0, "Jet_chHEF": 0.5, "Jet_neHEF": 0.89, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": true},
+
+    {"name": "TR_neHEF_at_cut_fails", "inputs": {"Jet_eta": 2.65, "Jet_chHEF": -1.0, "Jet_neHEF": 0.9, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 0, "Jet_neMultiplicity": 0, "Jet_nConstituents": 0}, "expected_pass": false},
+    {"name": "TR_neHEF_just_inside_passes", "inputs": {"Jet_eta": 2.65, "Jet_chHEF": -1.0, "Jet_neHEF": 0.89, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 0, "Jet_neMultiplicity": 0, "Jet_nConstituents": 0}, "expected_pass": true},
+
+    {"name": "TR_neEmEF_at_cut_fails", "inputs": {"Jet_eta": 2.65, "Jet_chHEF": -1.0, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.99, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 0, "Jet_neMultiplicity": 0, "Jet_nConstituents": 0}, "expected_pass": false},
+    {"name": "TR_neEmEF_just_inside_passes", "inputs": {"Jet_eta": 2.65, "Jet_chHEF": -1.0, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.98, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 0, "Jet_neMultiplicity": 0, "Jet_nConstituents": 0}, "expected_pass": true},
+
+    {"name": "eta_exactly_2p6_is_region_A_passes", "inputs": {"Jet_eta": 2.6, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": true},
+    {"name": "eta_2p6_region_A_requires_chMultiplicity_gt_zero", "inputs": {"Jet_eta": 2.6, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 0, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": false},
+    {"name": "eta_exactly_2p7_is_region_B_passes", "inputs": {"Jet_eta": 2.7, "Jet_chHEF": -1.0, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 0, "Jet_neMultiplicity": 0, "Jet_nConstituents": 0}, "expected_pass": true},
+
+    {"name": "eta_beyond_2p7_unsupported_fails_by_convention", "inputs": {"Jet_eta": 3.5, "Jet_chHEF": 0.5, "Jet_neHEF": 0.2, "Jet_neEmEF": 0.2, "Jet_chEmEF": 0.1, "Jet_muEF": 0.0, "Jet_chMultiplicity": 5, "Jet_neMultiplicity": 5, "Jet_nConstituents": 10}, "expected_pass": null, "region": "out_of_scope"}
+  ]
+}

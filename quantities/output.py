@@ -40,6 +40,8 @@ kinfit_prob = Quantity("kinfit_prob")
 kinfit_pull1 = Quantity("kinfit_pull1")
 kinfit_pull2 = Quantity("kinfit_pull2")
 kinfit_pullBalance = Quantity("kinfit_pullBalance")
+# SM fixed-mass (m(H->bb)=125, m(H->tautau)=125) HH kinematic fit output
+kinfit_mHH = Quantity("kinfit_mHH")
 kinfit_convergence_YToBB_boosted = Quantity("kinfit_convergence_YToBB_boosted")
 kinfit_mX_YToBB_boosted = Quantity("kinfit_mX_YToBB_boosted")
 kinfit_mY_YToBB_boosted = Quantity("kinfit_mY_YToBB_boosted")
@@ -95,6 +97,9 @@ good_jets_with_veto_mask_boosted = Quantity("good_jets_with_veto_mask")
 base_bjets_mask = Quantity("base_bjets_mask")
 good_bjets_mask = Quantity("good_bjets_mask")
 good_bjets_with_veto_mask = Quantity("good_bjets_with_veto_mask")
+# Kinematic b-jet acceptance (before the b-tag WP cut) cleaned of lepton
+# overlaps: the jet set the strict UParTAK4 multi-WP event weight reweights.
+base_bjets_with_veto_mask = Quantity("base_bjets_with_veto_mask")
 base_photons_mask = Quantity("base_photons_mask")
 Tau_pt_ele_corrected = Quantity("Tau_pt_ele_corrected")
 Tau_pt_ele_mu_corrected = Quantity("Tau_pt_mu_corrected")
@@ -632,6 +637,13 @@ emb_iso_wgt_mu_boosted_1 = Quantity("emb_iso_wgt_mu_boosted_1")
 # btag weight
 btag_weight = Quantity("btag_weight")
 btag_weight_boosted = Quantity("btag_weight_boosted")
+# Strict UParTAK4 multi-WP b-tag event weight (SM 2018-v15 path). The nominal
+# column plus the pt-flow clamp diagnostic; the per-variation weight columns
+# (btag_weight_upart_<variation>) are created at config time from the payload's
+# discovered systematic variations by
+# producers.scalefactors.build_strict_upart_btag_weight.
+btag_weight_upart = Quantity("btag_weight_upart")
+btag_eff_pt_clamped_njets = Quantity("btag_eff_pt_clamped_njets")
 # ditau trigger weights
 trg_wgt_double_tau_1 = Quantity("trg_wgt_double_tau_1")
 trg_wgt_double_tau_2 = Quantity("trg_wgt_double_tau_2")
@@ -798,6 +810,17 @@ Type1Jet_l2l3resPt = Quantity("Type1Jet_l2l3resPt")
 Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
 
 # endregion
+
+# ------------------------------------------------------------------------------
+# Payload-independent UParT probe-jet collection (sm_btag_efficiency_config)
+# ------------------------------------------------------------------------------
+# Per-jet probe mask (1 = probe) and the four equal-length exported vectors
+# it selects: corrected pt, eta, hadron flavour (int), and UParTAK4 B score.
+btag_probe_jet_mask = Quantity("btag_probe_jet_mask")
+btag_probe_jet_pt = Quantity("btag_probe_jet_pt")
+btag_probe_jet_eta = Quantity("btag_probe_jet_eta")
+btag_probe_jet_hadron_flavour = Quantity("btag_probe_jet_hadron_flavour")
+btag_probe_jet_upart = Quantity("btag_probe_jet_upart")
 
 # ------------------------------------------------------------------------------
 # Fake factor quantities
