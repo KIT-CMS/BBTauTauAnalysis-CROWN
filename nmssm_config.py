@@ -4046,14 +4046,14 @@ def build_config(
     add_electron_id_shifts(
         configuration,
         era,
-        [scalefactors.ElectronIDIso_SF],
+        [scalefactors.EleID_SF],
     )
 
     # Add energy scale correction shifts for electrons
     add_electron_es_shifts(
         configuration,
         era,
-        electrons.ElectronPtCorrectionMC,
+        [ElectronPtCorrectionMC],
     )
 
     #endregion

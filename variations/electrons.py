@@ -15,7 +15,7 @@ def add_electron_id_shifts(
 
     # Exclude data, as well as embedding samples, which have their own electron ID
     # and isolation scale factors
-    exclude_samples = ["data", "embedding", "embedding_mc"],
+    exclude_samples = ["data", "embedding", "embedding_mc"]
 
     # List if shifts for the total systematic shift of the electron ID and isolation
     # scale factors 
@@ -47,7 +47,7 @@ def add_electron_es_shifts(
     """
 
     # Exclude data, as well as embedding samples
-    exclude_samples = ["data", "embedding", "embedding_mc"],
+    exclude_samples = ["data", "embedding", "embedding_mc"]
 
     # Systematic shifts for electron energy scale variations, consisting of
     # scale and smearing variations
