@@ -81,11 +81,11 @@ float apply_jes_l2l3res(const float &jet_pt, const float &jet_eta,
 
 float apply_jes_shifts(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
-    const UChar_t &jet_id, const std::vector<std::string> &jes_shift_sources,
+    const UChar_t &jet_id, const std::string &jes_shift_source,
     const int &jes_shift_factor,
     const std::vector<correction::Correction *> &jes_shift_evaluators) {
     float jet_pt_corr;
-    if (jes_shift_sources.at(0) == "HEMIssue") {
+    if (jes_shift_source == "HEMIssue") {
         // To assign an uncertainty to the HEM issue, the jet pt needs to be
         // manually scaled in a specific phase space region.
         float sf = 1.0;
@@ -114,29 +114,29 @@ float apply_jes_shifts(
     return jet_pt_corr;
 }
 
-float apply_jer(const float &jet_pt, const float &jet_eta, const float &jet_phi,
-                const float &rho, const ROOT::RVec<float> &genjet_pt,
-                const ROOT::RVec<float> &genjet_eta,
-                const ROOT::RVec<float> &genjet_phi,
-                const correction::Correction *jer_resolution_evaluator,
-                const correction::Correction *jer_scalefactor_evaluator,
-                const correction::Correction *jer_scalefactor_uncertainty_evaluator,
-                const std::string &jer_shift, const float &jet_radius,
-                const std::string &era, TRandom3 randgen) {
+float apply_jer(
+    const float &jet_pt, const float &jet_eta, const float &jet_phi,
+    const float &rho, const ROOT::RVec<float> &genjet_pt,
+    const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
+    const correction::Correction *jer_resolution_evaluator,
+    const correction::Correction *jer_scalefactor_evaluator,
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator,
+    const std::string &jer_shift, const float &jet_radius,
+    const std::string &era, TRandom3 randgen) {
     // Get the JER MC resolution and data-MC scale factor for the smearing
     auto resol = jer_resolution_evaluator->evaluate({jet_eta, jet_pt, rho});
     auto sf = 1.0;
     if (std::stoi(era.substr(0, 4)) <= 2018) { // with run 2 inputs
         sf = jer_scalefactor_evaluator->evaluate({jet_eta, jer_shift});
     } else {
-        sf = jer_scalefactor_evaluator->evaluate({ // with run 3 inputs
+        sf = jer_scalefactor_evaluator->evaluate({// with run 3 inputs
                                                   jet_eta, jet_pt});
         if (jer_shift == "up" || jer_shift == "down") {
-            auto sf_unc = jer_scalefactor_uncertainty_evaluator->evaluate({jet_eta, jet_pt});
+            auto sf_unc = jer_scalefactor_uncertainty_evaluator->evaluate(
+                {jet_eta, jet_pt});
             if (jer_shift == "up") {
                 sf *= 1 + sf_unc;
-            }
-            else if (jer_shift == "down") {
+            } else if (jer_shift == "down") {
                 sf *= 1 - sf_unc;
             }
         }
@@ -183,8 +183,7 @@ JECResult apply_full_jec_mc(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const UChar_t &jet_id, const float &jet_area, const float &rho,
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
-    const ROOT::RVec<float> &genjet_phi,
-    const std::vector<std::string> &jes_shift_sources,
+    const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
     const float &jet_radius, const std::string &era, TRandom3 randgen,
     const correction::Correction *jes_l1_evaluator,
@@ -192,20 +191,20 @@ JECResult apply_full_jec_mc(
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
     const correction::Correction *jer_scalefactor_evaluator,
-    const correction::Correction *jer_scalefactor_uncertainty_evaluator
-    ) {
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator) {
     // Apply the consecutive steps of the jet energy calibration
     auto jet_pt_l1 =
         apply_jes_l1(jet_pt, jet_eta, jet_area, rho, jes_l1_evaluator);
     auto jet_pt_l2rel =
         apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jes_l2rel_evaluator);
     auto jet_pt_syst = apply_jes_shifts(jet_pt_l2rel, jet_eta, jet_phi, jet_id,
-                                        jes_shift_sources, jes_shift_factor,
+                                        jes_shift_source, jes_shift_factor,
                                         jes_shift_evaluators);
     auto jet_pt_jer = apply_jer(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
-        jer_resolution_evaluator, jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator, jer_shift,
-        jet_radius, era, randgen);
+        jer_resolution_evaluator, jer_scalefactor_evaluator,
+        jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
+        randgen);
 
     // Create the JECResult which also contains intermediate results of the
     // calibration
@@ -222,20 +221,22 @@ JECResult apply_jes_shifts_and_jer_mc(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const UChar_t &jet_id, const float &rho, const ROOT::RVec<float> &genjet_pt,
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
-    const std::vector<std::string> &jes_shift_sources,
-    const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, TRandom3 randgen,
+    const std::string &jes_shift_source, const int &jes_shift_factor,
+    const std::string &jer_shift, const float &jet_radius,
+    const std::string &era, TRandom3 randgen,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
-    const correction::Correction *jer_scalefactor_evaluator, const correction::Correction* jer_scalefactor_uncertainty_evaluator) {
+    const correction::Correction *jer_scalefactor_evaluator,
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator) {
     // Apply the jet energy scale shifts and the resolution smearing
     auto jet_pt_syst =
-        apply_jes_shifts(jet_pt, jet_eta, jet_phi, jet_id, jes_shift_sources,
+        apply_jes_shifts(jet_pt, jet_eta, jet_phi, jet_id, jes_shift_source,
                          jes_shift_factor, jes_shift_evaluators);
     auto jet_pt_jer = apply_jer(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
-        jer_resolution_evaluator, jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator, jer_shift,
-        jet_radius, era, randgen);
+        jer_resolution_evaluator, jer_scalefactor_evaluator,
+        jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
+        randgen);
 
     // Create the JECResult which also contains intermediate results of the
     // calibration
@@ -323,7 +324,7 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
 
 /**
  * Compute the regressed jet pt using the UParT/ParticleNet regression factors.
- * 
+ *
  * The regressed jet pt is computed, based on the raw jet \f$p_{\text{T}}\f$,
  * according to
  * https://cms-jerc.web.cern.ch/JES/#remarks-on-getting-rawpt-and-mass-for-regular-pnet-and-upart-jets.
@@ -344,60 +345,50 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
  * @return A dataframe with a new column of regressed jet pt or mass.
  */
 ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
-                     const std::string &jet_quantity_raw,
-                    const std::string &jet_reg_factor,
-                     const std::string &jet_reg_factor_with_neutrino,
-                    const std::string &jet_is_btagged,
-                    const std::string &algo
-                ) {
+                           const std::string &jet_quantity_raw,
+                           const std::string &jet_reg_factor,
+                           const std::string &jet_reg_factor_with_neutrino,
+                           const std::string &jet_is_btagged,
+                           const std::string &algo) {
 
     if (algo != "UParTAK4" and algo != "PNet") {
-        Logger::get("jet::jec::Regressed")->error("Invalid regression algorithm specified: {}. Possible values are 'UParTAK4' and 'PNet'.", algo);
+        Logger::get("jet::jec::Regressed")
+            ->error("Invalid regression algorithm specified: {}. Possible "
+                    "values are 'UParTAK4' and 'PNet'.",
+                    algo);
         throw std::runtime_error("Invalid regression algorithm specified");
     }
-    
-    auto func = [algo] (
-        const ROOT::RVec<float> &jet_quantity_raw,
-        const ROOT::RVec<float> &jet_reg_factor,
-        const ROOT::RVec<float> &jet_reg_factor_with_neutrino,
-        const ROOT::RVec<int> &jet_is_btagged
-    ) {
+
+    auto func = [algo](const ROOT::RVec<float> &jet_quantity_raw,
+                       const ROOT::RVec<float> &jet_reg_factor,
+                       const ROOT::RVec<float> &jet_reg_factor_with_neutrino,
+                       const ROOT::RVec<int> &jet_is_btagged) {
         return ROOT::VecOps::Map(
-            jet_quantity_raw,
-            jet_reg_factor,
-            jet_reg_factor_with_neutrino,
+            jet_quantity_raw, jet_reg_factor, jet_reg_factor_with_neutrino,
             jet_is_btagged,
-            [algo] (
-                const float &jet_quantity_raw,
-                const float &jet_reg_factor,
-                const float &jet_reg_factor_with_neutrino,
-                const int &jet_is_btagged
-            ) {
+            [algo](const float &jet_quantity_raw, const float &jet_reg_factor,
+                   const float &jet_reg_factor_with_neutrino,
+                   const int &jet_is_btagged) {
                 float jet_quantity_regressed;
                 if (jet_is_btagged) {
                     if (algo == "PNet") {
-                        jet_quantity_regressed = jet_quantity_raw * jet_reg_factor * jet_reg_factor_with_neutrino;
+                        jet_quantity_regressed = jet_quantity_raw *
+                                                 jet_reg_factor *
+                                                 jet_reg_factor_with_neutrino;
                     } else if (algo == "UParTAK4") {
-                        jet_quantity_regressed = jet_quantity_raw * jet_reg_factor_with_neutrino;
+                        jet_quantity_regressed =
+                            jet_quantity_raw * jet_reg_factor_with_neutrino;
                     }
                 } else {
                     jet_quantity_regressed = jet_quantity_raw * jet_reg_factor;
                 }
                 return jet_quantity_regressed;
-            }
-        );
+            });
     };
 
-    return df.Define(
-        outputname,
-        func,
-        {
-            jet_quantity_raw,
-            jet_reg_factor,
-            jet_reg_factor_with_neutrino,
-            jet_is_btagged
-        }
-    );
+    return df.Define(outputname, func,
+                     {jet_quantity_raw, jet_reg_factor,
+                      jet_reg_factor_with_neutrino, jet_is_btagged});
 }
 
 /**
@@ -413,25 +404,15 @@ ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
  * @return A dataframe with a new column of smeared jet pt.
  */
 ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
-     const std::string &outputname,
-                     const std::string &jet_quantity_raw,
-                    const std::string &jet_res_factor
-                ) {
-    auto func = [] (
-        const ROOT::RVec<float> &jet_quantity_raw,
-        const ROOT::RVec<float> &jet_res_factor
-    ) {
+                               const std::string &outputname,
+                               const std::string &jet_quantity_raw,
+                               const std::string &jet_res_factor) {
+    auto func = [](const ROOT::RVec<float> &jet_quantity_raw,
+                   const ROOT::RVec<float> &jet_res_factor) {
         return jet_quantity_raw * jet_res_factor;
     };
 
-    return df.Define(
-        outputname,
-        func,
-        {
-            jet_quantity_raw,
-            jet_res_factor
-        }
-    );
+    return df.Define(outputname, func, {jet_quantity_raw, jet_res_factor});
 }
 
 /**
@@ -505,7 +486,7 @@ ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
  * "AK8PFPuppi")
  * @param jes_tag tag of the JES correction campaign (e.g., "Summer19UL18_V5")
  * @param jer_tag tag of the JER correction campaign (e.g., "Summer19UL18_JRV2")
- * @param jes_shift_sources list of JES shift sources for the systematic shift
+ * @param jes_shift_source name of the JES shift source for the systematic shift
  * to be applied
  * @param jes_shift_factor factor of the JES shift variation (0 = nominal, +/-1
  * = up/down)
@@ -530,8 +511,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                const std::string &genjet_phi, const std::string &rho,
                const std::string &jer_seed, const std::string &jec_file,
                const std::string &jec_algo, const std::string &jes_tag,
-               const std::string &jer_tag,
-               const std::vector<std::string> &jes_shift_sources,
+               const std::string &jer_tag, const std::string &jes_shift_source,
                const int &jes_shift_factor, const std::string &jer_shift,
                const bool &reapply_jes, const std::string &era) {
     // In nanoAODv12 the type of jet/fatjet ID was changed to UChar_t
@@ -558,14 +538,11 @@ PtCorrectionMC(ROOT::RDF::RNode df,
 
     // Load the jet energy scale variation evaluators
     std::vector<correction::Correction *> jes_shift_evaluators;
-    for (const auto &source : jes_shift_sources) {
-        if (source != "" && source != "HEMIssue") {
-            auto evaluator = const_cast<correction::Correction *>(
-                load_shifted_jes_correction(correction_manager, jec_file,
-                                            jes_tag, type_tag, source,
-                                            jec_algo));
-            jes_shift_evaluators.push_back(evaluator);
-        }
+    if (jes_shift_source != "nominal" && jes_shift_source != "HEMIssue") {
+        auto evaluator = const_cast<correction::Correction *>(
+            load_shifted_jes_correction(correction_manager, jec_file, jes_tag,
+                                        type_tag, jes_shift_source, jec_algo));
+        jes_shift_evaluators.push_back(evaluator);
     }
 
     // Load the jet energy resolution evaluators
@@ -580,13 +557,11 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                             "SFUncertainty", jec_algo);
 
     // Function to retrieve the JEC result with intermediate steps
-    auto func_jec_result = [jes_shift_sources, jes_shift_factor, jer_shift,
+    auto func_jec_result = [jes_shift_source, jes_shift_factor, jer_shift,
                             jet_radius, reapply_jes, era, jes_l1_evaluator,
                             jes_l2rel_evaluator, jes_shift_evaluators,
-                            jer_resolution_evaluator,
-                            jer_scalefactor_evaluator,
-                            jer_scalefactor_uncertainty_evaluator
-    ](
+                            jer_resolution_evaluator, jer_scalefactor_evaluator,
+                            jer_scalefactor_uncertainty_evaluator](
                                const ROOT::RVec<float> &jet_pt_raw,
                                const ROOT::RVec<float> &jet_eta,
                                const ROOT::RVec<float> &jet_phi,
@@ -607,20 +582,22 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             // the calibrated momenta for the full collection.
             jet_jec_result = ROOT::VecOps::Map(
                 jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
-                [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_sources,
+                [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
                  jes_shift_factor, jer_shift, jet_radius, era, randgen,
                  jes_l1_evaluator, jes_l2rel_evaluator, jes_shift_evaluators,
-                 jer_resolution_evaluator, jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator](
+                 jer_resolution_evaluator, jer_scalefactor_evaluator,
+                 jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
                     const float &jet_area) {
                     return apply_full_jec_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, jet_area, rho,
-                        genjet_pt, genjet_eta, genjet_phi, jes_shift_sources,
+                        genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
                         jes_shift_factor, jer_shift, jet_radius, era, randgen,
                         jes_l1_evaluator, jes_l2rel_evaluator,
                         jes_shift_evaluators, jer_resolution_evaluator,
-                        jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator);
+                        jer_scalefactor_evaluator,
+                        jer_scalefactor_uncertainty_evaluator);
                 });
         } else {
             // The jet_pt_raw is already the jet energy scale-corrected pt.
@@ -630,19 +607,21 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             // retrieve the calibrated momenta for the full collection.
             jet_jec_result = ROOT::VecOps::Map(
                 jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
-                [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_sources,
+                [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
                  jes_shift_factor, jer_shift, jet_radius, era, randgen,
                  jes_shift_evaluators, jer_resolution_evaluator,
-                 jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator](
+                 jer_scalefactor_evaluator,
+                 jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
                     const float &jet_area) {
                     return apply_jes_shifts_and_jer_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, rho, genjet_pt,
-                        genjet_eta, genjet_phi, jes_shift_sources,
+                        genjet_eta, genjet_phi, jes_shift_source,
                         jes_shift_factor, jer_shift, jet_radius, era, randgen,
                         jes_shift_evaluators, jer_resolution_evaluator,
-                        jer_scalefactor_evaluator, jer_scalefactor_uncertainty_evaluator);
+                        jer_scalefactor_evaluator,
+                        jer_scalefactor_uncertainty_evaluator);
                 });
         }
         return jet_jec_result;
@@ -968,26 +947,25 @@ namespace quantities {
  *     file
  * @return a dataframe with the new column
  */
-ROOT::RDF::RNode TightestWPPassed(
-           ROOT::RDF::RNode df,
-           correctionManager::CorrectionManager &correction_manager,
-           const std::string &outputname, const std::string &btag_value,
-           const std::string &sf_file, const std::string &sf_wp_name
-) {
+ROOT::RDF::RNode
+TightestWPPassed(ROOT::RDF::RNode df,
+                 correctionManager::CorrectionManager &correction_manager,
+                 const std::string &outputname, const std::string &btag_value,
+                 const std::string &sf_file, const std::string &sf_wp_name) {
     // Get evaluator for WP definitions from correctionlib file
     auto wp_evaluator = correction_manager.loadCorrection(sf_file, sf_wp_name);
 
-    // Sort the working points in descending order to find the tightest WP passed
+    // Sort the working points in descending order to find the tightest WP
+    // passed
     auto wp_names = std::vector<std::string>({"L", "M", "T", "XT", "XXT"});
     auto wp_cuts = std::vector<float>();
     for (auto &wp_name : wp_names) {
         wp_cuts.push_back(wp_evaluator->evaluate({wp_name}));
     }
 
-    auto func = [wp_cuts, wp_names] (ROOT::RVec<float> &btag_value) {
+    auto func = [wp_cuts, wp_names](ROOT::RVec<float> &btag_value) {
         return ROOT::VecOps::Map(
-            btag_value,
-            [wp_cuts, wp_names] (const float &btag_value) {
+            btag_value, [wp_cuts, wp_names](const float &btag_value) {
                 std::string tightest_wp = "U";
                 for (size_t i = 0; i < wp_cuts.size(); ++i) {
                     if (btag_value > wp_cuts[i]) {
@@ -1000,20 +978,12 @@ ROOT::RDF::RNode TightestWPPassed(
                 }
                 Logger::get("jet::quantities::TightestWPPassed")
                     ->debug("Evaluated tightest WP for btag value {} to {}",
-                            btag_value,
-                            tightest_wp);
+                            btag_value, tightest_wp);
                 return tightest_wp;
-            }
-        );
+            });
     };
 
-    return df.Define(
-        outputname,
-        func,
-        {
-            btag_value
-        }
-    );
+    return df.Define(outputname, func, {btag_value});
 }
 
 /**
@@ -1030,22 +1000,19 @@ ROOT::RDF::RNode TightestWPPassed(
  * @param btag_wp_name name of the working point to evaluate
  * @return a dataframe with the new column
  */
-ROOT::RDF::RNode IsBTagged(
-           ROOT::RDF::RNode df,
-           correctionManager::CorrectionManager &correction_manager,
-           const std::string &outputname, const std::string &btag_value,
-           const std::string &sf_file, const std::string &sf_wp_name,
-           const std::string &btag_wp_name
-) {
+ROOT::RDF::RNode
+IsBTagged(ROOT::RDF::RNode df,
+          correctionManager::CorrectionManager &correction_manager,
+          const std::string &outputname, const std::string &btag_value,
+          const std::string &sf_file, const std::string &sf_wp_name,
+          const std::string &btag_wp_name) {
     // Set the logger name for better readability in debug messages
     const std::string logger_name = "jet::quantities::IsBTagged";
 
     // Debug messages for loading corrections
     Logger::get(logger_name)
-        ->debug(
-            "Evaluate b jet tagging scores with respect to fixed WP {}",
-            btag_wp_name
-        );
+        ->debug("Evaluate b jet tagging scores with respect to fixed WP {}",
+                btag_wp_name);
     Logger::get(logger_name)->debug("working point cset name {}", sf_wp_name);
 
     // Get evaluator for WP definitions from correctionlib file
@@ -1054,20 +1021,13 @@ ROOT::RDF::RNode IsBTagged(
     // Get the b jet tagging score to cut on for the given working point
     float btag_wp_cut = wp_evaluator->evaluate({btag_wp_name});
 
-    auto func = [btag_wp_cut] (ROOT::RVec<float> &btag_value) {
-        return ROOT::VecOps::Map(
-            btag_value,
-            [btag_wp_cut] (const float &score) { return static_cast<int>(score > btag_wp_cut); }
-        );
+    auto func = [btag_wp_cut](ROOT::RVec<float> &btag_value) {
+        return ROOT::VecOps::Map(btag_value, [btag_wp_cut](const float &score) {
+            return static_cast<int>(score > btag_wp_cut);
+        });
     };
 
-    return df.Define(
-        outputname,
-        func,
-        {
-            btag_value
-        }
-    );
+    return df.Define(outputname, func, {btag_value});
 }
 
 /**

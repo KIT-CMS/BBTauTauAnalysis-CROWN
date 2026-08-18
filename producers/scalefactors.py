@@ -175,19 +175,12 @@ def _create_tau_id_vsjet_sf_producer(
         "\"{tau_ides_sf_file}\"",
         "\"{discriminator}\"", 
     ]
-    call_fn = "physicsobject::tau::scalefactor::Id_vsJet"
+    call_fn = "physicsobject::tau::scalefactor::experimental::Id_vsJet"
     parameters.extend([
         f"\"{{{vsjet_wp}}}\"", 
         f"\"{{{tau_ides_sf_vsele_wp}}}\"", 
-        f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm0_pt20to40_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm0_pt40toInf_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm1_pt20to40_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm1_pt40toInf_shift}\"", 
-        "\"{tau_id_sf_vsjet_tau_dm10_pt20to40_shift}\"",
-        "\"{tau_id_sf_vsjet_tau_dm10_pt40toInf_shift}\"",
-        "\"{tau_id_sf_vsjet_tau_dm11_pt20to40_shift}\"",
-        "\"{tau_id_sf_vsjet_tau_dm11_pt40toInf_shift}\"",
+        f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"",
+        "\"{tau_id_sf_vsjet_variation}\""
     ])
 
     return ExtendedVectorProducer(
@@ -210,7 +203,7 @@ def _create_tau_id_vsele_sf_producer(
     return ExtendedVectorProducer(
         name=name,
         call="""
-            physicsobject::tau::scalefactor::Id_vsEle(
+            physicsobject::tau::scalefactor::experimental::Id_vsEle(
                 {df},
                 correctionManager,
                 {output},
@@ -219,8 +212,7 @@ def _create_tau_id_vsele_sf_producer(
                 "{discriminator}",
                 "{vsele_wp}",
                 "{era}",
-                "{tau_id_sf_vsele_barrel_shift}",
-                "{tau_id_sf_vsele_endcap_shift}"
+                "{tau_id_sf_vsele_variation}"
             )
         """,
         input=input,
@@ -239,7 +231,7 @@ def _create_tau_id_vsmu_sf_producer(
 ):
     return ExtendedVectorProducer(
         name=name,
-        call="""physicsobject::tau::scalefactor::Id_vsMu(
+        call="""physicsobject::tau::scalefactor::experimental::Id_vsMu(
             {df}, 
             correctionManager, 
             {output}, 
@@ -250,11 +242,7 @@ def _create_tau_id_vsmu_sf_producer(
             "{vsmu_vsele_wp}", 
             "{vsmu_vsjet_wp}", 
             "{era}", 
-            "{tau_id_sf_vsmu_wheel1_shift}", 
-            "{tau_id_sf_vsmu_wheel2_shift}", 
-            "{tau_id_sf_vsmu_wheel3_shift}", 
-            "{tau_id_sf_vsmu_wheel4_shift}", 
-            "{tau_id_sf_vsmu_wheel5_shift}"
+            "{tau_id_sf_vsmu_variation}"
         )
         """,
         input=input,
@@ -1164,7 +1152,7 @@ BJetWPUParT_SF = Producer(
         {input},
         "{bjet_sf_file}",
         "{bjet_sf_bc_name}",
-        "{bjet_sf_lf_name}",
+        "{bjet_sf_light_name}",
         "{bjet_sf_wp_name}",
         "{bjet_eff_file}",
         "{bjet_eff_name}",

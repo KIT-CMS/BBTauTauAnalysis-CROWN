@@ -234,7 +234,7 @@ LHE_Scale_weight = Producer(
     call="event::reweighting::LHEscale({df}, {output}, {input}, {muR}, {muF})",
     input=[nanoAOD.LHEScaleWeight],
     output=[q.lhe_scale_weight],
-    scopes=["global", "em", "et", "mt", "tt", "mm", "ee"],
+    scopes=["global"],  #, "em", "et", "mt", "tt", "mm", "ee"],
 )
 LHEDrellYanDecayFlavor = Producer(
     name="LHEDrellYanDecayFlavor",
