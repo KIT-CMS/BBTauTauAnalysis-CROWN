@@ -53,6 +53,7 @@ MINIMUM_CONTENT_NAMES = {
     "met_recoil_response_resolution",
     "pileup_reweighting",
     "lepton_id_iso_scale_factors",
+    "single_electron_trigger_sf",
     "single_muon_trigger_sf",
     "tau_id_vs_jet",
     "tau_id_vs_electron",

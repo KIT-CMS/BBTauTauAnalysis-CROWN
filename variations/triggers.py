@@ -47,6 +47,72 @@ def add_single_electron_trigger_shifts(
         )
 
 
+def _add_trigger_extrapolation_shifts(
+    configuration: Configuration,
+    name: str,
+    producers: list[Producer | ProducerGroup] | Producer | ProducerGroup,
+    scope: str,
+    config_key: str,
+    extrapolation_key: str,
+):
+    """
+    Add shifts for trigger scale factors from the payloads of the Tau Embedding
+    group, which carry no uncertainty. As in TauAnalysis-CROWN, the scale
+    factors are scaled by 1.02 (up) and 0.98 (down) via their extrapolation
+    factor.
+    """
+
+    # If producers is a single Producer or ProducerGroup, convert it to a list
+    if isinstance(producers, (Producer, ProducerGroup)):
+        producers = [producers]
+
+    # Exclude data, as well as embedding samples, which have their own trigger
+    # scale factors
+    exclude_samples = ["data", "embedding", "embedding_mc"]
+
+    # Get the nominal configuration, one entry per trigger
+    nominal_config = configuration.config_parameters[scope][config_key]
+
+    for direction, extrapolation in [("up", 1.02), ("down", 0.98)]:
+        # Create new entries for the shifted SFs, leaving the nominal ones
+        # untouched
+        shifted_config = [
+            {**entry, extrapolation_key: extrapolation}
+            for entry in nominal_config
+        ]
+
+        # Add the shift to the configuration
+        configuration.add_shift(
+            SystematicShift(
+                name=f"{name}{direction.capitalize()}",
+                shift_config={scope: {config_key: shifted_config}},
+                producers={scope: producers},
+            ),
+            exclude_samples=exclude_samples,
+        )
+
+
+def add_single_electron_trigger_extrapolation_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup] | Producer | ProducerGroup,
+    scope: str,
+):
+    """
+    Add shifts for single-electron trigger scale factors from the payloads of
+    the Tau Embedding group for the given era and scope. The shifts carry the
+    name of the single-electron trigger shifts of the EGM scale factors.
+    """
+    _add_trigger_extrapolation_shifts(
+        configuration,
+        f"CMS_eff_e_trigger_{era}",
+        producers,
+        scope,
+        config_key="singlelectron_trigger_sf_mc",
+        extrapolation_key="mc_electron_trg_extrapolation",
+    )
+
+
 def add_single_muon_trigger_shifts(
     configuration: Configuration,
     era: str,
