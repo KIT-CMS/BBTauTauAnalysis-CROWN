@@ -305,6 +305,21 @@ systematics:
     production_status: registered_not_produced
     final_disposition: propagate
 
+  - name: single_electron_trigger_sf
+    execution_class: crown_shift
+    affected_samples: *all_mc_2018
+    affected_channels: [et]
+    source: >-
+      common_config.py build_config ->
+      scalefactors.ETGenerateSingleElectronTriggerSF_MC using the TauAnalysis
+      Trg32_Iso_pt_eta_bins measurement
+    variation_keys: [singleElectronTriggerSF]
+    shift_name_patterns: [singleElectronTriggerSF]
+    correlation_policy: >-
+      correlated across processes sharing the 2018 Ele32 trigger leg
+    production_status: registered_not_produced
+    final_disposition: propagate
+
   - name: single_muon_trigger_sf
     execution_class: crown_shift
     affected_samples: *all_mc_2018
