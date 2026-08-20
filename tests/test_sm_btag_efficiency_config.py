@@ -22,6 +22,7 @@ characterization suite (``test_nmssm_characterization``) and
 ``test_sm_main_config``; here we only assert the efficiency profile's own
 surface.
 """
+from copy import deepcopy
 import unittest
 
 from analysis_configurations.bbtautau import sm_btag_efficiency_config
@@ -59,6 +60,18 @@ def _all_producer_names(config, scope):
 
 def _output_names(config, scope):
     return {q.get_leaf(shift="", scope=scope) for q in config.outputs[scope]}
+
+
+def _generated_calls(config, scope, producer_name):
+    """Generate calls on a copy so dynamic output groups stay test-local."""
+    producer = deepcopy(
+        next(p for p in config.producers[scope] if p.name == producer_name)
+    )
+    producer.output_group.shifts = {}
+    producer.output_group.ignored_shifts = {}
+    producer.output_group.quantities = []
+    parameters = deepcopy(config.config_parameters[scope])
+    return producer.writecalls(parameters, scope)
 
 
 class SMBtagEfficiencyConfigTest(unittest.TestCase):
@@ -267,26 +280,29 @@ class SMBtagEfficiencyDYWGenBosonScopeContractTest(unittest.TestCase):
 
 
 class SMBtagEfficiencyElectronTriggerSFTest(unittest.TestCase):
-    """Regression: the efficiency profile's et electron trigger SF must be the
-    unity producer, not the Run-3-only EGM ``Electron-HLT-SF`` one.
+    """Run-2 2018 MC uses the TauAnalysis electron-trigger SF measurement.
 
-    ``scalefactors.SingleEleTriggerSF`` evaluates the EGM ``Electron-HLT-SF``
-    correction, which does not exist in the Run-2 UL EGM ``electron.json.gz``
-    payload -- loading it aborts the et executable at DataFrame setup
-    (correctionlib ``CorrectionSet::at`` -> ``std::out_of_range``). The MC-only
-    b-tag efficiency profile substitutes ``SingleEleTriggerSFUnity`` (emits the
-    same ``trg_wgt_single_ele30`` column, hard-set to 1.0) so its et executable
-    runs. NMSSM keeps the original producer unchanged.
+    The Run-3 EGM ``Electron-HLT-SF`` correction is absent from the Run-2 UL
+    ``electron.json.gz`` payload. TauAnalysis instead evaluates
+    ``Trg32_Iso_pt_eta_bins`` from ``data/embedding/electron_2018UL.json.gz``
+    for ordinary MC. Both SM profiles and NMSSM must use that producer in the
+    2018 et scope and expose its ``trg_wgt_single_ele32`` column.
     """
 
-    def test_efficiency_profile_et_uses_unity_ele_trigger_sf(self):
+    def test_efficiency_profile_et_uses_tau_analysis_ele32_sf(self):
         cfg = _build("ttbar", scopes=("et", "mt", "tt"))
         et = {p.name for p in cfg.producers["et"]}
-        self.assertIn("SingleEleTriggerSFUnity", et)
+        self.assertIn("ETGenerateSingleElectronTriggerSF_MC", et)
         self.assertNotIn("SingleEleTriggerSF", et)
+        self.assertNotIn("SingleEleTriggerSFUnity", et)
+        calls = _generated_calls(cfg, "et", "ETGenerateSingleElectronTriggerSF_MC")
+        self.assertEqual(len(calls), 1)
+        self.assertIn('"trg_wgt_single_ele32"', calls[0])
+        self.assertIn('"data/embedding/electron_2018UL.json.gz"', calls[0])
+        self.assertIn('"Trg32_Iso_pt_eta_bins"', calls[0])
+        self.assertNotIn("trg_wgt_single_ele30", calls[0])
 
-    def test_nmssm_keeps_real_ele_trigger_sf(self):
-        # Byte-identity guard: the swap is scoped to the efficiency profile.
+    def test_nmssm_2018_et_uses_tau_analysis_ele32_sf(self):
         from analysis_configurations.bbtautau import nmssm_config
         from analysis_configurations.bbtautau.constants import ERAS
 
@@ -303,8 +319,39 @@ class SMBtagEfficiencyElectronTriggerSFTest(unittest.TestCase):
             "2018", "ttbar", ["et"], {"none"}, legacy, ERAS, SCOPES,
         )
         et = {p.name for p in cfg.producers["et"]}
-        self.assertIn("SingleEleTriggerSF", et)
+        self.assertIn("ETGenerateSingleElectronTriggerSF_MC", et)
+        self.assertNotIn("SingleEleTriggerSF", et)
         self.assertNotIn("SingleEleTriggerSFUnity", et)
+        self.assertEqual(
+            cfg.config_parameters["et"]["nominal"]["singlelectron_trigger_sf_mc"],
+            [
+                {
+                    "flagname": "trg_wgt_single_ele32",
+                    "mc_trigger_sf": "Trg32_Iso_pt_eta_bins",
+                    "mc_electron_trg_extrapolation": 1.0,
+                }
+            ],
+        )
+
+    def test_nmssm_2018_registers_tau_analysis_ele32_sf_shifts(self):
+        from analysis_configurations.bbtautau import nmssm_config
+        from analysis_configurations.bbtautau.constants import ERAS
+
+        legacy = [
+            "ggh_htautau", "ggh_hbb", "vbf_htautau", "vbf_hbb", "rem_htautau",
+            "rem_hbb", "rem_hww", "rem_hzz", "rem_higgs", "hh4b", "hh2b2tau",
+            "hh4v", "embedding", "embedding_mc", "singletop", "ttbar",
+            "rem_ttbar", "diboson", "dyjets", "dyjets_madgraph",
+            "dyjets_amcatnlo", "dyjets_amcatnlo_ll", "dyjets_amcatnlo_tt",
+            "dyjets_powheg", "wjets", "wjets_madgraph", "wjets_amcatnlo",
+            "data", "electroweak_boson", "nmssm_Ybb", "nmssm_Ytautau",
+        ]
+        cfg = nmssm_config.build_config(
+            "2018", "ttbar", ["et"], {"all"}, legacy, ERAS, SCOPES,
+        )
+        shifts = set(cfg.shifts["et"])
+        self.assertTrue(any("singleElectronTriggerSFUp" in shift for shift in shifts))
+        self.assertTrue(any("singleElectronTriggerSFDown" in shift for shift in shifts))
 
 
 if __name__ == "__main__":

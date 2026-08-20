@@ -41,7 +41,12 @@ from .variations.taus import (
     add_tau_es_shifts
 )
 from .variations.theory import add_qcd_scale_shifts
-from .variations.triggers import add_double_tautau_trigger_shifts, add_single_electron_trigger_shifts, add_single_muon_trigger_shifts
+from .variations.triggers import (
+    add_double_tautau_trigger_shifts,
+    add_single_electron_trigger_extrapolation_shifts,
+    add_single_electron_trigger_shifts,
+    add_single_muon_trigger_shifts,
+)
 from . import btag_payloads
 
 from code_generation.configuration import Configuration
@@ -2462,22 +2467,16 @@ def build_config(
     # never set the flag, so every branch below is byte-identical for them.
     strip_analysis_bjets = profile.enable_probe_jet_collection
 
-    # Single-electron trigger scale factor producer for the et/ee/em scopes.
-    # The default ``SingleEleTriggerSF`` evaluates the EGM ``Electron-HLT-SF``
-    # correction, which only exists (with the schema the C++ evaluator expects)
-    # in the Run-3 EGM ``electronHlt.json.gz`` payloads. On the Run-2 UL path the
-    # EGM ``electron.json.gz`` ships no HLT-trigger correction, so that load
-    # aborts the job at setup (correctionlib ``CorrectionSet::at`` ->
-    # ``std::out_of_range``). The MC-only b-tag efficiency profile (2018 UL v15)
-    # therefore uses the unity variant, which emits the identical
-    # ``ele_trigger_sf`` output column(s) set to 1.0 -- keeping the exact
-    # preselection column contract without the (unavailable) Run-2 HLT SF. NMSSM
-    # and the SM main profile keep ``SingleEleTriggerSF`` unchanged
-    # (byte-identical), so their Run-2 electron-trigger-SF physics decision is
-    # untouched.
+    # Single-electron trigger scale factor producer for the et scope. In 2018,
+    # mirror TauAnalysis: ordinary MC evaluates ``Trg32_Iso_pt_eta_bins`` from
+    # the electron SF payload measured by the Tau Embedding group. The central
+    # EGM ``Electron-HLT-SF`` correction used by ``SingleEleTriggerSF`` exists
+    # only in the Run-3 ``electronHlt.json.gz`` payloads and aborts when loaded
+    # from the Run-2 UL ``electron.json.gz``. Other eras keep their existing
+    # producer selection; in particular, Run 3 stays on the EGM correction.
     single_ele_trigger_sf = (
-        scalefactors.SingleEleTriggerSFUnity
-        if strip_analysis_bjets
+        scalefactors.ETGenerateSingleElectronTriggerSF_MC
+        if era == "2018"
         else scalefactors.SingleEleTriggerSF
     )
 
@@ -2711,29 +2710,16 @@ def build_config(
         },
     )
 
-    # Trigger scale factors for measurements in the embedding workflow
+    # Run-2 2018 single-electron trigger scale factor measured with the same
+    # method and payload as TauAnalysis. Ele115-only events have no dedicated
+    # correction in this payload; the configured weight describes Ele32.
     configuration.add_config_parameters(
-        ELECTRON_SCOPES,
+        ET_SCOPES,
         {
             "singlelectron_trigger_sf_mc": [
                 {
                     "flagname": "trg_wgt_single_ele32",
                     "mc_trigger_sf": "Trg32_Iso_pt_eta_bins",
-                    "mc_electron_trg_extrapolation": 1.0,  # for nominal case
-                },
-                {
-                    "flagname": "trg_wgt_single_ele35",
-                    "mc_trigger_sf": "Trg35_Iso_pt_eta_bins",
-                    "mc_electron_trg_extrapolation": 1.0,  # for nominal case
-                },
-                {
-                    "flagname": "trg_wgt_single_ele32orele35",
-                    "mc_trigger_sf": "Trg32_or_Trg35_Iso_pt_eta_bins",
-                    "mc_electron_trg_extrapolation": 1.0,  # for nominal case
-                },
-                {
-                    "flagname": "trg_wgt_single_ele27orele32orele35",
-                    "mc_trigger_sf": "Trg_Iso_pt_eta_bins",
                     "mc_electron_trg_extrapolation": 1.0,  # for nominal case
                 },
             ]
@@ -3403,9 +3389,20 @@ def build_config(
         ),
     )
 
-    # Remove trigger scale factor producers from data and embedding samples in mt scope
+    # Remove the era-selected et trigger scale factor from data and embedding.
+    # ``setup_embedding`` adds its dedicated embedding-event producer later.
     add_rule(
-        ELECTRON_SCOPES,
+        ET_SCOPES,
+        RemoveProducer(
+            producers=[
+                single_ele_trigger_sf,
+            ],
+            samples=profile_samples("data", "embedding", "embedding_mc"),
+        ),
+    )
+    # The fully leptonic electron scopes continue to use the EGM producer.
+    add_rule(
+        EE_SCOPES + EM_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.SingleEleTriggerSF,
@@ -4411,12 +4408,21 @@ def build_config(
     # Add shifts for single electron trigger SFs to scopes with at least one
     # electron
     for scope in ELECTRON_SCOPES:
-        add_single_electron_trigger_shifts(
-            configuration,
-            era,
-            [scalefactors.SingleEleTriggerSF],
-            scope,
-        )
+        if scope in ET_SCOPES and era == "2018":
+            # 2018 et evaluates the scale factor of the Tau Embedding group
+            add_single_electron_trigger_extrapolation_shifts(
+                configuration,
+                era,
+                [scalefactors.ETGenerateSingleElectronTriggerSF_MC],
+                scope,
+            )
+        else:
+            add_single_electron_trigger_shifts(
+                configuration,
+                era,
+                [scalefactors.SingleEleTriggerSF],
+                scope,
+            )
 
     # Add shifts for single muon trigger SFs to scopes with at least one muon
     for scope in MUON_SCOPES:
