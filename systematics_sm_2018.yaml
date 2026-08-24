@@ -33,9 +33,8 @@
 # "<key>Down" (case as CROWN registers it), unless noted otherwise in `source`.
 # `shift_name_patterns` (crown_shift entries only) are the substrings the
 # validator matches against the framework's actually-registered shift names
-# (case-sensitive substring containment, mirroring
-# tests/test_nmssm_characterization.py's own `expected in s` convention and
-# Configuration._is_valid_shift's -DSHIFTS substring rule).
+# (case-sensitive substring containment, the same rule
+# Configuration._is_valid_shift applies to -DSHIFTS).
 #
 # Single-owner rule: every crown_shift name the SM 2018 configuration surface
 # actually registers must be matched by shift_name_patterns from exactly one
