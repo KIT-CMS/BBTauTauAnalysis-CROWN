@@ -212,13 +212,11 @@ orders of magnitude.
 
 They are blocked at the code level, not merely omitted from a list: neither
 name appears in `constants.py`'s `LEGACY_AVAILABLE_SAMPLES` nor in either SM
-config's `AVAILABLE_SAMPLES`, and
-`tests/test_generator_interface.py::test_sm_surface_includes_signal_and_excludes_forbidden`
-**asserts** that they stay out. Putting such a nick in a list therefore fails
-in `generate.py` with `ValueError: Config '<name>' does not accept sample
-'ggZZ'`. Enabling either one is a code change (sample surface + the relevant
-`SampleModifier`/rule wiring in `common_config.py` + that test), not a list
-edit.
+config's `AVAILABLE_SAMPLES`, so putting such a nick in a list fails in
+`generate.py` with `ValueError: Config '<name>' does not accept sample 'ggZZ'`
+before `build_config` is ever reached. Enabling either one is a code change
+(sample surface + the relevant `SampleModifier`/rule wiring in
+`common_config.py`), not a list edit.
 
 ### Confirmed against the previous (private-production) sample list
 

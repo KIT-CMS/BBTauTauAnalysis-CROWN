@@ -18,9 +18,11 @@ thresholds. Both failure modes have occurred:
   different profile gates, so a profile got a UParT working point against a
   DeepJet discriminant.
 
-These tests pin all three invariants: no placeholder reaches the producer, the
-discriminant and the working point name the same tagger, and the working point's
-threshold equals the numeric ``bjet_min_score`` staged for the same era.
+The single test below pins all three invariants at once, per era and profile:
+no placeholder reaches the producer, the discriminant and the working point name
+the same tagger, and the working point's threshold in the payload equals the
+numeric ``bjet_min_score`` staged for that era (which is a hand-typed literal
+for the legacy eras).
 """
 import gzip
 import json
@@ -33,70 +35,61 @@ from analysis_configurations.bbtautau import (
     sm_btag_efficiency_config,
     sm_config,
 )
-from analysis_configurations.bbtautau.constants import ERAS, SCOPES
-from analysis_configurations.bbtautau.tests.test_nmssm_characterization import (
+from analysis_configurations.bbtautau.constants import (
+    ERAS,
     LEGACY_AVAILABLE_SAMPLES,
+    SCOPES,
 )
 
-# Discriminant column -> the tagger it belongs to, and the prefix its
-# working-point-values correction must carry inside the payload.
+# Discriminant column -> the prefix its working-point-values correction must
+# carry inside the payload.
 TAGGER_BY_SCORE_COLUMN = {
     "Jet_btagDeepFlavB": "deepJet",
     "Jet_btagPNetB": "particleNet",
     "Jet_btagUParTAK4B": "UParTAK4",
 }
 
-# (label, builder) for every entry point, built for the eras it supports.
-def _build_nmssm(era):
-    return nmssm_config.build_config(
-        era, "ttbar", ["mt"], {"none"}, LEGACY_AVAILABLE_SAMPLES, ERAS, SCOPES
-    )
+PARAMETERS = (
+    "bjet_score_column",
+    "bjet_min_score",
+    "bjet_sf_file",
+    "bjet_sf_wp_name",
+    "bjet_btag_wp_name",
+)
+
+# (label, module, eras) -- every entry point, over the eras it supports.
+# nmssm_config defines neither AVAILABLE_SAMPLES nor AVAILABLE_ERAS; both SM
+# wrappers define both, so the getattr fallbacks below cover all three.
+ENTRY_POINTS = (
+    ("nmssm_config", nmssm_config, ERAS),
+    ("sm_config", sm_config, sm_config.AVAILABLE_ERAS),
+    (
+        "sm_btag_efficiency_config",
+        sm_btag_efficiency_config,
+        sm_btag_efficiency_config.AVAILABLE_ERAS,
+    ),
+)
 
 
-def _build_sm(era):
-    return sm_config.build_config(
-        era, "ttbar", ["mt"], {"none"}, sm_config.AVAILABLE_SAMPLES, [era], SCOPES
-    )
-
-
-def _build_sm_btag_efficiency(era):
-    return sm_btag_efficiency_config.build_config(
+def btag_parameters(module, era):
+    config = module.build_config(
         era,
         "ttbar",
         ["mt"],
         {"none"},
-        sm_btag_efficiency_config.AVAILABLE_SAMPLES,
-        [era],
+        list(getattr(module, "AVAILABLE_SAMPLES", LEGACY_AVAILABLE_SAMPLES)),
+        list(getattr(module, "AVAILABLE_ERAS", ERAS)),
         SCOPES,
     )
-
-
-CASES = (
-    [("nmssm_config", era, _build_nmssm) for era in ERAS]
-    + [("sm_config", "2018", _build_sm)]
-    + [("sm_btag_efficiency_config", "2018", _build_sm_btag_efficiency)]
-)
-
-
-def btag_parameters(config):
     params = config.config_parameters["global"]["nominal"]
-    return {
-        key: params.get(key)
-        for key in (
-            "bjet_score_column",
-            "bjet_min_score",
-            "bjet_sf_file",
-            "bjet_sf_wp_name",
-            "bjet_btag_wp_name",
-        )
-    }
+    return {key: params.get(key) for key in PARAMETERS}
 
 
 def working_point_threshold(payload_path, correction_name, working_point):
-    """Medium-etc. threshold of ``correction_name`` in a correctionlib payload.
+    """Threshold of ``working_point`` in ``correction_name`` of a payload.
 
-    Returns None when the payload cannot be read (no cvmfs on this host), so the
-    caller can skip rather than fail.
+    Returns None when the payload or correction cannot be read (no cvmfs on
+    this host), so the caller can skip rather than fail.
     """
     try:
         with gzip.open(payload_path) as payload_file:
@@ -119,17 +112,19 @@ def working_point_threshold(payload_path, correction_name, working_point):
 class BtagFlagConsistencyTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # build_config is chatty; the assertions below are what matters here
+        # build_config is chatty; the assertions below are what matters here.
         logging.disable(logging.CRITICAL)
-        cls.parameters = {}
-        for label, era, build in CASES:
-            cls.parameters[(label, era)] = btag_parameters(build(era))
+        try:
+            cls.parameters = {
+                (label, era): btag_parameters(module, era)
+                for label, module, eras in ENTRY_POINTS
+                for era in eras
+            }
+        finally:
+            logging.disable(logging.NOTSET)
 
-    @classmethod
-    def tearDownClass(cls):
-        logging.disable(logging.NOTSET)
-
-    def test_no_placeholder_reaches_the_flag_producer(self):
+    def test_btag_flag_parameters_are_consistent(self):
+        checked_thresholds = 0
         for case, params in self.parameters.items():
             with self.subTest(case=case):
                 for key, value in params.items():
@@ -139,23 +134,17 @@ class BtagFlagConsistencyTest(unittest.TestCase):
                         f"{key} is unset/placeholder for {case}",
                     )
 
-    def test_discriminant_and_working_point_are_the_same_tagger(self):
-        for case, params in self.parameters.items():
-            with self.subTest(case=case):
                 tagger = TAGGER_BY_SCORE_COLUMN.get(params["bjet_score_column"])
                 self.assertIsNotNone(
-                    tagger, f"unknown b-tag discriminant {params['bjet_score_column']}"
+                    tagger,
+                    f"unknown b-tag discriminant {params['bjet_score_column']}",
                 )
                 self.assertTrue(
                     params["bjet_sf_wp_name"].startswith(tagger),
-                    f"{case}: discriminant {params['bjet_score_column']} ({tagger}) is "
-                    f"thresholded with {params['bjet_sf_wp_name']}",
+                    f"{case}: discriminant {params['bjet_score_column']} "
+                    f"({tagger}) is thresholded with {params['bjet_sf_wp_name']}",
                 )
 
-    def test_working_point_threshold_matches_numeric_min_score(self):
-        checked = 0
-        for case, params in self.parameters.items():
-            with self.subTest(case=case):
                 if not os.path.exists(params["bjet_sf_file"]):
                     continue
                 threshold = working_point_threshold(
@@ -165,7 +154,7 @@ class BtagFlagConsistencyTest(unittest.TestCase):
                 )
                 if threshold is None:
                     continue
-                checked += 1
+                checked_thresholds += 1
                 self.assertAlmostEqual(
                     threshold,
                     params["bjet_min_score"],
@@ -176,7 +165,7 @@ class BtagFlagConsistencyTest(unittest.TestCase):
                         f"bjet_min_score = {params['bjet_min_score']}"
                     ),
                 )
-        if not checked:
+        if not checked_thresholds:
             self.skipTest("no b-tag payload readable on this host (no cvmfs?)")
 
 
