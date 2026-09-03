@@ -33,8 +33,7 @@ OUT_BIN="/tmp/test_btag_sf_strict"
 
 # spdlog headers (Logger.hxx dependency) are fetched by CMake's
 # AddLogging.cmake into a CROWN build dir's install prefix, not shipped by the
-# container -- reuse whichever build dir already has them (same approach as
-# run_jetid_test.sh).
+# container -- reuse whichever build dir already has them.
 SPDLOG_INCLUDE_DIR=""
 for candidate in "${CROWN_ROOT}"/build*/include; do
     if [[ -d "${candidate}/spdlog" ]]; then

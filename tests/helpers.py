@@ -70,5 +70,27 @@ def all_producer_names(config, scope):
     return names
 
 
+def find_producer(config, scope, name):
+    """The producer called ``name`` in ``scope``, searching through groups."""
+
+    def walk(producer):
+        if producer.name == name:
+            return producer
+        members = getattr(producer, "producers", None)
+        if isinstance(members, dict):
+            members = [p for group in members.values() for p in group]
+        for member in members or []:
+            found = walk(member)
+            if found is not None:
+                return found
+        return None
+
+    for producer in config.producers[scope]:
+        found = walk(producer)
+        if found is not None:
+            return found
+    raise AssertionError(f"no producer {name!r} in scope {scope!r}")
+
+
 def output_names(config, scope):
     return {q.get_leaf(shift="", scope=scope) for q in config.outputs[scope]}
