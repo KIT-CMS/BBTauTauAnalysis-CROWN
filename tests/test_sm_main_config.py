@@ -27,6 +27,7 @@ from analysis_configurations.bbtautau.tests.helpers import (
     all_producer_names,
     build_nmssm,
     build_sm,
+    find_producer,
     output_names,
     producer_names,
 )
@@ -143,14 +144,20 @@ class SMMainConfigTest(unittest.TestCase):
         self.assertNotIn("MetScopes", names_tt)
 
     def test_sm_v15_jet_and_electron_wiring(self):
-        # SM-profile-only: the reconstructed 2018 UL PUPPI tight jet ID (a
-        # member of AuxJetCollectionQuantities) replaces the v9 Jet_jetId
-        # rename, and the electron scale comes from the pinned v15 EGM payload.
-        nested = all_producer_names(self.cfg_tt, "global")
+        # SM-profile-only: the correctionlib jet ID producer (a member of
+        # AuxJetCollectionQuantities) replaces the v9 Jet_jetId rename and reads
+        # the generated 2018 UL payload with the common 0/2/6 working point; the
+        # electron scale comes from the pinned v15 EGM payload.
         top = producer_names(self.cfg_tt, "global")
         self.assertIn("AuxJetCollectionQuantities", top)
-        self.assertIn("JetIDTight2018PuppiV15", nested)
-        self.assertNotIn("JetID", nested)  # the v9 rename producer
+        jet_id = find_producer(self.cfg_tt, "global", "JetID")
+        self.assertIn("physicsobject::jet::quantity::ID", jet_id.call)
+        params = self.cfg_tt.config_parameters["global"]["nominal"]
+        self.assertEqual(
+            params["ak4jet_id_file"],
+            "payloads/jetid/Run2-2018-UL-NanoAODv15/jetid.json.gz",
+        )
+        self.assertEqual(params["ak4jet_id_wp"], 2)
         self.assertIn("ElectronPtCorrectionMCRun3", top)
         self.assertIn(
             "EGM/Run2-2018-UL-NanoAODv15/2025-12-05",
@@ -193,9 +200,9 @@ class NMSSMIsolationTest(unittest.TestCase):
         self.assertIn("Jet_btagDeepFlavB", str(params["bjet_score_column"]))
         self.assertEqual(params["ak4jet_id_wp"], 2)  # v9 Jet_jetId working point
 
-        nested = all_producer_names(self.cfg_ttbar, "global")
-        self.assertIn("JetID", nested)  # the v9 rename producer
-        self.assertNotIn("JetIDTight2018PuppiV15", nested)
+        jet_id = find_producer(self.cfg_ttbar, "global", "JetID")
+        self.assertIn("event::quantity::Rename", jet_id.call)  # the v9 rename producer
+        self.assertEqual(params["ak4jet_id_file"], "DOES_NOT_EXIST")
 
         mt = producer_names(self.cfg_ttbar, "mt")
         outs = output_names(self.cfg_ttbar, "mt")
