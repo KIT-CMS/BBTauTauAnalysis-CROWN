@@ -49,7 +49,7 @@ def _expected_upart_weight_columns():
     the per-component up/down dispatch the producer emits).
     """
     variations = btag_payloads.discover_upart_variations(
-        btag_payloads.PINNED_BTV_2018_V15
+        btag_payloads.btv_upart_payload("2018")
     )
     keys = (variations["UParTAK4_comb"] | variations["UParTAK4_light"]) - {"central"}
     return {"btag_weight_upart"} | {f"btag_weight_upart_{key}" for key in keys}
@@ -74,13 +74,13 @@ class SMMainConfigTest(unittest.TestCase):
         params = self.cfg_tt.config_parameters["global"]["nominal"]
         self.assertEqual(params["bjet_max_abs_eta"], 2.4)
         self.assertIn("Jet_btagUParTAK4B", str(params["bjet_score_column"]))
-        wps = btag_payloads.load_upart_wps(btag_payloads.PINNED_BTV_2018_V15)
+        wps = btag_payloads.load_upart_wps(btag_payloads.btv_upart_payload("2018"))
         self.assertEqual(params["bjet_min_score"], wps["M"])
 
         # The heavy-flavour and light-flavour SF corrections must not be
         # swapped: that would apply comb SFs to light jets and vice versa.
         sf = self.cfg_tt.config_parameters["mt"]["nominal"]
-        self.assertEqual(sf["bjet_sf_file"], btag_payloads.PINNED_BTV_2018_V15)
+        self.assertEqual(sf["bjet_sf_file"], btag_payloads.btv_upart_payload("2018"))
         self.assertEqual(sf["bjet_sf_bc_name"], "UParTAK4_comb")
         self.assertEqual(sf["bjet_sf_lf_name"], "UParTAK4_light")
 
@@ -104,7 +104,7 @@ class SMMainConfigTest(unittest.TestCase):
         call = subproducers["StrictUParTBtagWeightNominal"].call
         self.assertIn("{vec_open}", call)
         self.assertIn("{vec_close}", call)
-        wps = btag_payloads.load_upart_wps(btag_payloads.PINNED_BTV_2018_V15)
+        wps = btag_payloads.load_upart_wps(btag_payloads.btv_upart_payload("2018"))
         for wp in ("XXT", "XT", "T", "M", "L"):
             self.assertIn(f"{wps[wp]}f", call)
 
@@ -166,7 +166,7 @@ class SMMainConfigTest(unittest.TestCase):
 
 
 class NMSSMIsolationTest(unittest.TestCase):
-    """The SM 2018-v15 additions must not leak into the NMSSM path.
+    """The Run-2 v15 input-path additions must not leak into the NMSSM path.
 
     ``nmssm_config.py`` and both SM entry points share ``common_config.py``, so
     every SM-only switch is profile-gated. These three tests build the NMSSM
@@ -210,6 +210,26 @@ class NMSSMIsolationTest(unittest.TestCase):
         self.assertNotIn("StrictUParTBtagWeight", mt)
         self.assertIn("id_wgt_bjet", outs)
         self.assertFalse(any(o.startswith("btag_weight_upart") for o in outs))
+
+
+class BtvUpartPayloadPinTest(unittest.TestCase):
+    """The UParT payload pin is keyed by era, not hardwired to 2018.
+
+    Every Run-2 era will move to the NanoAOD-v15 inputs, so the pin must
+    resolve per era and fail loudly for an era without a pin.
+    """
+
+    def test_every_run2_era_has_a_dated_pin(self):
+        from analysis_configurations.bbtautau.constants import ERAS_RUN2
+
+        for era in ERAS_RUN2:
+            path = btag_payloads.btv_upart_payload(era)
+            self.assertIn(f"Run2-{era}-UL-NanoAODv15/", path)
+            self.assertNotIn("/latest/", path)
+
+    def test_unpinned_era_raises(self):
+        with self.assertRaises(KeyError):
+            btag_payloads.btv_upart_payload("2022preEE")
 
 
 @unittest.skipUnless(_HAS_YAML, "PyYAML not installed in this interpreter")

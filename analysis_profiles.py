@@ -16,12 +16,17 @@ class AnalysisProfile:
     lhe_scale_weight_excluded_samples: Tuple[str, ...]
     # Samples for which the special NMSSM producer replaces the standard one.
     nmssm_lhe_scale_weight_samples: Tuple[str, ...]
-    # 2018-v15 SM jet path (AK4-PUPPI reconstructed tight ID, v15 JEC/JER).
-    use_2018_v15_jet_path: bool
+    # Read Run-2 eras from NanoAOD v15 instead of the legacy v9: AK4-PUPPI jets
+    # with correctionlib jet ID and v15 JEC/JER, Run-3-style EGM scale+smear,
+    # PuppiMET covariance. Not era-specific -- every Run-2 era is meant to move
+    # to v15; the per-era payloads are resolved in common_config/btag_payloads.
+    use_run2_v15_inputs: bool
     # SM-only b-jet acceptance override; None keeps the era default.
     bjet_max_abs_eta_override: Optional[float]
-    # "upart_2018_v15" switches branch/WPs/SF payloads for 2018; None = legacy.
-    btag_2018_algorithm: Optional[str]
+    # "upart" switches branch/WPs/SF payloads to the UParTAK4 tagger (BTV
+    # payload pinned per era in btag_payloads.BTV_UPART_PAYLOADS); None = legacy.
+    btag_algorithm: Optional[str]
+    # Efficiency payload directory; may contain an "{era}" placeholder.
     btag_payload_dir: Optional[str]
     # Explicit opt-in legacy efficiency alias, e.g. {"hh2b2tau": "ggh_htautau"}.
     legacy_btag_efficiency_alias: Optional[Mapping[str, str]] = None
@@ -41,9 +46,9 @@ NMSSM_PROFILE = AnalysisProfile(
         "data", "embedding", "embedding_mc", "diboson", "hh2b2tau",
     ),
     nmssm_lhe_scale_weight_samples=("nmssm_Ybb", "nmssm_Ytautau"),
-    use_2018_v15_jet_path=False,
+    use_run2_v15_inputs=False,
     bjet_max_abs_eta_override=None,
-    btag_2018_algorithm=None,
+    btag_algorithm=None,
     btag_payload_dir=None,
 )
 
@@ -57,10 +62,10 @@ SM_PROFILE = AnalysisProfile(
     # LHEScaleWeight present in the registered v15 HH input).
     lhe_scale_weight_excluded_samples=("data", "embedding", "embedding_mc", "diboson"),
     nmssm_lhe_scale_weight_samples=(),
-    use_2018_v15_jet_path=True,
+    use_run2_v15_inputs=True,
     bjet_max_abs_eta_override=2.4,
-    btag_2018_algorithm="upart_2018_v15",
-    btag_payload_dir="payloads/btagging_efficiencies/upart/2018",
+    btag_algorithm="upart",
+    btag_payload_dir="payloads/btagging_efficiencies/upart/{era}",
 )
 
 SM_BTAG_EFFICIENCY_PROFILE = AnalysisProfile(
@@ -71,9 +76,9 @@ SM_BTAG_EFFICIENCY_PROFILE = AnalysisProfile(
     tautau_truegen_mother_pdgid={"hh2b2tau": 25},
     lhe_scale_weight_excluded_samples=("data", "embedding", "embedding_mc", "diboson"),
     nmssm_lhe_scale_weight_samples=(),
-    use_2018_v15_jet_path=True,
+    use_run2_v15_inputs=True,
     bjet_max_abs_eta_override=2.4,
-    btag_2018_algorithm="upart_2018_v15",
+    btag_algorithm="upart",
     btag_payload_dir=None,
     mc_only=True,
     enable_btag_sf=False,

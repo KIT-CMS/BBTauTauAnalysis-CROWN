@@ -1,4 +1,4 @@
-"""2018 UL NanoAOD v15 UParT b-tagging payload helpers.
+"""UParT b-tagging payload helpers for the Run-2 UL NanoAOD v15 inputs.
 
 Config-time helpers that read the pinned BTV ``correctionlib`` payload using
 only the standard library (``gzip`` + ``json``).  ``correctionlib`` itself is
@@ -14,12 +14,35 @@ import gzip
 import json
 from typing import Dict, Set
 
-# Pinned BTV UParTAK4 payload for the SM 2018 UL NanoAOD v15 path.  The pin is a
-# dated CAT-metadata snapshot on cvmfs.
-PINNED_BTV_2018_V15 = (
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/"
-    "Run2-2018-UL-NanoAODv15/2026-06-18/btagging.json.gz"
-)
+from .constants import ERAS_RUN2
+
+# Pinned BTV UParTAK4 payloads for the Run-2 UL NanoAOD v15 inputs, one per
+# era.  Each pin is a dated CAT-metadata snapshot on cvmfs (never the rolling
+# "latest" symlink); all four ship the UParTAK4_wp_values / UParTAK4_comb /
+# UParTAK4_light corrections read below.
+BTV_UPART_PAYLOADS: Dict[str, str] = {
+    era: (
+        "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/"
+        f"Run2-{era}-UL-NanoAODv15/2026-06-18/btagging.json.gz"
+    )
+    for era in ERAS_RUN2
+}
+
+
+def btv_upart_payload(era: str) -> str:
+    """Return the pinned BTV UParTAK4 payload path for ``era``.
+
+    Raises a ``KeyError`` naming the pinned eras when ``era`` has no pin, so a
+    profile enabling the UParT path for an unsupported era fails at config
+    time instead of at run time inside correctionlib.
+    """
+    try:
+        return BTV_UPART_PAYLOADS[era]
+    except KeyError as error:
+        raise KeyError(
+            f"no pinned BTV UParTAK4 payload for era '{era}'; pinned eras: "
+            f"{sorted(BTV_UPART_PAYLOADS)}"
+        ) from error
 
 # Names of the UParTAK4 corrections stored in the pinned payload.
 WP_VALUES_CORRECTION = "UParTAK4_wp_values"
@@ -49,8 +72,8 @@ def _get_correction(payload: dict, name: str, path: str) -> dict:
     )
 
 
-def load_upart_wps(path: str = PINNED_BTV_2018_V15) -> Dict[str, float]:
-    """Read the ``UParTAK4_wp_values`` working points from the pinned payload.
+def load_upart_wps(path: str) -> Dict[str, float]:
+    """Read the ``UParTAK4_wp_values`` working points from the payload at ``path``.
 
     Walks ``corrections[name == "UParTAK4_wp_values"].data.content`` and
     returns its ``key`` -> ``value`` pairs.
@@ -63,9 +86,7 @@ def load_upart_wps(path: str = PINNED_BTV_2018_V15) -> Dict[str, float]:
     }
 
 
-def discover_upart_variations(
-    path: str = PINNED_BTV_2018_V15,
-) -> Dict[str, Set[str]]:
+def discover_upart_variations(path: str) -> Dict[str, Set[str]]:
     """Return the systematic-variation keys of the two UParTAK4 SF corrections.
 
     Collects ``data.content[*].key`` (the top-level ``systematic`` category) of

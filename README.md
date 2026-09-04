@@ -40,20 +40,22 @@ scopes, shifts, ...)`:
 
 An `AnalysisProfile` carries every axis the three configs differ on: allowed
 eras, signal sample(s), truth-mother PDG IDs, the LHE-scale-weight sample
-lists, whether the isolated 2018-v15 jet path is active
-(`use_2018_v15_jet_path`), the b-jet |&eta;| acceptance override, which b-tag
+lists, whether the Run-2 eras are read from NanoAOD v15
+(`use_run2_v15_inputs`), the b-jet |&eta;| acceptance override, which b-tag
 algorithm/payload directory to use, and the efficiency-profile-only switches (`mc_only`,
 `enable_btag_sf`, `enable_probe_jet_collection`). Adding a new analysis
 variant that only needs a different combination of these switches means
 adding a new `AnalysisProfile` instance and a new thin config module -- not
 forking `common_config.py`.
 
-### 2018-v15-only input contract for SM
+### NanoAOD-v15 input contract for SM (currently 2018 only)
 
-`SM_PROFILE` and `SM_BTAG_EFFICIENCY_PROFILE` both set `allowed_eras =
-("2018",)` and `use_2018_v15_jet_path = True`: the SM path only runs against
-2018 UL **NanoAOD v15**, and takes three inputs from an isolated code path
-that differs from the legacy (v9/Run-3) one NMSSM keeps using:
+`SM_PROFILE` and `SM_BTAG_EFFICIENCY_PROFILE` both set `use_run2_v15_inputs =
+True` and, for now, `allowed_eras = ("2018",)`: the SM path reads the Run-2
+eras from the UL **NanoAOD v15** reprocessing (only 2018 is enabled so far;
+the other Run-2 eras are meant to follow on the same code path, which is why
+nothing on it is named after an era), and takes three inputs from an isolated
+code path that differs from the legacy (v9/Run-3) one NMSSM keeps using:
 
 - **Jet ID from correctionlib** -- v15 drops the precomputed `Jet_jetId`
   branch, so the AK4-PUPPI jet ID is evaluated from the composition branches
@@ -65,22 +67,22 @@ that differs from the legacy (v9/Run-3) one NMSSM keeps using:
   working point are therefore identical across all eras.
 - **EGM electron path** -- v15 ships the Run-3-style scale+smear inputs
   (`Electron_deltaEtaSC`, `Electron_r9`, ...) instead of the v9
-  `Electron_dEscale*`/`dEsigma*` branches, so the SM 2018-v15 path switches
-  to the Run-3 electron-correction producer, pointed at the pinned
-  2018-UL-v15 EGM payload.
-- **PuppiMET covariance** -- v15 2018 UL renames the PF MET collection and
-  drops the `MET_covXX/XY/YY` branches the legacy `MetCov` producer reads,
-  so the SM path takes the MET covariance from `PuppiMET` instead
-  (`met.MetGlobalSM2018V15`).
+  `Electron_dEscale*`/`dEsigma*` branches, so the Run-2 v15 path switches
+  to the Run-3 electron-correction producer, pointed at the era's pinned
+  Run-2-UL-v15 EGM payload.
+- **PuppiMET covariance** -- the v15 UL reprocessing renames the PF MET
+  collection and drops the `MET_covXX/XY/YY` branches the legacy `MetCov`
+  producer reads, so the SM path takes the MET covariance from `PuppiMET`
+  instead (`met.MetGlobalRun2NanoV15`, one group per Run-2 era).
 
 All three pin a **dated** `cvmfs/cms-griddata.cern.ch` snapshot (never the
 rolling "latest" symlink), verified against this task's code:
 
 | Payload | Pinned snapshot date | Path (under `/cvmfs/cms-griddata.cern.ch/cat/metadata/`) |
 |---|---|---|
-| BTV UParTAK4 (working points + SF) | 2026-06-18 | `BTV/Run2-2018-UL-NanoAODv15/2026-06-18/btagging.json.gz` |
-| JME JEC/JER (2018-v15 branch) | 2026-06-05 | `JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz` |
-| EGM electron scale+smear (2018-v15) | 2025-12-05 | `EGM/Run2-2018-UL-NanoAODv15/2025-12-05/electronSS_EtDependent.json.gz` |
+| BTV UParTAK4 (working points + SF) | 2026-06-18 | `BTV/Run2-<era>-UL-NanoAODv15/2026-06-18/btagging.json.gz` (`btag_payloads.BTV_UPART_PAYLOADS`) |
+| JME JEC/JER (Run-2 v15) | 2026-06-05 | `JME/Run2-<era>-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz` |
+| EGM electron scale+smear (Run-2 v15) | 2025-12-05 | `EGM/Run2-<era>-UL-NanoAODv15/2025-12-05/electronSS_EtDependent.json.gz` |
 
 Working points and systematic variations are read directly from the dated BTV
 payload. After changing a pin, rerun the configuration and numerical tests.
