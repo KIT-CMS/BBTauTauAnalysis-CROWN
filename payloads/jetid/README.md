@@ -7,7 +7,8 @@ Run 3 `jetid.json.gz` files: corrections `AK4PUPPI_Tight`,
 nine inputs (`eta`, `chHEF`, `neHEF`, `chEmEF`, `neEmEF`, `muEF`,
 `chMultiplicity`, `neMultiplicity`, `multiplicity`), output 1 or 0. It is
 consumed by `producers/jets.py:JetIDFromCorrectionlib` through
-`ak4jet_id_file` on the SM 2018-v15 path, yielding the usual 0/2/6 jet ID.
+`ak4jet_id_file` on the Run-2 NanoAOD-v15 input path (one campaign directory
+per era; only 2018 is generated so far), yielding the usual 0/2/6 jet ID.
 
 | | |
 |---|---|

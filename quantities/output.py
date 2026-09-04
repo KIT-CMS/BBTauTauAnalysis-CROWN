@@ -645,7 +645,7 @@ emb_iso_wgt_mu_boosted_1 = Quantity("emb_iso_wgt_mu_boosted_1")
 # btag weight
 btag_weight = Quantity("btag_weight")
 btag_weight_boosted = Quantity("btag_weight_boosted")
-# Strict UParTAK4 multi-WP b-tag event weight (SM 2018-v15 path). The nominal
+# Strict UParTAK4 multi-WP b-tag event weight (UParT b-tag path). The nominal
 # column plus the pt-flow clamp diagnostic; the per-variation weight columns
 # (btag_weight_upart_<variation>) are created at config time from the payload's
 # discovered systematic variations by

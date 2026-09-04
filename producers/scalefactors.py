@@ -1232,7 +1232,8 @@ BJetWPUParT_SF = Producer(
 )
 
 ##############################################################################
-# Strict UParTAK4 multiple-working-point b-tag EVENT weight (SM 2018-v15).
+# Strict UParTAK4 multiple-working-point b-tag EVENT weight (UParT profiles on
+# the Run-2 NanoAOD-v15 inputs).
 #
 # The strict counterpart of BJetWPUParT_SF / BtaggingMultipleWP: the C++
 # consumer xyh::scalefactor::btagging_strict::multi_wp_event_weight throws

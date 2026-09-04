@@ -416,13 +416,13 @@ systematics:
     affected_samples: *all_mc_2018
     affected_channels: *all_channels
     source: >-
-      btag_payloads.discover_upart_variations(btag_payloads.PINNED_BTV_2018_V15)
+      btag_payloads.discover_upart_variations(btag_payloads.btv_upart_payload("2018"))
       -> producers/scalefactors.py:build_strict_upart_btag_weight
       (StrictUParTBtagWeight ProducerGroup); selected by
       common_config._use_strict_upart_btag
     variation_keys: pinned payload (dynamic)
     variation_keys_source: >-
-      btag_payloads.discover_upart_variations(btag_payloads.PINNED_BTV_2018_V15)
+      btag_payloads.discover_upart_variations(btag_payloads.btv_upart_payload("2018"))
     correlation_policy: >-
       per-component split via up_correlated/up_uncorrelated keys (BTV
       recommendation); UParTAK4_comb (b/c-flavor) and UParTAK4_light

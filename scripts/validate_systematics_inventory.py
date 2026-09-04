@@ -315,7 +315,7 @@ def check_upart_dynamic_variation_keys(entries: List[dict]) -> List[str]:
     errors: List[str] = []
     try:
         variations = btag_payloads.discover_upart_variations(
-            btag_payloads.PINNED_BTV_2018_V15
+            btag_payloads.btv_upart_payload("2018")
         )
     except FileNotFoundError as error:
         return [f"could not expand the dynamic UParT variation_keys marker: {error}"]
