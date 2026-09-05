@@ -471,7 +471,7 @@ systematics:
     affected_channels: *all_channels
     source: >-
       registered dataset nick
-      TTTo2L2Nu_TuneCP5up_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv15-150X
+      TTTo2L2Nu_TuneCP5up_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv15-150X_mc2018_realistic_v1-v2
       (sample_database/nanoAOD_v15/2018/ttbar/); no dedicated CROWN producer,
       compared at the analysis/statistical level against the nominal ttbar
       sample
