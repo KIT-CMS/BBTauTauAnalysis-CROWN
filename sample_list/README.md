@@ -150,15 +150,9 @@ the 13 SM MC `sample_type` categories, i.e. exactly
 | `hh2b2tau` (`node_SM`) | 1 | 1 | `rem_higgs` | 1 | 1 |
 | `vbf_hbb` | 1 | 1 | `vbf_htautau` | 1 | 1 |
 
-Selected against `sample_database` commit `1bba58ed`.
+Selected against `sample_database` commit `94bd5a0f`.
 
 ## Coverage: what the 2018 database holds and what the lists take
-
-The sample database registers **131** nicks for era 2018 / NanoAOD v15
-(`nanoAOD_v15/2018/*/*.json`, 17 `sample_type` directories). The widest list
-(`sm_2018_binned.txt`) takes 79 of them. Expected event counts below are
-`xsec * 59.83/fb`, i.e. produced events before any selection -- a scale
-indicator, not a signal-region yield.
 
 | `sample_type` | in | out | Out: what and why |
 |---|---|---|---|
@@ -172,7 +166,7 @@ indicator, not a signal-region yield.
 | `diboson` | 14 | 4 | inclusive-pythia8 `WW`/`WZ`/`ZZ` + the `ZZTo4L_M-1toInf` variant, all alternatives |
 | `dyjets` | 7 | 11 | competing binning schemes / madgraphMLM alternatives |
 | `wjets` | 3 | 22 | competing schemes + the 9 `WToTauNu_M-*` high-mass samples |
-| `embedding` | 0 | 8 | Phase-1 embedding exclusion (repo `README.md`) |
+| `embedding` | 0 | 16 | Phase-1 embedding exclusion (repo `README.md`) |
 | `ggZZ` | **0** | 3 | see below |
 | `triboson` | **0** | 1 | see below |
 
@@ -224,7 +218,8 @@ An earlier iteration of this analysis ran on **privately produced NanoAOD**
 (USER tier, `<dataset>_<user>-mc_2018UL_<campaign>_<timestamp>-<hash>` nicks
 from `aakhmets`/`sdaigler` campaigns). None of those nicks work against the
 central database -- the registration here is
-`<dataset>_RunIISummer20UL18NanoAODv15-150X` -- but mapping that list's 103
+`<dataset>_RunIISummer20UL18NanoAODv15-150X_mc2018_realistic_v1-v<N>` (without the
+campaign suffix before database commit `94bd5a0f`) -- but mapping that list's 103
 entries (83 distinct datasets, the rest `Ext1`/`Ext2` extensions of a base) onto
 NanoAOD v15 pins down what the v15 registration is actually missing:
 
