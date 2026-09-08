@@ -2,7 +2,6 @@
 Constant definitions.
 """
 
-import enum
 
 __all__ = [
     "GLOBAL_SCOPES",
@@ -20,8 +19,6 @@ __all__ = [
     "HAD_TAU_SCOPES",
     "SCOPES",
     "ERAS",
-    "AvailableBJetIDs",
-    "BJET_ID_ALGORITHM",
     "LEGACY_AVAILABLE_SAMPLES",
 ]
 
@@ -331,15 +328,8 @@ XYH_MASS_POINTS = [
     (4000, 3500),
 ]
 
-# b jet identification algorithms
-class AvailableBJetIDs(enum.Enum):
-    DEEPJET = enum.auto()
-    PNET = enum.auto()
-    UPART = enum.auto()
-BJET_ID_ALGORITHM = AvailableBJetIDs.PNET
-
 # legacy sample surface (verbatim, formerly generate.py:11-43); the fallback
-# for any config module that defines none of AVAILABLE_SAMPLES/DEFAULT_SAMPLES
+# also the sample surface every Configuration is built against
 LEGACY_AVAILABLE_SAMPLES = [
     "ggh_htautau",
     "ggh_hbb",

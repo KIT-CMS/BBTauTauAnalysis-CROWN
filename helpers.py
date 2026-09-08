@@ -71,6 +71,22 @@ def get_for_era(objects: dict[str | tuple[str], T], era: str, default: T = None)
     raise ValueError(f"No object found for era {era}, and no default value specified.")
 
 
+def override_eras(objects: dict[str | tuple[str], T], overrides: dict[str, T]) -> dict[str | tuple[str], T]:
+    """
+    Return the era dictionary `objects` with the eras named in `overrides`
+    remapped to the override objects. Eras that share a tuple key with an
+    overridden era keep their original object under the remaining key.
+    """
+    result: dict[str | tuple[str], T] = {}
+    for key, obj in objects.items():
+        eras = key if isinstance(key, tuple) else (key,)
+        remaining = tuple(era for era in eras if era not in overrides)
+        if remaining:
+            result[remaining if len(remaining) > 1 else remaining[0]] = obj
+    result.update(overrides)
+    return result
+
+
 def era_producer_groups(
     name: str,
     object_list: list[dict[str | tuple[str], T] | T],

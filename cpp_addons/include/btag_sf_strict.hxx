@@ -44,7 +44,9 @@ namespace btagging_strict {
 // overlaps -- the consumer enforces the eta support explicitly):
 //   * Find the tightest working point the jet passes among the five fixed
 //     UParTAK4 WPs, ordered tightest -> loosest {XXT, XT, T, M, L}, using the
-//     score thresholds in `wp_values` (same tightest->loosest order).
+//     score thresholds read from the SF payload's `UParTAK4_wp_values`
+//     correction (the same way the core BtaggingMultipleWP does), so the
+//     thresholds can never drift from the payload they belong to.
 //   * Let eff(WP) be the MC tagging efficiency and SF(WP) the data/MC scale
 //     factor for the jet flavor at that WP.
 //   * The jet's tag category and its per-jet contribution jet_w = P_data/P_MC:
@@ -66,8 +68,10 @@ namespace btagging_strict {
 // pass "central" on the side that does not carry a requested systematic
 // component (a comb-only component keeps light central, and vice versa).
 //
-// STRICT throw conditions (each std::runtime_error message contains the jet
-// pt / eta / flavor / score):
+// STRICT throw conditions (all but the first carry the offending jet's
+// pt / eta / flavor / score in the std::runtime_error message):
+//   * `UParTAK4_wp_values` thresholds that are non-finite or not strictly
+//     decreasing over the five WP names (checked once, at Define time);
 //   * jet |eta| outside [0, 2.4) (the abseta support of the pinned payload,
 //     whose abseta binning uses flow=error at 2.4);
 //   * an efficiency that is non-finite, <= 0, or > 1;
@@ -84,9 +88,9 @@ namespace btagging_strict {
 // the two per-flavor variation keys).
 // clang-format on
 
-// Fixed UParTAK4 working-point names, ordered tightest -> loosest. The
-// `wp_values` argument of multi_wp_event_weight MUST be given in this exact
-// order (as produced by btag_payloads.load_upart_wps on the Python side).
+// Fixed UParTAK4 working-point names, ordered tightest -> loosest. The score
+// thresholds are looked up per name in the SF payload's `UParTAK4_wp_values`
+// correction, and must come out strictly decreasing in this order.
 // clang-format off
 static const std::vector<std::string> kWorkingPointsTightToLoose = {
     "XXT", "XT", "T", "M", "L"};
@@ -95,6 +99,7 @@ static const std::vector<std::string> kWorkingPointsTightToLoose = {
 // Correction-set names inside the pinned UParTAK4 SF payload.
 static const char *kCombCorrection = "UParTAK4_comb";   // b/c jets (flavor 5/4)
 static const char *kLightCorrection = "UParTAK4_light"; // light jets (flavor 0)
+static const char *kWpValuesCorrection = "UParTAK4_wp_values"; // WP thresholds
 
 // Correction-set name inside the b-tag efficiency payload.
 static const char *kEfficiencyCorrection = "btag_efficiency";
@@ -125,8 +130,6 @@ static const char *kEfficiencyCorrection = "btag_efficiency";
  * @param variation_comb systematic key evaluated for b/c jets on UParTAK4_comb
  * @param variation_light systematic key evaluated for light jets on
  *     UParTAK4_light
- * @param wp_values the five WP score thresholds, ordered tightest -> loosest
- *     to match kWorkingPointsTightToLoose
  * @return a new dataframe carrying the event-weight column
  */
 ROOT::RDF::RNode multi_wp_event_weight(
@@ -137,28 +140,7 @@ ROOT::RDF::RNode multi_wp_event_weight(
     const std::string &jet_score, const std::string &jet_mask,
     const std::string &sf_file, const std::string &eff_file,
     const std::string &eff_sample_type, const std::string &variation_comb,
-    const std::string &variation_light, const std::vector<float> &wp_values);
-
-/**
- * @brief Diagnostic: per-event count of selected jets whose pt exceeds the
- * efficiency-payload pt-flow clamp threshold.
- *
- * The efficiency payload clamps pt above its top bin edge (flow=clamp), so a
- * jet with pt above the threshold is reweighted with the top-bin efficiency.
- * This diagnostic column records how many selected jets are affected, so the
- * clamping stays observable in the produced ntuple rather than silent.
- *
- * @param df input dataframe
- * @param output name of the output (unsigned) count column
- * @param jet_pt name of the per-jet transverse-momentum column
- * @param jet_mask name of the per-jet selection mask column
- * @param pt_clamp_threshold pt value above which the efficiency lookup clamps
- * @return a new dataframe carrying the count column
- */
-ROOT::RDF::RNode pt_clamped_njets(ROOT::RDF::RNode df, const std::string &output,
-                                  const std::string &jet_pt,
-                                  const std::string &jet_mask,
-                                  const float pt_clamp_threshold);
+    const std::string &variation_light);
 
 } // end namespace btagging_strict
 

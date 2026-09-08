@@ -5,24 +5,6 @@ from code_generation.code_generation import CodeGenerator
 from .constants import ERAS, SCOPES, LEGACY_AVAILABLE_SAMPLES
 
 
-def resolve_sample_surface(config_module):
-    """Resolve (available_samples, default_samples) for a config module.
-
-    Config modules may optionally define AVAILABLE_SAMPLES and/or
-    DEFAULT_SAMPLES. If neither is defined (e.g. nmssm_config), both fall
-    back to the legacy hardcoded sample list for backward compatibility.
-    """
-    available = getattr(config_module, "AVAILABLE_SAMPLES", None)
-    default = getattr(config_module, "DEFAULT_SAMPLES", None)
-    if available is None and default is None:
-        return list(LEGACY_AVAILABLE_SAMPLES), list(LEGACY_AVAILABLE_SAMPLES)
-    if available is None:
-        available = list(default)
-    if default is None:
-        default = list(available)
-    return list(available), list(default)
-
-
 def run(args):
     analysis_name = "bbtautau"
 
@@ -38,20 +20,22 @@ def run(args):
         f"analysis_configurations.{analysis_name}.{configname}"
     )
 
-    ## resolve and enforce the config-specific sample/era surface BEFORE
-    ## build_config is invoked
-    available_samples, _ = resolve_sample_surface(config)
+    ## a config module may restrict the eras and samples it accepts via
+    ## AVAILABLE_ERAS / AVAILABLE_SAMPLES; the configuration itself is always
+    ## built against the full legacy sample surface
     available_eras = getattr(config, "AVAILABLE_ERAS", ERAS)
+    accepted_samples = getattr(config, "AVAILABLE_SAMPLES", LEGACY_AVAILABLE_SAMPLES)
+    available_samples = LEGACY_AVAILABLE_SAMPLES
     available_scopes = SCOPES
     if era not in available_eras:
         raise ValueError(
             f"Config '{configname}' does not support era '{era}' "
             f"(supported: {available_eras})."
         )
-    if sample_group not in available_samples:
+    if sample_group not in accepted_samples:
         raise ValueError(
             f"Config '{configname}' does not accept sample '{sample_group}' "
-            f"(accepted: {available_samples})."
+            f"(accepted: {accepted_samples})."
         )
 
     ## Setting up executable

@@ -134,3 +134,7 @@ dmypy.json
 # AI generated documentation folder
 docs/
 
+
+# Generated C++ test fixtures (rebuilt by tests/cpp/run_btag_sf_test.sh via
+# tests/fixtures/make_btag_sf_strict_fixtures.py)
+tests/fixtures/btag_sf_strict_*.json

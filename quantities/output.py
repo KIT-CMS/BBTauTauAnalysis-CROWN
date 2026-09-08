@@ -651,7 +651,6 @@ btag_weight_boosted = Quantity("btag_weight_boosted")
 # discovered systematic variations by
 # producers.scalefactors.build_strict_upart_btag_weight.
 btag_weight_upart = Quantity("btag_weight_upart")
-btag_eff_pt_clamped_njets = Quantity("btag_eff_pt_clamped_njets")
 # ditau trigger weights
 trg_wgt_double_tau_1 = Quantity("trg_wgt_double_tau_1")
 trg_wgt_double_tau_2 = Quantity("trg_wgt_double_tau_2")

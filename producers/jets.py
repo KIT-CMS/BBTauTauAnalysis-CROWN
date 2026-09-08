@@ -10,7 +10,7 @@ from analysis_configurations.quantities import nanoAODv9_run2, nanoAODv12_run3
 from code_generation.producer import Producer, ProducerGroup
 from code_generation.quantity import Quantity
 
-from ..helpers import era_producer_groups
+from ..helpers import era_producer_groups, override_eras
 from ..constants import GLOBAL_SCOPES, SCOPES, HAD_TAU_SCOPES, ERAS_RUN2
 
 
@@ -303,33 +303,16 @@ AuxJetCollectionQuantities = era_producer_groups(
 
 def aux_jet_collection_quantities(jet_id_overrides=None):
     """
-    Rebuild the auxiliary `Jet` collection quantity group with a substituted jet
-    ID member for selected eras.
-
-    The jet ID is no longer a standalone config-level producer -- it runs as the
-    first member of this group -- so a profile that recomputes it must replace
-    the member rather than schedule a second producer, which would define
-    `Jet_ID` twice. `jet_id_overrides` maps an era string to the producer that
-    replaces the default `JetID` entry for that era; the eras it names are split
-    out of the tuple keys of `JetID`, every other era keeps its default. Used by
-    the Run-2 NanoAOD-v15 input path, which evaluates the AK4-PUPPI jet ID with
-    `JetIDFromCorrectionlib` instead of renaming the v9 `Jet_jetId` branch
-    (absent from v15 files).
-
-    :param jet_id_overrides: mapping of era to replacement jet ID producer
-    :return: mapping of era to producer group, like `AuxJetCollectionQuantities`
+    Auxiliary `Jet` collection quantity group with the jet ID member replaced for
+    the eras in `jet_id_overrides` (era -> producer). The jet ID runs as the
+    first member of this group, so a profile that recomputes it (the Run-2
+    NanoAOD-v15 path, `JetIDFromCorrectionlib` instead of the v9 `Jet_jetId`
+    rename) substitutes the member instead of scheduling a second `Jet_ID`
+    producer.
     """
     if not jet_id_overrides:
         return AuxJetCollectionQuantities
-
-    jet_id = {}
-    for key, producer in JetID.items():
-        eras = key if isinstance(key, tuple) else (key,)
-        remaining = tuple(_era for _era in eras if _era not in jet_id_overrides)
-        if remaining:
-            jet_id[remaining if len(remaining) > 1 else remaining[0]] = producer
-    jet_id.update(jet_id_overrides)
-
+    jet_id = override_eras(JetID, jet_id_overrides)
     return era_producer_groups(
         "AuxJetCollectionQuantities",
         [jet_id] + _AUX_JET_COLLECTION_MEMBERS[1:],
@@ -1321,19 +1304,13 @@ BasicBJetQuantities = ProducerGroup(
 # selection lives in the hadronic-tau scopes because it cleans probe jets
 # against BOTH selected pair legs (q.p4_1, q.p4_2).
 
-# Per-jet probe mask: corrected pt >= 20, |eta| < 2.4, pass tight jet ID, no
-# PUID, deltaR >= 0.4 vs both pair legs, no discriminator cut.
+# Per-jet probe mask: the base b-jet acceptance (pt, |eta|, tight jet ID; no
+# PUID on PUPPI jets) cleaned of overlaps with both pair legs, no discriminator
+# cut.
 BtagProbeJetMask = Producer(
     name="BtagProbeJetMask",
-    call="xyh::btag_probe::probe_mask({df}, {output}, {input}, {btag_probe_min_pt}, {btag_probe_max_abs_eta}, {btag_probe_min_delta_r})",
-    input=[
-        q.Jet_correctedPt,
-        nanoAOD.Jet_eta,
-        nanoAOD.Jet_phi,
-        q.Jet_ID,
-        q.p4_1,
-        q.p4_2,
-    ],
+    call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
+    input=[q.base_bjets_mask, q.jet_overlap_veto_mask],
     output=[q.btag_probe_jet_mask],
     scopes=HAD_TAU_SCOPES,
 )

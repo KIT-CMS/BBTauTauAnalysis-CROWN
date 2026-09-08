@@ -1,11 +1,15 @@
-"""NMSSM FastMTT friend-tree entry point (thin; body lives in fastmtt_common).
-
-Executable names/outputs are unchanged: the executable name derives from
-this module's name (`nmssm_fastmtt`), and the four outputs
-(`m/pt/eta/phi_fastmtt`) come from the shared builder below.
-"""
+"""NMSSM FastMTT friend-tree entry point."""
 from code_generation.friend_trees import FriendTreeConfiguration  # noqa: F401  (dispatcher check)
 
-from . import fastmtt_common
+from .friend_common import build_friend_config
+from .producers import pairquantities
+from .quantities import output as q
 
-build_config = fastmtt_common.build_fastmtt_config
+
+def build_config(*args, **kwargs):
+    return build_friend_config(
+        [pairquantities.FastMTTQuantities],
+        [q.m_fastmtt, q.pt_fastmtt, q.eta_fastmtt, q.phi_fastmtt],
+        *args,
+        **kwargs,
+    )

@@ -1241,8 +1241,7 @@ BJetWPUParT_SF = Producer(
 # a degenerate jet contribution, and it dispatches per correction (comb for
 # b/c, light for light) with independent variation keys. The producer emits the
 # nominal event weight plus one weight-only column per discovered systematic
-# variation (visible on the nominal tree, i.e. with -DSHIFTS=none), plus a
-# pt-flow clamp diagnostic.
+# variation (visible on the nominal tree, i.e. with -DSHIFTS=none).
 ##############################################################################
 
 # Kinematic b-jet acceptance (pt > 20, |eta| < 2.4, jet ID) BEFORE the b-tag WP
@@ -1254,22 +1253,8 @@ StrictUParTBtagMask = Producer(
     call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
     input=[q.base_bjets_mask, q.jet_overlap_veto_mask],
     output=[q.base_bjets_with_veto_mask],
-    scopes=SCOPES,
+    scopes=HAD_TAU_SCOPES,
 )
-
-# pt-flow clamp diagnostic: number of selected jets whose pt exceeds the
-# efficiency-payload clamp threshold.
-StrictUParTBtagPtClamped = Producer(
-    name="StrictUParTBtagPtClamped",
-    call=(
-        "xyh::scalefactor::btagging_strict::pt_clamped_njets("
-        "{df}, {output}, {input}, {bjet_eff_pt_clamp})"
-    ),
-    input=[q.Jet_correctedPt, q.base_bjets_with_veto_mask],
-    output=[q.btag_eff_pt_clamped_njets],
-    scopes=SCOPES,
-)
-
 
 def _parse_upart_variation_components(keys):
     """Return the set of systematic *components* in a set of variation keys.
@@ -1334,38 +1319,19 @@ def upart_variation_dispatch(variations):
     return dispatch
 
 
-def _upart_wp_values_literal(wp_values):
-    """C++ std::vector<float> braced-init-list for the WP thresholds.
-
-    Written with the reserved ``{vec_open}`` / ``{vec_close}`` placeholders (not
-    literal braces) so it survives CROWN's intermediate ``str.format`` passes;
-    they are resolved to ``{`` / ``}`` only in the final code-generation pass.
-    The thresholds are baked in tightest -> loosest order to line up with the
-    consumer's fixed WP names {XXT, XT, T, M, L}.
-    """
-    return (
-        "{vec_open}"
-        + ", ".join(f"{value}f" for value in wp_values)
-        + "{vec_close}"
-    )
-
-
-def _strict_upart_weight_producer(
-    name, output_quantity, variation_comb, variation_light, wp_values_literal
-):
+def _strict_upart_weight_producer(name, output_quantity, variation_comb, variation_light):
     """One multi_wp_event_weight Producer for a fixed (comb, light) variation.
 
-    The two variation keys and the WP-threshold vector are baked directly into
-    the call (they are known at config time), so they are NOT config-parameter
-    placeholders; the payload files and the efficiency sample_type remain config
-    parameters resolved per scope.
+    The two variation keys are known at config time and baked into the call;
+    the payload files and the efficiency sample_type remain config parameters
+    resolved per scope. The WP thresholds are read from the SF payload by the
+    C++ consumer.
     """
     call = (
         "xyh::scalefactor::btagging_strict::multi_wp_event_weight("
         "{df}, correctionManager, {output}, {input}, "
         '"{bjet_sf_file}", "{bjet_eff_file}", "{bjet_eff_sample_type}", '
-        '"' + variation_comb + '", "' + variation_light + '", '
-        + wp_values_literal + ")"
+        '"' + variation_comb + '", "' + variation_light + '")'
     )
     return Producer(
         name=name,
@@ -1378,34 +1344,28 @@ def _strict_upart_weight_producer(
             q.base_bjets_with_veto_mask,
         ],
         output=[output_quantity],
-        scopes=SCOPES,
+        scopes=HAD_TAU_SCOPES,
     )
 
 
-def build_strict_upart_btag_weight(variations, wp_values):
+def build_strict_upart_btag_weight(variations):
     """Assemble the ``StrictUParTBtagWeight`` ProducerGroup for the SM path.
 
     Emits the nominal weight ``btag_weight_upart``, one weight-only column per
-    discovered variation pair (``btag_weight_upart_<variation>``), the pt-flow
-    clamp diagnostic, and (as the first subproducer) the acceptance mask.
-
-    ``wp_values`` are the five WP score thresholds, ordered tightest -> loosest,
-    baked into every weight producer's call.
+    discovered variation pair (``btag_weight_upart_<variation>``) and (as the
+    first subproducer) the acceptance mask.
 
     Returns ``(producer_group, output_quantities)`` where ``output_quantities``
-    is the list of columns to hand to ``add_outputs`` (nominal + variations +
-    clamp diagnostic).
+    is the list of columns to hand to ``add_outputs``.
     """
     dispatch = upart_variation_dispatch(variations)
-    wp_values_literal = _upart_wp_values_literal(wp_values)
 
     subproducers = [StrictUParTBtagMask]
-    output_quantities = [q.btag_weight_upart, q.btag_eff_pt_clamped_njets]
+    output_quantities = [q.btag_weight_upart]
 
     subproducers.append(
         _strict_upart_weight_producer(
-            "StrictUParTBtagWeightNominal", q.btag_weight_upart, "central",
-            "central", wp_values_literal,
+            "StrictUParTBtagWeightNominal", q.btag_weight_upart, "central", "central"
         )
     )
     for entry in dispatch:
@@ -1417,18 +1377,15 @@ def build_strict_upart_btag_weight(variations, wp_values):
                 column,
                 entry["variation_comb"],
                 entry["variation_light"],
-                wp_values_literal,
             )
         )
-
-    subproducers.append(StrictUParTBtagPtClamped)
 
     group = ProducerGroup(
         name="StrictUParTBtagWeight",
         call=None,
         input=None,
         output=None,
-        scopes=SCOPES,
+        scopes=HAD_TAU_SCOPES,
         subproducers=subproducers,
     )
     return group, output_quantities

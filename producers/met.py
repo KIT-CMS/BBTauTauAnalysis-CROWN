@@ -4,7 +4,7 @@ from analysis_configurations.quantities import nanoAODv12_run3
 from code_generation.producer import Producer, ProducerGroup
 
 from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2, ERAS_RUN3
-from ..helpers import era_producer_groups, get_for_era
+from ..helpers import era_producer_groups, get_for_era, override_eras
 
 #
 # HELPER FUNCTIONS
@@ -251,46 +251,35 @@ MetJetCorrection = {
 }
 
 # MET functions running in the global scope
-MetGlobal = era_producer_groups(
-    "MetGlobal",
-    [
-        MetCov,
-        MetVectorUncorrected,
-        MetPtUncorrected,
-        MetPhiUncorrected,
-        MetSumEt,
-        MetVectorRaw,
-        MetPtRaw,
-        MetPhiRaw,
-        MetSumEtRaw,
-        MetJetCorrection,
-    ],
-    GLOBAL_SCOPES,
-)
+_MET_GLOBAL_MEMBERS = [
+    MetCov,
+    MetVectorUncorrected,
+    MetPtUncorrected,
+    MetPhiUncorrected,
+    MetSumEt,
+    MetVectorRaw,
+    MetPtRaw,
+    MetPhiRaw,
+    MetSumEtRaw,
+    MetJetCorrection,
+]
+MetGlobal = era_producer_groups("MetGlobal", _MET_GLOBAL_MEMBERS, GLOBAL_SCOPES)
 
-# MetGlobal for Run-2 eras read from NanoAOD v15 (UL reprocessing): identical
-# to the Run-2 MetGlobal group (v15 ships all of its PuppiMET / RawPuppiMET
-# inputs and the Run-2 PropagateToMET jet correction reads only branches
-# present in v15) except the covariance is taken from PuppiMET, because v15
-# drops the v9/v12 PFMET covariance branches. One group per Run-2 era; selected
-# in common_config for profiles with use_run2_v15_inputs. Profiles reading the
-# legacy v9 files keep the era-selected Run-2 MetGlobal.
-MetGlobalRun2NanoV15 = era_producer_groups(
-    "MetGlobal",
-    [
-        MetCovPuppi,
-        MetVectorUncorrected,
-        MetPtUncorrected,
-        MetPhiUncorrected,
-        MetSumEt,
-        MetVectorRaw,
-        MetPtRaw,
-        MetPhiRaw,
-        MetSumEtRaw,
-        {_era: get_for_era(MetJetCorrection, _era) for _era in ERAS_RUN2},
-    ],
-    GLOBAL_SCOPES,
-)
+
+def met_global(met_cov_overrides=None):
+    """
+    `MetGlobal` with the covariance producer replaced for the eras in
+    `met_cov_overrides` (era -> producer). The Run-2 NanoAOD-v15 inputs drop
+    the v9/v12 MET_covXX/XY/YY branches and take the covariance from PuppiMET
+    like 2024/2025; every other member reads branches present in v15.
+    """
+    if not met_cov_overrides:
+        return MetGlobal
+    return era_producer_groups(
+        "MetGlobal",
+        [override_eras(MetCov, met_cov_overrides)] + _MET_GLOBAL_MEMBERS[1:],
+        GLOBAL_SCOPES,
+    )
 
 # Propagate changes in the lepton energy scales to MET
 MetLeptonCorrection = Producer(

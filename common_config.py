@@ -1,6 +1,5 @@
 from __future__ import annotations  # needed for type annotations in > python 3.7
 
-import logging
 from typing import List
 from itertools import chain
 from .producers import electrons as electrons
@@ -55,7 +54,6 @@ from code_generation.systematics import SystematicShift, SystematicShiftByQuanti
 from .constants import ERAS_RUN2, ERAS_RUN3, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
 from .helpers import get_for_era
 
-log = logging.getLogger(__name__)
 
 
 def _get_recoil_calibration_samples():
@@ -1327,23 +1325,13 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
     :type configuration: Configuration
     """
 
-    # Run-2 NanoAOD-v15 AK4-PUPPI path. Profiles reading the Run-2 UL v15
-    # reprocessing switch this branch on for every Run-2 era; profiles on the
-    # legacy v9 files (NMSSM) and all Run-3 eras keep their wiring untouched.
-    use_run2_v15 = profile.use_run2_v15_inputs and era in ERAS_RUN2
+    use_run2_v15 = _use_run2_v15_inputs(profile, era)
 
-    # 2018 JEC/JER payloads are no longer profile-dependent: the AK4 JEC file
-    # for every Run-2 era now points at the NanoAODv15 AK4-PUPPI payload for all
-    # profiles, and that file contains exactly one JES tag
-    # (Summer20UL18NanoV15_V1_{MC,DATA}_*_AK4PFPuppi, no per-run split) and one
-    # JER tag (Summer19UL18_JRV3_MC_{PtResolution,ScaleFactor}_AK4PFPuppi) --
-    # the values the SM 2018-v15 path already used. The legacy v9 CHS tags
-    # (Summer19UL18_V5 / Summer19UL18_JRV2 / AK4PFchs) do not exist in it, so
-    # they are gone from this block; the level and data-vs-mc infixes are still
-    # appended by the C++ jerc factory.
-    # No CHS pileup-jet-ID cut on the PUPPI collection: disable it by pushing
-    # the max-pt threshold to 0 so no jet is ever subjected to the PUID cut.
-    # Legacy v9 CHS jets apply the PUID below 50 GeV as recommended.
+    # The AK4 JEC file of the Run-2 eras is the NanoAODv15 AK4-PUPPI payload
+    # for all profiles; it ships exactly one JES tag (Summer20UL18NanoV15_V1)
+    # and one JER tag (Summer19UL18_JRV3), the legacy v9 CHS tags do not exist
+    # in it. PUPPI jets get no pileup-jet-ID cut (max-pt threshold 0), legacy
+    # v9 CHS jets apply it below 50 GeV.
     run2_puid_max_pt = 0.0 if use_run2_v15 else 50.0
 
     # JetID recommendations: https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVUL#Preliminary_Recommendations_for
@@ -1643,60 +1631,21 @@ def add_ak8jet_config(configuration: Configuration):
     )
 
 
+def _use_run2_v15_inputs(profile, era: str) -> bool:
+    """Run-2 era read from the NanoAOD-v15 UL reprocessing (AK4-PUPPI jets,
+    correctionlib jet ID, Run-3-style electron scale, PuppiMET covariance)."""
+    return profile.use_run2_v15_inputs and era in ERAS_RUN2
+
+
 def _use_strict_upart_btag(profile, era: str) -> bool:
-    """Whether the strict UParTAK4 multi-WP b-tag SF branch is active.
-
-    True only for profiles selecting the UParT tagger
-    (``btag_algorithm == "upart"``) built for a Run-2 era (the BTV payload is
-    pinned per era in ``btag_payloads.BTV_UPART_PAYLOADS``) AND that actually
-    apply b-tag scale factors (``profile.enable_btag_sf``).
-    Efficiency-measurement profiles (e.g. ``SM_BTAG_EFFICIENCY_PROFILE``) select
-    the same ``btag_algorithm`` but set ``enable_btag_sf=False`` and
-    ``btag_payload_dir=None`` -- they must never take this branch, since the
-    strict consumer's ``{bjet_eff_file}`` config parameter is only staged when
-    ``btag_payload_dir`` is set, and a b-tag-SF producer must not run at all
-    on a profile whose whole point is measuring the efficiency, not applying
-    the SF derived from it.
-
-    Shared by ``add_bjet_config`` (stages the payload parameters) and
-    ``build_config`` (schedules the strict weight-producer group) so the two
-    call sites can never drift apart.
-    """
+    """Strict UParTAK4 multi-WP b-tag SF branch: UParT tagger, Run-2 era (payload
+    pinned per era in btag_payloads) and a profile that applies b-tag SFs at
+    all. Shared by add_bjet_config (parameters) and build_config (producers)."""
     return (
         profile.btag_algorithm == "upart"
         and era in ERAS_RUN2
         and profile.enable_btag_sf
     )
-
-
-def _resolve_legacy_btag_efficiency_alias(profile) -> dict:
-    """Resolve the (opt-in only) legacy efficiency sample-type alias.
-
-    ``AnalysisProfile.legacy_btag_efficiency_alias`` is an escape hatch for a
-    payload whose efficiency was measured under a
-    legacy sample-type name (e.g. the old NMSSM ``hh2b2tau -> ggh_htautau``
-    aliasing). It activates only for the UParT algorithm and an
-    explicit mapping onto ``ggh_htautau``. Activation is logged and recorded
-    in the generated configuration parameters.
-
-    Returns the alias mapping to use (possibly empty, meaning pure identity).
-    """
-    alias = dict(profile.legacy_btag_efficiency_alias or {})
-    if (
-        alias
-        and "ggh_htautau" in alias.values()
-        and profile.btag_algorithm == "upart"
-    ):
-        mapping_str = ", ".join(
-            f"{sample_type} -> {target}" for sample_type, target in sorted(alias.items())
-        )
-        log.warning(
-            "LEGACY B-TAG EFFICIENCY ALIAS ACTIVE: %s (approximation, forbidden "
-            "for final upper limits unless separately certified)",
-            mapping_str,
-        )
-        return alias
-    return {}
 
 
 def add_bjet_config(configuration: Configuration, era: str, sample_types: list[str], profile):
@@ -1923,12 +1872,8 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/btagging.json.gz",
                 }
             ),
-            # Name of the working-point-values correction inside bjet_sf_file, loaded
-            # by jets.JetIsBTagged together with bjet_btag_wp_name. It must name the
-            # same tagger as bjet_score_column, otherwise the flag thresholds one
-            # discriminant with another tagger's cut. The M values of these
-            # corrections equal the bjet_min_score thresholds above exactly, so the
-            # b-tag flag reproduces the numeric cut it replaced.
+            # working-point-values correction inside bjet_sf_file, read by
+            # jets.JetIsBTagged; must name the same tagger as bjet_score_column
             "bjet_sf_wp_name": EraModifier(
                 {
                     **{
@@ -2045,13 +1990,8 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                     "2025": "UParTAK4_light",  # UParT
                 },
             ),
-            # Nominal variation of the single-value shape SFs
-            # (BJetShapeDeepJet_SF for Run 2, BJetShapePNet_SF for 2022/2023);
-            # this is also the key the 16 b-tag shape shifts in
-            # btag_variations.py write. The split _lf/_bc variations below are
-            # read only by the 2024/2025 BJetWPUParT_SF producer, so all three
-            # must be defined: dropping this one loses code generation for eight
-            # of the ten eras (it is formatted into both shape-SF calls).
+            # nominal variation of the shape SFs (Run 2, 2022/2023) and the key
+            # the b-tag shape shifts write; _lf/_bc are read by BJetWPUParT_SF
             "bjet_sf_variation": "central",
             "bjet_sf_variation_lf": "central",
             "bjet_sf_variation_bc": "central",
@@ -2059,34 +1999,17 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
         },
     )
 
-    # UParT b-tag branch (Run-2 NanoAOD-v15 inputs). The profile reads b-jets
-    # from the reconstructed AK4-PUPPI collection and identifies them with the
-    # era's pinned UParTAK4 payload (read at config time), replacing the legacy
-    # Run-2 DeepJet score column / WP / SF payload. These are *parameters
-    # only*: the strict UParTAK4 working-point SF consumer producer is wired
-    # separately, so the values below stage the payload for that producer. The
-    # NMSSM path keeps the legacy EraModifier wiring untouched
-    # (``btag_algorithm is None``).
-    # Gated the same way (and via the same shared predicate) as the producer
-    # scheduling in build_config: profiles with enable_btag_sf=False (e.g. the
-    # b-tag efficiency-measurement profile) never stage these SF parameters.
+    # UParT b-tag parameters (Run-2 NanoAOD-v15 inputs): score column, working
+    # points and SF payload from the era's pinned UParTAK4 payload instead of
+    # the legacy DeepJet values. Same gate as the producer scheduling in
+    # build_config; profiles without b-tag SFs never stage them.
     use_strict_upart_btag = _use_strict_upart_btag(profile, era)
     if use_strict_upart_btag:
         upart_payload = btag_payloads.btv_upart_payload(era)
         upart_wps = btag_payloads.load_upart_wps(upart_payload)
-        # The discriminant column AND the working point that thresholds it must be
-        # overridden together, in the same scopes and under the same gate. The b-tag
-        # flag producer (jets.JetIsBTagged) runs in the global scope as a member of
-        # the auxiliary `Jet` quantity group -- i.e. for every profile -- and resolves
-        # its threshold from {bjet_sf_file} / {bjet_sf_wp_name} / {bjet_btag_wp_name},
-        # so those go into GLOBAL_SCOPES too: leaving them at the era default here
-        # would threshold the UParT discriminant with the DeepJet working point.
-        # Conversely, staging the payload on a wider gate than the column (e.g. on the
-        # b-tag algorithm alone, which is also set on the payload-independent
-        # efficiency profile) thresholds a DeepJet discriminant with the UParT working
-        # point. "M" matches the numeric bjet_min_score staged here, both read from
-        # the same pinned payload. Profiles that do not take this branch keep the
-        # era-default tagger consistently across all four parameters.
+        # Discriminant column and working point are overridden together, also
+        # in the global scope: jets.JetIsBTagged runs there for every profile
+        # and resolves its threshold from these parameters.
         configuration.add_config_parameters(
             GLOBAL_SCOPES + SCOPES,
             {
@@ -2105,56 +2028,23 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                 "bjet_sf_lf_name": btag_payloads.LIGHT_SF_CORRECTION,
             },
         )
-        # Parameters consumed by the strict UParTAK4 multi-WP event-weight
-        # producer (scheduled in build_config for the SM profile). These are
-        # parameters only; the producer wiring lives there.
-        #  - bjet_eff_sample_type: the sample's OWN name (identity), unless the
-        #    profile opts a sample into a legacy alias
-        #    (legacy_btag_efficiency_alias is None for the SM profile -> pure
-        #    identity), replacing the legacy hh2b2tau -> ggh_htautau aliasing so
-        #    the SM efficiency lookup keys on the true process.
-        #  - bjet_eff_pt_clamp: pt above which the efficiency payload clamps (a
-        #    per-event count of affected jets is written as a diagnostic).
-        # (The five WP thresholds are baked into the consumer's call in
-        # build_config, not passed as a config parameter, because a
-        # std::vector<float> literal would need braces that CROWN's format
-        # passes cannot carry; the {vec_open}/{vec_close} mechanism is used
-        # there instead.)
-        eff_alias = _resolve_legacy_btag_efficiency_alias(profile)
-        if eff_alias:
-            # Mirror the WARNING logged in _resolve_legacy_btag_efficiency_alias
-            # into the configuration itself, so the active alias is also
-            # visible in the generated configuration report/parameters (e.g.
-            # via Configuration.config_parameters / str(configuration)), not
-            # only in the build log.
-            configuration.add_config_parameters(
-                GLOBAL_SCOPES,
-                {
-                    "legacy_btag_efficiency_alias_active": ",".join(
-                        f"{sample_type}->{target}"
-                        for sample_type, target in sorted(eff_alias.items())
-                    ),
-                },
-            )
+        # Parameters of the strict UParTAK4 multi-WP event-weight producer
+        # (scheduled in build_config): the efficiency is looked up under the
+        # sample's own name.
         configuration.add_config_parameters(
             SCOPES,
             {
                 "bjet_eff_sample_type": SampleModifier(
-                    {
-                        sample_type: eff_alias.get(sample_type, sample_type)
-                        for sample_type in sample_types
-                    }
+                    {sample_type: sample_type for sample_type in sample_types}
                 ),
-                "bjet_eff_pt_clamp": 1000.0,
             },
         )
-        #  - bjet_eff_file: per-scope efficiency payload path. Installed by a
-        #    later task; the consumer loads it at RUNTIME through the
-        #    CorrectionManager, so a missing file fails only at run time, not at
-        #    config/compile time (no config-time existence gate here).
+        # per-scope efficiency payload; loaded at run time by the
+        # CorrectionManager, so a missing file fails only when the executable
+        # runs. The weight runs on the hadronic-tau scopes only.
         if profile.btag_payload_dir is not None:
             btag_payload_dir = profile.btag_payload_dir.format(era=era)
-            for scope in SCOPES:
+            for scope in HAD_TAU_SCOPES:
                 configuration.add_config_parameters(
                     [scope],
                     {
@@ -2369,11 +2259,6 @@ def build_config(
     available_scopes: List[str],
 ):
 
-    if profile.allowed_eras is not None and era not in profile.allowed_eras:
-        raise ValueError(
-            f"Configuration profile '{profile.name}' only supports eras "
-            f"{profile.allowed_eras}, got era '{era}'."
-        )
     if profile.mc_only and (sample == "data" or sample.startswith("embedding")):
         raise ValueError(
             f"Configuration profile '{profile.name}' accepts MC only, got '{sample}'."
@@ -2392,116 +2277,43 @@ def build_config(
     # Set sample flags manually
     # The configuration of is_data and is_embedding is set here for better readability, although
     # it has already been set in the Configuration class.
-    #
-    # These flags are added to *every* configured scope (global + all analysis
-    # scopes), not just the global scope: producers such as
-    # ``boson_corrections.GenBosonP4`` / ``GenVisBosonP4`` run in the analysis
-    # SCOPES and reference ``{is_data}`` in their call templates, so ``is_data``
-    # must be resolvable there. The framework's own ``_set_sample_parameters``
-    # already injects ``is_${sampletype}`` into all scopes for every type in
-    # ``available_sample_types``; for the full legacy surface (NMSSM) that means
-    # ``is_data``/``is_embedding`` are already present in every scope and
-    # re-adding them here is a value-identical no-op. On an MC-only reduced
-    # surface (the SM b-tag efficiency profile), ``data``/``embedding`` are not
-    # in ``available_sample_types``, so the framework never creates
-    # ``is_data``/``is_embedding`` at all -- this manual all-scope addition is
-    # what makes the DY/W gen-boson producers resolvable there.
-    is_data = sample == "data"
-    is_embedding = sample == "embedding"
-    is_mc = sample not in ["data", "embedding"]
     configuration.add_config_parameters(
-        configuration.scopes,
+        GLOBAL_SCOPES,
         {
-            "is_data": is_data,
-            "is_embedding": is_embedding,
-            "is_mc": is_mc,
+            "is_data": sample == "data",
+            "is_embedding": sample == "embedding",
+            "is_mc": sample not in ["data", "embedding"],
         },
     )
 
-    def profile_samples(*samples):
-        """Restrict a hardcoded rule/shift sample list to the active surface.
-
-        The DY/W modification rules and the MET-recoil shift below name the
-        full legacy DY/W sample surface (madgraph/amcatnlo/powheg subtypes).
-        The rule and shift machinery validates every named sample against
-        ``available_sample_types``, which raises a SampleRuleConfigurationError
-        for a reduced profile surface (e.g. the SM profiles, which carry the
-        merged ``dyjets``/``wjets`` groups but not every subtype). Intersecting
-        is a no-op for NMSSM (its surface is the full legacy list, so the tuple
-        is returned unchanged in order and the configuration stays
-        byte-identical) and drops the absent subtypes for reduced surfaces.
-        """
-        return [s for s in samples if s in available_sample_types]
-
-    def add_rule(scope, rule):
-        """Add a modification rule, skipping it when ``profile_samples`` has
-        emptied its sample list on a reduced surface.
-
-        A ``profile_samples``-wrapped rule that names only samples absent from
-        the active surface (e.g. the ``data``/``embedding`` SF-removal rules on
-        the MC-only b-tag efficiency surface) becomes a no-op, but the Rule
-        machinery rejects an empty ``samples``/``exclude_samples`` list -- so
-        such a rule is skipped rather than added. On the full legacy surface no
-        wrapped list is emptied, so every rule is added exactly as before
-        (byte-identical for NMSSM).
-        """
-        if not rule.samples and not rule.exclude_samples:
-            return
-        configuration.add_modification_rule(scope, rule)
-
-    # The SM v15 surface carries the DY and W processes as the single merged
-    # sample-type names ``dyjets`` / ``wjets`` (the legacy per-generator
-    # subtypes -- dyjets_madgraph, wjets_amcatnlo, ... -- are absent). Those
-    # merged names must therefore receive exactly the gen-boson-quantities /
-    # Zpt / recoil treatment the legacy 2018 subtypes get (same era, same
-    # physics process, different sample-type name); otherwise SM DY/W silently
-    # lose their gen boson four-vector and recoil correction. For the SM profile
-    # only, the merged names are added to the wrapped DY/W lists below before the
-    # ``profile_samples`` intersection. For NMSSM these stay empty, so every
-    # wrapped list is byte-identical (the merged NMSSM ``dyjets``/``wjets``
-    # samples keep their legacy "everything-else" recoil-rename treatment,
-    # because NMSSM uses the subtypes for the DY/W physics).
+    # The SM v15 sample surface carries DY and W as the merged names ``dyjets`` /
+    # ``wjets`` (no per-generator subtypes), so those names join the legacy DY/W
+    # subtype lists for the gen-boson / Zpt / recoil treatment below. Empty for
+    # NMSSM, whose merged names keep their legacy treatment.
     sm_merged_dyw = ["dyjets", "wjets"] if profile.use_run2_v15_inputs else []
     sm_merged_dy = ["dyjets"] if profile.use_run2_v15_inputs else []
 
-    # The b-tag efficiency-measurement profile
-    # (``SM_BTAG_EFFICIENCY_PROFILE``, the only profile that sets
-    # ``enable_probe_jet_collection``) writes a payload-independent UParT
-    # probe-jet collection INSTEAD of the analysis b-jet layer. It strips the
-    # whole DeepFlav/UParT-scored analysis b-jet chain (spec): the b-tag SF
-    # weight producer (+ its ``id_wgt_bjet`` output), the b-tag shape
-    # systematic variations, the b-tagged event filter (already disabled), the
-    # selected bb pair (its four-vectors, di-b-jet kinematics, and gen-matched
-    # di-b-jet quantities), the b-jet multiplicity, and the tautau+bb combined
-    # quantities -- while keeping the SM object / trigger / tau-pair /
-    # noise-filter / JEC / JER surface untouched. NMSSM and the SM main profile
-    # never set the flag, so every branch below is byte-identical for them.
+    # The b-tag efficiency-measurement profile writes the payload-independent
+    # UParT probe-jet collection instead of the analysis b-jet layer (b-tag SF
+    # weight, shape variations, selected bb pair, b-jet multiplicity,
+    # tautau+bb quantities). NMSSM and the SM main profile never set the flag.
     strip_analysis_bjets = profile.enable_probe_jet_collection
 
-    # Single-electron trigger scale factor producer for the et scope. In 2018,
-    # mirror TauAnalysis: ordinary MC evaluates ``Trg32_Iso_pt_eta_bins`` from
-    # the electron SF payload measured by the Tau Embedding group. The central
-    # EGM ``Electron-HLT-SF`` correction used by ``SingleEleTriggerSF`` exists
-    # only in the Run-3 ``electronHlt.json.gz`` payloads and aborts when loaded
-    # from the Run-2 UL ``electron.json.gz``. Other eras keep their existing
-    # producer selection; in particular, Run 3 stays on the EGM correction.
+    # Single-electron trigger SF for the et scope: the EGM Electron-HLT-SF
+    # correction exists only in the Run-3 payloads, so 2018 MC evaluates
+    # TauAnalysis' Trg32_Iso_pt_eta_bins from the Tau Embedding group's payload.
     single_ele_trigger_sf = (
         scalefactors.ETGenerateSingleElectronTriggerSF_MC
         if era == "2018"
         else scalefactors.SingleEleTriggerSF
     )
 
-    # Profiles with use_run2_v15_inputs read the Run-2 eras from NanoAOD v15
-    # (UL reprocessing) instead of the legacy v9. v15 drops the v9 EGamma
-    # electron-energy branches the Run-2 MC producer consumes
-    # (Electron_dEscale*/dEsigmaUp/dEsigmaDown) and instead ships the raw inputs
-    # the Run-3-style correctionlib scale+smear mechanism needs
-    # (Electron_deltaEtaSC, Electron_r9, ...). This predicate (same gating idiom
-    # as the v15 jet-ID / jet-selection / MET paths below) switches the electron
-    # energy correction to that Run-3 mechanism with the era's pinned Run-2 UL
-    # v15 EGM payload. NMSSM (use_run2_v15_inputs=False) never sets it, so the
-    # v9 Run-2 electron path stays byte-identical.
-    use_run2_v15_inputs = profile.use_run2_v15_inputs and era in ERAS_RUN2
+    # Run-2 NanoAOD-v15 inputs: the era switches below take the v15 value
+    # instead of the legacy era default.
+    use_run2_v15_inputs = _use_run2_v15_inputs(profile, era)
+
+    def v15_or(v15_value, era_map):
+        return v15_value if use_run2_v15_inputs else get_for_era(era_map, era)
 
     # noise filters
     add_noise_filters_config(configuration)
@@ -2626,16 +2438,9 @@ def build_config(
         },
     )
 
-    # Run-2 v15 electron energy correction: point the Run-3-style MC producer
-    # (the Run-3-style ElectronPtCorrectionMC, selected below) at the era's pinned Run-2 UL
-    # v15 EGM scale+smearing payload. Its "SmearAndSyst" correction is
-    # structurally identical to the Run-3 payloads (inputs syst/pt/r9/ScEta;
-    # syst categories smear/esmear/escale/...), so the existing Run-3 C++
-    # mechanism evaluates it unchanged. The DATED payload directory is pinned
-    # deliberately -- never the rolling "latest" symlink; the 2025-12-05
-    # snapshot ships the file for all four Run-2 eras. These overrides fire only
-    # on the Run-2 v15 input surface; profiles on the legacy v9 files keep the
-    # v9 Run-2 producer + Run-2 EGM_ScaleUnc file.
+    # Run-2 v15 electron energy correction: the era's pinned (dated, not
+    # "latest") Run-2 UL v15 EGM scale+smearing payload has the Run-3
+    # "SmearAndSyst" structure, so the Run-3 producer evaluates it unchanged.
     if use_run2_v15_inputs:
         configuration.add_config_parameters(
             GLOBAL_SCOPES,
@@ -2823,31 +2628,21 @@ def build_config(
     # between NanoAODv9 and NanoAODv15). Currently, the Run 2 producers just
     # rename the electron pt in NANOAOD.
     #
-    # The Run-2 v15 input path uses the Run-3-style correctionlib MC producer
-    # even for Run-2 eras: v15 UL NanoAOD ships the raw inputs
-    # (Electron_deltaEtaSC, Electron_r9) that producer needs. Profiles on the
-    # legacy v9 files keep the era default via get_for_era.
-    if use_run2_v15_inputs:
-        ElectronPtCorrectionMC = electrons.ElectronPtCorrectionMC[tuple(ERAS_RUN3)]
-    else:
-        ElectronPtCorrectionMC = get_for_era(electrons.ElectronPtCorrectionMC, era)
+    # The v15 inputs ship the raw inputs (Electron_deltaEtaSC, Electron_r9) of
+    # the Run-3-style scale+smear producer, so the v15 path uses it for Run 2.
+    ElectronPtCorrectionMC = v15_or(
+        electrons.ElectronPtCorrectionMC[tuple(ERAS_RUN3)], electrons.ElectronPtCorrectionMC
+    )
     ElectronPtCorrectionData = get_for_era(electrons.ElectronPtCorrectionData, era)
 
-    # Jet ID producer
-    # For a detailed description, see producers/jets.py
-    #
-    # The jet ID is not a standalone config-level producer any more: it is the
-    # first member of the auxiliary `Jet` quantity group below. The Run-2 v15
-    # AK4-PUPPI path substitutes that member for every Run-2 era (two producers
-    # defining `Jet_ID` would only surface as an RDataFrame redefinition at run
-    # time): NanoAOD v15 drops the precomputed Jet_jetId branch that the legacy
-    # v9 rename producer reads, so the ID is evaluated from the composition
-    # branches with the correctionlib producer that 2024/2025 already use,
-    # pointed at the era's UL payload via `ak4jet_id_file`. NMSSM
-    # (use_run2_v15_inputs=False) keeps the v9 rename producer.
-    jet_id_overrides = {}
-    if use_run2_v15_inputs:
-        jet_id_overrides = {_era: jets.JetIDFromCorrectionlib for _era in ERAS_RUN2}
+    # Jet ID producer (first member of the auxiliary `Jet` group, see
+    # producers/jets.py). v15 drops the precomputed Jet_jetId branch, so the v15
+    # path evaluates the ID with the correctionlib producer 2024/2025 use.
+    jet_id_overrides = (
+        {_era: jets.JetIDFromCorrectionlib for _era in ERAS_RUN2}
+        if use_run2_v15_inputs
+        else {}
+    )
 
     # Producers of auxiliary jet collection quantities (mainly used for
     # selection and JEC). For a detailed description, see producers/jets.py
@@ -2856,18 +2651,13 @@ def build_config(
     )
     AuxCorrT1METJetCollectionQuantities = get_for_era(jets.AuxCorrT1METJetCollectionQuantities, era)
 
-    # MET global quantities producer
-    # For a detailed description, see producers/met.py
-    # The Run-2 v15 input path takes the MET covariance from PuppiMET, because
-    # the v15 UL reprocessing renames the PF MET collection (MET_* -> PFMET_*)
-    # and drops the v9/v12 MET_covXX/XY/YY branches the Run-2 MetCov reads. All
-    # other Run-2 MET producers read branches present in v15, so only the
-    # covariance source changes. Profiles on the legacy v9 files keep the
-    # era-selected Run-2 MetGlobal.
-    if use_run2_v15_inputs:
-        MetGlobal = get_for_era(met.MetGlobalRun2NanoV15, era)
-    else:
-        MetGlobal = get_for_era(met.MetGlobal, era)
+    # MET global quantities producer (see producers/met.py). v15 drops the
+    # v9/v12 MET_covXX/XY/YY branches, so the v15 path takes the covariance
+    # from PuppiMET.
+    met_cov_overrides = (
+        {_era: met.MetCovPuppi for _era in ERAS_RUN2} if use_run2_v15_inputs else {}
+    )
+    MetGlobal = get_for_era(met.met_global(met_cov_overrides), era)
 
     # MET scope quantities producer
     # For a detailed description, see producers/met.py
@@ -2878,25 +2668,14 @@ def build_config(
     # - In Run 3, the PUPPI collection is used and no pileup ID is applied; the jet ID needs to
     #   be corrected in 2022 and 2023 due to a bug.
     # - In 2024, the jet ID must be calculated from base NANOAOD variables and a correction JSON
-    # - On the Run-2 v15 input path, the AK4 PUPPI collection is used with no
-    #   pileup ID (v15 ships no Jet_puId for PUPPI jets), so the without-PUID
-    #   selection group is used instead of the legacy CHS-with-PUID group.
-    if use_run2_v15_inputs:
-        base_jet_selection_producers = [
-            jets.BaseJetSelectionWithoutPUID,
-        ]
-    else:
-        base_jet_selection_producers = get_for_era(
-            {
-                tuple(ERAS_RUN2): [
-                    jets.BaseJetSelectionWithPUID,
-                ],
-                tuple(ERAS_RUN3): [
-                    jets.BaseJetSelectionWithoutPUID,
-                ],
-            },
-            era,
-        )
+    # - The Run-2 v15 inputs are AK4 PUPPI without Jet_puId, so no pileup ID.
+    base_jet_selection_producers = v15_or(
+        [jets.BaseJetSelectionWithoutPUID],
+        {
+            tuple(ERAS_RUN2): [jets.BaseJetSelectionWithPUID],
+            tuple(ERAS_RUN3): [jets.BaseJetSelectionWithoutPUID],
+        },
+    )
 
     # AK8 jet ID producers
     # fat_jet_id_producers = get_for_era(
@@ -2945,33 +2724,17 @@ def build_config(
         default=[]
     )
 
-    # UParT profiles: replace the era-selected (DeepJet-shape) SF producer
-    # with the strict UParTAK4 multiple-working-point event-weight consumer. It
-    # emits the nominal weight plus one weight-only column per discovered
-    # systematic variation and the pt-flow clamp diagnostic (its output columns
-    # are collected into strict_upart_btag_outputs and added to the ntuple
-    # below). NMSSM (btag_algorithm is None) keeps the era selection
-    # untouched, so its b-tag SF scheduling stays byte-identical. Profiles with
-    # enable_btag_sf=False (e.g. the b-tag efficiency-measurement profile, which
-    # also leaves btag_payload_dir=None) must never take this branch either: an
-    # efficiency-measurement profile must not apply b-tag SFs, and its
-    # {bjet_eff_file} parameter is never staged, so building it would hit an
-    # unresolved config parameter. Shared with add_bjet_config via
-    # _use_strict_upart_btag so the two call sites can't drift apart.
+    # UParT profiles replace the era-selected shape-SF producer with the strict
+    # UParTAK4 multi-WP event-weight group: nominal weight plus one weight-only
+    # column per discovered systematic variation, collected into
+    # strict_upart_btag_outputs and added to the ntuple below.
     use_strict_upart_btag = _use_strict_upart_btag(profile, era)
     strict_upart_btag_outputs = []
     if use_strict_upart_btag:
         upart_payload = btag_payloads.btv_upart_payload(era)
-        upart_btag_variations = btag_payloads.discover_upart_variations(upart_payload)
-        upart_btag_wps = btag_payloads.load_upart_wps(upart_payload)
-        # WP thresholds ordered tightest -> loosest to match the consumer's
-        # fixed WP names {XXT, XT, T, M, L}.
-        upart_btag_wp_values = [
-            upart_btag_wps[wp] for wp in ["XXT", "XT", "T", "M", "L"]
-        ]
         bjet_id_sf_producer, strict_upart_btag_outputs = (
             scalefactors.build_strict_upart_btag_weight(
-                upart_btag_variations, upart_btag_wp_values
+                btag_payloads.discover_upart_variations(upart_payload)
             )
         )
 
@@ -3072,60 +2835,57 @@ def build_config(
     )
 
     # Producers common to all scopes with at least one hadronic tau
-    common_scope_producers = [
+    scope_producers = [
         # fatjets.FatJetCollection,
         # fatjets.FatJetCollectionWithoutVeto,
         # fatjets.BasicFatJetQuantities,
         jets.JetSelection,
         jets.BasicJetQuantities,
-    ]
-    if not strip_analysis_bjets:
-        # Analysis b-jet layer: b-jet multiplicity, the selected bb pair and
-        # its four-vectors, and the gen-matched di-b-jet quantities. Dropped
-        # for the payload-independent probe-jet profile (see
-        # strip_analysis_bjets above).
-        common_scope_producers += [
-            jets.BasicBJetQuantities,
-            pairquantities_bbpair.AllBBPairProducers,
-            genparticles.GenDiBjetPairQuantities,
-        ]
-    # fatjets.FindFatjetMatchingBjet,
-    # fatjets.BasicMatchedFatJetQuantities,
-    # fatjets.FindXbbFatjet,
-    # fatjets.BasicXbbFatJetQuantities,
-    # fatjets.LeadingFatJetQuantities,
-    if not strip_analysis_bjets:
-        # b-tag scale-factor weight producer (not applied when measuring the
-        # efficiency it would be derived from).
-        common_scope_producers += [bjet_id_sf_producer]
-    common_scope_producers += [
+        jets.BasicBJetQuantities,
+        pairquantities_bbpair.AllBBPairProducers,
+        genparticles.GenDiBjetPairQuantities,
+        # fatjets.FindFatjetMatchingBjet,
+        # fatjets.BasicMatchedFatJetQuantities,
+        # fatjets.FindXbbFatjet,
+        # fatjets.BasicXbbFatJetQuantities,
+        # fatjets.LeadingFatJetQuantities,
+        bjet_id_sf_producer,
         # TODO Need to properly handle recoil producer for Run 2 (ROOT file-based)
         MetScopes,
         met.MetQuantities,
-        # The tautau+bb combination needs the selected bb pair, so the
-        # probe-jet profile uses the reduced ditau+MET quantities group.
-        pairquantities.DiTauPairMETQuantitiesNoBB
-        if strip_analysis_bjets
-        else pairquantities.DiTauPairMETQuantities,
+        pairquantities.DiTauPairMETQuantities,
         genparticles.GenMatching,
     ]
     # + xbb_sf_producers
     # + fj_genjet_producers
-    configuration.add_producers(SCOPES, common_scope_producers)
+    if strip_analysis_bjets:
+        # probe-jet profile: no analysis b-jet layer, no b-tag SF weight, and
+        # the ditau+MET quantities without the tautau+bb combination
+        analysis_bjet_layer = [
+            jets.BasicBJetQuantities,
+            pairquantities_bbpair.AllBBPairProducers,
+            genparticles.GenDiBjetPairQuantities,
+            bjet_id_sf_producer,
+        ]
+        scope_producers = [
+            pairquantities.DiTauPairMETQuantitiesNoBB
+            if p is pairquantities.DiTauPairMETQuantities
+            else p
+            for p in scope_producers
+            if p not in analysis_bjet_layer
+        ]
+    if use_strict_upart_btag:
+        # the strict UParT weight runs on the hadronic-tau scopes only, where
+        # the efficiency payloads exist
+        scope_producers = [p for p in scope_producers if p is not bjet_id_sf_producer]
+    configuration.add_producers(SCOPES, scope_producers)
+    if use_strict_upart_btag:
+        configuration.add_producers(HAD_TAU_SCOPES, [bjet_id_sf_producer])
 
-    # Payload-independent UParT probe-jet collection (efficiency profile
-    # only): selected on kinematics + tight jet ID + deltaR against both pair
-    # legs, independent of the analysis b-jet collection, no b-tag SF.
+    # Payload-independent UParT probe-jet collection (efficiency profile only):
+    # the base b-jet acceptance cleaned of lepton overlaps, no discriminator cut.
     if strip_analysis_bjets:
         configuration.add_producers(HAD_TAU_SCOPES, [jets.BtagProbeJetVectors])
-        configuration.add_config_parameters(
-            HAD_TAU_SCOPES,
-            {
-                "btag_probe_min_pt": 20.0,
-                "btag_probe_max_abs_eta": 2.4,
-                "btag_probe_min_delta_r": 0.4,
-            },
-        )
 
     # Producers for quantities in all scopes with hadronic taus
     configuration.add_producers(
@@ -3304,111 +3064,87 @@ def build_config(
 
     # For DY samples, add producer for flag indicating the flavor of the decay products
     if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
-        add_rule(
+        configuration.add_modification_rule(
             GLOBAL_SCOPES,
             AppendProducer(
                 [
                     event.LHEDrellYanEMuFilter,
                 ],
-                samples=profile_samples("dyjets_amcatnlo_ll"),
+                samples=["dyjets_amcatnlo_ll"],
             )
         )
 
     # For DY and W samples, calculate the generator-level boson four-vector
-    _gen_boson_samples = profile_samples(
-        "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
-        "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo",
-        *sm_merged_dyw,
+    configuration.add_modification_rule(
+        SCOPES,
+        AppendProducer(
+            [boson_corrections.GenBosonQuantities],
+            samples=[
+                "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
+                "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo",
+            ] + sm_merged_dyw,
+        ),
     )
-    if _gen_boson_samples:
-        add_rule(
-            SCOPES,
-            AppendProducer(
-                [boson_corrections.GenBosonQuantities],
-                samples=_gen_boson_samples,
-            ),
-        )
 
-    # For DY samples, apply Z pt reweighting. NOTE: the ZPtReweighting producer
-    # is Run-3-only (``z_pt_reweighting_producers`` resolves to [] for 2018, and
-    # ``zpt_weight_file`` is DOES_NOT_EXIST for Run 2), so this rule appends no
-    # producer for era 2018 for both legacy subtypes and the merged SM name --
-    # the merged ``dyjets`` is added here for structural parity so it picks up
-    # any future Run-2 Zpt producer automatically. W samples get no Zpt (legacy
-    # subtype behavior mirrored: wjets is intentionally absent from this list).
-    _zpt_samples = profile_samples(
-        "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
-        "dyjets_amcatnlo_tt", "dyjets_powheg",
-        *sm_merged_dy,
-    )
-    if _zpt_samples:
-        add_rule(
-            SCOPES,
-            AppendProducer(
-                z_pt_reweighting_producers,
-                samples=_zpt_samples,
-            )
+    # For DY samples, apply Z pt reweighting (Run-3-only producer; resolves to
+    # no producer for Run 2, the merged SM name is listed for parity)
+    configuration.add_modification_rule(
+        SCOPES,
+        AppendProducer(
+            z_pt_reweighting_producers,
+            samples=[
+                "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
+                "dyjets_amcatnlo_tt", "dyjets_powheg",
+            ] + sm_merged_dy,
         )
+    )
 
     # For all samples that are not DY and W, replace recoil corrections with
-    # renaming operation.
-    #
-    # `samples = available - exclude`, so filtering the excluded DY/W subtypes
-    # to the active surface leaves the subtraction result unchanged for NMSSM
-    # (full legacy surface -> byte-identical). On a reduced surface (SM) none
-    # of the legacy recoil subtypes are present, which would collapse the
-    # exclude list to empty (rejected by the rule machinery); there recoil
-    # correction is renamed for every sample in the surface instead.
-    _recoil_rename_exclude = profile_samples(
-        "dyjets_madgraph",
-        "dyjets_amcatnlo",
-        "dyjets_amcatnlo_ll",
-        "dyjets_amcatnlo_tt",
-        "dyjets_powheg",
-        "wjets_madgraph",
-        "wjets_amcatnlo",
-        *sm_merged_dyw,
+    # renaming operation
+    configuration.add_modification_rule(
+        SCOPES,
+        ReplaceProducer(
+            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
+            exclude_samples=[
+                "dyjets_madgraph",
+                "dyjets_amcatnlo",
+                "dyjets_amcatnlo_ll",
+                "dyjets_amcatnlo_tt",
+                "dyjets_powheg",
+                "wjets_madgraph",
+                "wjets_amcatnlo",
+            ] + sm_merged_dyw,
+        ),
     )
-    if _recoil_rename_exclude:
-        _recoil_rename_rule = ReplaceProducer(
-            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
-            exclude_samples=_recoil_rename_exclude,
-        )
-    else:
-        _recoil_rename_rule = ReplaceProducer(
-            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
-            samples=list(available_sample_types),
-        )
-    add_rule(SCOPES, _recoil_rename_rule)
 
     # Remove DeepTau ID scale factor producers from data samples
-    add_rule(
+    configuration.add_modification_rule(
         HAD_TAU_SCOPES,
         RemoveProducer(
             producers=[scalefactors.TauIDSF],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Remove the era-selected et trigger scale factor from data and embedding.
     # ``setup_embedding`` adds its dedicated embedding-event producer later.
-    add_rule(
+    configuration.add_modification_rule(
         ET_SCOPES,
         RemoveProducer(
             producers=[
                 single_ele_trigger_sf,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
     # The fully leptonic electron scopes continue to use the EGM producer.
-    add_rule(
+    configuration.add_modification_rule(
         EE_SCOPES + EM_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.SingleEleTriggerSF,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
     # TODO fix for Run 2, SF seem to not be available
@@ -3424,13 +3160,13 @@ def build_config(
 
 
     # Remove trigger scale factor producers from data and embedding samples in mt scope
-    add_rule(
+    configuration.add_modification_rule(
         MUON_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.SingleMuTriggerSF,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         )
     )
     # TODO fix for Run 2, SF seem to not be available
@@ -3445,24 +3181,24 @@ def build_config(
     # )
 
     # Remove muon ID and isolation scale factor producers from data and embedding samples in mt scope
-    add_rule(
+    configuration.add_modification_rule(
         MT_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.MuonIDIso_SF,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         )
     )
 
     # Remove trigger scale factor producers from data and embedding samples in tt scope
-    add_rule(
+    configuration.add_modification_rule(
         TT_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.TauTauTriggerSF,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
 
@@ -3480,13 +3216,13 @@ def build_config(
     #)
 
     # Remove b tagging scale factor producers from data and embedding samples in all scopes 
-    add_rule(
-        SCOPES,
+    configuration.add_modification_rule(
+        HAD_TAU_SCOPES if use_strict_upart_btag else SCOPES,
         RemoveProducer(
             producers=[
                 bjet_id_sf_producer,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
 
@@ -3511,44 +3247,44 @@ def build_config(
     # )
 
     # Remove the pileup weights from data and embedding samples
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
             producers=[event.PUweights],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
 
     # Replace jet energy correction for data and embedding
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[jets.JetEnergyCorrectionMC, jets.JetEnergyCorrectionData],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
 
     # Replace regressed jet energy correction for data and embedding
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[
                 jets.JetEnergyCorrectionMCRegressed,
                 jets.JetEnergyCorrectionDataRegressed,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
 
     # Replace jet energy correction for type-I correction jets for data and embedding
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[
                 jets.Type1JetEnergyCorrectionMC,
                 jets.Type1JetEnergyCorrectionData,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
 
@@ -3575,33 +3311,33 @@ def build_config(
 
     # Replace electron pt correction for data, as the correction is computed
     # differently in data and MC
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         ReplaceProducer(
             producers=[
                 ElectronPtCorrectionMC,
                 ElectronPtCorrectionData,
             ],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Replace the tau energy correction producer for data samples
-    add_rule(
+    configuration.add_modification_rule(
         HAD_TAU_SCOPES,
         ReplaceProducer(
             producers=[taus.TauEnergyCorrectionMC, taus.TauEnergyCorrectionData],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # The number of partons is only defined for MC samples and only important to
     # know for EW process samples
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
             producers=[event.npartons],
-            exclude_samples=profile_samples(
+            exclude_samples=[
                 "dyjets",
                 "dyjets_madgraph",
                 "dyjets_powheg",
@@ -3612,24 +3348,24 @@ def build_config(
                 "wjets_madgraph",
                 "wjets_amcatnlo",
                 "electroweak_boson",
-            ),
+            ],
         ),
     )
 
     # For whatever reason, the diboson samples do not have these weights in the
     # ntuple....
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
             producers=[event.LHE_Scale_weight],
-            samples=profile_samples(*profile.lhe_scale_weight_excluded_samples),
+            samples=list(profile.lhe_scale_weight_excluded_samples),
         ),
     )
 
     # For whatever reason, the NMSSM samples have one less entry of the weights
     # and therefore need special treatment
     if profile.nmssm_lhe_scale_weight_samples:
-        add_rule(
+        configuration.add_modification_rule(
             GLOBAL_SCOPES,
             ReplaceProducer(
                 producers=[event.LHE_Scale_weight, event.NMSSM_LHE_Scale_weight],
@@ -3638,34 +3374,34 @@ def build_config(
         )
 
     # Remove the generator-level tau matching producers from data samples
-    add_rule(
+    configuration.add_modification_rule(
         SCOPES,
         RemoveProducer(
             producers=[
                 genparticles.GenMatching,
             ],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Remove the generator-level b jet pair quantities from data and embedding
     # samples
-    add_rule(
+    configuration.add_modification_rule(
         SCOPES,
         RemoveProducer(
             producers=[
                 genparticles.GenDiBjetPairQuantities,
             ],
-            samples=profile_samples("data", "embedding", "embedding_mc"),
+            samples=["data", "embedding", "embedding_mc"],
         ),
     )
 
     # For ttbar samples, top pt weights should be produced
-    add_rule(
+    configuration.add_modification_rule(
         SCOPES,
         AppendProducer(
             producers=[event.TopPtReweighting],
-            samples=profile_samples("ttbar"),
+            samples=["ttbar"],
         ),
     )
 
@@ -3678,65 +3414,65 @@ def build_config(
     #)
 
     # Add Golden JSON filter for data and embedding samples
-    add_rule(
+    configuration.add_modification_rule(
         GLOBAL_SCOPES,
         AppendProducer(
             producers=[event.JSONFilter],
-            samples=profile_samples("data", "embedding"),
+            samples=["data", "embedding"],
         ),
     )
 
     # Remove generator-level tau quantities in et scope
-    add_rule(
+    configuration.add_modification_rule(
         ET_SCOPES,
         RemoveProducer(
             producers=[genparticles.ETGenDiTauPairQuantities],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Remove generator-level tau quantities in mt scope
-    add_rule(
+    configuration.add_modification_rule(
         MT_SCOPES,
         RemoveProducer(
             producers=[genparticles.MTGenDiTauPairQuantities],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Remove generator-level tau quantities in tt scope
-    add_rule(
+    configuration.add_modification_rule(
         TT_SCOPES,
         RemoveProducer(
             producers=[genparticles.TTGenDiTauPairQuantities],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Remove generator-level dilepton quantities in ee scope
-    add_rule(
+    configuration.add_modification_rule(
         EE_SCOPES,
         RemoveProducer(
             producers=[genparticles.ElElGenPairQuantities],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Remove generator-level dilepton quantities in mm scope
-    add_rule(
+    configuration.add_modification_rule(
         MM_SCOPES,
         RemoveProducer(
             producers=[genparticles.MuMuGenPairQuantities],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
     # Remove generator-level dilepton quantities in mm scope
-    add_rule(
+    configuration.add_modification_rule(
         EM_SCOPES,
         RemoveProducer(
             producers=[genparticles.EMGenDiTauPairQuantities],
-            samples=profile_samples("data"),
+            samples=["data"],
         ),
     )
 
@@ -3769,53 +3505,45 @@ def build_config(
         q.eta_2,
         q.phi_1,
         q.phi_2,
-    ]
-    # Analysis b-jet layer outputs: the selected bb pair kinematics and the
-    # gen-matched di-b-jet quantities. Dropped for the payload-independent
-    # probe-jet profile (see strip_analysis_bjets).
-    if not strip_analysis_bjets:
-        scope_outputs += [
-            q.bpair_pt_1,
-            q.bpair_pt_2,
-            q.bpair_eta_1,
-            q.bpair_eta_2,
-            q.bpair_phi_1,
-            q.bpair_phi_2,
-            q.bpair_mass_1,
-            q.bpair_mass_2,
-            q.bpair_btag_value_1,
-            q.bpair_btag_value_2,
-            q.bpair_m_inv,
-            q.bpair_deltaR,
-            q.bpair_pt_dijet,
-            q.bpair_pt_regressed_1,
-            q.bpair_pt_regressed_2,
-            q.bpair_eta_regressed_1,
-            q.bpair_eta_regressed_2,
-            q.bpair_phi_regressed_1,
-            q.bpair_phi_regressed_2,
-            q.bpair_mass_regressed_1,
-            q.bpair_mass_regressed_2,
-            q.bpair_btag_value_regressed_1,
-            q.bpair_btag_value_regressed_2,
-            q.bpair_pt_resolution_regressed_1,
-            q.bpair_pt_resolution_regressed_2,
-            q.bpair_m_inv_regressed,
-            q.bpair_deltaR_regressed,
-            q.bpair_pt_dijet_regressed,
-            q.genjet_pt_1,
-            q.genjet_eta_1,
-            q.genjet_phi_1,
-            q.genjet_mass_1,
-            q.genjet_hadFlavour_1,
-            q.genjet_pt_2,
-            q.genjet_eta_2,
-            q.genjet_phi_2,
-            q.genjet_mass_2,
-            q.genjet_hadFlavour_2,
-            q.genjet_m_inv,
-        ]
-    scope_outputs += [
+        q.bpair_pt_1,
+        q.bpair_pt_2,
+        q.bpair_eta_1,
+        q.bpair_eta_2,
+        q.bpair_phi_1,
+        q.bpair_phi_2,
+        q.bpair_mass_1,
+        q.bpair_mass_2,
+        q.bpair_btag_value_1,
+        q.bpair_btag_value_2,
+        q.bpair_m_inv,
+        q.bpair_deltaR,
+        q.bpair_pt_dijet,
+        q.bpair_pt_regressed_1,
+        q.bpair_pt_regressed_2,
+        q.bpair_eta_regressed_1,
+        q.bpair_eta_regressed_2,
+        q.bpair_phi_regressed_1,
+        q.bpair_phi_regressed_2,
+        q.bpair_mass_regressed_1,
+        q.bpair_mass_regressed_2,
+        q.bpair_btag_value_regressed_1,
+        q.bpair_btag_value_regressed_2,
+        q.bpair_pt_resolution_regressed_1,
+        q.bpair_pt_resolution_regressed_2,
+        q.bpair_m_inv_regressed,
+        q.bpair_deltaR_regressed,
+        q.bpair_pt_dijet_regressed,
+        q.genjet_pt_1,
+        q.genjet_eta_1,
+        q.genjet_phi_1,
+        q.genjet_mass_1,
+        q.genjet_hadFlavour_1,
+        q.genjet_pt_2,
+        q.genjet_eta_2,
+        q.genjet_phi_2,
+        q.genjet_mass_2,
+        q.genjet_hadFlavour_2,
+        q.genjet_m_inv,
         q.n_jets,
         # q.jet_pt,
         # q.jet_eta,
@@ -3861,15 +3589,8 @@ def build_config(
         q.m_vis,
         q.deltaR_ditaupair,
         q.pt_vis,
-    ]
-    # b-jet multiplicity and the b-tag SF weight column: dropped for the
-    # probe-jet profile (no b-jet selection, no b-tag SF).
-    if not strip_analysis_bjets:
-        scope_outputs += [
-            q.n_bjets,
-            q.id_wgt_bjet,
-        ]
-    scope_outputs += [
+        q.n_bjets,
+        q.id_wgt_bjet,
         q.mass_1,
         q.mass_2,
         q.dxy_1,
@@ -3908,20 +3629,62 @@ def build_config(
         q.mt_1,
         q.mt_2,
         q.pt_tautau,
-    ]
-    # tautau+bb combined quantities need the selected bb pair.
-    if not strip_analysis_bjets:
-        scope_outputs += [
-            q.pt_tautaubb,
-            q.mass_tautaubb,
-        ]
-    scope_outputs += [
+        q.pt_tautaubb,
+        q.mass_tautaubb,
         q.mt_tot,
         q.gen_match_1,
         q.gen_match_2,
         q.pt_dijet,
         q.jet_hemisphere,
     ]
+    if strip_analysis_bjets:
+        # probe-jet profile: drop the selected-bb-pair layer and the b-tag SF weight
+        analysis_bjet_layer_outputs = [
+            q.bpair_pt_1,
+            q.bpair_pt_2,
+            q.bpair_eta_1,
+            q.bpair_eta_2,
+            q.bpair_phi_1,
+            q.bpair_phi_2,
+            q.bpair_mass_1,
+            q.bpair_mass_2,
+            q.bpair_btag_value_1,
+            q.bpair_btag_value_2,
+            q.bpair_m_inv,
+            q.bpair_deltaR,
+            q.bpair_pt_dijet,
+            q.bpair_pt_regressed_1,
+            q.bpair_pt_regressed_2,
+            q.bpair_eta_regressed_1,
+            q.bpair_eta_regressed_2,
+            q.bpair_phi_regressed_1,
+            q.bpair_phi_regressed_2,
+            q.bpair_mass_regressed_1,
+            q.bpair_mass_regressed_2,
+            q.bpair_btag_value_regressed_1,
+            q.bpair_btag_value_regressed_2,
+            q.bpair_pt_resolution_regressed_1,
+            q.bpair_pt_resolution_regressed_2,
+            q.bpair_m_inv_regressed,
+            q.bpair_deltaR_regressed,
+            q.bpair_pt_dijet_regressed,
+            q.genjet_pt_1,
+            q.genjet_eta_1,
+            q.genjet_phi_1,
+            q.genjet_mass_1,
+            q.genjet_hadFlavour_1,
+            q.genjet_pt_2,
+            q.genjet_eta_2,
+            q.genjet_phi_2,
+            q.genjet_mass_2,
+            q.genjet_hadFlavour_2,
+            q.genjet_m_inv,
+            q.n_bjets,
+            q.id_wgt_bjet,
+            q.pt_tautaubb,
+            q.mass_tautaubb,
+        ]
+        scope_outputs = [o for o in scope_outputs if o not in analysis_bjet_layer_outputs]
     configuration.add_outputs(SCOPES, scope_outputs)
 
     # Payload-independent UParT probe-jet vectors (efficiency profile only).
@@ -4193,20 +3956,15 @@ def build_config(
     #     )
 
     #########################
-    # Strict UParTAK4 b-tag event-weight outputs (SM 2018-v15 profile)
+    # Strict UParTAK4 b-tag event-weight outputs (SM v15 profiles)
     #########################
-    # The strict consumer replaces the DeepJet-shape SF producer, which
-    # produced ``id_wgt_bjet``; that column is no longer produced on the SM
-    # path (nothing else consumes it -- it is a pure output), so drop it from
-    # the requested outputs and register the strict weight columns instead
-    # (nominal + per-variation weight-only columns + pt-flow clamp diagnostic).
-    # For data/embedding the strict producer group and its outputs are removed
-    # by the b-tag RemoveProducer rule, matching the legacy id_wgt_bjet
-    # behavior. NMSSM never enters this branch, so its outputs stay unchanged.
+    # The strict consumer replaces the shape-SF producer that wrote
+    # id_wgt_bjet; register its weight columns instead. Data/embedding drop
+    # the group and its outputs through the b-tag RemoveProducer rule.
     if use_strict_upart_btag:
         for scope in configuration.outputs:
             configuration.outputs[scope].discard(q.id_wgt_bjet)
-        configuration.add_outputs(SCOPES, strict_upart_btag_outputs)
+        configuration.add_outputs(HAD_TAU_SCOPES, strict_upart_btag_outputs)
 
     # --- Trigger setup -------------------------------------------------------
 
@@ -4347,10 +4105,9 @@ def build_config(
 
     #region
 
-    # The strict UParTAK4 consumer of the SM UParT path emits its systematic
-    # variations as ordinary weight-only columns instead of shifts, and the
-    # b-tag efficiency-measurement profile applies no b-tag SF at all: neither
-    # gets b-tag shifts. NMSSM keeps them unchanged.
+    # The strict UParTAK4 consumer does not read {bjet_sf_variation*} (its
+    # variations are weight-only columns); the efficiency profile applies no
+    # b-tag SF at all.
     if not profile.enable_btag_sf or use_strict_upart_btag:
         pass
     elif era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
