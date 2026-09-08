@@ -4,8 +4,7 @@ from code_generation.code_generation import CodeGenerator
 from code_generation.friend_trees import FriendTreeConfiguration
 import inspect
 
-from .constants import ERAS, SCOPES
-from .generate import resolve_sample_surface
+from .constants import ERAS, SCOPES, LEGACY_AVAILABLE_SAMPLES
 
 
 def run(args):
@@ -23,20 +22,22 @@ def run(args):
         f"analysis_configurations.{analysis_name}.{configname}"
     )
 
-    ## resolve and enforce the config-specific sample/era surface BEFORE
-    ## build_config is invoked
-    available_samples, _ = resolve_sample_surface(config)
+    ## a config module may restrict the eras and samples it accepts via
+    ## AVAILABLE_ERAS / AVAILABLE_SAMPLES; the configuration itself is always
+    ## built against the full legacy sample surface
     available_eras = getattr(config, "AVAILABLE_ERAS", ERAS)
+    accepted_samples = getattr(config, "AVAILABLE_SAMPLES", LEGACY_AVAILABLE_SAMPLES)
+    available_samples = LEGACY_AVAILABLE_SAMPLES
     available_scopes = SCOPES
     if era not in available_eras:
         raise ValueError(
             f"Config '{configname}' does not support era '{era}' "
             f"(supported: {available_eras})."
         )
-    if sample_group not in available_samples:
+    if sample_group not in accepted_samples:
         raise ValueError(
             f"Config '{configname}' does not accept sample '{sample_group}' "
-            f"(accepted: {available_samples})."
+            f"(accepted: {accepted_samples})."
         )
 
     # check if the config is of type FriendTreeConfiguration

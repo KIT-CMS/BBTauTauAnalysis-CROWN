@@ -85,7 +85,7 @@ REQUIRED_FIELDS = {
 # than being spelled out in the YAML (see btag_payloads.discover_upart_variations).
 DYNAMIC_VARIATION_KEYS_MARKER = "pinned payload (dynamic)"
 
-# Every SM MC sample nick (i.e. all of sm_config.DEFAULT_SAMPLES except
+# Every SM MC sample nick (i.e. all of sm_config.AVAILABLE_SAMPLES except data and
 # "data", which registers no shifts) rather than a hand-picked subset: several
 # shift families are gated by `if sample in [...]`/`if "dyjets" in sample or
 # "electroweak_boson" in sample` in common_config.py, so a proper subset is
@@ -95,7 +95,9 @@ DYNAMIC_VARIATION_KEYS_MARKER = "pinned payload (dynamic)"
 # scripts/validate_systematics_inventory.py's own report / task-12 fix
 # report), so the full census is cheap enough to always use.
 SM_SHIFT_ENUMERATION_SAMPLES = tuple(
-    sample for sample in sm_config.DEFAULT_SAMPLES if sample != "data"
+    sample
+    for sample in sm_config.AVAILABLE_SAMPLES
+    if sample not in ("data", "embedding", "embedding_mc")
 )
 
 
@@ -200,7 +202,10 @@ def build_sm_registered_shifts(
     The efficiency payload path is a runtime parameter and is not opened while
     the configuration is built.
     """
-    from analysis_configurations.bbtautau.constants import SCOPES
+    from analysis_configurations.bbtautau.constants import (
+        LEGACY_AVAILABLE_SAMPLES,
+        SCOPES,
+    )
 
     registered: Set[str] = set()
     for sample in samples:
@@ -209,7 +214,7 @@ def build_sm_registered_shifts(
             sample,
             list(SCOPES),
             {"all"},
-            sm_config.AVAILABLE_SAMPLES,
+            LEGACY_AVAILABLE_SAMPLES,
             ["2018"],
             SCOPES,
         )

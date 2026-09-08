@@ -45,19 +45,10 @@ ROOT::RDF::RNode multi_wp_event_weight(
     const std::string &jet_score, const std::string &jet_mask,
     const std::string &sf_file, const std::string &eff_file,
     const std::string &eff_sample_type, const std::string &variation_comb,
-    const std::string &variation_light, const std::vector<float> &wp_values) {
+    const std::string &variation_light) {
 
     const std::string logger_name =
         "xyh::scalefactor::btagging_strict::multi_wp_event_weight";
-
-    // The five WP thresholds must line up with the five fixed WP names.
-    if (wp_values.size() != kWorkingPointsTightToLoose.size()) {
-        throw std::runtime_error(
-            logger_name + ": expected " +
-            std::to_string(kWorkingPointsTightToLoose.size()) +
-            " working-point thresholds (ordered tightest->loosest), got " +
-            std::to_string(wp_values.size()));
-    }
 
     Logger::get(logger_name)
         ->debug("strict UParTAK4 multi-WP event weight: comb variation {}, "
@@ -72,14 +63,42 @@ ROOT::RDF::RNode multi_wp_event_weight(
     auto eff_evaluator =
         correction_manager.loadCorrection(eff_file, kEfficiencyCorrection);
 
+    // Read the WP score thresholds out of the SF payload itself (as the core
+    // physicsobject::jet::scalefactor::BtaggingMultipleWP does), in the fixed
+    // tightest->loosest WP order the per-jet loop below relies on.
+    auto wp_evaluator =
+        correction_manager.loadCorrection(sf_file, kWpValuesCorrection);
+    std::vector<float> thresholds;
+    thresholds.reserve(kWorkingPointsTightToLoose.size());
+    for (const auto &wp : kWorkingPointsTightToLoose) {
+        float cut;
+        try {
+            cut = static_cast<float>(wp_evaluator->evaluate({wp}));
+        } catch (const std::exception &error) {
+            throw std::runtime_error(
+                logger_name + ": failed to read the " + kWpValuesCorrection +
+                " threshold for WP " + wp + ": " + error.what());
+        }
+        // Tightest->loosest must be a strictly decreasing score cut, else the
+        // per-jet "tightest passed WP" search below is meaningless.
+        if (!std::isfinite(cut) ||
+            (!thresholds.empty() && cut >= thresholds.back())) {
+            throw std::runtime_error(
+                logger_name + ": " + kWpValuesCorrection + " threshold " +
+                std::to_string(cut) + " for WP " + wp +
+                " must be finite and strictly below the previous (tighter) "
+                "WP threshold");
+        }
+        thresholds.push_back(cut);
+        Logger::get(logger_name)->debug("UParTAK4 WP {} threshold {}", wp, cut);
+    }
+
     // In nanoAODv12/v15 the jet hadron flavor is stored as UChar_t; the cast
     // keeps v9 (Int_t) inputs working, mirroring the core BtaggingMultipleWP.
     auto [df1, flavor_column] =
         utility::Cast<ROOT::RVec<UChar_t>, ROOT::RVec<Int_t>>(
             df, jet_flavor + "_upart_strict_v12",
             "ROOT::VecOps::RVec<UChar_t>", jet_flavor);
-
-    const std::vector<float> thresholds = wp_values;
 
     auto event_weight =
         [comb_evaluator, light_evaluator, eff_evaluator, thresholds,
@@ -246,23 +265,6 @@ ROOT::RDF::RNode multi_wp_event_weight(
 
     return df1.Define(output, event_weight,
                       {jet_pt, jet_eta, flavor_column, jet_score, jet_mask});
-}
-
-ROOT::RDF::RNode pt_clamped_njets(ROOT::RDF::RNode df, const std::string &output,
-                                  const std::string &jet_pt,
-                                  const std::string &jet_mask,
-                                  const float pt_clamp_threshold) {
-    auto count = [pt_clamp_threshold](const ROOT::RVec<float> &pts,
-                                      const ROOT::RVec<int> &mask) {
-        unsigned int n = 0;
-        for (std::size_t i = 0; i < pts.size(); ++i) {
-            if (mask.at(i) && pts.at(i) > pt_clamp_threshold) {
-                ++n;
-            }
-        }
-        return n;
-    };
-    return df.Define(output, count, {jet_pt, jet_mask});
 }
 
 } // end namespace btagging_strict

@@ -20,13 +20,16 @@ They mirror the real payload SCHEMA:
     ``btag_efficiency`` with nesting Category(sample_type) ->
     Category(working_point) -> Category(jet_flavor:int) -> Binning(eta) ->
     Binning(pt) -> value. Three sample_type regimes drive the throw tests:
-      - ``valid``   : monotonic, in-(0,1] efficiencies (test a, d);
-      - ``zero``    : flavor-5 medium-WP efficiency == 0 (test b, eff<=0);
-      - ``nonmono`` : flavor-5 eff(M) < eff(T) (test c, non-monotonic).
+      - ``valid``     : monotonic, in-(0,1] efficiencies (test a, d);
+      - ``zero``      : flavor-5 medium-WP efficiency == 0 (test b, eff<=0);
+      - ``nonmono``   : flavor-5 eff(M) < eff(T) (test c, non-monotonic);
+      - ``above_one`` : flavor-5 medium-WP efficiency == 1.5 (test i, eff>1).
 
 Five WP keys are kept for dispatch realism; the algebra tests exercise the
-M/T (b) and L/M (light) bins. Re-run this script to regenerate the JSONs after
-changing any value; commit the JSONs alongside it.
+M/T (b) and L/M (light) bins. The SF file's ``UParTAK4_wp_values`` thresholds
+are read by the consumer itself, so they define which WP bin every test score
+lands in. The JSONs are generated (and gitignored), not committed:
+``tests/cpp/run_btag_sf_test.sh`` re-runs this script before every build.
 
 Documented values (see the C++ test for the hand-computed weights):
 
@@ -39,8 +42,10 @@ Documented values (see the C++ test for the hand-computed weights):
     flavor 5: {L:0.80, M:0.60, T:0.40, XT:0.25, XXT:0.10}
     flavor 4: {L:0.50, M:0.30, T:0.15, XT:0.08, XXT:0.03}
     flavor 0: {L:0.20, M:0.05, T:0.02, XT:0.01, XXT:0.005}
-  btag_efficiency zero    : == valid, but flavor 5 M -> 0.0
-  btag_efficiency nonmono : flavor 5 -> {L:0.80, M:0.30, T:0.50, XT:0.25, XXT:0.10}
+  btag_efficiency zero      : == valid, but flavor 5 M -> 0.0
+  btag_efficiency nonmono   : flavor 5 -> {L:0.80, M:0.30, T:0.50, XT:0.25, XXT:0.10}
+  btag_efficiency above_one : == valid, but flavor 5 M -> 1.5
+  UParTAK4_wp_values (tightest -> loosest): XXT 0.9, XT 0.7, T 0.5, M 0.3, L 0.1
 """
 import json
 import os
@@ -81,6 +86,11 @@ EFF_ZERO = {
 }
 EFF_NONMONO = {
     5: {"L": 0.80, "M": 0.30, "T": 0.50, "XT": 0.25, "XXT": 0.10},
+    4: dict(EFF_VALID[4]),
+    0: dict(EFF_VALID[0]),
+}
+EFF_ABOVE_ONE = {
+    5: dict(EFF_VALID[5], M=1.5),
     4: dict(EFF_VALID[4]),
     0: dict(EFF_VALID[0]),
 }
@@ -165,8 +175,9 @@ def wp_values_correction():
         "data": {
             "nodetype": "category",
             "input": "working_point",
-            # Synthetic thresholds; the C++ takes wp_values as an argument, so
-            # this correction is present for schema realism only.
+            # Synthetic thresholds, read by the consumer itself (as the core
+            # BtaggingMultipleWP does). Tightest -> loosest {XXT, XT, T, M, L}
+            # must be strictly decreasing, or the consumer throws.
             "content": [
                 {"key": "L", "value": 0.1},
                 {"key": "M", "value": 0.3},
@@ -207,7 +218,12 @@ def eff_flavor_category(regime, wp):
 
 
 def eff_correction():
-    regimes = {"valid": EFF_VALID, "zero": EFF_ZERO, "nonmono": EFF_NONMONO}
+    regimes = {
+        "valid": EFF_VALID,
+        "zero": EFF_ZERO,
+        "nonmono": EFF_NONMONO,
+        "above_one": EFF_ABOVE_ONE,
+    }
     return {
         "name": "btag_efficiency",
         "version": 1,

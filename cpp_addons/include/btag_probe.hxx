@@ -3,8 +3,8 @@
 
 #include "ROOT/RDataFrame.hxx"
 #include "ROOT/RVec.hxx"
-#include <cstddef>
 #include <string>
+#include <type_traits>
 
 // namespace xyh
 namespace xyh {
@@ -17,79 +17,35 @@ namespace btag_probe {
 // Payload-independent UParT probe-jet collection.
 // ------------------------------------------------------------------------
 // The b-tag efficiency-measurement ntuple profile
-// (``sm_btag_efficiency_config``) does not run the analysis b-jet selection
-// or apply any b-tag scale factor. Instead it exports a *probe* jet
-// collection selected purely on kinematics + reconstructed jet ID, from
-// which the b-tag efficiency (per hadron flavour, per UParTAK4 working
-// point) is measured downstream in TauFakeFactors -- one row per probe jet,
-// with NO discriminator cut applied here (the denominator must be the full
-// jet population, not the b-tagged subset, otherwise the 20-30 GeV region is
-// biased by the analysis b-jet pt threshold).
+// (``sm_btag_efficiency_config``) exports a *probe* jet collection with NO
+// b-tag discriminator cut and NO b-tag scale factor applied, from which the
+// b-tag efficiency (per hadron flavour, per UParTAK4 working point) is
+// measured downstream in TauFakeFactors -- one row per probe jet.
 //
-// The probe mask is built from the base jet collection (corrected pt, jet
-// eta, and the reconstructed tight jet-ID mask), NOT from the analysis
-// b-jet-selected mask, so it is independent of the analysis b-jet
-// acceptance. The four exported per-probe-jet vectors (corrected pt, eta,
-// hadron flavour, UParTAK4 B score) share this one mask, so they are equal
-// in length by construction.
+// The probe mask itself is assembled on the Python side out of the existing
+// core building blocks (``physicsobject::CombineMasks`` of the base b-jet mask
+// and the lepton-overlap veto mask); this header only holds the helper that
+// applies that mask to the exported per-probe-jet vectors. All exported
+// vectors share the one mask, so they are equal in length by construction.
 // clang-format on
 
 /**
- * @brief Build the per-jet probe mask (1 = probe, 0 = not a probe) for the
- * payload-independent b-tag efficiency-measurement ntuple.
+ * @brief Keep the elements of a per-jet vector selected by a mask, in input
+ * order.
  *
- * A jet is a probe if ALL of the following hold:
- *  - corrected pt >= @p min_pt;
- *  - |eta| < @p max_abs_eta;
- *  - the reconstructed tight jet-ID mask entry is nonzero (pass);
- *  - deltaR >= @p min_delta_r against BOTH selected pair legs
- *    (@p pair_p4_1 and @p pair_p4_2).
+ * The output length equals the number of nonzero mask entries, so applying the
+ * same @p mask to several input columns yields aligned, equal-length outputs.
  *
- * No b-tag discriminator cut and no b-tag scale factor is applied -- the
- * probe collection is deliberately independent of the analysis b-jet
- * collection (see the file-level note).
+ * @tparam TOut element type of the output vector
+ * @tparam TIn element type of the input column (defaults to @p TOut); the
+ *     distinct-type form is used for the hadron-flavour vector, whose NanoAOD
+ *     v15 branch is stored as ``UChar_t`` but which is exported as ``int``
  *
- * @param df The input data frame.
- * @param output The output per-jet mask column (RVec<int>, 1 = probe).
- * @param jet_pt The (nominal) corrected jet pt column (RVec<float>).
- * @param jet_eta The jet pseudorapidity column (RVec<float>).
- * @param jet_phi The jet azimuth column (RVec<float>), used for deltaR.
- * @param jet_id_mask The reconstructed tight jet-ID mask column (RVec<int>).
- * @param pair_p4_1 The first selected pair leg four-vector column.
- * @param pair_p4_2 The second selected pair leg four-vector column.
- * @param min_pt The minimum corrected pt (inclusive).
- * @param max_abs_eta The maximum |eta| (exclusive).
- * @param min_delta_r The minimum deltaR against each pair leg (inclusive).
- * @return A new data frame with the probe mask column.
- */
-ROOT::RDF::RNode probe_mask(ROOT::RDF::RNode df, const std::string &output,
-                            const std::string &jet_pt,
-                            const std::string &jet_eta,
-                            const std::string &jet_phi,
-                            const std::string &jet_id_mask,
-                            const std::string &pair_p4_1,
-                            const std::string &pair_p4_2, const float min_pt,
-                            const float max_abs_eta, const float min_delta_r);
-
-/**
- * @brief Write the elements of an input per-jet vector selected by a mask to
- * a new (shorter) output vector, in input order.
- *
- * The output length equals the number of nonzero mask entries. Applying the
- * same @p mask to several input columns yields equal-length outputs by
- * construction, which is how the four probe-jet vectors stay aligned.
- *
- * @tparam TOut The element type of the output vector.
- * @tparam TIn The element type of the input column (defaults to @p TOut).
- * Each kept element is ``static_cast<TOut>``. The distinct-type form is used
- * for the hadron-flavour vector, whose NanoAOD v15 branch is stored as
- * ``UChar_t`` but is exported as ``int``.
- *
- * @param df The input data frame.
- * @param output The output (masked) vector column.
- * @param input_column The input per-jet vector column.
- * @param mask The per-jet mask column (RVec<int>, nonzero = keep).
- * @return A new data frame with the masked output vector column.
+ * @param df input dataframe
+ * @param output name of the output (masked) vector column
+ * @param input_column name of the input per-jet vector column
+ * @param mask name of the per-jet mask column (nonzero = keep)
+ * @return a new dataframe carrying the masked output vector column
  */
 template <typename TOut, typename TIn = TOut>
 ROOT::RDF::RNode masked_vector(ROOT::RDF::RNode df, const std::string &output,
@@ -97,15 +53,13 @@ ROOT::RDF::RNode masked_vector(ROOT::RDF::RNode df, const std::string &output,
                                const std::string &mask) {
     auto select = [](const ROOT::RVec<TIn> &values,
                      const ROOT::RVec<int> &jet_mask) {
-        ROOT::RVec<TOut> selected;
-        const std::size_t n = values.size();
-        selected.reserve(n);
-        for (std::size_t i = 0; i < n; ++i) {
-            if (i < jet_mask.size() && jet_mask[i] != 0) {
-                selected.push_back(static_cast<TOut>(values[i]));
-            }
+        if constexpr (std::is_same_v<TOut, TIn>) {
+            return values[jet_mask != 0];
+        } else {
+            return ROOT::VecOps::Map(
+                values[jet_mask != 0],
+                [](const TIn &value) { return static_cast<TOut>(value); });
         }
-        return selected;
     };
     return df.Define(output, select, {input_column, mask});
 }

@@ -379,45 +379,23 @@ ROOT::RDF::RNode BestYHKinFit(
 }
 
 /**
- * @brief Function to run the kinematic fit of a Standard-Model non-resonant
- * HH -> bb tautau system with a single, fixed mass hypothesis
- * m(H->bb) = 125 GeV and m(H->tautau) = 125 GeV. It reuses the SAME vendored
- * fit engine (`YHKinFitMaster`) as `hhkinfit::YHKinFit`, but with exactly one
- * hypothesis pair instead of the NMSSM Y-mass scan: the mass-hypothesis
- * vectors are single-element (`{125}`), and no YToBB/YToTauTau selection is
- * performed. `YHKinFitMaster::Fit` hard-codes the SM Higgs mass to 125 GeV
- * and takes the other Higgs mass from the (single) Y-mass hypothesis, so
- * `mY = 125` yields the desired 125/125 double-Higgs constraint regardless of
- * the `Ytautau` flag (here fixed to `false`, i.e. the b-jet pair carries the
- * scanned mass).
- *
- * The estimated di-Higgs mass `kinfit_mHH` is the invariant mass of the fully
- * fitted four-object system, which the engine exposes as `mX` (identical
- * quantity, SM-appropriate name).
- *
- * The per-jet b-energy regression resolution is taken from `b_reso_1` /
- * `b_reso_2` (the ParticleNet regression resolutions, `bpair_reg_res_1/2` in
- * the main SM ntuple) and passed into the `YHKinFitMaster` engine exactly as
- * `hhkinfit::YHKinFit` does: unconverted, as the relative b-jet pt
- * resolution (see `YHKinFitMaster::CalcBjetResolution`, which multiplies by
- * the jet pt internally).
+ * @brief Kinematic fit of a non-resonant HH -> bb tautau system with the single
+ * fixed hypothesis m(H->bb) = m(H->tautau) = 125 GeV. Uses the same
+ * `YHKinFitMaster` engine as `hhkinfit::YHKinFit` with one hypothesis pair
+ * instead of the NMSSM Y-mass scan (`Ytautau=false`, so the b-jet pair carries
+ * the scanned mass and the engine's hard-coded 125 GeV the tautau side).
+ * `kinfit_mHH` is the invariant mass of the fitted four-object system (the
+ * engine's `mX`). The b-jet resolutions are the relative regression
+ * resolutions, passed through unconverted as in `YHKinFit`.
  *
  * @param df the input dataframe
  * @param outputs names of the four output columns, in order:
  * {kinfit_convergence, kinfit_chi2, kinfit_prob, kinfit_mHH}
- * @param tau_p4_1 name of the Lorentz-vector column of the first tau
- * @param tau_p4_2 name of the Lorentz-vector column of the second tau
- * @param b_p4_1 name of the Lorentz-vector column of the first b-jet
- * @param b_reso_1 name of the column containing the pt resolution of the
- * first b-jet
- * @param b_p4_2 name of the Lorentz-vector column of the second b-jet
- * @param b_reso_2 name of the column containing the pt resolution of the
- * second b-jet
- * @param met_p4 name of the Lorentz-vector column of the missing transverse
- * energy
- * @param met_cov_xx name of the column containing the met covariance xx
- * @param met_cov_xy name of the column containing the met covariance xy (= yx)
- * @param met_cov_yy name of the column containing the met covariance yy
+ * @param tau_p4_1, tau_p4_2 Lorentz-vector columns of the two taus
+ * @param b_p4_1, b_reso_1, b_p4_2, b_reso_2 Lorentz-vector and relative pt
+ * resolution columns of the two b-jets
+ * @param met_p4 Lorentz-vector column of the missing transverse energy
+ * @param met_cov_xx, met_cov_xy, met_cov_yy met covariance columns (xy = yx)
  * @returns a dataframe with the four SM HH kinematic-fit outputs
  */
 ROOT::RDF::RNode
@@ -465,10 +443,7 @@ sm_hh_kinfit(ROOT::RDF::RNode df, const std::vector<std::string> &outputs,
             met_cov[0][1] = met_cov_xy;
             met_cov[1][1] = met_cov_yy;
 
-            // Single, fixed hypothesis pair: m(H->bb) = m(H->tautau) = 125 GeV.
-            // The engine hard-codes the SM Higgs mass (here the tautau side,
-            // Ytautau=false) to 125 and takes the other Higgs mass from the
-            // single-element Y-mass hypothesis, so {125} gives 125/125.
+            // single fixed hypothesis pair, m(H->bb) = m(H->tautau) = 125 GeV
             std::vector<int> hypo_mh = {125};
             std::vector<int> hypo_mY = {125};
 
