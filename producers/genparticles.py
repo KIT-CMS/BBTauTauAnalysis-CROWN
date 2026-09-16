@@ -976,3 +976,17 @@ GenMatchingBoostedTauPairFlag = Producer(
     output=[q.gen_boostedtaupair_match_flag],
     scopes=SCOPES,
 )
+CalculateGenBosonVector = Producer(
+        call='genparticles::GetBoson({df}, {output}, {input}, {is_data})',
+        input=[
+            nanoAOD.GenPart_pt,
+            nanoAOD.GenPart_eta,
+            nanoAOD.GenPart_phi,
+            nanoAOD.GenPart_mass,
+            nanoAOD.GenPart_pdgId,
+            nanoAOD.GenPart_status,
+            nanoAOD.GenPart_statusFlags,
+        ],
+        output=[q.genboson_p4],
+        scopes=["global"]
+    )

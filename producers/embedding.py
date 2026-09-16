@@ -294,7 +294,7 @@ TauEmbeddingElectronIDSF_1 = Producer(
         {embedding_electron_id_extrapolation})
         """,
     input=[q.pt_1, q.eta_1],
-    output=[q.id_wgt_ele_1],
+    output=[q.id_wgt_emb_ele_1],
     scopes=["et", "ee", "em"],
 )
 

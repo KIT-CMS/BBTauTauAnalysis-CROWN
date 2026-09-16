@@ -172,7 +172,7 @@ def _add_electron_triggers(
                             # final filter:       hltEle115CaloIdVTGsfTrkIdTGsfDphiFilter
                             # filter bit:         11
                             # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary
-                            ele_115_caloidvt_gsftrkidt_parameters,
+                            # ele_115_caloidvt_gsftrkidt_parameters,
                     ],
                     "2017": [
                             # trigger:            HLT_Ele32_WPTight_Gsf
@@ -447,19 +447,19 @@ def _add_muon_triggers(
                         # final filter:       hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q
                         # filter bit:         10
                         # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2018
-                        mu_50_parameters,
+                        # mu_50_parameters,
 
                         # trigger:            HLT_OldMu100
                         # final filter:       hltL3fL1sMu22Or25L1f0L2f10QL3Filtered100Q
                         # filter bit:         11
                         # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2018
-                        old_mu_100_parameters,
+                        # old_mu_100_parameters,
 
                         # trigger:            HLT_TkMu100
                         # final filter:       hltL3fL1sMu25f0TkFiltered100Q
                         # filter bit:         11
                         # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/MuonHLT2018
-                        tk_mu_100_parameters,
+                        # tk_mu_100_parameters,
                     ],
                     "2017": [
                         # trigger:            HLT_IsoMu24
@@ -1389,7 +1389,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                     "2017": [],
                     "2018": [
                         {
-                            "tt_trigger_leg1_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg1",
+                            "tt_trigger_leg1_flagname": f"{flag.replace('trg_', 'trg_wgt_')}_leg1",
                             "tt_trigger_flag": flag,
                             **common_double_tautau_trigger_args,
                         }
@@ -1430,7 +1430,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                     "2017": [],
                     "2018": [
                         {
-                            "tt_trigger_leg2_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg2",
+                            "tt_trigger_leg2_flagname": f"{flag.replace('trg_', 'trg_wgt_')}_leg2",
                             "tt_trigger_flag": flag,
                             **common_double_tautau_trigger_args,
                         }

@@ -198,16 +198,16 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
                             "embedding_trigger_sf": "Trg_IsoMu24_pt_eta_bins",
                             "muon_trg_extrapolation": 1.0,  # for nominal case
                         },
-                        {
-                            "flagname": "trg_wgt_single_mu27",
-                            "embedding_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
-                            "muon_trg_extrapolation": 1.0,  # for nominal case
-                        },
-                        {
-                            "flagname": "trg_wgt_single_mu24ormu27",
-                            "embedding_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
-                            "muon_trg_extrapolation": 1.0,  # for nominal case
-                        },
+                        # {
+                        #     "flagname": "trg_wgt_single_mu27",
+                        #     "embedding_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
+                        #     "muon_trg_extrapolation": 1.0,  # for nominal case
+                        # },
+                        # {
+                        #     "flagname": "trg_wgt_single_mu24ormu27",
+                        #     "embedding_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
+                        #     "muon_trg_extrapolation": 1.0,  # for nominal case
+                        # },
                     ],
                     "2017": [
                         {
@@ -347,8 +347,8 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
         ["et"],
         AppendProducer(
             producers=[
-                embedding.TauEmbeddingElectronIDSF_1,
-                embedding.TauEmbeddingElectronIsoSF_1,
+                # embedding.TauEmbeddingElectronIsoSF_1,
+                # embedding.TauEmbeddingElectronIDSF_1,
                 # embedding.TauEmbeddingBoostedElectronIDSF_1,
                 # embedding.TauEmbeddingBoostedElectronIsoSF_1,
                 embedding.ETGenerateSingleElectronTriggerSF,
@@ -356,6 +356,20 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
             samples=["embedding"],
         ),
     )
+    configuration.add_producers(
+        "et",
+        [
+            embedding.TauEmbeddingElectronIsoSF_1,
+            embedding.TauEmbeddingElectronIDSF_1,
+        ],
+    )
+    configuration.add_outputs(
+            ["et"],
+            [
+                q.iso_wgt_ele_1,
+                q.id_wgt_emb_ele_1,
+            ],
+        )
     configuration.add_modification_rule(
         ["tt"],
         AppendProducer(
@@ -412,7 +426,7 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
                 {
                     "2018": [
                         {
-                            "flagname": "trg_double_tau35_mediumiso_hps",
+                            "flagname": "trg_double_tau35_mediumiso",
                             "p1_ptcut": 35,
                             "p2_ptcut": 35,
                             "p1_etacut": 2.1,
@@ -436,7 +450,7 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
                             "max_deltaR_triggermatch": 0.4,
                         },
                         {
-                            "flagname": "trg_double_tau40_mediumiso_tightid",
+                            "flagname": "trg_double_tau40_mediumiso",
                             "p1_ptcut": 40,
                             "p2_ptcut": 40,
                             "p1_etacut": 2.1,
@@ -448,7 +462,7 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
                             "max_deltaR_triggermatch": 0.4,
                         },
                         {
-                            "flagname": "trg_double_tau35_tightiso_tightid",
+                            "flagname": "trg_double_tau35_tightiso",
                             "p1_ptcut": 35,
                             "p2_ptcut": 35,
                             "p1_etacut": 2.1,
@@ -1052,14 +1066,14 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
                                     "muon_trg_extrapolation": 1.02,
                                 },
                                 {
-                                    "flagname": "trg_wgt_single_mu27",
-                                    "embedding_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
-                                    "muon_trg_extrapolation": 1.02,
-                                },
-                                {
-                                    "flagname": "trg_wgt_single_mu24ormu27",
-                                    "embedding_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
-                                    "muon_trg_extrapolation": 1.02,
+                                #     "flagname": "trg_wgt_single_mu27",
+                                #     "embedding_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
+                                #     "muon_trg_extrapolation": 1.02,
+                                # },
+                                # {
+                                #     "flagname": "trg_wgt_single_mu24ormu27",
+                                #     "embedding_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
+                                #     "muon_trg_extrapolation": 1.02,
                                 },
                             ],
                             "2017": [
@@ -1117,16 +1131,16 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
                                     "embedding_trigger_sf": "Trg_IsoMu24_pt_eta_bins",
                                     "muon_trg_extrapolation": 0.98,
                                 },
-                                {
-                                    "flagname": "trg_wgt_single_mu27",
-                                    "embedding_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
-                                    "muon_trg_extrapolation": 0.98,
-                                },
-                                {
-                                    "flagname": "trg_wgt_single_mu24ormu27",
-                                    "embedding_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
-                                    "muon_trg_extrapolation": 0.98,
-                                },
+                                # {
+                                #     "flagname": "trg_wgt_single_mu27",
+                                #     "embedding_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
+                                #     "muon_trg_extrapolation": 0.98,
+                                # },
+                                # {
+                                #     "flagname": "trg_wgt_single_mu24ormu27",
+                                #     "embedding_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
+                                #     "muon_trg_extrapolation": 0.98,
+                                # },
                             ],
                             "2017": [
                                 {

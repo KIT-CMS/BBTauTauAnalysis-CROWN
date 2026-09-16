@@ -87,7 +87,21 @@ JetID = {
         scopes=GLOBAL_SCOPES,
     ),
 }
-
+JetID_pseudo = Producer(
+    call="physicsobject::jet::quantity::PseudoID({df}, {output}, {input}, \"{era}\")",
+    input=[
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_chHEF,
+        nanoAOD.Jet_neHEF,
+        nanoAOD.Jet_chEmEF,
+        nanoAOD.Jet_neEmEF,
+        nanoAOD.Jet_muEF,
+        nanoAOD.Jet_chMultiplicity,
+        nanoAOD.Jet_neMultiplicity,
+    ],
+    output=[q.Jet_ID],
+    scopes=GLOBAL_SCOPES,
+)
 # Value of the b jet tagger
 # - For 2022 and 2023, PNet is used
 # - For Run 2 and from 2024 on, UParT regression is used

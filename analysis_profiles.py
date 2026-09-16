@@ -59,8 +59,9 @@ SM_PROFILE = AnalysisProfile(
     nmssm_lhe_scale_weight_samples=(),
     use_2018_v15_jet_path=True,
     bjet_max_abs_eta_override=2.4,
-    btag_2018_algorithm="upart_2018_v15",
-    btag_payload_dir="payloads/btagging_efficiencies/upart/2018",
+    # enable_btag_sf = False,
+    btag_2018_algorithm="DeepJet", #"upart_2018_v15",
+    btag_payload_dir=None, #"payloads/btagging_efficiencies/upart/2018",
 )
 
 SM_BTAG_EFFICIENCY_PROFILE = AnalysisProfile(

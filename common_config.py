@@ -1296,7 +1296,7 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
             # - The SM 2018-v15 path reads the reconstructed
             #   JetIDTight2018PuppiV15 mask, which is a boolean pass/fail
             #   (1 == pass tight, 0 == fail), so wp 1 selects tight.
-            "ak4jet_id_wp": 1 if use_sm_2018_v15 else 2,
+            "ak4jet_id_wp": 6,
             "ak4jet_apply_jet_horn_veto": "true",
             "ak4jet_puid_wp": EraModifier(
                 {
@@ -2468,6 +2468,7 @@ def build_config(
 
     # Z pt reweighting
     add_zpt_weight_config(configuration)
+    add_z_pt_reweighting_config_run2(configuration)
 
     # MET corrections
     add_met_corrections_config(configuration)
@@ -2641,16 +2642,16 @@ def build_config(
                     "mc_trigger_sf": "Trg_IsoMu24_pt_eta_bins",
                     "mc_muon_trg_extrapolation": 1.0,  # for nominal case
                 },
-                {
-                    "flagname": "trg_wgt_single_mu27",
-                    "mc_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
-                    "mc_muon_trg_extrapolation": 1.0,  # for nominal case
-                },
-                {
-                    "flagname": "trg_wgt_single_mu24ormu27",
-                    "mc_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
-                    "mc_muon_trg_extrapolation": 1.0,  # for nominal case
-                },
+                # {
+                #     "flagname": "trg_wgt_single_mu27",
+                #     "mc_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
+                #     "mc_muon_trg_extrapolation": 1.0,  # for nominal case
+                # },
+                # {
+                #     "flagname": "trg_wgt_single_mu24ormu27",
+                #     "mc_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
+                #     "mc_muon_trg_extrapolation": 1.0,  # for nominal case
+                # },
             ]
         },
     )
@@ -2796,7 +2797,7 @@ def build_config(
                 "2018-v15 jet ID formula not pinned/validated — SM entry "
                 "points are blocked"
             )
-        jet_id_overrides["2018"] = jets.JetIDTight2018PuppiV15
+        jet_id_overrides["2018"] = jets.JetID_pseudo #jets.JetIDTight2018PuppiV15
 
     # Producers of auxiliary jet collection quantities (mainly used for
     # selection and JEC). For a detailed description, see producers/jets.py
@@ -2876,8 +2877,8 @@ def build_config(
     # b jet identification scale factors
     bjet_id_sf_producer = get_for_era(
         {
-            # tuple(ERAS_RUN2): scalefactors.BJetShapeDeepJet_SF,
-            tuple(ERAS_RUN2): scalefactors.BJetWPUParT_SF,
+            tuple(ERAS_RUN2): scalefactors.BJetShapeDeepJet_SF,
+            # tuple(ERAS_RUN2): scalefactors.BJetWPUParT_SF,
             ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): scalefactors.BJetShapePNet_SF,
             ("2024", "2025"): scalefactors.BJetWPUParT_SF,
         },
@@ -2899,7 +2900,6 @@ def build_config(
     # unresolved config parameter. Shared with add_bjet_config via
     # _use_strict_upart_btag so the two call sites can't drift apart.
     use_strict_upart_btag = _use_strict_upart_btag(profile, era)
-    use_strict_upart_btag = False
     strict_upart_btag_outputs = []
     if use_strict_upart_btag:
         upart_btag_variations = btag_payloads.discover_upart_variations(
@@ -2918,6 +2918,8 @@ def build_config(
                 upart_btag_variations, upart_btag_wp_values
             )
         )
+        # bjet_id_sf_producer = scalefactors.BJetWPUParT_SF
+        # strict_upart_btag_outputs = [q.id_wgt_bjet]
 
     # Z boson pt reweighting
     # - TODO For Run 2, the corrections are provided in ROOT files and require a dedicated producer chain.
@@ -2999,6 +3001,7 @@ def build_config(
             AuxJetCollectionQuantities,
             AuxCorrT1METJetCollectionQuantities,
             jets.Type1JetCollection,
+            genparticles.CalculateGenBosonVector,
         ]
         + prefire_weight_producers
         + [base_jet_selection_producers]
@@ -3077,6 +3080,22 @@ def build_config(
             scalefactors.TauIDSF,
             taus.TauEnergyCorrectionMC
         ]
+    )
+    configuration.add_producers(
+            ["mt", "et", "tt"],
+            [
+                pairquantities.FastMTTQuantities,
+            ],
+        )
+    
+    configuration.add_outputs(
+        ["mt", "et", "tt"],
+        [
+            q.m_fastmtt,
+            q.pt_fastmtt,
+            q.eta_fastmtt,
+            q.phi_fastmtt,
+        ],
     )
 
     # Producers for quantities in the et scope
@@ -3614,12 +3633,12 @@ def build_config(
     )
 
     # TODO needs to be refined for run 3, not considered at the moment
-    #configuration.add_modification_rule(
-    #    HAD_TAU_SCOPES,
-    #    AppendProducer(
-    #        producers=event.ZPtMassReweighting, samples=["dyjets", "electroweak_boson"]
-    #    ),
-    #)
+    configuration.add_modification_rule(
+       HAD_TAU_SCOPES,
+       AppendProducer(
+           producers=event.ZPtMassReweighting, samples=["dyjets", "electroweak_boson"]
+       ),
+    )
 
     # Add Golden JSON filter for data and embedding samples
     add_rule(
@@ -3765,8 +3784,7 @@ def build_config(
         # q.jet_eta,
         # q.jet_phi,
         # q.jet_mass,
-        # TODO fix jet ID type
-        # q.jet_id,
+        q.Jet_ID,
         # q.jet_deepjet_b_score,
         # q.jet_pnet_b_score,
         # q.jet_deepjet_b_tagged_medium,
@@ -4012,6 +4030,7 @@ def build_config(
             q.tau_decaymode_2,
             q.electron_veto_flag,
             q.muon_veto_flag,
+            q.dilepton_veto,
             # q.fj_leading_pt,
             # q.fj_leading_msoftdrop,
         ],
@@ -4585,7 +4604,6 @@ def build_config(
     # systematic shifts for single muon trigger corrections
     #
 
-    # TODO check run 2 eras
     if era in ["2016preVFP", "2016postVFP", "2017", "2018", "2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
         for _variation in ["up", "down"]:
             configuration.add_shift(
