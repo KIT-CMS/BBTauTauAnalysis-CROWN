@@ -533,34 +533,20 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
 #########################
 # Electron ID/ISO SF
 #########################
+# Electron reconstruction weight: the EGM payload stores the reconstruction
+# efficiency in pt categories, so the addon selects the category per electron
+# (see cpp_addons/include/electron_reco.hxx) and takes the era key from the
+# config instead of a fixed category name.
 Ele_1_Reco_SF = Producer(
     name="Ele_1_Reco_SF",
-    call="""physicsobject::electron::scalefactor::Reco(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{ele_sf_year_id}", 
-        "{ele_sf_file}", 
-        "{ele_sf_cset_name}", 
-        "{ele_reco_sf_variation}")
-        """,
+    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_1, q.eta_1, q.phi_1],
     output=[q.reco_wgt_ele_1],
     scopes=["em", "ee", "et"],
 )
 Ele_2_Reco_SF = Producer(
     name="Ele_2_Reco_SF",
-    call="""physicsobject::electron::scalefactor::Reco(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{ele_sf_year_id}", 
-        "{ele_sf_file}", 
-        "{ele_sf_cset_name}", 
-        "{ele_reco_sf_variation}")
-        """,
+    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_2, q.eta_2, q.phi_2],
     output=[q.reco_wgt_ele_2],
     scopes=["ee"],
@@ -607,17 +593,17 @@ EleID_SF = ProducerGroup(
     scopes=["em", "ee", "et"],
     subproducers={
         "em": [
-            Ele_1_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_Reco_SF,
             Ele_1_ID_SF,
         ],
         "ee": [
-            Ele_1_Reco_SF,  # TODO a bit tedious to implement
-            Ele_2_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_Reco_SF,
+            Ele_2_Reco_SF,
             Ele_1_ID_SF,
             Ele_2_ID_SF,
         ],
         "et": [
-            Ele_1_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_Reco_SF,
             Ele_1_ID_SF,
         ],
     },
@@ -1255,7 +1241,7 @@ StrictUParTBtagMask = Producer(
     call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
     input=[q.base_bjets_mask, q.jet_overlap_veto_mask],
     output=[q.base_bjets_with_veto_mask],
-    scopes=HAD_TAU_SCOPES,
+    scopes=SCOPES,
 )
 
 def _parse_upart_variation_components(keys):
@@ -1346,7 +1332,7 @@ def _strict_upart_weight_producer(name, output_quantity, variation_comb, variati
             q.base_bjets_with_veto_mask,
         ],
         output=[output_quantity],
-        scopes=HAD_TAU_SCOPES,
+        scopes=SCOPES,
     )
 
 
@@ -1387,7 +1373,7 @@ def build_strict_upart_btag_weight(variations):
         call=None,
         input=None,
         output=None,
-        scopes=HAD_TAU_SCOPES,
+        scopes=SCOPES,
         subproducers=subproducers,
     )
     return group, output_quantities
