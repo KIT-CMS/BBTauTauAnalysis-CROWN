@@ -100,17 +100,12 @@ class SMMainConfigTest(unittest.TestCase):
         self.assertEqual(len(expected), 83)
 
         config = build("sm_config", "ttbar", scopes=ALL_SCOPES)
-        for scope in HAD_TAU_SCOPES:
+        for scope in ALL_SCOPES:
             with self.subTest(scope=scope):
                 outs = output_names(config, scope)
                 self.assertEqual(
                     {o for o in outs if o.startswith("btag_weight_upart")}, expected
                 )
-        for scope in FULLY_LEPTONIC_SCOPES:
-            with self.subTest(scope=scope):
-                outs = output_names(config, scope)
-                self.assertFalse(any(o.startswith("btag_weight_upart") for o in outs))
-                self.assertNotIn("StrictUParTBtagWeight", producer_names(config, scope))
 
     def test_sm_dyw_recoil_wiring(self):
         # the merged dyjets/wjets names get the gen-boson four-vector and the
