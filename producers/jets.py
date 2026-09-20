@@ -9,7 +9,7 @@ from code_generation.producer import Producer, ProducerGroup
 from code_generation.quantity import Quantity
 
 from ..helpers import era_producer_groups, override_eras
-from ..constants import GLOBAL_SCOPES, SCOPES, HAD_TAU_SCOPES, ERAS_RUN2
+from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2
 
 
 # ------------------------------------------------------------------------------
@@ -1255,7 +1255,7 @@ BtagProbeJetMask = Producer(
     call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
     input=[q.base_bjets_mask, q.jet_overlap_veto_mask],
     output=[q.btag_probe_jet_mask],
-    scopes=HAD_TAU_SCOPES,
+    scopes=SCOPES,
 )
 
 # Nominal corrected pt of the probe jets.
@@ -1264,7 +1264,7 @@ BtagProbeJetPt = Producer(
     call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
     input=[q.Jet_correctedPt, q.btag_probe_jet_mask],
     output=[q.btag_probe_jet_pt],
-    scopes=HAD_TAU_SCOPES,
+    scopes=SCOPES,
 )
 
 # Eta of the probe jets.
@@ -1273,7 +1273,7 @@ BtagProbeJetEta = Producer(
     call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
     input=[nanoAOD.Jet_eta, q.btag_probe_jet_mask],
     output=[q.btag_probe_jet_eta],
-    scopes=HAD_TAU_SCOPES,
+    scopes=SCOPES,
 )
 
 # Hadron flavour of the probe jets (MC-only NanoAOD branch, stored as UChar_t,
@@ -1283,7 +1283,7 @@ BtagProbeJetHadronFlavour = Producer(
     call="xyh::btag_probe::masked_vector<int, UChar_t>({df}, {output}, {input})",
     input=[nanoAOD.Jet_hadronFlavour, q.btag_probe_jet_mask],
     output=[q.btag_probe_jet_hadron_flavour],
-    scopes=HAD_TAU_SCOPES,
+    scopes=SCOPES,
 )
 
 # UParTAK4 B score of the probe jets.
@@ -1292,7 +1292,7 @@ BtagProbeJetUParT = Producer(
     call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
     input=[nanoAOD.Jet_btagUParTAK4B, q.btag_probe_jet_mask],
     output=[q.btag_probe_jet_upart],
-    scopes=HAD_TAU_SCOPES,
+    scopes=SCOPES,
 )
 
 BtagProbeJetVectors = ProducerGroup(
@@ -1300,7 +1300,7 @@ BtagProbeJetVectors = ProducerGroup(
     call=None,
     input=None,
     output=None,
-    scopes=HAD_TAU_SCOPES,
+    scopes=SCOPES,
     subproducers=[
         BtagProbeJetMask,
         BtagProbeJetPt,

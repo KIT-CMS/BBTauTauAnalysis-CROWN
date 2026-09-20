@@ -28,6 +28,11 @@ class AnalysisProfile:
     mc_only: bool = False
     enable_btag_sf: bool = True
     enable_probe_jet_collection: bool = False
+    # Upper bound on the relative isolation of the light lepton kept in the
+    # tau channels (et electron, mt muon); None keeps the 0.4 default. The
+    # analysis cuts at 0.15, the stored sideband above it feeds the fake-factor
+    # DR-to-SR corrections and the anti-isolated control regions.
+    tau_channel_lepton_max_iso: Optional[float] = None
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -56,6 +61,7 @@ SM_PROFILE = AnalysisProfile(
     bjet_max_abs_eta_override=2.4,
     btag_algorithm="upart",
     btag_payload_dir="payloads/btagging_efficiencies/upart/{era}",
+    tau_channel_lepton_max_iso=0.5,
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the

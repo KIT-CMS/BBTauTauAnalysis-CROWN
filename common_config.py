@@ -1966,10 +1966,10 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
         )
         # per-scope efficiency payload; loaded at run time by the
         # CorrectionManager, so a missing file fails only when the executable
-        # runs. The weight runs on the hadronic-tau scopes only.
+        # runs. Each channel requires its own measured efficiency payload.
         if profile.btag_payload_dir is not None:
             btag_payload_dir = profile.btag_payload_dir.format(era=era)
-            for scope in HAD_TAU_SCOPES:
+            for scope in SCOPES:
                 configuration.add_config_parameters(
                     [scope],
                     {
@@ -2239,6 +2239,13 @@ def build_config(
         else scalefactors.SingleEleTriggerSF
     )
 
+    # Light dilepton control channels (ee, em, mm). Pinned to 2018 only because
+    # the ee trigger SF relies on the Tau Embedding group's 2018 payload above;
+    # the electron reconstruction weight itself is keyed by ele_sf_year_id and
+    # selects the payload's pt category per electron for every era.
+    sm_light_controls = profile.use_run2_v15_inputs and era == "2018"
+    ee_trigger_sf = single_ele_trigger_sf if sm_light_controls else scalefactors.SingleEleTriggerSF
+
     # Run-2 NanoAOD-v15 inputs: the era switches below take the v15 value
     # instead of the legacy era default.
     use_run2_v15_inputs = _use_run2_v15_inputs(profile, era)
@@ -2472,7 +2479,7 @@ def build_config(
     # method and payload as TauAnalysis. Ele115-only events have no dedicated
     # correction in this payload; the configured weight describes Ele32.
     configuration.add_config_parameters(
-        ET_SCOPES,
+        ET_SCOPES + (EE_SCOPES if sm_light_controls else []),
         {
             "singlelectron_trigger_sf_mc": [
                 {
@@ -2804,18 +2811,12 @@ def build_config(
             for p in scope_producers
             if p not in analysis_bjet_layer
         ]
-    if use_strict_upart_btag:
-        # the strict UParT weight runs on the hadronic-tau scopes only, where
-        # the efficiency payloads exist
-        scope_producers = [p for p in scope_producers if p is not bjet_id_sf_producer]
     configuration.add_producers(SCOPES, scope_producers)
-    if use_strict_upart_btag:
-        configuration.add_producers(HAD_TAU_SCOPES, [bjet_id_sf_producer])
 
     # Payload-independent UParT probe-jet collection (efficiency profile only):
     # the base b-jet acceptance cleaned of lepton overlaps, no discriminator cut.
     if strip_analysis_bjets:
-        configuration.add_producers(HAD_TAU_SCOPES, [jets.BtagProbeJetVectors])
+        configuration.add_producers(SCOPES, [jets.BtagProbeJetVectors])
 
     # Producers for quantities in all scopes with hadronic taus
     configuration.add_producers(
@@ -2922,7 +2923,7 @@ def build_config(
             genparticles.ElElGenPairQuantities,
             scalefactors.EleID_SF,
             triggers.SingleEleTriggerFlags,
-            scalefactors.SingleEleTriggerSF,
+            ee_trigger_sf,
         ]
     )
 
@@ -2968,12 +2969,36 @@ def build_config(
             genparticles.EMGenDiTauPairQuantities,
             scalefactors.EleID_SF,
             scalefactors.MuonIDIso_SF,
-            triggers.SingleEleTriggerFlags,
             triggers.SingleMuTriggerFlags,
-            scalefactors.SingleEleTriggerSF,
             scalefactors.SingleMuTriggerSF,
-        ],
+        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, scalefactors.SingleEleTriggerSF]),
     )
+
+    # Light-lepton isolation kept in the tau channels; the light control
+    # channels keep the 0.4 default of the object selection.
+    if profile.tau_channel_lepton_max_iso is not None:
+        configuration.add_config_parameters(
+            ET_SCOPES, {"tight_electron_max_iso": profile.tau_channel_lepton_max_iso}
+        )
+        configuration.add_config_parameters(
+            MT_SCOPES, {"tight_muon_max_iso": profile.tau_channel_lepton_max_iso}
+        )
+
+    if sm_light_controls:
+        configuration.add_config_parameters(EE_SCOPES + EM_SCOPES, {"tight_electron_min_pt": 15.0})
+        configuration.add_config_parameters(MM_SCOPES + EM_SCOPES, {"tight_muon_min_pt": 15.0})
+        configuration.add_producers(EE_SCOPES + EM_SCOPES, [scalefactors.Ele_1_Reco_SF])
+        configuration.add_producers(EE_SCOPES, [scalefactors.Ele_2_Reco_SF])
+        configuration.add_outputs(EE_SCOPES + EM_SCOPES, [q.reco_wgt_ele_1])
+        configuration.add_outputs(EE_SCOPES, [q.reco_wgt_ele_2])
+        for control_scopes, control_producers in [
+            (EE_SCOPES + EM_SCOPES, [scalefactors.EleID_SF, scalefactors.Ele_1_Reco_SF]),
+            (EE_SCOPES, [scalefactors.Ele_2_Reco_SF]),
+            (MM_SCOPES + EM_SCOPES, [scalefactors.MuonIDIso_SF]),
+        ]:
+            configuration.add_modification_rule(control_scopes, RemoveProducer(
+                producers=control_producers, samples=["data", "embedding", "embedding_mc"],
+            ))
 
     # Extra lepton vetoes in channels, requires `Veto<object>` and
     # `VetoSecond<object>` to be added to the correct scopes
@@ -3067,16 +3092,15 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         ),
     )
-    # The fully leptonic electron scopes continue to use the EGM producer.
     configuration.add_modification_rule(
-        EE_SCOPES + EM_SCOPES,
-        RemoveProducer(
-            producers=[
-                scalefactors.SingleEleTriggerSF,
-            ],
-            samples=["data", "embedding", "embedding_mc"],
-        ),
+        EE_SCOPES,
+        RemoveProducer(producers=[ee_trigger_sf], samples=["data", "embedding", "embedding_mc"]),
     )
+    if not sm_light_controls:
+        configuration.add_modification_rule(
+            EM_SCOPES,
+            RemoveProducer(producers=[scalefactors.SingleEleTriggerSF], samples=["data", "embedding", "embedding_mc"]),
+        )
     # TODO fix for Run 2, SF seem to not be available
     # configuration.add_modification_rule(
     #     ET_SCOPES,
@@ -3147,7 +3171,7 @@ def build_config(
 
     # Remove b tagging scale factor producers from data and embedding samples in all scopes 
     configuration.add_modification_rule(
-        HAD_TAU_SCOPES if use_strict_upart_btag else SCOPES,
+        SCOPES,
         RemoveProducer(
             producers=[
                 bjet_id_sf_producer,
@@ -3612,10 +3636,10 @@ def build_config(
     configuration.add_outputs(SCOPES, scope_outputs)
 
     # Payload-independent UParT probe-jet vectors (efficiency profile only).
-    # Added on the hadronic-tau scopes, where the probe producers run.
+    # The cleaned pretag collection is identical to the SF acceptance in every scope.
     if strip_analysis_bjets:
         configuration.add_outputs(
-            HAD_TAU_SCOPES,
+            SCOPES,
             [
                 q.btag_probe_jet_pt,
                 q.btag_probe_jet_eta,
@@ -3796,7 +3820,7 @@ def build_config(
             triggers.SingleEleTriggerFlags.output_group,
             q.electron_veto_flag,
             q.muon_veto_flag,
-        ] + scalefactors.SingleEleTriggerSF.get_outputs("ee"),
+        ] + ee_trigger_sf.get_outputs("ee"),
     )
 
     # Outputs for the em scope
@@ -3805,12 +3829,11 @@ def build_config(
         [
             q.nelectrons,
             q.nmuons,
-            triggers.SingleEleTriggerFlags.output_group,
             triggers.SingleMuTriggerFlags.output_group,
             q.electron_veto_flag,
             q.muon_veto_flag,
             q.dilepton_veto,
-        ] + scalefactors.SingleEleTriggerSF.get_outputs("em")
+        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags.output_group] + scalefactors.SingleEleTriggerSF.get_outputs("em"))
         + scalefactors.SingleMuTriggerSF.get_outputs("em"),
     )
 
@@ -4603,7 +4626,7 @@ def build_config(
     if use_strict_upart_btag:
         for scope in configuration.outputs:
             configuration.outputs[scope].discard(q.id_wgt_bjet)
-        configuration.add_outputs(HAD_TAU_SCOPES, strict_upart_btag_outputs)
+        configuration.add_outputs(SCOPES, strict_upart_btag_outputs)
 
     #########################
     # Import triggersetup   #
