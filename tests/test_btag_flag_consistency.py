@@ -6,9 +6,11 @@ agree and nothing in the framework checks that they do. A placeholder or a wrong
 correction name throws loudly in correctionlib, but a working point taken from a
 *different tagger* than the discriminant silently mis-flags jets; both have happened.
 """
+
 import gzip
 import json
-import unittest
+
+import pytest
 
 from analysis_configurations.bbtautau import btag_payloads
 from analysis_configurations.bbtautau.constants import ERAS
@@ -20,17 +22,18 @@ TAGGER_BY_SCORE_COLUMN = {
     "Jet_btagPNetB": "particleNet",
     "Jet_btagUParTAK4B": "UParTAK4",
 }
-
 PARAMETERS = (
-    "bjet_score_column", "bjet_min_score", "bjet_sf_file",
-    "bjet_sf_wp_name", "bjet_btag_wp_name",
+    "bjet_score_column",
+    "bjet_min_score",
+    "bjet_sf_file",
+    "bjet_sf_wp_name",
+    "bjet_btag_wp_name",
 )
-
-# Every entry point over the eras it supports; nmssm_config defines no
-# AVAILABLE_ERAS and therefore accepts all of them.
-CASES = tuple(("nmssm_config", era) for era in ERAS) + (
-    ("sm_config", "2018"), ("sm_btag_efficiency_config", "2018"),
-)
+# Every entry point over the eras it supports; nmssm_config accepts all of them.
+CASES = [("nmssm_config", era) for era in ERAS] + [
+    ("sm_config", "2018"),
+    ("sm_btag_efficiency_config", "2018"),
+]
 
 
 def working_points(payload_path, correction_name):
@@ -39,40 +42,27 @@ def working_points(payload_path, correction_name):
         return btag_payloads.load_upart_wps(payload_path)
     with gzip.open(payload_path, "rt") as handle:
         corrections = {c["name"]: c for c in json.load(handle)["corrections"]}
-    content = corrections[correction_name]["data"]["content"]
-    return {item["key"]: item["value"] for item in content}
+    return {
+        item["key"]: item["value"]
+        for item in corrections[correction_name]["data"]["content"]
+    }
 
 
-class BtagFlagConsistencyTest(unittest.TestCase):
-    def test_btag_flag_parameters_are_consistent(self):
-        for module_name, era in CASES:
-            with self.subTest(module=module_name, era=era):
-                nominal = build(module_name, "ttbar", era=era).config_parameters[
-                    "global"
-                ]["nominal"]
-                params = {key: nominal.get(key) for key in PARAMETERS}
-                case = f"{module_name}/{era}"
-                for key, value in params.items():
-                    self.assertNotIn(
-                        value, ("TO_ADD", "DOES_NOT_EXIST", None),
-                        f"{key} is unset/placeholder for {case}",
-                    )
-                tagger = TAGGER_BY_SCORE_COLUMN.get(params["bjet_score_column"])
-                self.assertIsNotNone(
-                    tagger, f"unknown b-tag discriminant {params['bjet_score_column']}"
-                )
-                self.assertTrue(
-                    params["bjet_sf_wp_name"].startswith(tagger),
-                    f"{case}: discriminant {params['bjet_score_column']} ({tagger}) "
-                    f"is thresholded with {params['bjet_sf_wp_name']}",
-                )
-                wps = working_points(params["bjet_sf_file"], params["bjet_sf_wp_name"])
-                self.assertAlmostEqual(
-                    wps[params["bjet_btag_wp_name"]], params["bjet_min_score"], places=6,
-                    msg=f"{case}: payload {params['bjet_sf_wp_name']} "
-                        f"{params['bjet_btag_wp_name']} != bjet_min_score",
-                )
-
-
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize("module,era", CASES)
+def test_btag_flag_parameters_are_consistent(module, era):
+    nominal = build(module, "ttbar", era=era).config_parameters["global"]["nominal"]
+    params = {key: nominal.get(key) for key in PARAMETERS}
+    for key, value in params.items():
+        assert value not in (
+            "TO_ADD",
+            "DOES_NOT_EXIST",
+            None,
+        ), f"{key} is unset for {module}/{era}"
+    tagger = TAGGER_BY_SCORE_COLUMN[params["bjet_score_column"]]
+    assert params["bjet_sf_wp_name"].startswith(
+        tagger
+    ), f"{module}/{era}: discriminant {params['bjet_score_column']} is thresholded with {params['bjet_sf_wp_name']}"
+    wps = working_points(params["bjet_sf_file"], params["bjet_sf_wp_name"])
+    assert wps[params["bjet_btag_wp_name"]] == pytest.approx(
+        params["bjet_min_score"], abs=1e-6
+    )
