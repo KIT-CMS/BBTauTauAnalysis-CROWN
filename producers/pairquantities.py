@@ -818,34 +818,51 @@ jet_hemisphere = Producer(
     scopes=["mt", "et", "tt", "em", "ee", "mm"],
 )
 
+_DITAU_MET_QUANTITIES = [
+    Pzetamissvis,
+    mTdileptonMET,
+    mt_1,
+    mt_2,
+    p4_tautau,
+    pt_tautau,
+    pt_ttjj,
+    p4_tautaubb,
+    pt_tautaubb,
+    mass_tautaubb,
+    mt_tot,
+    #Pzetamissvis_pf,
+    #mTdileptonMET_pf,
+    #mt_1_pf,
+    #mt_2_pf,
+    #pt_tt_pf,
+    #pt_ttjj_pf,
+    #pt_ttbb_pf,
+    #mt_tot_pf,
+    pt_dijet,
+    jet_hemisphere,
+
+]
+
 DiTauPairMETQuantities = ProducerGroup(
     name="DiTauPairMETQuantities",
     call=None,
     input=None,
     output=None,
     scopes=["mt", "et", "tt", "em", "ee", "mm"],
+    subproducers=_DITAU_MET_QUANTITIES,
+)
+
+# Without the tautau+bb combination, for the b-tag efficiency profile that
+# builds no selected bb pair.
+DiTauPairMETQuantitiesNoBB = ProducerGroup(
+    name="DiTauPairMETQuantitiesNoBB",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["mt", "et", "tt", "em", "ee", "mm"],
     subproducers=[
-        Pzetamissvis,
-        mTdileptonMET,
-        mt_1,
-        mt_2,
-        p4_tautau,
-        pt_tautau,
-        pt_ttjj,
-        p4_tautaubb,
-        pt_tautaubb,
-        mass_tautaubb,
-        mt_tot,
-        #Pzetamissvis_pf,
-        #mTdileptonMET_pf,
-        #mt_1_pf,
-        #mt_2_pf,
-        #pt_tt_pf,
-        #pt_ttjj_pf,
-        #pt_ttbb_pf,
-        #mt_tot_pf,
-        pt_dijet,
-        jet_hemisphere,
+        p for p in _DITAU_MET_QUANTITIES
+        if p not in (p4_tautaubb, pt_tautaubb, mass_tautaubb)
     ],
 )
 

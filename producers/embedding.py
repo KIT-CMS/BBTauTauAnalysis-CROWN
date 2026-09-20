@@ -2,7 +2,6 @@ from code_generation.producer import Producer, ProducerGroup, ExtendedVectorProd
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 
-"""
 EmbeddingGenWeight = Producer(
     name="EmbeddingGenWeight",
     call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
@@ -67,27 +66,19 @@ TauEmbeddingIsTightTrailingMuon = Producer(
     output=[q.emb_isTightTrailingMuon],
     scopes=["et", "mt", "tt", "em", "mm", "ee"],
 )
-TauEmbeddingnInitialPairCandidates = Producer(
-    name="TauEmbeddingInitialPairCandidates",
-    call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
-    input=[nanoAOD.TauEmbedding_InitialPairCandidates],
-    output=[q.emb_InitialPairCandidates],
-    scopes=["et", "mt", "tt", "em", "mm", "ee"],
-)
-TauEmbeddingSelectionOldMass = Producer(
-    name="TauEmbeddingSelectionOldMass",
-    call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
-    input=[nanoAOD.TauEmbedding_SelectionOldMass],
-    output=[q.emb_SelectionOldMass],
-    scopes=["et", "mt", "tt", "em", "mm", "ee"],
-)
-TauEmbeddingSelectionNewMass = Producer(
-    name="TauEmbeddingSelectionNewMass",
-    call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
-    input=[nanoAOD.TauEmbedding_SelectionNewMass],
-    output=[q.emb_SelectionNewMass],
-    scopes=["et", "mt", "tt", "em", "mm", "ee"],
-)
+# TauEmbeddingnInitialPairCandidates / TauEmbeddingSelectionOldMass /
+# TauEmbeddingSelectionNewMass are intentionally NOT defined here (unlike the
+# reference `unittest` analysis config): they read
+# nanoAOD.TauEmbedding_nInitialPairCandidates / TauEmbedding_SelectionOldMass /
+# TauEmbedding_SelectionNewMass, none of which exist in the NanoAOD v15 Run 3
+# schema this analysis's `nanoAOD` alias resolves to
+# (analysis_configurations/quantities/nanoAODv15_run3.py) -- only in the
+# legacy v9 Run 2 schema. Defining them would raise AttributeError at import
+# time for every build (not just embedding samples), since this module is
+# imported unconditionally by tau_embedding_settings.py. Re-add them (with
+# their emb_InitialPairCandidates / emb_SelectionOldMass / emb_SelectionNewMass
+# outputs, currently unused) once/if those branches are added to the v15
+# schema.
 
 EmbeddingQuantities = ProducerGroup(
     name="EmbeddingQuantities",
@@ -105,12 +96,8 @@ EmbeddingQuantities = ProducerGroup(
         TauEmbeddingIsMediumTrailingMuon,
         TauEmbeddingIsTightLeadingMuon,
         TauEmbeddingIsTightTrailingMuon,
-        TauEmbeddingnInitialPairCandidates,
-        TauEmbeddingSelectionOldMass,
-        TauEmbeddingSelectionNewMass,
     ],
 )
-"""
 
 
 # Selection scalefactor

@@ -484,36 +484,20 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
 #########################
 # Electron ID/ISO SF
 #########################
+# Electron reconstruction weight: the EGM payload stores the reconstruction
+# efficiency in pt categories, so the addon selects the category per electron
+# (see cpp_addons/include/electron_reco.hxx) and takes the era key from the
+# config instead of a fixed category name.
 Ele_1_Reco_SF = Producer(
     name="Ele_1_Reco_SF",
-    call="""physicsobject::electron::scalefactor::Id(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{ele_sf_year_id}", 
-        "{ele_reco_sf_name}", 
-        "{ele_sf_file}", 
-        "{ele_sf_cset_name}", 
-        "{ele_reco_sf_variation}")
-        """,
+    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_1, q.eta_1, q.phi_1],
     output=[q.reco_wgt_ele_1],
     scopes=["em", "ee", "et"],
 )
 Ele_2_Reco_SF = Producer(
     name="Ele_2_Reco_SF",
-    call="""physicsobject::electron::scalefactor::Id(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{ele_sf_year_id}", 
-        "{ele_reco_sf_name}", 
-        "{ele_sf_file}", 
-        "{ele_sf_cset_name}", 
-        "{ele_reco_sf_variation}")
-        """,
+    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_2, q.eta_2, q.phi_2],
     output=[q.reco_wgt_ele_2],
     scopes=["ee"],
@@ -558,19 +542,18 @@ EleID_SF = ProducerGroup(
     input=None,
     output=None,
     scopes=["em", "ee", "et"],
+    # Ele_N_Reco_SF is not part of this group: common_config.py wires it
+    # explicitly for the light control channels (ee, em); adding it here would
+    # also put reco_wgt_ele_1 into the et ntuples.
     subproducers={
         "em": [
-            #Ele_1_Reco_SF,  TODO a bit tedious to implement
             Ele_1_IDWP90_SF,
         ],
         "ee": [
-            #Ele_1_Reco_SF,  TODO a bit tedious to implement
-            #Ele_2_Reco_SF,  TODO a bit tedious to implement
             Ele_1_IDWP90_SF,
             Ele_2_IDWP90_SF,
         ],
         "et": [
-            #Ele_1_Reco_SF,  TODO a bit tedious to implement
             Ele_1_IDWP90_SF,
         ],
     },
@@ -1185,6 +1168,166 @@ BJetWPUParT_SF = Producer(
     output=[q.id_wgt_bjet],
     scopes=SCOPES,
 )
+
+##############################################################################
+# Strict UParTAK4 multiple-working-point b-tag EVENT weight (UParT profiles on
+# the Run-2 NanoAOD-v15 inputs).
+#
+# The strict counterpart of BJetWPUParT_SF / BtaggingMultipleWP: the C++
+# consumer xyh::scalefactor::btagging_strict::multi_wp_event_weight throws
+# (with the offending jet kinematics) instead of silently substituting 1.0 for
+# a degenerate jet contribution, and it dispatches per correction (comb for
+# b/c, light for light) with independent variation keys. The producer emits the
+# nominal event weight plus one weight-only column per discovered systematic
+# variation (visible on the nominal tree, i.e. with -DSHIFTS=none).
+##############################################################################
+
+# Kinematic b-jet acceptance (pt > 20, |eta| < 2.4, jet ID) BEFORE the b-tag WP
+# cut, cleaned of lepton overlaps -- the exact jet set the fixed-WP event
+# reweighting runs over, and already inside the [0, 2.4) eta support the strict
+# consumer requires.
+StrictUParTBtagMask = Producer(
+    name="StrictUParTBtagMask",
+    call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
+    input=[q.base_bjets_mask, q.jet_overlap_veto_mask],
+    output=[q.base_bjets_with_veto_mask],
+    scopes=SCOPES,
+)
+
+def _parse_upart_variation_components(keys):
+    """Return the set of systematic *components* in a set of variation keys.
+
+    A component is the suffix shared by an ``up``/``down`` pair: the plain
+    up/down pair maps to ``""``; ``up_hf``/``down_hf`` map to ``"hf"``;
+    ``central`` is ignored.
+    """
+    components = set()
+    for key in keys:
+        if key == "central":
+            continue
+        if key in ("up", "down"):
+            components.add("")
+        elif key.startswith("up_"):
+            components.add(key[len("up_"):])
+        elif key.startswith("down_"):
+            components.add(key[len("down_"):])
+    return components
+
+
+def upart_variation_dispatch(variations):
+    """Build the per-correction variation dispatch for the weight columns.
+
+    ``variations`` is the mapping returned by
+    ``btag_payloads.discover_upart_variations`` (correction name -> set of
+    systematic keys). For every component in the UNION of the comb and light
+    components, and each direction (up/down), one weight column is emitted whose
+    per-flavor variation keys follow the spec rule:
+
+      * component in comb only  -> comb uses the key, light stays ``central``;
+      * component in light only -> light uses the key, comb stays ``central``;
+      * component in both        -> each flavor uses its own key.
+
+    Returns an ordered list of dicts ``{"suffix", "variation_comb",
+    "variation_light"}`` (plain component first, then components sorted by name;
+    up before down), so the emitted column set is deterministic.
+    """
+    comb_components = _parse_upart_variation_components(
+        variations["UParTAK4_comb"]
+    )
+    light_components = _parse_upart_variation_components(
+        variations["UParTAK4_light"]
+    )
+    union = comb_components | light_components
+    ordered = ([""] if "" in union else []) + sorted(c for c in union if c)
+    dispatch = []
+    for component in ordered:
+        for direction in ("up", "down"):
+            key = direction if component == "" else f"{direction}_{component}"
+            dispatch.append(
+                {
+                    "suffix": key,
+                    "variation_comb": (
+                        key if component in comb_components else "central"
+                    ),
+                    "variation_light": (
+                        key if component in light_components else "central"
+                    ),
+                }
+            )
+    return dispatch
+
+
+def _strict_upart_weight_producer(name, output_quantity, variation_comb, variation_light):
+    """One multi_wp_event_weight Producer for a fixed (comb, light) variation.
+
+    The two variation keys are known at config time and baked into the call;
+    the payload files and the efficiency sample_type remain config parameters
+    resolved per scope. The WP thresholds are read from the SF payload by the
+    C++ consumer.
+    """
+    call = (
+        "xyh::scalefactor::btagging_strict::multi_wp_event_weight("
+        "{df}, correctionManager, {output}, {input}, "
+        '"{bjet_sf_file}", "{bjet_eff_file}", "{bjet_eff_sample_type}", '
+        '"' + variation_comb + '", "' + variation_light + '")'
+    )
+    return Producer(
+        name=name,
+        call=call,
+        input=[
+            q.Jet_correctedPt,
+            nanoAOD.Jet_eta,
+            nanoAOD.Jet_hadronFlavour,
+            nanoAOD.Jet_btagUParTAK4B,
+            q.base_bjets_with_veto_mask,
+        ],
+        output=[output_quantity],
+        scopes=SCOPES,
+    )
+
+
+def build_strict_upart_btag_weight(variations):
+    """Assemble the ``StrictUParTBtagWeight`` ProducerGroup for the SM path.
+
+    Emits the nominal weight ``btag_weight_upart``, one weight-only column per
+    discovered variation pair (``btag_weight_upart_<variation>``) and (as the
+    first subproducer) the acceptance mask.
+
+    Returns ``(producer_group, output_quantities)`` where ``output_quantities``
+    is the list of columns to hand to ``add_outputs``.
+    """
+    dispatch = upart_variation_dispatch(variations)
+
+    subproducers = [StrictUParTBtagMask]
+    output_quantities = [q.btag_weight_upart]
+
+    subproducers.append(
+        _strict_upart_weight_producer(
+            "StrictUParTBtagWeightNominal", q.btag_weight_upart, "central", "central"
+        )
+    )
+    for entry in dispatch:
+        column = Quantity(f"btag_weight_upart_{entry['suffix']}")
+        output_quantities.append(column)
+        subproducers.append(
+            _strict_upart_weight_producer(
+                f"StrictUParTBtagWeight_{entry['suffix']}",
+                column,
+                entry["variation_comb"],
+                entry["variation_light"],
+            )
+        )
+
+    group = ProducerGroup(
+        name="StrictUParTBtagWeight",
+        call=None,
+        input=None,
+        output=None,
+        scopes=SCOPES,
+        subproducers=subproducers,
+    )
+    return group, output_quantities
+
 
 btagging_SF_boosted = Producer(
     name="btagging_SF_boosted",

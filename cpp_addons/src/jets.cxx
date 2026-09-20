@@ -126,10 +126,27 @@ float apply_jer(const float &jet_pt, const float &jet_eta, const float &jet_phi,
     // Get the JER MC resolution and data-MC scale factor for the smearing
     auto resol = jer_resolution_evaluator->evaluate({jet_eta, jet_pt, rho});
     auto sf = 1.0;
-    if (std::stoi(era.substr(0, 4)) <= 2018) { // with run 2 inputs
+    // The JER scale-factor payload comes in two schemas, and which one applies
+    // is a property of the payload, not of the era: the 2018-UL-NanoAODv15 SM
+    // reprocessing is a Run-2 era that nevertheless ships the modern schema.
+    //  - legacy (NanoAODv9 UL): inputs (JetEta, systematic:string); a single
+    //    ScaleFactor correction returns the nominal/up/down value selected by
+    //    the systematic string.
+    //  - modern (NanoAODv12+/v15): inputs (JetEta, JetPt) returning the nominal
+    //    SF, with the up/down uncertainty in a separate SFUncertainty
+    //    correction.
+    // Detect the schema from the correction's own declared second-input type so
+    // both the legacy AK4-CHS-v9 path and the AK4-PUPPI-v12/v15 path (including
+    // 2018-UL-v15) evaluate correctly. This is behaviour-identical to the prior
+    // era gate for every previously supported payload.
+    const auto &jer_sf_inputs = jer_scalefactor_evaluator->inputs();
+    const bool legacy_jer_sf_schema =
+        jer_sf_inputs.size() >= 2 &&
+        jer_sf_inputs.at(1).type() == correction::Variable::VarType::string;
+    if (legacy_jer_sf_schema) { // with run 2 (v9) inputs
         sf = jer_scalefactor_evaluator->evaluate({jet_eta, jer_shift});
     } else {
-        sf = jer_scalefactor_evaluator->evaluate({ // with run 3 inputs
+        sf = jer_scalefactor_evaluator->evaluate({ // with modern (v12+/v15) inputs
                                                   jet_eta, jet_pt});
         if (jer_shift == "up" || jer_shift == "down") {
             auto sf_unc = jer_scalefactor_uncertainty_evaluator->evaluate({jet_eta, jet_pt});

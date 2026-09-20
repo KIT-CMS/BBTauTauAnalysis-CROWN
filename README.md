@@ -2,17 +2,116 @@
 
 This repository has been forked from [KIT-CMS/TauAnalysis-CROWN](https://github.com/KIT-CMS/TauAnalysis-CROWN).
 
-The repository holding the CROWN configuration of the NMSSM X &rightarrow; YH &rightarrow; bb&tau;&tau; analysis.
+The repository holding the CROWN configuration of the NMSSM X &rightarrow; YH &rightarrow; bb&tau;&tau;
+analysis and of the SM (non-resonant) HH &rightarrow; bb&tau;&tau; analysis.
 
+Every top-level configuration is a thin wrapper: it picks an `AnalysisProfile` (`analysis_profiles.py`,
+a frozen dataclass) and calls `common_config.build_config(PROFILE, era, sample, scopes, shifts, ...)`,
+which holds the whole configuration body. The profile carries the axes the analyses differ on --
+bb/&tau;&tau; truth-mother PDG IDs, the LHE-scale-weight sample lists, `use_run2_v15_inputs`, the
+b-jet |&eta;| override, the b-tag algorithm and efficiency-payload directory, and the
+efficiency-ntuple switches (`mc_only`, `enable_btag_sf`, `enable_probe_jet_collection`) -- so a new
+variant is one more profile instance plus one more thin module, not a fork of `common_config.py`.
+A config module may also declare `AVAILABLE_ERAS` and/or `AVAILABLE_SAMPLES`; `generate.py` and
+`generate_friends.py` reject an era or sample outside them before `build_config` runs, but the
+`Configuration` itself is always built against `constants.LEGACY_AVAILABLE_SAMPLES`.
 
 ## Available Configurations
 
-* `nmssm_config.py` - The main configuration to be used for the X &rightarrow; YH &rightarrow; bb&tau;&tau; search.
-
+* `nmssm_config.py` (`NMSSM_PROFILE`) - The main configuration to be used for the
+  X &rightarrow; YH &rightarrow; bb&tau;&tau; search. All eras, legacy (v9 / Run-3) inputs.
+* `sm_config.py` (`SM_PROFILE`) - The SM HH &rightarrow; bb&tau;&tau; production configuration:
+  Run-2 NanoAOD-v15 inputs, UParTAK4 b-tagging, `AVAILABLE_ERAS = ["2018"]`.
+* `sm_btag_efficiency_config.py` (`SM_BTAG_EFFICIENCY_PROFILE`, a `dataclasses.replace(SM_PROFILE,
+  ...)`) - The same selection, MC only and without b-tag scale factors, plus the probe-jet collection
+  the UParT b-tag MC efficiency is measured from downstream in `TauFakeFactors`. Being
+  payload-independent, it never depends on the payload it exists to produce.
 
 ## Available Friend Configurations
 
-* `nmssm_fastmtt.py` - Produce FastMTT friends
+The FastMTT and resolved kinematic-fit entries are thin wrappers around the shared
+`FriendTreeConfiguration` body `friend_common.build_friend_config`.
 
-* `nmssm_fake_factors.py` - Produce fake factor friends for the NMSSM analysis
+* `nmssm_fastmtt.py` / `sm_fastmtt.py` - Produce FastMTT friends (`m/pt/eta/phi_fastmtt`); the SM
+  module re-exports the NMSSM builder and only adds `AVAILABLE_ERAS = ["2018"]`.
+* `nmssm_kinfit_resolved.py` / `nmssm_kinfit_boosted.py` - HH/YH kinematic fit over the NMSSM Y-mass
+  hypotheses, resolved and boosted.
+* `sm_kinfit_resolved.py` - Fixed 125/125 GeV HH kinematic fit, 2018 only; outputs
+  `kinfit_convergence`, `kinfit_chi2`, `kinfit_prob`, `kinfit_mHH`.
+* `fake_factors_friend_config.py` - Produce fake factor friends for the NMSSM analysis.
+* `xyh_classifier_friend_config.py` - Produce PNN classifier friends for the NMSSM analysis.
 
+## Building
+
+Per-era wrapper scripts in `build_scripts/`, run from the CROWN repo root. All arguments are
+positional and optional: `$1` samples, `$2` scopes, `$3` debug, `$4` steps
+(`build` | `run_binary` | `all`), `$5` config (default `nmssm_config`).
+
+```bash
+bash analysis_configurations/bbtautau/build_scripts/test_build_2018.sh
+bash analysis_configurations/bbtautau/build_scripts/test_build_2018.sh hh2b2tau et,mt,tt false build sm_config
+```
+
+Each script configures and compiles in `<CROWN>/build_<era>[_<config>]/` -- the `_<config>` suffix is
+appended whenever `$5` is not `nmssm_config`, so builds for one era do not clobber each other -- and
+installs binaries `<config>_<sample>_<era>` into its `bin/`. `run_binary` runs each binary on a
+hard-coded remote NanoAOD test file and needs a valid grid proxy.
+
+The scripts pass `-DSHIFTS=none`. `-DSHIFTS` selects which of the *registered* CROWN shifts get
+compiled into an executable, matched by **case-insensitive substring containment** against the shift
+names (`Configuration._is_valid_shift`): `jes` selects every `jesUnc*` shift, `btag` every b-tag one.
+`all` and `none` are specials.
+
+## Run-2 NanoAOD-v15 inputs
+
+Both SM profiles set `use_run2_v15_inputs = True`. Only 2018 is enabled so far; the other Run-2 eras
+are meant to follow on the same code path, which is why nothing on it is named after an era. Relative
+to the legacy Run-2 path NMSSM keeps using:
+
+- **Jet ID** -- v15 ships no usable `Jet_jetId`, so the AK4-PUPPI ID is evaluated from the composition
+  branches by `producers/jets.py`'s `JetIDFromCorrectionlib` (the same producer 2024/2025 use), reading
+  `payloads/jetid/Run2-<era>-UL-NanoAODv15/jetid.json.gz`. JME does not publish that file for Run 2 UL;
+  it is generated by the `jetid-payloads` repository (see `payloads/jetid/README.md`), 2018 only so far.
+- **Electron scale and smearing** -- v15 carries the Run-3-style scale+smear inputs, so this path uses
+  the Run-3 `ElectronPtCorrectionMC` producer against the era's pinned `EGM/Run2-<era>-UL-NanoAODv15`
+  payload.
+- **MET covariance** -- v15 drops `MET_covXX/XY/YY`, so the covariance comes from `PuppiMET` through
+  `met.met_global(overrides)`.
+- **b-tagging** -- UParTAK4. `btag_payloads.py` reads the pinned per-era BTV payload
+  (`BTV/Run2-<era>-UL-NanoAODv15/2026-06-18/btagging.json.gz`) with `btv_upart_payload`,
+  `load_upart_wps` (working points) and `discover_upart_variations` (variation keys); MC efficiencies
+  are committed at `payloads/btagging_efficiencies/upart/2018/btag_efficiency_{et,mt,tt}.json.gz`
+  (`SM_PROFILE.btag_payload_dir = "payloads/btagging_efficiencies/upart/{era}"`). The
+  multi-working-point event weight comes from the strict consumer
+  `xyh::scalefactor::btagging_strict::multi_wp_event_weight` (`cpp_addons/*/btag_sf_strict.*`), which
+  takes the five WP thresholds from the SF payload's own `UParTAK4_wp_values` correction and throws
+  instead of clamping -- on thresholds that are not strictly decreasing, an efficiency that is
+  non-finite / &le; 0 / > 1, a non-monotonic efficiency pair, |&eta;| outside [0, 2.4), an unknown
+  jet flavour, or any correctionlib failure.
+- **Probe jets** -- with `enable_probe_jet_collection`, `jets.BtagProbeJetVectors` masks the jets with
+  `CombineMasks(base_bjets_mask, jet_overlap_veto_mask)` and exports
+  `btag_probe_jet_{pt,eta,hadron_flavour,upart}` via `xyh::btag_probe::masked_vector` -- the columns
+  the downstream efficiency measurement reads.
+
+All `/cvmfs/cms-griddata.cern.ch` pins are dated CAT-metadata snapshots, never the rolling `latest`
+symlink; after changing one, rerun the tests.
+
+## Tests
+
+The Python tests build the configurations and assert their surfaces; paths below are relative to the
+CROWN repo root. `source analysis_configurations/bbtautau/scripts/setup_tests.sh` sets up the LCG
+stack and `PYTHONPATH`. They read the pinned BTV payload, so `/cvmfs/cms-griddata.cern.ch` must be
+mounted.
+
+```bash
+python -m pytest analysis_configurations/bbtautau/tests
+```
+
+The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer, SM HH kinematic fit, electron
+reconstruction weight) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are
+skipped without `root-config`, `g++`, correctionlib and spdlog headers. The synthetic b-tag fixtures
+(gitignored) are regenerated by the test from `tests/fixtures/make_btag_sf_strict_fixtures.py`.
+
+## 2018 control production
+
+See [control production](docs_control_production.md) for `ee/em/mm`, the calibration-first UParT workflow, and the et/mt light-lepton isolation sideband kept up to 0.5.

@@ -378,5 +378,136 @@ ROOT::RDF::RNode BestYHKinFit(
     return df7;
 }
 
+/**
+ * @brief Kinematic fit of a non-resonant HH -> bb tautau system with the single
+ * fixed hypothesis m(H->bb) = m(H->tautau) = 125 GeV. Uses the same
+ * `YHKinFitMaster` engine as `hhkinfit::YHKinFit` with one hypothesis pair
+ * instead of the NMSSM Y-mass scan (`Ytautau=false`, so the b-jet pair carries
+ * the scanned mass and the engine's hard-coded 125 GeV the tautau side).
+ * `kinfit_mHH` is the invariant mass of the fitted four-object system (the
+ * engine's `mX`). The b-jet resolutions are the relative regression
+ * resolutions, passed through unconverted as in `YHKinFit`.
+ *
+ * @param df the input dataframe
+ * @param outputs names of the four output columns, in order:
+ * {kinfit_convergence, kinfit_chi2, kinfit_prob, kinfit_mHH}
+ * @param tau_p4_1, tau_p4_2 Lorentz-vector columns of the two taus
+ * @param b_p4_1, b_reso_1, b_p4_2, b_reso_2 Lorentz-vector and relative pt
+ * resolution columns of the two b-jets
+ * @param met_p4 Lorentz-vector column of the missing transverse energy
+ * @param met_cov_xx, met_cov_xy, met_cov_yy met covariance columns (xy = yx)
+ * @returns a dataframe with the four SM HH kinematic-fit outputs
+ */
+ROOT::RDF::RNode
+sm_hh_kinfit(ROOT::RDF::RNode df, const std::vector<std::string> &outputs,
+             const std::string &tau_p4_1, const std::string &tau_p4_2,
+             const std::string &b_p4_1, const std::string &b_reso_1,
+             const std::string &b_p4_2, const std::string &b_reso_2,
+             const std::string &met_p4, const std::string &met_cov_xx,
+             const std::string &met_cov_xy, const std::string &met_cov_yy) {
+    Logger::get("sm_hh_kinfit")
+        ->debug("Fitting bbtautau system with fixed 125/125 HH hypothesis to "
+                "get an estimation for the di-Higgs mass.");
+
+    auto kin_fit = [](const ROOT::Math::PtEtaPhiMVector &tau_p4_1,
+                      const ROOT::Math::PtEtaPhiMVector &tau_p4_2,
+                      const ROOT::Math::PtEtaPhiMVector &b_p4_1,
+                      const float &b_reso_1,
+                      const ROOT::Math::PtEtaPhiMVector &b_p4_2,
+                      const float &b_reso_2,
+                      const ROOT::Math::PtEtaPhiMVector &met_p4,
+                      const float &met_cov_xx, const float &met_cov_xy,
+                      const float &met_cov_yy) {
+        auto kinfit_mHH = -10.;
+        auto kinfit_chi2 = 999.;
+        auto kinfit_prob = 0.;
+        auto kinfit_convergence = -1.;
+
+        if ((tau_p4_1.Pt() > 0.) && (tau_p4_2.Pt() > 0.) &&
+            (b_p4_1.Pt() > 0.) && (b_p4_2.Pt() > 0.)) {
+            ROOT::Math::PtEtaPhiEVector tau_1 =
+                (ROOT::Math::PtEtaPhiEVector)tau_p4_1;
+            ROOT::Math::PtEtaPhiEVector tau_2 =
+                (ROOT::Math::PtEtaPhiEVector)tau_p4_2;
+            ROOT::Math::PtEtaPhiEVector b_1 =
+                (ROOT::Math::PtEtaPhiEVector)b_p4_1;
+            ROOT::Math::PtEtaPhiEVector b_2 =
+                (ROOT::Math::PtEtaPhiEVector)b_p4_2;
+
+            ROOT::Math::PtEtaPhiEVector met_LV =
+                (ROOT::Math::PtEtaPhiEVector)ROOT::Math::PtEtaPhiMVector(
+                    met_p4.Pt(), 0., met_p4.Phi(), 0.);
+            TMatrixD met_cov(2, 2);
+            met_cov[0][0] = met_cov_xx;
+            met_cov[1][0] = met_cov_xy;
+            met_cov[0][1] = met_cov_xy;
+            met_cov[1][1] = met_cov_yy;
+
+            // single fixed hypothesis pair, m(H->bb) = m(H->tautau) = 125 GeV
+            std::vector<int> hypo_mh = {125};
+            std::vector<int> hypo_mY = {125};
+
+            YHKinFitMaster kinFits = YHKinFitMaster(
+                b_1, b_reso_1, b_2, b_reso_2, tau_1, tau_2, met_LV, met_cov,
+                /*Ytautau=*/false);
+            kinFits.addMhHypothesis(hypo_mh);
+            kinFits.addMYHypothesis(hypo_mY);
+
+            kinFits.doFullFit();
+
+            std::pair<int, int> bestHypo = kinFits.getBestHypoFullFit();
+            Logger::get("sm_hh_kinfit")
+                ->debug("best hypothesis: tautau {}, bb {}", bestHypo.first,
+                        bestHypo.second);
+
+            if (bestHypo.second > 0) {
+                std::map<std::pair<int, int>, double> fit_results_chi2 =
+                    kinFits.getChi2FullFit();
+                std::map<std::pair<int, int>, double> fit_results_fitprob =
+                    kinFits.getFitProbFullFit();
+                std::map<std::pair<int, int>, double> fit_results_mX =
+                    kinFits.getMXFullFit();
+                std::map<std::pair<int, int>, int> fit_convergence =
+                    kinFits.getConvergenceFullFit();
+
+                kinfit_convergence = fit_convergence.at(bestHypo);
+                kinfit_mHH = fit_results_mX.at(bestHypo);
+                kinfit_chi2 = fit_results_chi2.at(bestHypo);
+                kinfit_prob = fit_results_fitprob.at(bestHypo);
+            }
+            Logger::get("sm_hh_kinfit")
+                ->debug("kinfit_convergence: {}", kinfit_convergence);
+            Logger::get("sm_hh_kinfit")->debug("kinfit_mHH: {}", kinfit_mHH);
+            Logger::get("sm_hh_kinfit")->debug("kinfit_chi2: {}", kinfit_chi2);
+            Logger::get("sm_hh_kinfit")->debug("kinfit_prob: {}", kinfit_prob);
+        }
+
+        ROOT::RVec<float> result = {(float)kinfit_convergence,
+                                    (float)kinfit_chi2, (float)kinfit_prob,
+                                    (float)kinfit_mHH};
+        return result;
+    };
+
+    std::string variation = "";
+    if (outputs.at(0).find("__") != std::string::npos) {
+        size_t pos = outputs.at(0).find("__");
+        variation = outputs.at(0).substr(pos);
+    }
+
+    std::string result_vec_name = "SMHHKinFit_vector_resolved" + variation;
+
+    auto df_out =
+        df.Define(result_vec_name, kin_fit,
+                  {tau_p4_1, tau_p4_2, b_p4_1, b_reso_1, b_p4_2, b_reso_2,
+                   met_p4, met_cov_xx, met_cov_xy, met_cov_yy});
+
+    for (std::size_t i = 0; i < outputs.size(); ++i) {
+        df_out = df_out.Define(outputs.at(i), hhkinfit::single_output(i),
+                               {result_vec_name});
+    }
+
+    return df_out;
+}
+
 } // namespace hhkinfit
 #endif /* GUARDHHKINFIT_H */
