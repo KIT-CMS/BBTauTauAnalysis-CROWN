@@ -1,5 +1,9 @@
 from dataclasses import dataclass
+<<<<<<< Updated upstream
 from ..producers import taus, embedding, scalefactors
+=======
+from ..producers import taus, embedding
+>>>>>>> Stashed changes
 
 
 @dataclass
@@ -38,4 +42,8 @@ class ES_ID_SCHEME:
 
     @property
     def pt_binning(self):
+<<<<<<< Updated upstream
         return [""] if self.is_dm_binned else ["20to40", "40toInf"]
+=======
+        return [""] if self.is_dm_binned else ["20to40", "40toInf"]
+>>>>>>> Stashed changes

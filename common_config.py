@@ -1,9 +1,13 @@
 from __future__ import annotations  # needed for type annotations in > python 3.7
 
+<<<<<<< Updated upstream
 import json
 import logging
 import os
 from typing import List
+=======
+from typing import List, Union, Callable
+>>>>>>> Stashed changes
 from itertools import chain
 from .producers import electrons as electrons
 from .producers import event as event
@@ -37,8 +41,11 @@ from code_generation.utility.generate_DAG import create_graph
 from .constants import ERAS_RUN2, ERAS_RUN3, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
 from .helpers import get_for_era
 from .scripts.SpecialSetups import ES_ID_SCHEME
+<<<<<<< Updated upstream
 
 log = logging.getLogger(__name__)
+=======
+>>>>>>> Stashed changes
 
 
 def add_noise_filters_config(configuration: Configuration):
@@ -2320,9 +2327,13 @@ def build_config(
         available_eras,
         available_scopes,
     )
+<<<<<<< Updated upstream
     
     configuration.ES_ID_SCHEME = ES_ID_SCHEME("dm_pt_binned")
 
+=======
+    configuration.ES_ID_SCHEME = ES_ID_SCHEME("dm_pt_binned")
+>>>>>>> Stashed changes
     # Set sample flags manually
     # The configuration of is_data and is_embedding is set here for better readability, although
     # it has already been set in the Configuration class.
@@ -2346,9 +2357,28 @@ def build_config(
     configuration.add_config_parameters(
         configuration.scopes,
         {
+<<<<<<< Updated upstream
             "is_data": is_data,
             "is_embedding": is_embedding,
             "is_mc": is_mc,
+=======
+            "is_data": sample == "data",
+            "is_embedding": sample == "embedding",
+            "is_mc": sample not in ["data", "embedding"],
+            "is_ttbar": sample in ["ttbar", "rem_ttbar"],
+            "is_singletop": sample in ["singletop"],
+            "is_diboson": sample in ["diboson"],
+            "is_dyjets": sample in [
+                "dyjets",
+                "dyjets_madgraph",
+                "dyjets_amcatnlo",
+                "dyjets_amcatnlo_ll",
+                "dyjets_amcatnlo_tt",
+                "dyjets_powheg",
+                "electroweak_boson",
+            ],
+            "is_wjets": sample in ["wjets", "wjets_madgraph", "wjets_amcatnlo"],
+>>>>>>> Stashed changes
         },
     )
 
@@ -2668,6 +2698,11 @@ def build_config(
                     "mc_trigger_sf": "Trg32_Iso_pt_eta_bins",
                     "mc_electron_trg_extrapolation": 1.0,  # for nominal case
                 },
+                {
+                    "flagname": "trg_wgt_single_ele32orele35",
+                    "mc_trigger_sf": "Trg32_or_Trg35_Iso_pt_eta_bins",
+                    "mc_electron_trg_extrapolation": 1.0,  # for nominal case
+                },
             ]
         },
     )
@@ -2741,6 +2776,7 @@ def build_config(
     )
 
     # Electron pt correction
+<<<<<<< Updated upstream
     # - In Run 2, a fix must be applied to the already corrected electron pt.
     # - In Run 3, the electon pt is not corrected at NanoAOD level, the full correction is applied
     #   based on correctionlib files.
@@ -2763,6 +2799,26 @@ def build_config(
         electron_pt_correction_data_producer = electrons.ElectronPtCorrectionData.get(era, "v15")
      
     
+=======
+    #
+    # See comments in corresponding producers: For Run 2, the corrections on
+    # NANOAOD v15 samples are not available yet (the procedure has changed
+    # between NanoAODv9 and NanoAODv15). Currently, the Run 2 producers just
+    # rename the electron pt in NANOAOD.
+    #
+    # The v15 inputs ship the raw inputs (Electron_deltaEtaSC, Electron_r9) of
+    # the Run-3-style scale+smear producer, so the v15 path uses it for Run 2.
+    ElectronPtCorrectionMC = v15_or(
+        electrons.ElectronPtCorrectionMC[tuple(ERAS_RUN3)], electrons.ElectronPtCorrectionMC
+    )
+    ElectronPtCorrectionData = get_for_era(electrons.ElectronPtCorrectionData, era)
+    # ElectronPtCorrectionMC = electrons.ElectronPtCorrectionMC.get(era,"v15")
+    # if era in ERAS_RUN2:
+    #     # - In Run 2, the pt is already corrected, so this is just
+    #     ElectronPtCorrectionData = electrons.ElectronPtCorrectionData.get(era, "v9")
+    # else:
+    #     ElectronPtCorrectionData = electrons.ElectronPtCorrectionData.get(era, "v15")
+>>>>>>> Stashed changes
 
     # Jet ID producer
     # For a detailed description, see producers/jets.py
@@ -3078,7 +3134,12 @@ def build_config(
         HAD_TAU_SCOPES,
         [
             scalefactors.TauIDSF,
+<<<<<<< Updated upstream
             taus.TauEnergyCorrectionMC
+=======
+            taus.TauEnergyCorrectionMC,
+            taus.MttCollApproximation,
+>>>>>>> Stashed changes
         ]
     )
     configuration.add_producers(
@@ -3277,10 +3338,22 @@ def build_config(
         )
 
     # For DY and W samples, calculate the generator-level boson four-vector
+<<<<<<< Updated upstream
     _gen_boson_samples = profile_samples(
         "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
         "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo",
         *sm_merged_dyw,
+=======
+    configuration.add_modification_rule(
+        SCOPES,
+        AppendProducer(
+            [boson_corrections.GenBosonQuantities],
+            samples=[
+                "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
+                "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo", "electroweak_boson",
+            ] + sm_merged_dyw,
+        ),
+>>>>>>> Stashed changes
     )
     if _gen_boson_samples:
         add_rule(
@@ -3414,7 +3487,11 @@ def build_config(
             producers=[
                 scalefactors.MuonIDIso_SF,
             ],
+<<<<<<< Updated upstream
             samples=profile_samples("data", "embedding", "embedding_mc"),
+=======
+            samples=["data"],
+>>>>>>> Stashed changes
         )
     )
 
@@ -3720,6 +3797,15 @@ def build_config(
         q.is_data,
         q.is_embedding,
         q.is_mc,
+        q.is_ttbar,
+        q.is_dyjets,
+        q.is_wjets,
+        q.is_ggh_htautau,
+        q.is_vbf_htautau,
+        q.is_diboson,
+        q.is_ggh_hbb,
+        q.is_vbf_hbb,
+        q.is_singletop,
         nanoAOD.run,
         q.lumi,
         q.npartons,
@@ -3732,6 +3818,135 @@ def build_config(
         q.eta_2,
         q.phi_1,
         q.phi_2,
+<<<<<<< Updated upstream
+=======
+        q.bpair_pt_1,
+        q.bpair_pt_2,
+        q.bpair_eta_1,
+        q.bpair_eta_2,
+        q.bpair_phi_1,
+        q.bpair_phi_2,
+        q.bpair_mass_1,
+        q.bpair_mass_2,
+        q.bpair_btag_value_1,
+        q.bpair_btag_value_2,
+        q.bpair_m_inv,
+        q.bpair_deltaR,
+        q.bpair_pt_dijet,
+        q.bpair_pt_regressed_1,
+        q.bpair_pt_regressed_2,
+        q.bpair_eta_regressed_1,
+        q.bpair_eta_regressed_2,
+        q.bpair_phi_regressed_1,
+        q.bpair_phi_regressed_2,
+        q.bpair_mass_regressed_1,
+        q.bpair_mass_regressed_2,
+        q.bpair_btag_value_regressed_1,
+        q.bpair_btag_value_regressed_2,
+        q.bpair_pt_resolution_regressed_1,
+        q.bpair_pt_resolution_regressed_2,
+        q.bpair_m_inv_regressed,
+        q.bpair_deltaR_regressed,
+        q.bpair_pt_dijet_regressed,
+        q.genjet_pt_1,
+        q.genjet_eta_1,
+        q.genjet_phi_1,
+        q.genjet_mass_1,
+        q.genjet_hadFlavour_1,
+        q.genjet_pt_2,
+        q.genjet_eta_2,
+        q.genjet_phi_2,
+        q.genjet_mass_2,
+        q.genjet_hadFlavour_2,
+        q.genjet_m_inv,
+        q.n_jets,
+        # q.jet_pt,
+        # q.jet_eta,
+        # q.jet_phi,
+        # q.jet_mass,
+        # TODO fix jet ID type
+        # q.jet_id,
+        # q.jet_deepjet_b_score,
+        # q.jet_pnet_b_score,
+        # q.jet_deepjet_b_tagged_medium,
+        # q.jet_pnet_b_tagged_medium,
+        # q.jet_pt_pnet,
+        # q.jet_pt_pnet_with_neutrino,
+        # q.jet_pt_pnet_resolution,
+        # q.jet_pt_nanoaod,
+        # q.jet_pt_raw_factor,
+        q.jpt_1,
+        q.jpt_2,
+        q.jeta_1,
+        q.jeta_2,
+        q.jphi_1,
+        q.jphi_2,
+        q.jtag_value_1,
+        q.jtag_value_2,
+        q.jpt_nano_1,
+        q.jpt_nano_2,
+        q.jpt_raw_1,
+        q.jpt_raw_2,
+        # regressed leading-jet quantities are produced by
+        # jets.BasicJetQuantities, which is scheduled for every profile, so
+        # these stay outside the analysis-b-jet gate below
+        q.jpt_regressed_1,
+        q.jpt_regressed_2,
+        q.jpt_regressed_resolution_1,
+        q.jpt_regressed_resolution_2,
+        q.mjj,
+        q.m_vis,
+        q.deltaR_ditaupair,
+        q.pt_vis,
+        q.n_bjets,
+        q.id_wgt_bjet,
+        q.mass_1,
+        q.mass_2,
+        q.dxy_1,
+        q.dxy_2,
+        q.dz_1,
+        q.dz_2,
+        q.q_1,
+        q.q_2,
+        q.iso_1,
+        q.iso_2,
+        q.gen_pt_1,
+        q.gen_eta_1,
+        q.gen_phi_1,
+        q.gen_mass_1,
+        q.gen_pdgid_1,
+        q.gen_pt_2,
+        q.gen_eta_2,
+        q.gen_phi_2,
+        q.gen_mass_2,
+        q.gen_pdgid_2,
+        q.gen_m_vis,
+        q.met,
+        q.metphi,
+        q.met_raw,
+        q.metphi_raw,
+        q.metSumEt_raw,
+        q.met_uncorrected,
+        q.metphi_uncorrected,
+        q.metSumEt,
+        q.metcov00,
+        q.metcov01,
+        q.metcov10,
+        q.metcov11,
+        q.pzetamissvis,
+        q.mTdileptonMET,
+        q.mt_1,
+        q.mt_2,
+        q.pt_tautau,
+        q.pt_tautaubb,
+        q.mass_tautaubb,
+        q.mt_tot,
+        q.mtt_coll_approx,
+        q.gen_match_1,
+        q.gen_match_2,
+        q.pt_dijet,
+        q.jet_hemisphere,
+>>>>>>> Stashed changes
     ]
     # Analysis b-jet layer outputs: the selected bb pair kinematics and the
     # gen-matched di-b-jet quantities. Dropped for the payload-independent
@@ -4505,6 +4720,11 @@ def build_config(
                                     "mc_trigger_sf": "Trg32_Iso_pt_eta_bins",
                                     "mc_electron_trg_extrapolation": _extrapolation,
                                 },
+                                {
+                                    "flagname": "trg_wgt_single_ele32orele35",
+                                    "mc_trigger_sf": "Trg32_or_Trg35_Iso_pt_eta_bins",
+                                    "mc_electron_trg_extrapolation": _extrapolation,
+                                },
                             ],
                         },
                     },
@@ -4753,7 +4973,294 @@ def build_config(
     # Jet energy correction for data
     #########################
     # add_jetCorrectionData(configuration, era)
+    
+    #########################
+    # Fake Factors
+    #########################
+    import json
+    import os
+    import correctionlib
+    from .producers import fakefactors_test
+    from dataclasses import dataclass, field
 
+    @dataclass
+    class NonClosureGranularity:
+        granularity: str
+        coarse_check: Callable[[str], bool] = field(default=lambda x: "_non_closure_Corr" in x)
+
+        def check(self, name: str) -> bool:
+            if self.granularity == "both":
+                return True
+            is_coarse = self.coarse_check(name)
+
+            if self.granularity == "coarse":
+                return is_coarse
+
+            if self.granularity == "fine":
+                return not is_coarse
+    
+    non_closure_granularity = NonClosureGranularity("coarse")  # "both", "coarse", "fine"
+    USE_SPLIT_INFO_PRODUCER = False
+
+    def ff_process_name(name: str) -> str:
+        if "process_fractions" in name:
+            return "fraction_variation"
+
+        process = name.split("_")[0]  # QCD, Wjets, ttbar
+        if "fake_factors" in name:
+            return f"{process}_variation"
+
+        suffix = "DR_SR" if "DR_SR" in name else "non_closure"
+        return f"{process}_{suffix}_correction"
+
+    def load_ff_correctionlib(path: str) -> correctionlib.CorrectionSet:
+        path = os.path.join("analysis_configurations/bbtautau", path)
+        return json.loads(correctionlib.CorrectionSet.from_file(path)._data)["corrections"]
+
+    def apply_variation_based_on_granularity(name: str) -> bool:
+        if "non_closure" not in name:
+            return True
+        return non_closure_granularity.check(name)
+
+    # ---
+
+    if "et" in scopes:
+        configuration.add_config_parameters(
+            ["et"],
+            {
+                "fraction_variation": "nominal",
+                # ---------------------------------------
+                "QCD_variation": "nominal",
+                "QCD_DR_SR_correction": "nominal",
+                "QCD_non_closure_correction": "nominal",
+                # ---------------------------------------
+                # "Wjets_variation": "nominal",
+                # "Wjets_DR_SR_correction": "nominal",
+                # "Wjets_non_closure_correction": "nominal",
+                # ---------------------------------------
+                "ttbar_variation": "nominal",
+                "ttbar_non_closure_correction": "nominal",
+                # ---------------------------------------
+                "file": EraModifier(
+                    {
+                        "2016": "",
+                        "2017": "",
+                        "2018": "payloads/fake_factors/sm/2018/fake_factors_et.json.gz",
+                    }
+                ),
+                "corr_file": EraModifier(
+                    {
+                        "2016": "",
+                        "2017": "",
+                        "2018": "payloads/fake_factors/sm/2018/FF_corrections_et.json.gz",
+                    }
+                ),
+            },
+        )
+
+    if "mt" in scopes:
+        configuration.add_config_parameters(
+            ["mt"],
+            {
+                "fraction_variation": "nominal",
+                # ---------------------------------------
+                "QCD_variation": "nominal",
+                "QCD_DR_SR_correction": "nominal",
+                "QCD_non_closure_correction": "nominal",
+                # ---------------------------------------
+                # "Wjets_variation": "nominal",
+                # "Wjets_DR_SR_correction": "nominal",
+                # "Wjets_non_closure_correction": "nominal",
+                # ---------------------------------------
+                "ttbar_variation": "nominal",
+                "ttbar_non_closure_correction": "nominal",
+                # ---------------------------------------
+                "file": EraModifier(
+                    {
+                        "2016": "",
+                        "2017": "",
+                        "2018": "payloads/fake_factors/sm/2018/fake_factors_mt.json.gz",
+                    }
+                ),
+                "corr_file": EraModifier(
+                    {
+                        "2016": "",
+                        "2017": "",
+                        "2018": "payloads/fake_factors/sm/2018/FF_corrections_mt.json.gz",
+                    }
+                ),
+            },
+        )
+    
+    if "tt" in scopes:
+        configuration.add_config_parameters(
+            ["tt"],
+            {
+                "fraction_variation": "nominal",
+                "fraction_variation_subleading": "nominal",
+                # ---------------------------------------
+                "QCD_variation": "nominal",
+                "QCD_DR_SR_correction": "nominal",
+                "QCD_non_closure_correction": "nominal",
+                "QCD_subleading_variation": "nominal",
+                "QCD_subleading_DR_SR_correction": "nominal",
+                "QCD_subleading_non_closure_correction": "nominal",
+                # ---------------------------------------
+                "ttbar_variation": "nominal",
+                "ttbar_non_closure_correction": "nominal",
+                "ttbar_subleading_variation": "nominal",
+                "ttbar_subleading_non_closure_correction": "nominal",
+                # ---------------------------------------
+                "file": EraModifier(
+                    {
+                        "2016": "",
+                        "2017": "",
+                        "2018": "payloads/fake_factors/sm/2018/fake_factors_tt.json.gz",
+                    }
+                ),
+                "corr_file": EraModifier(
+                    {
+                        "2016": "",
+                        "2017": "",
+                        "2018": "payloads/fake_factors/sm/2018/FF_corrections_tt.json.gz",
+                    }
+                ),
+            },
+        )
+    
+    if era == "2018":
+        configuration.add_producers(
+            ["et"],
+            [
+                fakefactors_test.VariableConversionToFloatProducerGroup,
+                fakefactors_test.FFInput_QCD_2018_mt,
+                # fakefactors_test.FFInput_Wjets_2018_mt,
+                fakefactors_test.FFInput_ttbar_2018_mt,
+                fakefactors_test.FFInput_fractions_2018_mt,
+                fakefactors_test.FFInput_DR_QCD_2018_mt,
+                # fakefactors_test.FFInput_DR_Wjets_2018_mt,
+                fakefactors_test.FFInput_NC_QCD_2018_et,
+                # fakefactors_test.FFInput_NC_Wjets_2018_et,
+                fakefactors_test.FFInput_NC_ttbar_2018_et,
+                fakefactors_test.RawFakeFactors_sm_2018_mt,
+                *([fakefactors_test.FakeFactors_sm_et_split_info, fakefactors_test.FakeFactors_sm_et] if USE_SPLIT_INFO_PRODUCER else [fakefactors_test.FakeFactors_sm_et]),
+            ],
+        )
+        configuration.add_producers(
+            ["mt"],
+            [
+                fakefactors_test.VariableConversionToFloatProducerGroup,
+                fakefactors_test.FFInput_QCD_2018_mt,
+                # fakefactors_test.FFInput_Wjets_2018_mt,
+                fakefactors_test.FFInput_ttbar_2018_mt,
+                fakefactors_test.FFInput_fractions_2018_mt,
+                fakefactors_test.FFInput_DR_QCD_2018_mt,
+                # fakefactors_test.FFInput_DR_Wjets_2018_mt,
+                fakefactors_test.FFInput_NC_QCD_2018_mt,
+                # fakefactors_test.FFInput_NC_Wjets_2018_mt,
+                fakefactors_test.FFInput_NC_ttbar_2018_mt,
+                fakefactors_test.RawFakeFactors_sm_2018_mt,
+                *([fakefactors_test.FakeFactors_sm_mt_split_info, fakefactors_test.FakeFactors_sm_mt] if USE_SPLIT_INFO_PRODUCER else [fakefactors_test.FakeFactors_sm_mt]),
+            ],
+        )
+
+    active_outputs = [
+        q.fake_factor_2,
+        q.raw_qcd_fake_factor_2,
+        # q.raw_wjets_fake_factor_2,
+        q.raw_ttbar_fake_factor_2,
+        q.qcd_fake_factor_fraction_2,
+        # q.wjets_fake_factor_fraction_2,
+        q.ttbar_fake_factor_fraction_2,
+        q.qcd_DR_SR_correction_2,
+        # q.wjets_DR_SR_correction_2,
+        q.ttbar_DR_SR_correction_2,
+        q.qcd_correction_wo_DR_SR_2,
+        # q.wjets_correction_wo_DR_SR_2,
+        q.ttbar_correction_wo_DR_SR_2,
+        q.qcd_fake_factor_correction_2,
+        # q.wjets_fake_factor_correction_2,
+        q.ttbar_fake_factor_correction_2,
+        q.qcd_fake_factor_2,
+        # q.wjets_fake_factor_2,
+        q.ttbar_fake_factor_2,
+    ] if USE_SPLIT_INFO_PRODUCER else [q.raw_fake_factor_2 ,q.fake_factor_2]
+
+    configuration.add_outputs(["mt", "et"], active_outputs)
+
+
+    for scope in scopes:
+        if scope == "et":
+            scope_producer = fakefactors_test.FakeFactors_sm_et
+        elif scope == "mt":
+            scope_producer = fakefactors_test.FakeFactors_sm_mt
+        elif scope == "tt":
+            print("No systematic variations implemented for tt yet.")
+            continue
+        all_variations = (
+            (ff_process_name(correction["name"]), value["key"].replace("Up", ""))
+            for corrections in (
+                load_ff_correctionlib(configuration.config_parameters[scope]["file"]),
+                load_ff_correctionlib(configuration.config_parameters[scope]["corr_file"]),
+            )
+            for correction in corrections
+            for value in correction["data"]["content"]
+            if value["key"].endswith("Up")
+            # ("<producer variation argument>", "<variation name without direction>")
+        )
+
+        for _key, _name in set(all_variations):
+            if not apply_variation_based_on_granularity(_name):
+                continue
+            for _shift in ["Up", "Down"]:
+                configuration.add_shift(
+                    SystematicShift(
+                        name=f"{_name}{_shift}",
+                        shift_config={(scope,): {_key: f"{_name}{_shift}"}},
+                        producers={(scope,): (scope_producer,)},
+                    ),
+                )
+    
+    if "tt" in scopes:
+        configuration.add_producers(
+            ["tt"],
+            [
+                fakefactors_test.VariableConversionToFloatProducerGroup,
+                fakefactors_test.RawFakeFactors_sm_tt_1,
+                fakefactors_test.RawFakeFactors_sm_tt_2,
+                fakefactors_test.FakeFactors_sm_tt_1,
+                fakefactors_test.FakeFactors_sm_tt_2,
+            ],
+        )
+        configuration.add_outputs(
+            ["tt"],
+            [
+                q.raw_fake_factor_1,
+                q.raw_fake_factor_2,
+                q.fake_factor_1,
+                q.fake_factor_2,
+            ]
+        )
+
+    #########################
+    # FastMTT
+    #########################
+    configuration.add_producers(
+        ["mt", "et", "tt", "em"],
+        [pairquantities.FastMTTQuantities],
+    )
+
+    configuration.add_outputs(
+        ["mt", "et", "tt", "em"],
+        [
+            q.m_fastmtt,
+            q.pt_fastmtt,
+            q.eta_fastmtt,
+            q.phi_fastmtt,
+        ],
+    )
+    
+    
     #########################
     # Finalize and validate the configuration
     #########################

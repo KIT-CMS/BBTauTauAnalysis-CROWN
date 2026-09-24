@@ -334,8 +334,13 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
         ["mt"],
         AppendProducer(
             producers=[
+<<<<<<< Updated upstream
                 embedding.TauEmbeddingMuonIDSF_1,
                 embedding.TauEmbeddingMuonIsoSF_1,
+=======
+                # embedding.TauEmbeddingMuonIDSF_1,
+                # embedding.TauEmbeddingMuonIsoSF_1,
+>>>>>>> Stashed changes
                 # embedding.TauEmbeddingBoostedMuonIDSF_1,
                 # embedding.TauEmbeddingBoostedMuonIsoSF_1,
                 embedding.MTGenerateSingleMuonTriggerSF,
@@ -343,6 +348,14 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
             samples=["embedding"],
         ),
     )
+    configuration.add_modification_rule(
+            ["mt"],
+            ReplaceProducer(
+                producers=[scalefactors.MuonIDIso_SF, embedding.MuonIDIso_SF_EMB],
+                samples=["embedding", "embedding_mc"],
+                scopes=["mt"],
+            ),
+        )
     configuration.add_modification_rule(
         ["et"],
         AppendProducer(
@@ -930,7 +943,11 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
             },
             producers={
                 ("mt"): [
+<<<<<<< Updated upstream
                     embedding.TauEmbeddingMuonIDSF_1,
+=======
+                    embedding.MuonIDIso_SF_EMB,
+>>>>>>> Stashed changes
                 ],
             },
         ),
@@ -945,7 +962,11 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
             },
             producers={
                 ("mt"): [
+<<<<<<< Updated upstream
                     embedding.TauEmbeddingMuonIDSF_1,
+=======
+                    embedding.MuonIDIso_SF_EMB,
+>>>>>>> Stashed changes
                 ],
             },
         ),
@@ -960,7 +981,11 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
             },
             producers={
                 ("mt"): [
+<<<<<<< Updated upstream
                     embedding.TauEmbeddingMuonIsoSF_1,
+=======
+                    embedding.MuonIDIso_SF_EMB,
+>>>>>>> Stashed changes
                 ],
             },
         ),
@@ -975,7 +1000,11 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
             },
             producers={
                 ("mt"): [
+<<<<<<< Updated upstream
                     embedding.TauEmbeddingMuonIsoSF_1,
+=======
+                    embedding.MuonIDIso_SF_EMB,
+>>>>>>> Stashed changes
                 ],
             },
         ),
@@ -1329,6 +1358,7 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
                 "ele_energyscale_endcap": "nom",
             },
         )
+<<<<<<< Updated upstream
         configuration.add_modification_rule(
             "global",
             ReplaceProducer(
@@ -1381,5 +1411,60 @@ def setup_embedding(configuration: Configuration, scopes: List[str], era: str):
             ),
             samples=["embedding"],
         )
+=======
+        # MC Producer not ready (just rename) thus also nothing for embedding yet!
+        # configuration.add_modification_rule(
+        #     "global",
+        #     ReplaceProducer(
+        #         producers=[
+        #             electrons.ElectronPtCorrectionMC.get(era, "v15"),
+        #             electrons.ElectronPtCorrectionEmbedding,
+        #         ],
+        #         samples=["embedding"],
+        #     ),
+        # )
+        # configuration.add_shift(
+        #     SystematicShift(
+        #         name="eleEsBarrelUp",
+        #         shift_config={("global"): {"ele_energyscale_barrel": "up"}},
+        #         producers={("global"): electrons.ElectronPtCorrectionEmbedding},
+        #     ),
+        #     samples=["embedding"],
+        # )
+        # configuration.add_shift(
+        #     SystematicShift(
+        #         name="eleEsBarrelDown",
+        #         shift_config={
+        #             ("global"): {"ele_energyscale_barrel": "down"},
+        #         },
+        #         producers={("global"): electrons.ElectronPtCorrectionEmbedding},
+        #     ),
+        #     samples=["embedding"],
+        # )
+        # configuration.add_shift(
+        #     SystematicShift(
+        #         name="eleEsEndcapUp",
+        #         shift_config={
+        #             ("global"): {
+        #                 "ele_energyscale_endcap": "up",
+        #             }
+        #         },
+        #         producers={("global"): electrons.ElectronPtCorrectionEmbedding},
+        #     ),
+        #     samples=["embedding"],
+        # )
+        # configuration.add_shift(
+        #     SystematicShift(
+        #         name="eleEsEndcapDown",
+        #         shift_config={
+        #             ("global"): {
+        #                 "ele_energyscale_endcap": "down",
+        #             }
+        #         },
+        #         producers={("global"): electrons.ElectronPtCorrectionEmbedding},
+        #     ),
+        #     samples=["embedding"],
+        # )
+>>>>>>> Stashed changes
 
     return configuration

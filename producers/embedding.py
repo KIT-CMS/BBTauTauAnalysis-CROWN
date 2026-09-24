@@ -212,7 +212,19 @@ TauEmbeddingMuonIsoSF_1 = Producer(
     output=[q.iso_wgt_mu_1],
     scopes=["mt", "mm"],
 )
-
+MuonIDIso_SF_EMB = ProducerGroup(
+    name="MuonIDIso_SF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["mt"],
+    subproducers={
+        "mt": [
+            TauEmbeddingMuonIDSF_1,
+            TauEmbeddingMuonIsoSF_1,
+        ],
+    },
+)
 TauEmbeddingMuonIsoSF_2 = Producer(
     name="TauEmbeddingMuonIsoSF_2",
     call="""embedding::muon::Scalefactor(

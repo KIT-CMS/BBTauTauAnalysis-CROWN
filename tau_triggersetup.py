@@ -173,6 +173,15 @@ def _add_electron_triggers(
                             # filter bit:         11
                             # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary
                             # ele_115_caloidvt_gsftrkidt_parameters,
+<<<<<<< Updated upstream
+=======
+                            
+                            # trigger:            HLT_Ele35_WPTight_Gsf
+                            # final filter:       hltEle35noerWPTightGsfTrackIsoFilter
+                            # filter bit:         1
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/EgHLTRunIISummary
+                            ele_35_wptight_gsf_parameters,
+>>>>>>> Stashed changes
                     ],
                     "2017": [
                             # trigger:            HLT_Ele32_WPTight_Gsf

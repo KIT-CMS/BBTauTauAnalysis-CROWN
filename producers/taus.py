@@ -5,9 +5,14 @@ Producers for hadronic tau energy scale corrections and object selections.
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from code_generation.producer import Producer, ProducerGroup
+<<<<<<< Updated upstream
 from ..constants import HAD_TAU_SCOPES, MT_SCOPES
 from code_generation.helpers import defaults
 
+=======
+from ..constants import HAD_TAU_SCOPES
+from code_generation.helpers import defaults
+>>>>>>> Stashed changes
 
 #
 # ENERGY SCALE CORRECTIONS
@@ -41,8 +46,14 @@ with defaults(output=[q.Tau_pt_corrected],
                 "{tau_ES_shift_DM10}",
                 "{tau_ES_shift_DM11}"
             )
+<<<<<<< Updated upstream
         """
     )
+=======
+        """,
+    )
+
+>>>>>>> Stashed changes
     TauPtCorrection_emb_genTau_dm_binned = Producer(
         name="TauPtCorrection_emb_genTau_dm_binned",
         call='''physicsobject::tau::PtCorrectionMC_genuineTau_v15(
@@ -61,6 +72,7 @@ with defaults(output=[q.Tau_pt_corrected],
             "{tau_ES_shift_DM11}")''',
     )
     TauPtCorrection_emb_genTau_dm_pt_binned = Producer(
+<<<<<<< Updated upstream
         name="TauPtCorrection_emb_genTau_dm_pt_binned",
         call='''physicsobject::tau::PtCorrectionMC_genuineTau_v15(
             {df},
@@ -82,6 +94,28 @@ with defaults(output=[q.Tau_pt_corrected],
             "{tau_ES_shift_DM11_40toInf}")''',
     )
 
+=======
+    name="TauPtCorrection_emb_genTau_dm_pt_binned",
+    call='''physicsobject::tau::PtCorrectionMC_genuineTau_v15(
+        {df},
+        correctionManager,
+        {output},
+        {input},
+        "{tau_emb_sf_file}",
+        "{tau_emb_ES_json_name}",
+        "{tau_id_algorithm}",
+        "{tau_emb_ES_WP}",
+        "{tau_ides_sf_vsele_wp}",
+        "{tau_ES_shift_DM0_20to40}",
+        "{tau_ES_shift_DM0_40toInf}",
+        "{tau_ES_shift_DM1_20to40}",
+        "{tau_ES_shift_DM1_40toInf}",
+        "{tau_ES_shift_DM10_20to40}",
+        "{tau_ES_shift_DM10_40toInf}",
+        "{tau_ES_shift_DM11_20to40}",
+        "{tau_ES_shift_DM11_40toInf}")''',
+    )
+>>>>>>> Stashed changes
 # Tau mass correction, derived from the change of the tau pt due to the 
 # correction
 TauMassCorrection = Producer(
@@ -145,6 +179,28 @@ TauEnergyCorrectionMC = ProducerGroup(
     scopes=HAD_TAU_SCOPES,
     subproducers=[
         TauPtCorrectionMC,
+        TauMassCorrection,
+    ],
+)
+TauEnergyCorrection_Embedding_ES_dm_binned = ProducerGroup(
+    name="TauEnergyCorrection_Embedding_ES_dm_binned",
+        call=None,
+        input=None,
+        output=None,
+        scopes=HAD_TAU_SCOPES,
+    subproducers=[
+        TauPtCorrection_emb_genTau_dm_binned,
+        TauMassCorrection,
+    ],
+)
+TauEnergyCorrection_Embedding_ES_dm_pt_binned = ProducerGroup(
+    name="TauEnergyCorrection_Embedding_ES_dm_pt_binned",
+            call=None,
+            input=None,
+            output=None,
+            scopes=HAD_TAU_SCOPES,
+    subproducers=[
+        TauPtCorrection_emb_genTau_dm_pt_binned,
         TauMassCorrection,
     ],
 )
@@ -212,4 +268,11 @@ NumberOfGoodTaus = Producer(
     input=[q.good_taus_mask],
     output=[q.ntaus],
     scopes=HAD_TAU_SCOPES,
+)
+MttCollApproximation = Producer(
+    name="MttCollApproximation",
+    call="quantities::CollinearApproxMtt({df}, {output}, {input})",
+    input=[q.p4_1, q.p4_2, q.met_p4_recoilcorrected],
+    output=[q.mtt_coll_approx],
+    scopes=["et", "mt", "tt"],
 )
