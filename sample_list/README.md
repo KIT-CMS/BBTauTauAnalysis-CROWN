@@ -27,11 +27,21 @@ All four are era 2018 / NanoAOD v15 and differ along two independent axes.
 EGamma &times; Run2018A-D); `sm_config` takes the full lists.
 
 **Inclusive or binned.** The `inclusive` lists take the inclusive `WJetsToLNu` and `DYJetsToLL_M-50`
-amcatnloFXFX samples; the `binned` lists replace exactly those two with same-generator,
-non-overlapping partitions of the same phase space (`WJetsToLNu_{0J,1J,2J}` and the six
-`DYJetsToLL_LHEFilterPtZ-*` bins). Nothing else differs -- `DYJetsToLL_M-10to50` is identical in all
-four. Both partitions are complete and gap-free, so plain per-sample cross-section weighting stays
-correct: no stitching, no overlap removal.
+amcatnloFXFX samples; the `binned` lists replace those with same-generator partitions
+(`WJetsToLNu_{0J,1J,2J}` and the six `DYJetsToLL_LHEFilterPtZ-*` bins). `DYJetsToLL_M-10to50` is
+identical in all four. The W partition is complete, so plain per-sample cross-section weighting is
+correct for it.
+
+The DY partition is **not** complete: the `LHEFilterPtZ-*` bins contain no event with zero LHE partons
+(`LHE_Njets == 0`, i.e. `LHE_Vpt == 0`), which is 69% of the `DYJetsToLL_M-50` cross section
+(0To50 = 1404.8 pb = 0.231 &times; 6077.22 pb; the six bins sum to 1877 pb). `sm_2018_binned.txt`
+therefore also carries the inclusive `DYJetsToLL_M-50` nick (as does `sm_2018_binned_mc.txt`), and
+every consumer must take **only its `npartons == 0` events** (CROWN writes `npartons` = `LHE_Njets`
+for `dyjets`) at the full inclusive normalisation. The PtZ bins always have `npartons >= 1`, so the
+two sets are disjoint and a hard cut suffices, no stitching weights. CROWN itself cannot apply the cut
+(the inclusive and the binned samples share the `dyjets` executable); ShapeSmith does it through a
+per-sample cut, the TauFakeFactors preselection through `sample_cuts`. Using the inclusive nick
+without that cut counts every `npartons >= 1` DY event twice.
 
 ## Format
 
