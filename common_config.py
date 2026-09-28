@@ -1,13 +1,6 @@
 from __future__ import annotations  # needed for type annotations in > python 3.7
 
-<<<<<<< Updated upstream
-import json
-import logging
-import os
-from typing import List
-=======
 from typing import List, Union, Callable
->>>>>>> Stashed changes
 from itertools import chain
 from .producers import electrons as electrons
 from .producers import event as event
@@ -41,11 +34,6 @@ from code_generation.utility.generate_DAG import create_graph
 from .constants import ERAS_RUN2, ERAS_RUN3, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
 from .helpers import get_for_era
 from .scripts.SpecialSetups import ES_ID_SCHEME
-<<<<<<< Updated upstream
-
-log = logging.getLogger(__name__)
-=======
->>>>>>> Stashed changes
 
 
 def add_noise_filters_config(configuration: Configuration):
@@ -2327,13 +2315,7 @@ def build_config(
         available_eras,
         available_scopes,
     )
-<<<<<<< Updated upstream
-    
     configuration.ES_ID_SCHEME = ES_ID_SCHEME("dm_pt_binned")
-
-=======
-    configuration.ES_ID_SCHEME = ES_ID_SCHEME("dm_pt_binned")
->>>>>>> Stashed changes
     # Set sample flags manually
     # The configuration of is_data and is_embedding is set here for better readability, although
     # it has already been set in the Configuration class.
@@ -2357,11 +2339,6 @@ def build_config(
     configuration.add_config_parameters(
         configuration.scopes,
         {
-<<<<<<< Updated upstream
-            "is_data": is_data,
-            "is_embedding": is_embedding,
-            "is_mc": is_mc,
-=======
             "is_data": sample == "data",
             "is_embedding": sample == "embedding",
             "is_mc": sample not in ["data", "embedding"],
@@ -2378,7 +2355,6 @@ def build_config(
                 "electroweak_boson",
             ],
             "is_wjets": sample in ["wjets", "wjets_madgraph", "wjets_amcatnlo"],
->>>>>>> Stashed changes
         },
     )
 
@@ -2776,30 +2752,6 @@ def build_config(
     )
 
     # Electron pt correction
-<<<<<<< Updated upstream
-    # - In Run 2, a fix must be applied to the already corrected electron pt.
-    # - In Run 3, the electon pt is not corrected at NanoAOD level, the full correction is applied
-    #   based on correctionlib files.
-    # The isolated SM 2018-v15 path uses the Run-3-style correctionlib MC
-    # producer (ElectronPtCorrectionMC) even though 2018 is a Run-2 era:
-    # v15 2018 UL NanoAOD does not ship the v9 Electron_dEsigmaUp/dEsigmaDown
-    # branches the legacy Run-2 producer reads, but does ship the raw inputs
-    # (Electron_deltaEtaSC, Electron_r9) the Run-3 producer needs. NMSSM keeps
-    # the v9 Run-2 producer via get_for_era.
-    if era in ERAS_RUN2:
-        if use_sm_2018_v15_inputs:
-                electron_pt_correction_mc_producer = electrons.ElectronPtCorrectionMC.get(era,"v15")
-        else:
-            electron_pt_correction_mc_producer = electrons.ElectronPtCorrectionMC.get(era, "v9")
-        # - In Run 2, the pt is already corrected, so this is just
-        electron_pt_correction_data_producer = electrons.ElectronPtCorrectionData.get(era, "v9")
-    
-    else:
-        electron_pt_correction_mc_producer = electrons.ElectronPtCorrectionMC.get(era, "v15")
-        electron_pt_correction_data_producer = electrons.ElectronPtCorrectionData.get(era, "v15")
-     
-    
-=======
     #
     # See comments in corresponding producers: For Run 2, the corrections on
     # NANOAOD v15 samples are not available yet (the procedure has changed
@@ -2818,7 +2770,6 @@ def build_config(
     #     ElectronPtCorrectionData = electrons.ElectronPtCorrectionData.get(era, "v9")
     # else:
     #     ElectronPtCorrectionData = electrons.ElectronPtCorrectionData.get(era, "v15")
->>>>>>> Stashed changes
 
     # Jet ID producer
     # For a detailed description, see producers/jets.py
@@ -3134,12 +3085,8 @@ def build_config(
         HAD_TAU_SCOPES,
         [
             scalefactors.TauIDSF,
-<<<<<<< Updated upstream
-            taus.TauEnergyCorrectionMC
-=======
             taus.TauEnergyCorrectionMC,
             taus.MttCollApproximation,
->>>>>>> Stashed changes
         ]
     )
     configuration.add_producers(
@@ -3338,12 +3285,6 @@ def build_config(
         )
 
     # For DY and W samples, calculate the generator-level boson four-vector
-<<<<<<< Updated upstream
-    _gen_boson_samples = profile_samples(
-        "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
-        "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo",
-        *sm_merged_dyw,
-=======
     configuration.add_modification_rule(
         SCOPES,
         AppendProducer(
@@ -3353,7 +3294,6 @@ def build_config(
                 "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo", "electroweak_boson",
             ] + sm_merged_dyw,
         ),
->>>>>>> Stashed changes
     )
     if _gen_boson_samples:
         add_rule(
@@ -3487,11 +3427,7 @@ def build_config(
             producers=[
                 scalefactors.MuonIDIso_SF,
             ],
-<<<<<<< Updated upstream
-            samples=profile_samples("data", "embedding", "embedding_mc"),
-=======
             samples=["data"],
->>>>>>> Stashed changes
         )
     )
 
@@ -3818,8 +3754,6 @@ def build_config(
         q.eta_2,
         q.phi_1,
         q.phi_2,
-<<<<<<< Updated upstream
-=======
         q.bpair_pt_1,
         q.bpair_pt_2,
         q.bpair_eta_1,
@@ -3946,7 +3880,6 @@ def build_config(
         q.gen_match_2,
         q.pt_dijet,
         q.jet_hemisphere,
->>>>>>> Stashed changes
     ]
     # Analysis b-jet layer outputs: the selected bb pair kinematics and the
     # gen-matched di-b-jet quantities. Dropped for the payload-independent
