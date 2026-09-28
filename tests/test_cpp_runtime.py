@@ -33,6 +33,10 @@ ELECTRON_RECO_PAYLOADS = {
     ),
     "2023PromptC": ("Run3-23CSep23-Summer23-NanoAODv12/2025-12-15", "Electron-ID-SF"),
 }
+# The official AK4 PUPPI JERC payload of the SM 2018 production
+JER_PAYLOAD_2018 = Path(
+    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz"
+)
 
 
 def toolchain():
@@ -146,3 +150,29 @@ def test_sm_hh_kinfit_compiles_and_converges(tmp_path):
         ],
     )
     subprocess.run([str(binary)], check=True)
+
+
+@pytest.fixture(scope="module")
+def jer_smearing_binary(tmp_path_factory):
+    if not JER_PAYLOAD_2018.is_file():
+        pytest.skip("Pinned official JME payload requires CVMFS")
+    return compile_fixture(
+        tmp_path_factory.mktemp("jer_smearing"),
+        "jer_smearing",
+        [CPP / "test_jer_smearing.cxx", ADDONS / "src/jets.cxx", CORRECTION_MANAGER],
+        correctionlib=True,
+    )
+
+
+# reapply_jes: 1 is the production setting, 0 takes the input pt as JES-corrected
+@pytest.mark.parametrize("reapply_jes", ["1", "0"])
+def test_jer_hybrid_smearing_matches_gen_jets_and_draws_per_jet(
+    jer_smearing_binary, reapply_jes
+):
+    """The JEC chain scales gen-matched jets with the closest passing gen jet,
+    draws one independent standard-normal number per unmatched jet, which
+    neither the matching of other jets nor the JER variation changes, and the
+    HEM variation scales every tight-ID jet in the HEM region."""
+    subprocess.run(
+        [str(jer_smearing_binary), str(JER_PAYLOAD_2018), reapply_jes], check=True
+    )

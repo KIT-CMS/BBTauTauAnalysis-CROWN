@@ -12,6 +12,7 @@
 #include <Math/VectorUtil.h>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace physicsobject {
 
@@ -108,7 +109,7 @@ float apply_jes_shifts(
         // manually scaled in a specific phase space region.
         float sf = 1.0;
         if (jes_shift_factor == -1 && jet_pt > 15.0 && jet_phi > -1.57 &&
-            jet_phi < -0.87 && jet_id == 2) {
+            jet_phi < -0.87 && (jet_id & 2)) { // passes the tight jet ID
             if (jet_eta > -2.5 && jet_eta < -1.3) {
                 sf = 0.8;
             } else if (jet_eta > -3.0 && jet_eta <= -2.5) {
@@ -601,7 +602,11 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                                const ROOT::RVec<float> &genjet_eta,
                                const ROOT::RVec<float> &genjet_phi,
                                const float &rho, const unsigned int &seed) {
-        // Random value generator for jet energy resolution smearing
+        // Standard-normal numbers for the stochastic jet energy resolution
+        // smearing, one per jet and drawn for every jet in collection order.
+        // A jet therefore keeps its number regardless of the matching status
+        // of the other jets, in every systematic variation and in every jet
+        // collection that starts with the same jets.
         TRandom3 randgen = TRandom3(seed);
         ROOT::RVec<float> random_normal(jet_pt_raw.size());
         for (auto &z : random_normal) {
@@ -652,8 +657,9 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                     return apply_jes_shifts_and_jer_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, rho, genjet_pt,
                         genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era, random_normal,
-                        jes_shift_evaluators, jer_resolution_evaluator,
+                        jes_shift_factor, jer_shift, jet_radius, era,
+                        random_normal, jes_shift_evaluators,
+                        jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
                         jer_scalefactor_uncertainty_evaluator);
                 });
