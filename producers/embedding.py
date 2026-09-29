@@ -104,7 +104,7 @@ EmbeddingQuantities = ProducerGroup(
 
 TauEmbeddingTriggerSelectionSF = Producer(
     name="TauEmbeddingTriggerSelectionSF",
-    call="""embedding::scalefactor::selectionTrigger(
+    call="""embedding::scalefactor::SelectionTrigger(
         {df}, 
         correctionManager, 
         {output}, 
