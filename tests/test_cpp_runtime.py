@@ -152,6 +152,21 @@ def test_sm_hh_kinfit_compiles_and_converges(tmp_path):
     subprocess.run([str(binary)], check=True)
 
 
+def test_fastmtt_producer_passes_leptonic_decay_types(tmp_path):
+    """The core quantities::FastMtt behind the FastMTT friends hands a light
+    lepton to FastMTT as a leptonic tau decay, in mt, et and em."""
+    binary = compile_fixture(
+        tmp_path,
+        "fastmtt_decay_types",
+        [
+            CPP / "test_fastmtt_decay_types.cxx",
+            CROWN / "src/quantities.cxx",
+            *sorted((CROWN / "src/SVFit").glob("*.cxx")),
+        ],
+    )
+    subprocess.run([str(binary)], check=True)
+
+
 @pytest.fixture(scope="module")
 def jer_smearing_binary(tmp_path_factory):
     if not JER_PAYLOAD_2018.is_file():
