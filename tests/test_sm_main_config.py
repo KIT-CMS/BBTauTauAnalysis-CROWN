@@ -17,7 +17,7 @@ from analysis_configurations.bbtautau.tests.helpers import (
     FakeArgs,
     build,
     find_producer,
-    generate,
+    generate_code,
     output_names,
     producer_names,
 )
@@ -138,7 +138,7 @@ def test_sm_dyw_recoil_wiring():
 def test_mt_generates_with_every_shift(module):
     """The single-muon trigger SF shifts carry the trigger flag the SF producer
     gates on; without it, code generation with shifts=all failed in mt."""
-    outputs = generate(module, "ttbar", shifts=("all",)).outputs["mt"]
+    outputs = generate_code(module, "ttbar", shifts=("all",)).outputs["mt"]
     assert {
         f"trg_wgt_single_mu24__CMS_eff_m_trigger_2018{variation}"
         for variation in ("Up", "Down")
