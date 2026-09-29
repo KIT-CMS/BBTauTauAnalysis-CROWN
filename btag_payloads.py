@@ -1,7 +1,7 @@
 """UParT b-tagging payload helpers for the Run-2 UL NanoAOD v15 inputs.
 
 Config-time helpers that read the pinned BTV ``correctionlib`` payload using
-only the standard library (``gzip`` + ``json``).  ``correctionlib`` itself is
+only the standard library (``payload_io``).  ``correctionlib`` itself is
 deliberately *not* imported here, so the analysis configuration can be
 constructed (and unit-tested) without the C++ correction backend.
 
@@ -10,11 +10,10 @@ BTV payload.
 """
 from __future__ import annotations
 
-import gzip
-import json
 from typing import Dict, Set
 
 from .constants import ERAS_RUN2
+from .payload_io import get_correction, load_payload
 
 # Pinned BTV UParTAK4 payloads for the Run-2 UL NanoAOD v15 inputs, one per
 # era.  Each pin is a dated CAT-metadata snapshot on cvmfs (never the rolling
@@ -49,37 +48,14 @@ WP_VALUES_CORRECTION = "UParTAK4_wp_values"
 COMB_SF_CORRECTION = "UParTAK4_comb"
 LIGHT_SF_CORRECTION = "UParTAK4_light"
 
-def _load_payload(path: str) -> dict:
-    """Read and JSON-decode a gzipped correctionlib payload from ``path``."""
-    try:
-        with gzip.open(path, "rt") as handle:
-            return json.load(handle)
-    except FileNotFoundError as error:
-        raise FileNotFoundError(
-            f"BTV UParTAK4 payload not found at '{path}'"
-        ) from error
-
-
-def _get_correction(payload: dict, name: str, path: str) -> dict:
-    """Return the correction named ``name`` from a decoded payload."""
-    for correction in payload.get("corrections", []):
-        if correction.get("name") == name:
-            return correction
-    found = [c.get("name") for c in payload.get("corrections", [])]
-    raise ValueError(
-        f"correction '{name}' not found in payload '{path}'; "
-        f"found corrections {found}"
-    )
-
-
 def load_upart_wps(path: str) -> Dict[str, float]:
     """Read the ``UParTAK4_wp_values`` working points from the payload at ``path``.
 
     Walks ``corrections[name == "UParTAK4_wp_values"].data.content`` and
     returns its ``key`` -> ``value`` pairs.
     """
-    payload = _load_payload(path)
-    correction = _get_correction(payload, WP_VALUES_CORRECTION, path)
+    payload = load_payload(path)
+    correction = get_correction(payload, WP_VALUES_CORRECTION, path)
     return {
         item["key"]: item["value"]
         for item in correction["data"]["content"]
@@ -95,10 +71,10 @@ def discover_upart_variations(path: str) -> Dict[str, Set[str]]:
         {"UParTAK4_comb": {"central", "up", "down", "up_correlated", ...},
          "UParTAK4_light": {"central", "up", "down", "up_correlated", ...}}
     """
-    payload = _load_payload(path)
+    payload = load_payload(path)
     variations: Dict[str, Set[str]] = {}
     for name in (COMB_SF_CORRECTION, LIGHT_SF_CORRECTION):
-        correction = _get_correction(payload, name, path)
+        correction = get_correction(payload, name, path)
         variations[name] = {
             item["key"]
             for item in correction["data"]["content"]
