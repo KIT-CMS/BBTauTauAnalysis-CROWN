@@ -333,3 +333,21 @@ def test_profile_lowers_the_embedding_tau_pt_threshold():
     assert parameters(config, "mt")["tight_tau_min_pt"] == pytest.approx(
         16.667, abs=1e-3
     )
+
+
+def test_embedding_sample_list_follows_its_rule():
+    """sample_list/README.md: the sorted eltau/mutau/tautau 2018 embedding nicks."""
+    database = ANALYSIS.parents[2] / "sample_database/nanoAOD_v15/datasets.json"
+    if not database.is_file():
+        pytest.skip("KingMaker's sample_database is required")
+    datasets = json.loads(database.read_text())
+    nicks = sorted(
+        nick
+        for nick, entry in datasets.items()
+        if entry["sample_type"] == "embedding"
+        and entry["era"] == "2018"
+        and any(token in nick for token in ("_eltau_", "_mutau_", "_tautau_"))
+    )
+    assert len(nicks) == 12
+    listed = (ANALYSIS / "sample_list/sm_2018_embedding.txt").read_text()
+    assert listed == "".join(f"{nick}\n" for nick in nicks)
