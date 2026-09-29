@@ -21,7 +21,7 @@ TauPtCorrectionMC = Producer(
             correctionManager,
             {output},
             {input},
-            "{tau_ides_sf_file}",
+            "{tau_vsjet_es_sf_file}",
             "{tau_ES_json_name}",
             "{tau_id_algorithm}",
             "{tau_ides_sf_vsjet_wp}",

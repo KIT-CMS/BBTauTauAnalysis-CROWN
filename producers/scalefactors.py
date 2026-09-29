@@ -232,7 +232,7 @@ def _create_tau_id_vsjet_sf_producer(
         "correctionManager",
         "{output}", 
         "{input}", 
-        "\"{tau_ides_sf_file}\"",
+        "\"{tau_vsjet_es_sf_file}\"",
         "\"{discriminator}\"", 
     ]
     call_fn = "physicsobject::tau::scalefactor::experimental::Id_vsJet"
@@ -798,7 +798,7 @@ DoubleEleTauTriggerSF = ProducerGroup(
 # muon leg scale factor
 TauTauTriggerLeg1SF = ExtendedVectorProducer(
     name="DoubleTauTauTriggerLeg1SF",
-    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg1_sf_name}", "Medium", "sf", "{tt_trigger_leg1_variation}")',
+    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "{tau_trigger_cset_name}", "{tt_trigger_leg1_sf_name}", "Medium", "sf", "{tt_trigger_leg1_variation}")',
     input=[
         q.pt_1,
         q.tau_decaymode_1,
@@ -811,7 +811,7 @@ TauTauTriggerLeg1SF = ExtendedVectorProducer(
 # tau leg scale factor (for the Medium DeepTau WP)
 TauTauTriggerLeg2SF = ExtendedVectorProducer(
     name="DoubleTauTauTriggerLeg2SF",
-    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg2_sf_name}", "Medium", "sf", "{tt_trigger_leg2_variation}")',
+    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "{tau_trigger_cset_name}", "{tt_trigger_leg2_sf_name}", "Medium", "sf", "{tt_trigger_leg2_variation}")',
     input=[
         q.pt_2,
         q.tau_decaymode_2,
@@ -853,7 +853,7 @@ ETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
         {input}, 
         "{mc_electron_sf_file}", 
         "{mc_trigger_sf}", 
-        "mc", 
+        "{electron_trigger_sf_type}", 
         {mc_electron_trg_extrapolation})
         """,
     input=[q.pt_1, q.eta_1],
