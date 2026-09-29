@@ -98,7 +98,7 @@ YtautauTrueGenPair = Producer(
 )
 EmbeddingGenPair = Producer(
     name="EmbeddingGenPair",
-    call="ditau_pairselection::buildtruegenpair({df}, {input}, {output}, {truegen_mother_pdgid}, {truegen_daughter_1_pdgid}, {truegen_daugher_2_pdgid})",
+    call="ditau_pairselection::buildtruegenpair({df}, {output}, {input}, {truegen_mother_pdgid}, {truegen_daughter_1_pdgid}, {truegen_daughter_2_pdgid})",
     input=[
         nanoAOD.GenPart_statusFlags,
         nanoAOD.GenPart_status,
