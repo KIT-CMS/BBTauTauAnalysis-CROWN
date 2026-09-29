@@ -6,7 +6,7 @@ from analysis_configurations.bbtautau.constants import SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     build,
     find_producer,
-    generate,
+    generate_code,
     output_names,
     producer_names,
 )
@@ -101,7 +101,7 @@ def test_actual_cpp_generation_in_every_scope(module, sample):
     """Placeholder expansion and source emission for all six scopes, not just DAG
     validation: data (no SFs), MC with SFs and gen-boson recoil, and the MC-only
     efficiency profile."""
-    generated = generate(module, sample, scopes=tuple(SCOPES))
+    generated = generate_code(module, sample, scopes=tuple(SCOPES))
     assert list(generated.directory.rglob("*.cxx"))
     for scope, expected in LEPTON_SFS.items():
         outputs = generated.outputs[scope]

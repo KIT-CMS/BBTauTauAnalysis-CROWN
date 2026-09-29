@@ -3,7 +3,7 @@
 Not a test module. ``build()`` mirrors ``generate.py`` -- gate on the module's
 ``AVAILABLE_ERAS``, but always construct against ``LEGACY_AVAILABLE_SAMPLES`` --
 and caches, so each (module, sample, era, scopes, shifts) surface is built once
-per session. ``generate()`` emits the C++ code of a surface, also once per session.
+per session. ``generate_code()`` emits the C++ code of a surface, also once per session.
 The accessors keep the producer-group traversal in one place.
 """
 import atexit
@@ -57,7 +57,7 @@ with open(f"{directory}/outputs.json", "w") as f:
 
 
 @functools.lru_cache(maxsize=None)
-def generate(module_name, sample, era="2018", scopes=("mt",), shifts=("none",)):
+def generate_code(module_name, sample, era="2018", scopes=("mt",), shifts=("none",)):
     """Generate the C++ code of one surface; cached, so each surface is generated once.
 
     Generation runs in a subprocess: it mutates module-level producers, so a second
