@@ -885,40 +885,32 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
     # TODO Update 2025 corrections as soon as they are available. For now, the 2024 corrections are used for 2025 as well.
     # TODO The Run 2 NanoAOD v15 corrections are still not final, some placeholders taken from the NanoAOD v9 corrections have been inserted. E.g., for 2016preVFP:
     # > DeepTau2018v2p5 Correctionlib JSON : 1st iteration \ DeepTauVSe and VSmu are taken from 2018 : Temporary -- will be updated soon
+    pog_tau_file = EraModifier(
+        {
+            "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016preVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
+            "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016postVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
+            "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2017-UL-NanoAODv15/2025-11-27/tau.json.gz",
+            "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2018-UL-NanoAODv15/2025-11-27/tau.json.gz",
+            "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-25/tau.json.gz",
+            "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-25/tau.json.gz",
+            "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
+            "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
+            "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+            "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+        }
+    )
     configuration.add_config_parameters(
         HAD_TAU_SCOPES,
         {
-            "tau_ides_sf_file": EraModifier(
-                {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016preVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016postVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2017-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2018-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
-                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
-                }
-            ),
-            "tau_trigger_sf_file": EraModifier(
-                {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016preVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2016postVFP-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2017-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2018-UL-NanoAODv15/2025-11-27/tau.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
-                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
-                }
-            ),
+            # The POG file holds the tau ID SFs, the energy scale and the trigger
+            # SFs. tau_vsjet_es_sf_file is read by the vsJet SF and the energy
+            # scale, the two corrections the embedding takes from its own payload.
+            "tau_ides_sf_file": pog_tau_file,
+            "tau_vsjet_es_sf_file": pog_tau_file,
+            "tau_trigger_sf_file": pog_tau_file,
+            "tau_trigger_cset_name": "tau_trigger",
             "tau_ES_json_name": "tau_energy_scale",
             "tau_id_algorithm": tau_id,
-            "tau_es_vs_jet_wp": "Medium",
             "tau_ES_shift_DM0": "nom",  # old
             "tau_ES_shift_DM1": "nom",  # old
             "tau_ES_shift_DM10": "nom",  # old
@@ -2546,10 +2538,12 @@ def build_config(
 
     # Run-2 2018 single-electron trigger scale factor measured with the same
     # method and payload as TauAnalysis. Ele115-only events have no dedicated
-    # correction in this payload; the configured weight describes Ele32.
+    # correction in this payload; the configured weight describes Ele32. The
+    # payload also holds the embedding SF (type "emb", embedding_run2_v15).
     configuration.add_config_parameters(
         ET_SCOPES + (EE_SCOPES if sm_light_controls else []),
         {
+            "electron_trigger_sf_type": "mc",
             "singlelectron_trigger_sf_mc": [
                 {
                     "flagname": "trg_wgt_single_ele32",
