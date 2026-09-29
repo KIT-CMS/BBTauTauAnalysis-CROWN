@@ -43,6 +43,39 @@ two sets are disjoint and a hard cut suffices, no stitching weights. CROWN itsel
 per-sample cut, the TauFakeFactors preselection through `sample_cuts`. Using the inclusive nick
 without that cut counts every `npartons >= 1` DY event twice.
 
+## The embedding list
+
+`sm_2018_embedding.txt` is a fifth list outside the two axes: the 12 2018 tau-embedding nicks of
+`sm_config` (`sample_type` `embedding`, see `embedding_run2_v15.py` and the README section "Tau
+embedding"). Its content follows one rule, shared with the ShapeSmith inventory
+`inventory/sm2018_embedding.txt`, which must stay byte-identical: every nick of
+`KingMaker/sample_database/nanoAOD_v15/datasets.json` with `sample_type` `embedding`, `era` 2018 and
+the final-state token `_eltau_`, `_mutau_` or `_tautau_` (no `muemb`), sorted with Python
+`sorted()`, one nick per line, with a trailing newline.
+
+```python
+nicks = sorted(
+    nick for nick, entry in datasets.items()
+    if entry["sample_type"] == "embedding" and entry["era"] == "2018"
+    and any(token in nick for token in ("_eltau_", "_mutau_", "_tautau_"))
+)
+```
+
+Embedding is built for et, mt and tt only; any other scope aborts the build. It runs as a second
+`ProduceNtuples` call under the same (fresh) production tag as the data/MC production it is combined
+with, with the same analysis, CROWN and KingMaker commits and payloads, and with all shifts, which are
+exactly the embedding tau shifts:
+
+```bash
+law run ProduceNtuples --analysis bbtautau --config sm_config \
+    --sample-list <CROWN>/analysis_configurations/bbtautau/sample_list/sm_2018_embedding.txt \
+    --scopes et,mt,tt --shifts all --production-tag <tag of the data/MC production> --workers 100
+```
+
+The embedding executable is built although the tag exists, because KingMaker builds per sample type
+and era. Never rerun that tag with other scopes: a reused tag does not rebuild an existing sample type,
+and new scopes come out empty.
+
 ## Format
 
 `KingMaker/processor/tasks/CROWNBase.py::parse_samplelist` turns every line into a nick **verbatim** --
