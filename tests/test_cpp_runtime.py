@@ -33,6 +33,10 @@ ELECTRON_RECO_PAYLOADS = {
     ),
     "2023PromptC": ("Run3-23CSep23-Summer23-NanoAODv12/2025-12-15", "Electron-ID-SF"),
 }
+# The Tau Embedding group's lepton payloads of the 2018 embedding SFs
+EMBEDDING_PAYLOADS = [
+    CROWN / f"data/embedding/{flavour}_2018UL.json.gz" for flavour in ("muon", "electron")
+]
 # The official AK4 PUPPI JERC payload of the SM 2018 production
 JER_PAYLOAD_2018 = Path(
     "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz"
@@ -111,6 +115,25 @@ def test_electron_reco_official_payload_pt_categories(electron_reco_binary, era)
     if not payload.is_file():
         pytest.skip("Pinned official EGM payload requires CVMFS")
     subprocess.run([str(electron_reco_binary), str(payload), cset, era], check=True)
+
+
+def test_embedding_iso_binned_sf_follows_the_iso_bin_and_eta_convention(tmp_path):
+    """The iso-binned embedding SF takes the correction of the lepton's iso bin and
+    evaluates muons with |eta| and electrons with signed eta, like the core
+    functions."""
+    if not all(payload.is_file() for payload in EMBEDDING_PAYLOADS):
+        pytest.skip("The CROWN data/embedding payloads are required")
+    binary = compile_fixture(
+        tmp_path,
+        "embedding_iso_binned",
+        [
+            CPP / "test_embedding_iso_binned.cxx",
+            ADDONS / "src/embedding_iso.cxx",
+            CORRECTION_MANAGER,
+        ],
+        correctionlib=True,
+    )
+    subprocess.run([str(binary), *map(str, EMBEDDING_PAYLOADS)], check=True)
 
 
 def test_strict_upart_btag_weight_consumer(tmp_path):
