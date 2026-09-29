@@ -1,15 +1,12 @@
 """Light-dilepton control channels (ee, em, mm) and the SM lepton-isolation sideband."""
 
-from pathlib import Path
-import subprocess
-import sys
-
 import pytest
 
 from analysis_configurations.bbtautau.constants import SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     build,
     find_producer,
+    generate,
     output_names,
     producer_names,
 )
@@ -100,30 +97,18 @@ def test_electron_reco_weight_is_the_era_keyed_addon_call():
         ("sm_btag_efficiency_config", "dyjets"),
     ],
 )
-def test_actual_cpp_generation_in_every_scope(module, sample, tmp_path):
+def test_actual_cpp_generation_in_every_scope(module, sample):
     """Placeholder expansion and source emission for all six scopes, not just DAG
     validation: data (no SFs), MC with SFs and gen-boson recoil, and the MC-only
     efficiency profile."""
-    script = f"""
-from analysis_configurations.bbtautau.tests.helpers import build
-from analysis_configurations.bbtautau.tests.test_sm_control_channels import LEPTON_SFS
-from code_generation.code_generation import CodeGenerator
-config = build({module!r}, {sample!r}, scopes={tuple(SCOPES)!r})
-generator = CodeGenerator("code_generation/analysis_template.cxx", "code_generation/subset_template.cxx",
-                          config, "bbtautau", {module!r}, "{module}_{sample}_2018", {str(tmp_path)!r})
-generator.generate_code()
-for scope, expected in LEPTON_SFS.items():
-    outputs = set(generator.output_commands[scope])
-    assert (expected <= outputs) if {sample!r} != "data" else not expected & outputs, (scope, expected ^ outputs)
-"""
-    result = subprocess.run(
-        [sys.executable, "-c", script],
-        cwd=Path(__file__).resolve().parents[3],
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert list(tmp_path.rglob("*.cxx"))
+    generated = generate(module, sample, scopes=tuple(SCOPES))
+    assert list(generated.directory.rglob("*.cxx"))
+    for scope, expected in LEPTON_SFS.items():
+        outputs = generated.outputs[scope]
+        if sample == "data":
+            assert not expected & outputs, scope
+        else:
+            assert expected <= outputs, (scope, expected - outputs)
 
 
 @pytest.mark.parametrize(

@@ -1,13 +1,22 @@
-"""Shared build helper, fake CLI args and configuration accessors for the suite.
+"""Shared build and generation helpers, fake CLI args and configuration accessors.
 
 Not a test module. ``build()`` mirrors ``generate.py`` -- gate on the module's
 ``AVAILABLE_ERAS``, but always construct against ``LEGACY_AVAILABLE_SAMPLES`` --
 and caches, so each (module, sample, era, scopes, shifts) surface is built once
-per session. The accessors keep the producer-group traversal in one place.
+per session. ``generate()`` emits the C++ code of a surface, also once per session.
+The accessors keep the producer-group traversal in one place.
 """
+import atexit
 import functools
 import importlib
+import json
 import logging
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+from typing import NamedTuple
 
 from analysis_configurations.bbtautau.constants import ERAS, LEGACY_AVAILABLE_SAMPLES, SCOPES
 
@@ -25,6 +34,48 @@ def build(module_name, sample, era="2018", scopes=("mt",), shifts=("none",)):
         )
     finally:
         logging.disable(logging.NOTSET)
+
+
+class Generated(NamedTuple):
+    directory: Path  # the generated sources
+    outputs: dict  # scope -> set of output column names
+
+
+_GENERATE = """
+import json, sys
+from analysis_configurations.bbtautau.tests.helpers import build
+from code_generation.code_generation import CodeGenerator
+module, sample, era, scopes, shifts, directory = json.loads(sys.argv[1])
+config = build(module, sample, era, tuple(scopes), tuple(shifts))
+generator = CodeGenerator("code_generation/analysis_template.cxx",
+                          "code_generation/subset_template.cxx", config, "bbtautau",
+                          module, f"{module}_{sample}_{era}", directory)
+generator.generate_code()
+with open(f"{directory}/outputs.json", "w") as f:
+    json.dump(generator.output_commands, f)
+"""
+
+
+@functools.lru_cache(maxsize=None)
+def generate(module_name, sample, era="2018", scopes=("mt",), shifts=("none",)):
+    """Generate the C++ code of one surface; cached, so each surface is generated once.
+
+    Generation runs in a subprocess: it mutates module-level producers, so a second
+    surface generated in the same process can fail.
+    """
+    directory = tempfile.mkdtemp(prefix=f"{module_name}_{sample}_{era}_")
+    atexit.register(shutil.rmtree, directory, ignore_errors=True)
+    arguments = json.dumps([module_name, sample, era, scopes, shifts, directory])
+    result = subprocess.run(
+        [sys.executable, "-c", _GENERATE, arguments],
+        cwd=Path(__file__).resolve().parents[3],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    with open(f"{directory}/outputs.json") as f:
+        outputs = {scope: set(names) for scope, names in json.load(f).items()}
+    return Generated(Path(directory), outputs)
 
 
 class FakeArgs:
