@@ -1406,7 +1406,7 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
             "ak4jet_jes_source": "nominal",
             "ak4jet_jes_shift_factor": 0,
             "ak4jet_jer_master_seed": 42,
-            "ak4jet_jer_shift": "nom",  # or '"up"', '"down"'
+            "ak4jet_jer_shift": "nom",  # or "up", "down" (the producer call adds the quotes)
             "ak4jet_jec_file": EraModifier(
                 {
                     "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
@@ -1553,7 +1553,7 @@ def add_ak8jet_config(configuration: Configuration):
             "ak8jet_jes_source": "nominal",
             "ak8jet_jes_shift_factor": 0,
             "ak8jet_jer_master_seed": 43,
-            "ak8jet_jer_shift": "nom",  # or '"up"', '"down"'
+            "ak8jet_jer_shift": "nom",  # or "up", "down" (the producer call adds the quotes)
             "ak8jet_jec_file": EraModifier(  # TODO use AK4 file for fatjets because it either was is just copied and the fatjet file has no merged uncertainty scheme?
                 {
                     "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv15/2026-06-05/fatJet_jerc.json.gz",
