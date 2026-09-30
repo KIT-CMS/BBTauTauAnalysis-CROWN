@@ -263,6 +263,16 @@ def test_no_mc_shift_leaves_its_columns_nominal():
     assert not {name for name in shifts if name.startswith(("CMS_eff_t_", "CMS_eff_m_i"))}
 
 
+def test_only_the_mc_tau_energy_scale_shifts_match_taues():
+    """-DSHIFTS selects shifts by case-insensitive substring, so 'tauEs' must select
+    the MC tau energy scale shifts and nothing else."""
+    shifts = shift_names(measurement("dyjets", ("all",)), "mt")
+    tokens = ("1prong0pizero", "1prong1pizero", "3prong0pizero", "3prong1pizero")
+    assert {name for name in shifts if "taues" in name.lower()} == {
+        f"tauEs{token}{direction}" for token in tokens for direction in ("Up", "Down")
+    }
+
+
 def test_sample_list_covers_every_sample_type():
     """sample_list/README.md: sorted 2018 nicks, SingleMuon data, mutau and muemb
     embedding, and every sample type of the configuration."""
