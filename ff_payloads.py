@@ -27,7 +27,7 @@ Shift selection: every directional key, except
   ``SystBandAsym``: SystBandHigh Up is the curve re-smoothed with bandwidth
   x1.5 and Down its mirror 2*nominal - Up, SystBandLow the same with x0.5,
   SystBandAsym Up/Down are the x1.5/x0.5 curves
-  (/work/jvoss/FF_Updated/helper/ff_functions.py:1575-1584);
+  (``smooth_function`` in /work/jvoss/FF_Updated/helper/ff_functions.py);
 - the per-variable non-closure keys of the closure stack: only the global
   (coarse) keys are kept.
 """

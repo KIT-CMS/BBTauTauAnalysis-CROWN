@@ -3038,7 +3038,7 @@ def build_config(
             configuration.add_modification_rule(control_scopes, RemoveProducer(
                 producers=control_producers, samples=["data", "embedding", "embedding_mc"],
             ))
-        # mm embedding (tau-ID measurement) replaces them in embedding_run2_v15
+        # mm embedding (tau-ID measurement) replaces it in embedding_run2_v15
         configuration.add_modification_rule(
             MM_SCOPES, RemoveProducer(producers=[scalefactors.MuonIDIso_SF], samples=["data"])
         )
@@ -3125,7 +3125,7 @@ def build_config(
     )
 
     # Remove the era-selected et trigger scale factor and the electron ID
-    # scale factor from data; embedding replaces them in its own setup below.
+    # scale factor from data; embedding handles them in its own setup below.
     configuration.add_modification_rule(
         ET_SCOPES,
         RemoveProducer(
@@ -3981,8 +3981,8 @@ def build_config(
     if sample == "embedding" and profile.use_run2_v15_inputs:
         embedding_run2_v15.setup(configuration, profile, era, scopes)
     elif sample in ("embedding", "embedding_mc"):
-        # the legacy setup adds its embedding scale factors next to the removed
-        # MC ones
+        # the legacy setup appends its own embedding scale factors in place of
+        # these MC ones
         for _scopes, _producer in [
             (ET_SCOPES, single_ele_trigger_sf),
             (MT_SCOPES, scalefactors.MuonIDIso_SF),

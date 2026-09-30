@@ -79,6 +79,7 @@ def _add_muon_triggers(configuration: Configuration, sample: str):
         {
             "mu_trigger": SINGLE_MUON_TRIGGERS,
             "singlemuon_trigger_sf_mc": _mc_trigger_sfs(1.0),
+            # in place of the IsoMu24-only embedding SF of embedding_run2_v15
             "singlemuon_trigger_sf": [
                 {"flagname": flag, "embedding_trigger_sf": sf, "muon_trg_extrapolation": 1.0}
                 for flag, sf in TRIGGER_SFS.items()
