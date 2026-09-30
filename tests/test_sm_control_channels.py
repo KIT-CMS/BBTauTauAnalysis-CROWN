@@ -99,15 +99,17 @@ def test_electron_reco_weight_is_the_era_keyed_addon_call():
 )
 def test_actual_cpp_generation_in_every_scope(module, sample):
     """Placeholder expansion and source emission for all six scopes, not just DAG
-    validation: data (no SFs), MC with SFs and gen-boson recoil, and the MC-only
-    efficiency profile."""
+    validation: data (no weight in any scope), MC with SFs and gen-boson recoil, and
+    the MC-only efficiency profile."""
     generated = generate_code(module, sample, scopes=tuple(SCOPES))
     assert list(generated.directory.rglob("*.cxx"))
-    for scope, expected in LEPTON_SFS.items():
-        outputs = generated.outputs[scope]
-        if sample == "data":
-            assert not expected & outputs, scope
-        else:
+    if sample == "data":
+        for scope in SCOPES:
+            weights = {o for o in generated.outputs[scope] if "wgt" in o or "weight" in o}
+            assert not weights, (scope, weights)
+    else:
+        for scope, expected in LEPTON_SFS.items():
+            outputs = generated.outputs[scope]
             assert expected <= outputs, (scope, expected - outputs)
 
 
