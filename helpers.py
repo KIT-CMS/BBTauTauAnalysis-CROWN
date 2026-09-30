@@ -148,3 +148,17 @@ def era_producer_groups(
         )
 
     return producer_group_dict
+
+
+def cpp_list(values) -> str:
+    """
+    Render `values` as the body of a C++ braced list, to be placed between
+    `{vec_open}` and `{vec_close}` in a producer call: strings are quoted,
+    numbers are written as they are.
+
+    ```python
+    cpp_list([0.15, 0.25])                  # '0.15, 0.25'
+    cpp_list(["Iso_pt_eta_bins", "AIso"])   # '"Iso_pt_eta_bins", "AIso"'
+    ```
+    """
+    return ", ".join(f'"{value}"' if isinstance(value, str) else str(value) for value in values)

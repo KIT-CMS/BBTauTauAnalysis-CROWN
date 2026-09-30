@@ -33,12 +33,13 @@ Three corrections, all version 0 without description, returning 1.0 for every
 Axes: `wp` Medium, Tight; `wp_VSe` VVLoose, Tight; `syst` nom, up, down; the pT
 and |eta| bins clamp. The analysis reads Medium with vsEle Tight in et and VVLoose
 in mt and tt. DM11 equals DM10 everywhere, because the measurement fits one 3-prong
-category (DM1011); the `emb*` shifts therefore move DM10 and DM11 together.
+category (DM1011); the embedding shifts vary DM10 and DM11 separately (one decay mode per
+shift, see `variations/taus.py`), so the two are to be correlated downstream.
 
 ## The 40 GeV step of the energy scale
 
-`tau_energy_scale` changes at a raw tau pT of 40 GeV, and each `embTauEs` shift moves
-both pT bins of its decay mode together. For Medium/VVLoose the corrected pT has a
+`tau_energy_scale` changes at a raw tau pT of 40 GeV, and each `CMS_scale_t_emb_*` shift
+moves both pT bins of its decay mode together. For Medium/VVLoose the corrected pT has a
 hole just below 40 GeV: DM0 38.9-39.3 GeV (0.972 -> 0.983), DM1 37.7-39.8 GeV
 (0.943 -> 0.994), DM10 38.2-39.5 GeV (0.955 -> 0.988). For Medium/Tight (et): DM1
 37.9-39.4 GeV, DM10 38.4-39.7 GeV, while DM0 overlaps (37.5-37.8 GeV, 0.946 -> 0.939).

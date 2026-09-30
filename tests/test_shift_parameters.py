@@ -17,10 +17,11 @@ from analysis_configurations.bbtautau.tests.helpers import build
 
 # The eras each analysis produces: SM 2018 on the Run-2 v15 inputs, NMSSM Run 3
 SURFACES = [
-    ("sm_config", "ttbar", "2018"),
-    ("sm_config", "dyjets", "2018"),
-    ("nmssm_config", "ttbar", "2024"),
-    ("nmssm_config", "dyjets_amcatnlo_ll", "2022postEE"),
+    ("sm_config", "ttbar", "2018", tuple(SCOPES)),
+    ("sm_config", "dyjets", "2018", tuple(SCOPES)),
+    ("sm_config", "embedding", "2018", ("et", "mt", "tt")),
+    ("nmssm_config", "ttbar", "2024", tuple(SCOPES)),
+    ("nmssm_config", "dyjets_amcatnlo_ll", "2022postEE", tuple(SCOPES)),
 ]
 
 
@@ -49,9 +50,9 @@ def _read_parameters(config, scope):
     return read, entries
 
 
-@pytest.mark.parametrize("module,sample,era", SURFACES)
-def test_every_shifted_parameter_is_read(module, sample, era):
-    config = build(module, sample, era=era, scopes=tuple(SCOPES), shifts=("all",))
+@pytest.mark.parametrize("module,sample,era,scopes", SURFACES)
+def test_every_shifted_parameter_is_read(module, sample, era, scopes):
+    config = build(module, sample, era=era, scopes=scopes, shifts=("all",))
     unread = []
     for scope in config.shifts:
         read, entries = _read_parameters(config, scope)
@@ -94,11 +95,11 @@ def _variation_parameters(parameters):
                 yield entry_key, entry_value
 
 
-@pytest.mark.parametrize("module,sample,era", SURFACES)
-def test_nominal_parameters_select_the_nominal_corrections(module, sample, era):
+@pytest.mark.parametrize("module,sample,era,scopes", SURFACES)
+def test_nominal_parameters_select_the_nominal_corrections(module, sample, era, scopes):
     """Shift helpers run whatever shifts are selected, so one that edits the nominal
     configuration in place changes the nominal of every build."""
-    config = build(module, sample, era=era, scopes=tuple(SCOPES), shifts=("all",))
+    config = build(module, sample, era=era, scopes=scopes, shifts=("all",))
     shifted_nominal = [
         (scope, key, value)
         for scope, parameters in config.config_parameters.items()

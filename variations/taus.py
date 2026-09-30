@@ -5,6 +5,7 @@ from code_generation.producer import Producer, ProducerGroup
 from ..producers import pairselection as pairselection
 from ..producers import muons as muons
 from ..producers import electrons as electrons
+from ..producers import embedding as embedding
 
 from ..constants import ERAS_RUN2
 
@@ -278,4 +279,93 @@ def add_tau_es_shifts(
                 },
             },
             add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
+
+
+def add_embedding_tau_id_vs_jet_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup],
+    scopes: list[str],
+    pt_bins: list[tuple[int, int | str]],
+    tau_id_algorithm: str = "DeepTau2018v2p5",
+):
+    """
+    Add shifts for tau ID vs jet scale factors of tau-embedded events for the
+    given era.
+
+    The scale factors have been measured in bins of the hadronic tau decay mode
+    and pt. Shifts are performed independently for each of these 2D bins.
+    """
+
+    # Independent shifts of the tau ID vs jet scale factor in each DM and pt bin
+    shifts = [
+        KeyValueShift(
+            name=f"CMS_eff_t_emb_{tau_id_algorithm}_VSjet_DM{dm}_pt{pt_start}to{pt_stop}_{era}",
+            key="tau_id_sf_vsjet_variation",
+            value=f"{{direction}}_custom_dm{dm}_pt{pt_start}to{pt_stop}",
+        )
+        for dm in [0, 1, 10, 11]
+        for pt_start, pt_stop in pt_bins
+    ]
+
+    # Add up and down variation for each shift
+    for shift in shifts:
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"samples": ["embedding"]},
+        )
+
+
+def add_embedding_tau_es_shifts(
+    configuration: Configuration,
+    era: str,
+    producer: Producer | ProducerGroup,
+    tau_id_algorithm: str = "DeepTau2018v2p5",
+):
+    """
+    Add shifts for the tau energy scale (TES) of tau-embedded events for the
+    given era.
+
+    The embedded taus are genuine hadronic tau decays. Their energy scale has
+    been measured per decay mode, the shifts are decorrelated between the DMs.
+    """
+
+    # Independent shifts of the tau energy scale in each DM
+    shifts = [
+        KeyValueShift(
+            name=f"CMS_scale_t_emb_{tau_id_algorithm}_DM{dm}_{era}",
+            key="tau_es_variation",
+            value=f"{{direction}}_custom_genTau_dm{dm}",
+        )
+        for dm in [0, 1, 10, 11]
+    ]
+
+    # Add up and down variation for each shift. Next to the producers ignored
+    # by the MC shifts, the embedding isolation SFs of the light lepton are
+    # ignored, which read its iso_1.
+    for shift in shifts:
+        add_systematic_shift(
+            configuration,
+            shift,
+            producer,
+            shift_kwargs={
+                "ignore_producers": {
+                    "et": [
+                        pairselection.LVEl1,
+                        electrons.VetoElectrons,
+                        embedding.TauEmbeddingElectronIsoBinnedSF_1,
+                    ],
+                    "mt": [
+                        pairselection.LVMu1,
+                        muons.VetoMuons,
+                        embedding.TauEmbeddingMuonIsoBinnedSF_1,
+                    ],
+                    "tt": [],
+                },
+            },
+            add_kwargs={"samples": ["embedding"]},
         )

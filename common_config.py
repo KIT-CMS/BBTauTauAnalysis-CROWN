@@ -44,6 +44,7 @@ from .variations.triggers import (
     add_single_electron_trigger_shifts,
     add_single_muon_trigger_shifts,
 )
+from . import embedding_run2_v15
 from . import btag_payloads
 
 from code_generation.configuration import Configuration
@@ -3140,15 +3141,16 @@ def build_config(
         ),
     )
 
-    # Remove the era-selected et trigger scale factor from data and embedding.
-    # ``setup_embedding`` adds its dedicated embedding-event producer later.
+    # Remove the era-selected et trigger scale factor and the electron ID
+    # scale factor from data; embedding replaces them in its own setup below.
     configuration.add_modification_rule(
         ET_SCOPES,
         RemoveProducer(
             producers=[
                 single_ele_trigger_sf,
+                scalefactors.EleID_SF,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=["data"],
         ),
     )
     configuration.add_modification_rule(
@@ -3193,25 +3195,27 @@ def build_config(
     #     )
     # )
 
-    # Remove muon ID and isolation scale factor producers from data and embedding samples in mt scope
+    # Remove muon ID and isolation scale factor producers from data samples in
+    # mt scope; embedding replaces them in its own setup below
     configuration.add_modification_rule(
         MT_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.MuonIDIso_SF,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=["data"],
         )
     )
 
-    # Remove trigger scale factor producers from data and embedding samples in tt scope
+    # Remove trigger scale factor producers from data samples in tt scope;
+    # embedding reconfigures or removes them in its own setup below
     configuration.add_modification_rule(
         TT_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.TauTauTriggerSF,
             ],
-            samples=["data", "embedding", "embedding_mc"],
+            samples=["data"],
         ),
     )
 
@@ -3990,8 +3994,21 @@ def build_config(
     #########################
     # Add additional producers and SFs related to embedded samples
     #########################
-
-    if sample == "embedding" or sample == "embedding_mc":
+    # the v15 setup reads the resolved noise filter list
+    if sample == "embedding" and profile.use_run2_v15_inputs:
+        embedding_run2_v15.setup(configuration, profile, era, scopes)
+    elif sample in ("embedding", "embedding_mc"):
+        # the legacy setup adds its embedding scale factors next to the removed
+        # MC ones
+        for _scopes, _producer in [
+            (ET_SCOPES, single_ele_trigger_sf),
+            (MT_SCOPES, scalefactors.MuonIDIso_SF),
+            (TT_SCOPES, scalefactors.TauTauTriggerSF),
+        ]:
+            configuration.add_modification_rule(
+                _scopes,
+                RemoveProducer(producers=[_producer], samples=["embedding", "embedding_mc"]),
+            )
         setup_embedding(configuration, HAD_TAU_SCOPES)
 
     # -------------------------------------------------------------------------

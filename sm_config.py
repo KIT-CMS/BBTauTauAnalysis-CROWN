@@ -4,12 +4,12 @@ from .analysis_profiles import SM_PROFILE
 from . import common_config
 
 AVAILABLE_ERAS = ["2018"]
-# embedding/embedding_mc are buildable for commissioning only and are not part
-# of the sample lists in sample_list/
+# embedding: et, mt and tt only, see embedding_run2_v15.py and the README
+# section "Tau embedding"
 AVAILABLE_SAMPLES = [
     "hh2b2tau", "data", "dyjets", "wjets", "ttbar", "singletop", "diboson",
     "electroweak_boson", "ggh_htautau", "vbf_htautau", "vbf_hbb", "rem_hbb",
-    "rem_higgs", "rem_ttbar", "embedding", "embedding_mc",
+    "rem_higgs", "rem_ttbar", "embedding",
 ]
 
 # Entry point for SM Analysis

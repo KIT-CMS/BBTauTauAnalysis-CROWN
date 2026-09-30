@@ -113,6 +113,25 @@ TauTauTriggerFlags = ExtendedVectorProducer(
     vec_config="tautau_trigger",
 )
 
+# double tau-tau trigger flags in tau embedding: the embedded taus fire no ditau
+# HLT path, so only the trigger objects' filter bits are matched
+TauTauTriggerFlagsEmbedding = ExtendedVectorProducer(
+    name="TauTauTriggerFlagsEmbedding",
+    call='trigger::DoubleObjectFlag({df}, {output}, {input}, {p1_min_pt}, {p2_min_pt}, {p1_max_abs_eta}, {p2_max_abs_eta}, {p1_particle_id}, {p2_particle_id}, {vec_open}{p1_filter_bit}{vec_close}, {vec_open}{p2_filter_bit}{vec_close}, {match_max_delta_r})',
+    input=[
+        q.p4_1,
+        q.p4_2,
+        nanoAOD.TrigObj_pt,
+        nanoAOD.TrigObj_eta,
+        nanoAOD.TrigObj_phi,
+        nanoAOD.TrigObj_id,
+        nanoAOD.TrigObj_filterBits,
+    ],
+    output="flagname",
+    scopes=TT_SCOPES,
+    vec_config="tautau_trigger_embedding",
+)
+
 # double tau-tau + jet trigger flags, including trigger object matching
 TauTauJetTriggerFlags = ExtendedVectorProducer(
     name="TauTauJetTriggerFlags",
