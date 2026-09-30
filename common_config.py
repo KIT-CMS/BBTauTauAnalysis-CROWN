@@ -2200,10 +2200,12 @@ def add_met_corrections_config(configuration: Configuration):
                 },
                 default=True,
             ),
+            # the merged dyjets and wjets names are the SM v15 samples; NMSSM
+            # replaces the recoil producer for them (sm_merged_dyw in build_config)
             "apply_recoil_correction": SampleModifier(
                 {
-                    k: True
-                    for k in _get_recoil_calibration_samples()
+                    **{k: True for k in _get_recoil_calibration_samples()},
+                    "wjets": True,
                 },
                 default=False,
             ),

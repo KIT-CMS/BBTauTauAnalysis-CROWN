@@ -238,7 +238,7 @@ everything not listed is the `sm_config` one.
 | vsJet SF, MC | `id_wgt_tau_vsJet_{Medium,Tight}_2`, wp_VSe VVLoose, `dm` | POG | Loose, Medium, Tight, VVLoose, `dm` | Medium |
 | vsJet SF, embedding | none | &ndash; | none | embedding payload |
 | vsEle / vsMu SF | `id_wgt_tau_vsEle_{VVLoose,Tight}_2`; `id_wgt_tau_vsMu_Tight_2` for both vsEle WPs (the v15 payload has no vsEle input) | POG | the same values, one vsMu column per vsEle WP | same |
-| MET recoil correction | DY and W (`dyjets`, `wjets`) | `data/recoil_corrections/Type1_PuppiMET_2018.root` | DY and W (`MetCorrections_Run2`) | DY only: the merged `wjets` sample type is missing from `apply_recoil_correction` |
+| MET recoil correction | DY and W (`dyjets`, `wjets`) | `data/recoil_corrections/Type1_PuppiMET_2018.root` | DY and W (`MetCorrections_Run2`) | same |
 | b-tag SF | none | &ndash; | none | strict UParTAK4 weight |
 | Embedding tau p<sub>T</sub> threshold | 20/1.2 GeV | grid applied in ShapeSmith | 20 GeV, grid in CROWN | 20 GeV |
 

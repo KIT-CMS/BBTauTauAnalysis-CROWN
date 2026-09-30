@@ -121,7 +121,7 @@ def test_upart_weight_variation_columns_match_discovery():
 
 def test_sm_dyw_recoil_wiring():
     """The merged dyjets/wjets names get the gen-boson four-vector and the intact
-    recoil-correction group; everything else takes RenameMet."""
+    recoil-correction group, with the correction on; everything else takes RenameMet."""
     for sample in ("dyjets", "wjets"):
         config = build("sm_config", sample)
         names = producer_names(config, "mt") | producer_names(config, "global")
@@ -129,9 +129,25 @@ def test_sm_dyw_recoil_wiring():
             "GenBosonQuantities",
             "MetScopes",
         } <= names and "RenameMet" not in names, sample
+        assert config.config_parameters["mt"]["nominal"]["apply_recoil_correction"], sample
     ttbar = build("sm_config", "ttbar", scopes=ALL_SCOPES)
     names = producer_names(ttbar, "mt") | producer_names(ttbar, "global")
     assert "RenameMet" in names and not {"GenBosonQuantities", "MetScopes"} & names
+
+
+@pytest.mark.parametrize("sample", ["dyjets", "wjets"])
+def test_sm_recoil_shifts_set_the_run2_flags(sample):
+    """The Run-2 recoil producer reads bool flags, not the Run-3 variation name."""
+    config = build("sm_config", sample, shifts=("all",))
+    read = find_producer(config, "mt", "RecoilCorrectionMet").parameters["mt"]
+    for systematic, name in [("response", "scale"), ("resolution", "res")]:
+        for direction in ("Up", "Down"):
+            change = config.shifts["mt"][f"__CMS_{name}_met_RecoilCalibration_2018{direction}"]
+            assert change == {
+                f"apply_recoil_{systematic}_systematic": True,
+                f"recoil_systematic_shift_{direction.lower()}": True,
+            }
+            assert set(change) <= read
 
 
 @pytest.mark.parametrize("module", ["sm_config", "nmssm_config"])
