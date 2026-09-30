@@ -155,6 +155,24 @@ only.
 All `/cvmfs/cms-griddata.cern.ch` pins are dated CAT-metadata snapshots, never the rolling `latest`
 symlink; after changing one, rerun the tests.
 
+## Systematic shifts
+
+Every shift is defined in the `variations/` package, one module per object (`taus`, `jec`,
+`bjet_tagging`, `electrons`, `muons`, `met`, `pileup_prefiring`, `triggers`, `theory`), and named after
+its datacard nuisance (`CMS_scale_t_DeepTau2018v2p5_DM0_pt20to40_genTau_2018Up`,
+`CMS_eff_m_trigger_2018Down`, `CMS_scale_j_AbsoluteUp`, ...). `common_config.build_config` registers
+them for NMSSM and SM alike. The SM specifics use the same helpers:
+
+- 2018 et (and ee of the light control channels) evaluates the trigger SF of the Tau Embedding group,
+  whose shift `CMS_eff_e_trigger_2018` scales it by 1.02 / 0.98 (`add_single_electron_trigger_extrapolation_shifts`);
+- the strict UParTAK4 b-tag weight writes its variations as weight columns, so the SM has no b-tag
+  shifts;
+- the embedding and the tau-ID measurement add their own shifts (sections below).
+
+`tests/test_shift_parameters.py` checks that every shifted parameter is read by a producer of its
+scope and that the nominal parameters select the nominal corrections. `-DSHIFTS` selects shifts by
+case-insensitive substring, e.g. `CMS_scale_t` for all tau energy scale shifts.
+
 ## Tau embedding
 
 `sm_config` builds the 2018 &mu;&rarr;&tau; embedded samples (sample type `embedding`, list
