@@ -30,8 +30,9 @@ A config module may also declare `AVAILABLE_ERAS` and/or `AVAILABLE_SAMPLES`; `g
 
 ## Available Friend Configurations
 
-The FastMTT and resolved kinematic-fit entries are thin wrappers around the shared
-`FriendTreeConfiguration` body `friend_common.build_friend_config`.
+The friend entries are thin wrappers around the shared `FriendTreeConfiguration` bodies in
+`friend_common.py`: `build_friend_config` (FastMTT, resolved kinematic fit) and
+`build_fake_factor_friend` (fake factors).
 
 * `nmssm_fastmtt.py` / `sm_fastmtt.py` - Produce FastMTT friends (`m/pt/eta/phi_fastmtt`); the SM
   module re-exports the NMSSM builder and only adds `AVAILABLE_ERAS = ["2018"]`.
@@ -39,8 +40,53 @@ The FastMTT and resolved kinematic-fit entries are thin wrappers around the shar
   hypotheses, resolved and boosted.
 * `sm_kinfit_resolved.py` - Fixed 125/125 GeV HH kinematic fit, 2018 only; outputs
   `kinfit_convergence`, `kinfit_chi2`, `kinfit_prob`, `kinfit_mHH`.
-* `fake_factors_friend_config.py` - Produce fake factor friends for the NMSSM analysis.
+* `fake_factors_friend_config.py` / `sm_fake_factors.py` - Fake-factor friends, NMSSM (Run 3,
+  `NMSSM_PAYLOAD_DIRS`) and SM (2018, `SM_PAYLOAD_DIRS`); see [Fake-factor friends](#fake-factor-friends).
 * `xyh_classifier_friend_config.py` - Produce PNN classifier friends for the NMSSM analysis.
+
+### Fake-factor friends
+
+Each friend reads the two payload files of its scope, `fake_factors_<ch>.json.gz` and
+`FF_corrections_<ch>.json.gz` (TauFakeFactors layout; `FF_corrections_<ch>_default.json.gz` where the
+corrections file carries the name of its corrections configuration), at configuration time with `ff_payloads.py`
+(standard library only), and takes the correction inputs and the shifts from them, so a new payload
+needs no code change. The C++ (`cpp_addons/src/fakefactors.cxx`) evaluates the QCD + ttbar model per
+leg: `frac_QCD * max(FF_QCD * DR->SR_QCD * closure_QCD, 0) + frac_ttbar * max(FF_ttbar * closure_ttbar, 0)`,
+the raw fake factor without the corrections.
+
+| Scope | Legs (correction suffix) | Outputs |
+|---|---|---|
+| et, mt | `lt` (none) | `fake_factor_raw`, `fake_factor` |
+| tt | `leading` (none), `subleading` (`_subleading`) | `fake_factor_{1,2}_raw`, `fake_factor_{1,2}` |
+
+The payload conventions are checked when the configuration is built (a `ValueError` names the file and
+the correction): every correction has a `syst` category with a default (the nominal) at the top, the
+inputs are `[process] + real ... + syst` (`process` only in the fractions, whose processes are exactly
+QCD and ttbar), every input is a quantity of `quantities/output.py` (`njets`/`nbtag` are aliases of
+`n_jets`/`n_bjets`), every syst key is `nominal`, `<correction>nominal` or ends in Up/Down/_up/_down
+with its partner, and the global non-closure keys are in every member of a compound closure.
+
+Shifts: every Up/Down key of the leg's corrections except `SystBandHigh`/`SystBandLow` (the same
+smoothing band as `SystBandAsym`) and the per-variable non-closure keys (only the global, coarse ones
+are kept). The shift name is the payload key with `_up`/`_down` written `Up`/`Down`, e.g.
+`process_fractionsfrac_QCDUp` sets `ff_fraction_variation` to `process_fractionsfrac_QCD_up`; fake-factor
+and fraction shifts act on both outputs of the leg, DR->SR and closure shifts only on the corrected
+one. That is 17 pairs per leg for the SM 2018 payload and 14 for the NMSSM ones. The NMSSM shift names
+therefore follow the payload keys (2025: `QCDStatShift...`, `process_fractionsfrac_QCD...`; 2022-2024:
+`fracTTbarUnc`), which the hardwired lists before got wrong, evaluating those shifts as nominal.
+Friends keep `--shifts all|none`.
+
+The build needs a quantities map that lists every input column of the scope. A missing nominal
+column fails at configuration time; a shifted variant is used where the map has it, otherwise the
+input stays nominal under that shift (info log only).
+
+Payloads: the NMSSM Run-3 ones stay at `payloads/fake_factors/<version>/<era>/` (2022 and 2023:
+`fake-factors-2026-06-10`, 2024 and 2025: `fake-factors-2026-09-26`, which has no 2024 tt payload), new ones go to
+`payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payload is the commissioning payload
+`payloads/fake_factors/sm/fake-factors-2026-09-22/2018/` (see its README; its shifts are for wiring
+checks only). A new payload goes into a new dated directory, and only the entry in `SM_PAYLOAD_DIRS` /
+`NMSSM_PAYLOAD_DIRS` changes. Friend tarballs and outputs are keyed by production and friend tag
+only, so producing friends with a new payload on an existing production needs a new `--friend-tag`.
 
 ## Building
 
