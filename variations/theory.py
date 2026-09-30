@@ -38,3 +38,39 @@ def add_qcd_scale_shifts(
             producers,
             add_kwargs={"exclude_samples": exclude_samples},
         )
+
+
+def add_parton_shower_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup],
+):
+    """
+    Add shifts of ISR/FSR tunes for Pythia.
+    """
+
+    # Exclude data, as well as embedding samples
+    exclude_samples = ["data", "embedding", "embedding_mc"]
+
+    # List of shifts for the renormalization and factorization scales
+    shifts = [
+        KeyValueShift(
+            name="ps_isr",
+            key="ps_isr_variation",
+            value={"down": 0.5, "up": 2.0},
+        ),
+        KeyValueShift(
+            name="ps_fsr",
+            key="ps_fsr_variation",
+            value={"down": 0.5, "up": 2.0},
+        ),
+    ]
+
+    # Add up and down variation for each shift
+    for shift in shifts:
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            add_kwargs={"exclude_samples": exclude_samples},
+        )
