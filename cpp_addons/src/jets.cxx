@@ -75,8 +75,20 @@ float apply_jes_l2rel(const float &jet_pt, const float &jet_eta,
 float apply_jes_l2l3res(const float &jet_pt, const float &jet_eta,
                         const float &run, const std::string &era,
                         const correction::Correction *jes_l2l3res_evaluator) {
+    // Apply manual clipping for 2024 and 2025 in the 2.0 < |eta| < 2.5 region
+    // for jets with pt < 30
+    auto corrlib_jet_pt = jet_pt;
+    if (
+        std::stoi(era.substr(0, 4)) == 2024
+        && jet_pt < 30.0
+        && std::abs(jet_eta) > 2.0
+        && std::abs(jet_eta) < 2.5
+    ) {
+        corrlib_jet_pt = 30.0;
+    }
+
     // Calculate the L2L3res-corrected pt
-    return jet_pt * jes_l2l3res_evaluator->evaluate({run, jet_eta, jet_pt});
+    return jet_pt * jes_l2l3res_evaluator->evaluate({run, jet_eta, corrlib_jet_pt});
 }
 
 float apply_jes_shifts(
@@ -122,7 +134,7 @@ float apply_jer(
     const correction::Correction *jer_scalefactor_evaluator,
     const correction::Correction *jer_scalefactor_uncertainty_evaluator,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 randgen) {
+    const std::string &era, TRandom3 &randgen) {
     // Get the JER MC resolution and data-MC scale factor for the smearing
     auto resol = jer_resolution_evaluator->evaluate({jet_eta, jet_pt, rho});
     auto sf = 1.0;
@@ -135,18 +147,18 @@ float apply_jer(
             auto sf_unc = jer_scalefactor_uncertainty_evaluator->evaluate(
                 {jet_eta, jet_pt});
             if (jer_shift == "up") {
-                sf *= 1 + sf_unc;
+                sf = sf * (1 + sf_unc);
             } else if (jer_shift == "down") {
-                sf *= 1 - sf_unc;
+                sf = sf * (1 - sf_unc);
             }
         }
     }
 
     // Match the jet to a generator-level jet
-    float min_delta_r = 0;
+    float min_delta_r = std::numeric_limits<float>::infinity();
     float gen_pt = -10.0;
     for (int i = 0; i < genjet_pt.size(); ++i) {
-        float delta_r = ROOT::VecOps::DeltaR(jet_eta, jet_phi, genjet_eta[i],
+        float delta_r = ROOT::VecOps::DeltaR(jet_eta, genjet_eta[i], jet_phi,
                                              genjet_phi[i]);
         if (delta_r > min_delta_r) {
             continue;
@@ -160,23 +172,32 @@ float apply_jer(
 
     // Smear the JER by either using the rescaling or the random smearing
     // method
-    float delta_jer = 0.0;
+    float c_jer = 1.0;
     if (gen_pt >= 0.0) {
-        delta_jer = (sf - 1.0) * (jet_pt - gen_pt) / jet_pt;
+        c_jer = 1 + (sf - 1.0) * (jet_pt - gen_pt) / jet_pt;
     } else {
         // Jet horn mitigation for run 3
         // If no generator-level jet is found for a reconstructed jet in
         // 2.5 < eta < 3.0, no smearing shall be applied.
-        if (std::stoi(era.substr(0, 4)) > 2022 && abs(jet_eta) > 2.5 &&
-            abs(jet_eta) < 3.0) {
-            delta_jer = 0.0;
+        if (
+            std::stoi(era.substr(0, 4)) >= 2022
+            && std::stoi(era.substr(0, 4)) <= 2024
+            && abs(jet_eta) > 2.5
+            && abs(jet_eta) < 3.0
+        ) {
+            c_jer = 1.0;
         } else {
-            delta_jer = randgen.Gaus(0, resol) *
+            c_jer = 1 + randgen.Gaus(0, resol) *
                         (std::sqrt(std::max(std::pow(sf, 2) - 1.0, 0.0)));
         }
     }
 
-    return jet_pt * std::max(0.f, 1.f + delta_jer);
+    // Set c_jer to unity if a negative value has been obtained
+    if (c_jer <= 0) {
+        c_jer = 1.0;
+    }
+
+    return c_jer * jet_pt;
 }
 
 JECResult apply_full_jec_mc(
@@ -185,7 +206,7 @@ JECResult apply_full_jec_mc(
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, TRandom3 randgen,
+    const float &jet_radius, const std::string &era, TRandom3 &randgen,
     const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
@@ -223,7 +244,7 @@ JECResult apply_jes_shifts_and_jer_mc(
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
     const std::string &jes_shift_source, const int &jes_shift_factor,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 randgen,
+    const std::string &era, TRandom3 &randgen,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
     const correction::Correction *jer_scalefactor_evaluator,
@@ -305,21 +326,6 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
 
     return df.Define(outputname, callable,
                      {jet_quantity, jet_raw_factor, jet_muon_subtr_factor});
-}
-
-ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
-                              const std::string &outputname,
-                              const std::string &jet_quantity,
-                              const std::string &jet_muon_subtr_factor) {
-    // Event-level lambda that computes the jet pt before JEC and with
-    // subtracting the muon component for each jet in the event
-    auto callable = [](const ROOT::RVec<float> &jet_quantity,
-                       const ROOT::RVec<float> &jet_muon_subtr_factor) {
-        return jet_quantity * (1 - jet_muon_subtr_factor);
-    };
-
-    return df.Define(outputname, callable,
-                     {jet_quantity, jet_muon_subtr_factor});
 }
 
 /**
@@ -583,7 +589,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             jet_jec_result = ROOT::VecOps::Map(
                 jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era, randgen,
+                 jes_shift_factor, jer_shift, jet_radius, era, &randgen,
                  jes_l1_evaluator, jes_l2rel_evaluator, jes_shift_evaluators,
                  jer_resolution_evaluator, jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
@@ -608,7 +614,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             jet_jec_result = ROOT::VecOps::Map(
                 jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era, randgen,
+                 jes_shift_factor, jer_shift, jet_radius, era, &randgen,
                  jes_shift_evaluators, jer_resolution_evaluator,
                  jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](

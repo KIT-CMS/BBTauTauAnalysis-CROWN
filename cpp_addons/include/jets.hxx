@@ -60,14 +60,14 @@ float apply_jer(
     const correction::Correction *jer_scalefactor_evaluator,
     const correction::Correction *jer_scalefactor_uncertainty_evaluator,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 randgen);
+    const std::string &era, TRandom3 &randgen);
 JECResult apply_full_jec_mc(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const UChar_t &jet_id, const float &jet_area, const float &rho,
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, TRandom3 randgen,
+    const float &jet_radius, const std::string &era, TRandom3 &randgen,
     const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
@@ -80,7 +80,7 @@ JECResult apply_jes_shifts_and_jer_mc(
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
     const std::string &jes_shift_source, const int &jes_shift_factor,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 randgen,
+    const std::string &era, TRandom3 &randgen,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
     const correction::Correction *jer_scalefactor_evaluator,
@@ -99,10 +99,6 @@ ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
                               const std::string &outputname,
                               const std::string &jet_quantity,
                               const std::string &jet_raw_factor,
-                              const std::string &jet_muon_subtr_factor);
-ROOT::RDF::RNode RawMuonSubtr(ROOT::RDF::RNode df,
-                              const std::string &outputname,
-                              const std::string &jet_quantity,
                               const std::string &jet_muon_subtr_factor);
 ROOT::RDF::RNode Regressed(ROOT::RDF::RNode df, const std::string &outputname,
                            const std::string &jet_quantity_raw,
