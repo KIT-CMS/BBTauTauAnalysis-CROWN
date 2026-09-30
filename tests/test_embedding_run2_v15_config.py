@@ -19,17 +19,17 @@ from analysis_configurations.bbtautau import common_config, embedding_run2_v15
 from analysis_configurations.bbtautau.analysis_profiles import NMSSM_PROFILE, SM_PROFILE
 from analysis_configurations.bbtautau.constants import LEGACY_AVAILABLE_SAMPLES, SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
+    V15_EMBEDDING_BRANCHES,
     build,
     find_producer,
     generate_code,
+    nanoaod_inputs,
     output_names,
     producer_names,
 )
-from code_generation.quantity import NanoAODQuantity
 
 ANALYSIS = Path(__file__).resolve().parents[1]
 CHANNELS = ("et", "mt", "tt")
-BRANCHES = ANALYSIS / "tests/fixtures/nanoaod_v15_embedding_2018_branches.txt"
 POG_TAU_FILE = "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-2018-UL-NanoAODv15/2025-11-27/tau.json.gz"
 VSELE_WP = {"et": "Tight", "mt": "VVLoose", "tt": "VVLoose"}
 
@@ -98,33 +98,6 @@ def shifts_of(config, scope):
     }
 
 
-def nanoaod_inputs(config):
-    def walk(producer, scope):
-        inputs = (
-            producer.input.get(scope, []) if isinstance(producer.input, dict) else []
-        )
-        yield from (q.name for q in inputs or [] if isinstance(q, NanoAODQuantity))
-        members = getattr(producer, "producers", None)
-        if isinstance(members, dict):
-            members = members.get(scope, [])
-        for member in members or []:
-            yield from walk(member, scope)
-
-    names = {
-        name
-        for scope in config.producers
-        for p in config.producers[scope]
-        for name in walk(p, scope)
-    }
-    names |= {
-        q.name
-        for scope in config.outputs
-        for q in config.outputs[scope]
-        if isinstance(q, NanoAODQuantity)
-    }
-    return names | set(parameters(config, "global")["met_filters"])
-
-
 @pytest.mark.parametrize(
     "era,scopes",
     [("2018", ["em"]), ("2018", ["ee"]), ("2018", ["mt", "mm"]), ("2017", ["mt"])],
@@ -137,7 +110,7 @@ def test_requests_outside_the_profile_raise(era, scopes):
 def test_every_nanoaod_input_exists_in_the_v15_embedding_files():
     """Branch list of one v15 embedding file (mutau 2018A nano_1; eltau and tautau
     carry the same 1476 branches)."""
-    branches = set(BRANCHES.read_text().split())
+    branches = set(V15_EMBEDDING_BRANCHES.read_text().split())
     assert not nanoaod_inputs(embedding(shifts=("all",))) - branches
 
 
