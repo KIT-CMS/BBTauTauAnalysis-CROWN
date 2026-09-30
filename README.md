@@ -27,6 +27,9 @@ A config module may also declare `AVAILABLE_ERAS` and/or `AVAILABLE_SAMPLES`; `g
   ...)`) - The same selection, MC only and without b-tag scale factors, plus the probe-jet collection
   the UParT b-tag MC efficiency is measured from downstream in `TauFakeFactors`. Being
   payload-independent, it never depends on the payload it exists to produce.
+* `sm_tau_id_measurement_config.py` (`SM_TAU_ID_MEASUREMENT_PROFILE`, `tau_id_measurement.py`) - The
+  n-tuples of the tau-ID SF and energy scale measurement for embedding, 2018, mt and mm (see
+  [Tau-ID measurement](#tau-id-measurement)).
 
 ## Available Friend Configurations
 
@@ -149,8 +152,9 @@ symlink; after changing one, rerun the tests.
 `sample_list/sm_2018_embedding.txt`) through `embedding_run2_v15.setup`; NMSSM keeps the legacy
 `tau_embedding_settings.setup_embedding`. `build_config` dispatches on `use_run2_v15_inputs`. Three
 profile fields steer the module: `embedding_scopes` (SM: et, mt, tt; any other scope or an era other
-than 2018 raises `ValueError`), `embedding_tau_corrections` (false: no payload tau energy scale, no
-vsJet SF, no tau shifts) and `embedding_min_tau_pt` (a lower `tight_tau_min_pt` for embedding).
+than 2018 raises `ValueError`; the tau-ID measurement: mt and the &mu;&rarr;&mu; embedding in mm),
+`embedding_tau_corrections` (false: no payload tau energy scale, no vsJet SF, no tau shifts) and
+`embedding_min_tau_pt` (a lower `tight_tau_min_pt` for embedding).
 
 Embedded events are data apart from the simulated tau decays: golden JSON, data JEC, no pileup,
 b-tag, LHE-scale or top-pT weight, no JER. The MET filters drop `Flag_BadPFMuonDzFilter`, which the
@@ -196,6 +200,72 @@ Downstream contract:
 
 The embedding production runs under the same production tag as its data/MC production, see
 `sample_list/README.md`.
+
+## Tau-ID measurement
+
+`sm_tau_id_measurement_config` builds the n-tuples of the DeepTau2018v2p5 vsJet SF and tau energy
+scale measurement for embedding (ShapeSmith measurement `tau_id_es`): 2018, mt (the &mu;&tau;<sub>h</sub>
+tag and probe) and mm (the Z &rarr; &mu;&mu; control region), for data (SingleMuon), MC (`dyjets`,
+`wjets`, `ttbar`, `singletop`, `diboson`) and embedding (mutau in mt, muemb in mm); sample list
+`sample_list/sm_2018_tau_id_measurement.txt`. Other eras and scopes raise `ValueError`. The profile
+keeps the SM selection and sets `tau_id_measurement`, which replaces the corrections and the trigger
+below and drops the MC vsJet and POG muon SF shifts (`tau_id_measurement.setup`, called at the end of
+`build_config`).
+
+The energy scale grid is not produced in CROWN: the embedded taus stay uncorrected (energy scale 1,
+no vsJet SF, no tau shifts) and are selected from 20/1.2 GeV on, so that ShapeSmith can scale their
+kinematics per grid point, up to +20 %, and still cut at 20 GeV. The MC tau energy scale shifts are
+the only shifts whose name contains `CMS_scale_t`, so this substring selects them and nothing else.
+
+### Corrections and their precedent
+
+The precedent is jvoss's measurement production `SFs_EMB_Run2_04_08_26` (TauAnalysis
+`config_run2_v15`, generated code under `KingMaker_v15_Run2/build/SFs_EMB_Run2_04_08_26__nom`);
+everything not listed is the `sm_config` one.
+
+| Correction | This configuration | Source | Precedent | `sm_config` |
+|---|---|---|---|---|
+| Trigger (data, MC, embedding; mt, mm) | `trg_single_mu24` &#124;&#124; `trg_single_mu27`: HLT_IsoMu24/27, p<sub>T</sub> > 25/28 GeV, &#124;&eta;&#124; < 2.5, filter bit 3 | NanoAOD trigger objects | same (`MTGenerateSingleMuonTriggerFlags`) | IsoMu24 only (bit 1, 26 GeV, &#124;&eta;&#124; < 2.4), plus Mu50/Mu100 |
+| Muon trigger SF, MC | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` of the first muon, type `mc` | KIT `data/embedding/muon_2018UL.json.gz`: `Trg_IsoMu24`, `Trg_IsoMu27`, `Trg_IsoMu27_or_IsoMu24_pt_eta_bins` | `MTGenerateSingleMuonTriggerSF_MC` | POG `NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight` |
+| Muon trigger SF, embedding | the same three, type `emb` | same payload | `MTGenerateSingleMuonTriggerSF` (mt, mm) | `Trg_IsoMu24` only (mt) |
+| Muon ID/iso SF, MC | `ID_pt_eta_bins`, `Iso_pt_eta_bins`, type `mc`, first muon (mt), both (mm) | KIT `muon_2018UL` | `PrivateMuonIDSF/IsoSF_{1,2}_MC` | POG `NUM_MediumID_DEN_TrackerMuons`, `NUM_TightRelIso_DEN_MediumID` |
+| Muon ID/iso SF, embedding | mt: ID + iso-binned (Part A), mm: `ID`, `Iso_pt_eta_bins` of both muons, type `emb` | KIT `muon_2018UL` | `TauEmbeddingMuonIDSF/IsoSF_{1,2}` (mt: `Iso` only, equal below iso 0.15) | &ndash; |
+| Embedding selection SF, generator pair | `embeddingselection_2018UL` in mt and mm; `EmbeddingGenPair` Z&rarr;&tau;&tau; (mt), Z&rarr;&mu;&mu; 23/13/13 (mm) | KIT | `TauEmbeddingSelectionSF`, `EmbeddingGenPair` | mt as Part A |
+| Tau ES, MC | POG `tau_energy_scale`, vsJet Loose, vsEle VVLoose | POG TAU `Run2-2018-UL-NanoAODv15/2025-11-27` | `TauEnergyCorrection_ES_dm_binned_v15` (Loose, VVLoose) | Medium, VVLoose |
+| Tau ES, embedding | by value, 1.0 per decay mode | &ndash; | `TauEnergyCorrection_Embedding` (1.0) | embedding payload |
+| vsJet SF, MC | `id_wgt_tau_vsJet_{Medium,Tight}_2`, wp_VSe VVLoose, `dm` | POG | Loose, Medium, Tight, VVLoose, `dm` | Medium |
+| vsJet SF, embedding | none | &ndash; | none | embedding payload |
+| vsEle / vsMu SF | `id_wgt_tau_vsEle_{VVLoose,Tight}_2`; `id_wgt_tau_vsMu_Tight_2` for both vsEle WPs (the v15 payload has no vsEle input) | POG | the same values, one vsMu column per vsEle WP | same |
+| Embedding tau p<sub>T</sub> threshold | 20/1.2 GeV | grid applied in ShapeSmith | 20 GeV, grid in CROWN | 20 GeV |
+
+The predecessor's MC also computed a Z p<sub>T</sub> reweighting that its shapes did not use; 2018
+v15 has none. Its sample list additionally held the madgraphMLM `WJetsToLNu`, which its shapes did not
+use either (a generator alternative, see `sample_list/README.md`).
+
+### Shape systematics
+
+The MC shifts are the common ones of `build_config` (`variations/`), except for the vsJet SF shifts,
+since the measurement measures that SF, and the POG muon ID/iso and trigger SF shifts, since it
+replaces those SFs; its KIT trigger SF has a shift of its own. The table maps the shape systematics
+of the predecessor (jvoss's synced shapes of `SFs_EMB_Run2_04_08_26__full`) to them.
+`tests/test_sm_tau_id_measurement_config.py` holds the same map (`PREDECESSOR_SHIFTS`) and checks
+that every listed shift exists in mt and, for the families mm carries, in mm.
+
+| Datacard family | CROWN shifts (`Up`/`Down`) or weight | Affected columns |
+|---|---|---|
+| `CMS_scale_j_<source>` (28 sources), `CMS_scale_j_HEMIssue_Run2018` | the reduced set of the regrouped sources, `CMS_scale_j_{Absolute,BBEC1,EC2,HF}{,_2018}`, `CMS_scale_j_FlavorQCD`, `CMS_scale_j_RelativeBal`, `CMS_scale_j_RelativeSample_2018`, and `CMS_HEM_2018`; the individual sources are not produced | jets, b-tag weights, `n_jets`, `n_bjets`, `met`, `metphi`, `mt_1`, `pt_tautau`, `mt_tot`, ... |
+| `CMS_PileUp` | `CMS_pileup_2018` | `puweight` |
+| `CMS_scale_met_unclustered_energy_Run2018` | `CMS_scale_met_unclustered_energy_2018` | `met`, `metphi`, `mt_1`, `pt_tautau`, `mt_tot`, ... |
+| `CMS_res_met_Run2018`, `CMS_scale_met_Run2018` | `CMS_res_met_RecoilCalibration_2018`, `CMS_scale_met_RecoilCalibration_2018` (`dyjets`, `wjets`) | as above |
+| `CMS_scale_t_dm{0,1,10,11}_Run2018` | `CMS_scale_t_DeepTau2018v2p5_DM<dm>_pt{20to40,40to60,60toInf}_genTau_2018`, decorrelated in p<sub>T</sub> as well | tau four-vector, `m_vis`, `mt_1`, `met`, tau ID flags and SFs, pair columns |
+| `CMS_eff_t_dm{0,1,10,11}_Run2018` | none, the measured SF (the predecessor's up/down evaluated the nominal SF) | &ndash; |
+| `CMS_fake_m_WH{1..5}_Run2018` | `CMS_fake_t_DeepTau2018v2p5_VSmu_wheel{1..5}_2018` | `id_wgt_tau_vsMu_Tight_2` |
+| `CMS_scale_fake_m_Run2018` | `CMS_scale_t_DeepTau2018v2p5_genMuon_wheel{1..5}_2018`, decorrelated in the muon wheels | tau four-vector and pair columns, as the genuine-tau shifts |
+| `CMS_eff_m_trigger_Run2018` | `CMS_eff_m_trigger_2018`: KIT MC trigger SFs &times; 1.02 / 0.98, mt | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` |
+| no predecessor family | `CMS_res_j_2018`, `CMS_scale_e_2018`, `CMS_res_e_2018`, `QCDscale_{ren,fac}`, `CMS_fake_t_DeepTau2018v2p5_VSe_DM<dm>_{barrel,endcap}_2018`, `CMS_scale_t_DeepTau2018v2p5_DM<dm>_genElectron_{barrel,endcap}_2018` | |
+| `CMS_htt_ttbarShape` | weight: `topPtReweightWeight` squared (up), removed (down) | `topPtReweightWeight` (nominal) |
+| `CMS_fake_j_Run2018` | weight: `max(1-0.002 pt_2, 0.6)` (up), `min(1+0.002 pt_2, 1.4)` (down) | `pt_2` (nominal) |
+| `CMS_emb_ttbar_contamination_Run2018` | built downstream from TTT for every EMB grid point | &ndash; |
 
 ## Tests
 
