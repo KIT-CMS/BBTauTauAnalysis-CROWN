@@ -21,7 +21,8 @@ A config module may also declare `AVAILABLE_ERAS` and/or `AVAILABLE_SAMPLES`; `g
 * `nmssm_config.py` (`NMSSM_PROFILE`) - The main configuration to be used for the
   X &rightarrow; YH &rightarrow; bb&tau;&tau; search. All eras, legacy (v9 / Run-3) inputs.
 * `sm_config.py` (`SM_PROFILE`) - The SM HH &rightarrow; bb&tau;&tau; production configuration:
-  Run-2 NanoAOD-v15 inputs, UParTAK4 b-tagging, `AVAILABLE_ERAS = ["2018"]`.
+  Run-2 NanoAOD-v15 inputs, UParTAK4 b-tagging, `AVAILABLE_ERAS = ["2018"]`, tau embedding in et, mt
+  and tt (see [Tau embedding](#tau-embedding)).
 * `sm_btag_efficiency_config.py` (`SM_BTAG_EFFICIENCY_PROFILE`, a `dataclasses.replace(SM_PROFILE,
   ...)`) - The same selection, MC only and without b-tag scale factors, plus the probe-jet collection
   the UParT b-tag MC efficiency is measured from downstream in `TauFakeFactors`. Being
@@ -96,6 +97,60 @@ to the legacy Run-2 path NMSSM keeps using:
 All `/cvmfs/cms-griddata.cern.ch` pins are dated CAT-metadata snapshots, never the rolling `latest`
 symlink; after changing one, rerun the tests.
 
+## Tau embedding
+
+`sm_config` builds the 2018 &mu;&rarr;&tau; embedded samples (sample type `embedding`, list
+`sample_list/sm_2018_embedding.txt`) through `embedding_run2_v15.setup`; NMSSM keeps the legacy
+`tau_embedding_settings.setup_embedding`. `build_config` dispatches on `use_run2_v15_inputs`. Three
+profile fields steer the module: `embedding_scopes` (SM: et, mt, tt; any other scope or an era other
+than 2018 raises `ValueError`), `embedding_tau_corrections` (false: no payload tau energy scale, no
+vsJet SF, no tau shifts) and `embedding_min_tau_pt` (a lower `tight_tau_min_pt` for embedding).
+
+Embedded events are data apart from the simulated tau decays: golden JSON, data JEC, no pileup,
+b-tag, LHE-scale or top-pT weight, no JER. The MET filters drop `Flag_BadPFMuonDzFilter`, which the
+v15 embedding files lack; `EmbeddingGenPair` (Z &rarr; &tau;&tau;) replaces the MC generator pair, and
+the generator-jet quantities are dropped (no `GenJet_*` in the files). The corrections keep the MC
+column names and working points:
+
+| | et | mt | tt |
+|---|---|---|---|
+| Selection | `emb_triggersel_wgt`, `emb_idsel_wgt_1/2` (`embeddingselection_2018UL`, on the generator taus) | same | same |
+| Lepton ID | KIT `ID90_pt_eta_bins` (`id_wgt_ele_1`), replaces the POG `wp90iso` SF | KIT `ID_pt_eta_bins` (`id_wgt_mu_1`) | &ndash; |
+| Lepton iso | `iso_wgt_ele_1`: `Iso_pt_eta_bins` below 0.15, `AIso_pt_eta_bins` above | `iso_wgt_mu_1`: `Iso`, `AIso1` (0.15&ndash;0.25), `AIso2` (above) | &ndash; |
+| Trigger | `Trg32_Iso_pt_eta_bins`, type `emb`, all iso values | `Trg_IsoMu24_pt_eta_bins`, all iso values | `tau_trigger2018_UL` `tauTriggerSF` |
+| Tau ES, vsJet SF | embedding payload, Medium / vsEle Tight | Medium / vsEle VVLoose | Medium / vsEle VVLoose |
+| Tau vsE, vsMu SF | POG, as MC | same | same |
+
+The iso SFs take the correction of the lepton's `iso_1` bin (`xyh::scalefactor::embedding_iso_binned`,
+|&eta;| for muons, signed &eta; for electrons, like the core functions). The tau payload is preliminary,
+see `payloads/tau_embedding/README.md`. Electrons keep the EGM MC scale and smearing. The tt trigger
+flags keep their four MC names, but match both taus to the embedding di-tau filter bit 23 without an
+HLT path (`triggers.TauTauTriggerFlagsEmbedding`), since the ditau paths do not fire in embedding.
+
+Shifts (all others exclude embedding), defined in `variations/taus.py`, without channel in the name:
+
+- `CMS_scale_t_emb_DeepTau2018v2p5_DM{0,1,10,11}_2018{Up,Down}`: tau energy scale per decay mode, both
+  pT bins of a decay mode together;
+- `CMS_eff_t_emb_DeepTau2018v2p5_VSjet_DM{0,1,10,11}_pt{20to40,40toInf}_2018{Up,Down}`: vsJet SF per
+  decay mode and pT bin; tt, which selects taus above 40 GeV, has only `pt40toInf`.
+
+The payload fills DM11 with the fitted 3-prong category of DM10, but a shift varies one decay mode:
+DM10 and DM11 are separate shifts, to be correlated downstream.
+
+Downstream contract:
+
+- routing like the data streams: mutau &rarr; mt, eltau &rarr; et, tautau &rarr; tt;
+- event weight: the SF columns above &times; `emb_genweight` &times; `emb_triggersel_wgt` &times;
+  `emb_idsel_wgt_1` &times; `emb_idsel_wgt_2`, no cross section or luminosity, trigger flag
+  required; `genWeight` is written too and equals `emb_genweight`;
+- embedding enters only with genuine &tau;&tau; ("T": et `gen_match_1 == 3 && gen_match_2 == 5`, mt
+  `gen_match_1 == 4 && gen_match_2 == 5`, tt both `== 5`), and MC events with T are removed from DY,
+  TT, ST, VV, TTV and EWK; W, H and HH stay;
+- the FastMTT and fake-factor friends run on the embedding n-tuples like on data and MC.
+
+The embedding production runs under the same production tag as its data/MC production, see
+`sample_list/README.md`.
+
 ## Tests
 
 The Python tests build the configurations and assert their surfaces; paths below are relative to the
@@ -108,8 +163,11 @@ python -m pytest analysis_configurations/bbtautau/tests
 ```
 
 The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer, SM HH kinematic fit, electron
-reconstruction weight) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are
-skipped without `root-config`, `g++`, correctionlib and spdlog headers. The synthetic b-tag fixtures
+reconstruction weight, embedding iso-binned SF, FastMTT decay types, JER smearing) run inside the
+same pytest session (`tests/test_cpp_runtime.py`) and are skipped without `root-config`, `g++`,
+correctionlib and spdlog headers. `tests.helpers.generate` emits the C++ code of a configuration in a
+subprocess, once per session; the embedding tests use it with a committed branch list of one v15
+embedding file (`tests/fixtures/nanoaod_v15_embedding_2018_branches.txt`). The synthetic b-tag fixtures
 (gitignored) are regenerated by the test from `tests/fixtures/make_btag_sf_strict_fixtures.py`.
 
 ## 2018 control production

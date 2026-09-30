@@ -33,6 +33,13 @@ class AnalysisProfile:
     # analysis cuts at 0.15, the stored sideband above it feeds the fake-factor
     # DR-to-SR corrections and the anti-isolated control regions.
     tau_channel_lepton_max_iso: Optional[float] = None
+    # Tau embedding on the Run-2 v15 inputs (embedding_run2_v15): the scopes it
+    # may be built for (empty: none), whether the embedded taus get the payload
+    # tau energy scale, vsJet SF and their shifts, and an optional lower tau pT
+    # threshold (tight_tau_min_pt) for embedding builds.
+    embedding_scopes: Tuple[str, ...] = ()
+    embedding_tau_corrections: bool = True
+    embedding_min_tau_pt: Optional[float] = None
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -62,6 +69,7 @@ SM_PROFILE = AnalysisProfile(
     btag_algorithm="upart",
     btag_payload_dir="payloads/btagging_efficiencies/upart/{era}",
     tau_channel_lepton_max_iso=0.5,
+    embedding_scopes=("et", "mt", "tt"),
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the

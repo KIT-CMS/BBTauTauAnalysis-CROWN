@@ -733,6 +733,37 @@ def _add_tautau_triggers(
         },
     )
 
+    # 2018 double tau-tau triggers, shared by the data/MC and the embedding flags
+    tautau_trigger_2018 = [
+        # trigger:          HLT_DoubleMediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg
+        # final tau filter: hltHpsDoublePFTau35TrackPt1MediumChargedIsolationDz02Reg
+        # tau filter bit:   6
+        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+        # comment:          Filter bits do not work in NANOAOD v9; data run >= 317509 and MC
+        double_medium_chargediso_hps_35_eta_2p1_parameters,
+
+        # trigger:          HLT_DoubleTightChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg
+        # final tau filter: hltDoublePFTau35TrackPt1TightChargedIsolationAndTightOOSCPhotonsDz02Reg
+        # tau filter bit:   6
+        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+        # comment:          data run < 317509
+        double_tight_chargediso_35_eta_2p1_parameters,
+
+        # trigger:          HLT_DoubleMediumChargedIsoPFTau40_Trk1_TightID_eta2p1_Reg
+        # final tau filter: hltDoublePFTau40TrackPt1MediumChargedIsolationAndTightOOSCPhotonsDz02Reg
+        # tau filter bit:   6
+        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+        # comment:          data run < 317509
+        double_medium_chargediso_40_eta_2p1_parameters,
+
+        # trigger:          HLT_DoubleTightChargedIsoPFTau40_Trk1_eta2p1_Reg
+        # final tau filter: hltDoublePFTau40TrackPt1TightChargedIsolationDz02Reg
+        # tau filter bit:   6
+        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+        # comment:          data run < 317509
+        double_tight_chargediso_40_eta_2p1_parameters,
+    ]
+
     # Add triggers to the configuration
     configuration.add_config_parameters(
         TT_SCOPES,
@@ -839,35 +870,7 @@ def _add_tautau_triggers(
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
-                    "2018": [
-                        # trigger:          HLT_DoubleMediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg
-                        # final tau filter: hltHpsDoublePFTau35TrackPt1MediumChargedIsolationDz02Reg
-                        # tau filter bit:   6
-                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
-                        # comment:          Filter bits do not work in NANOAOD v9; data run >= 317509 and MC
-                        double_medium_chargediso_hps_35_eta_2p1_parameters,
-
-                        # trigger:          HLT_DoubleTightChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg
-                        # final tau filter: hltDoublePFTau35TrackPt1TightChargedIsolationAndTightOOSCPhotonsDz02Reg
-                        # tau filter bit:   6
-                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
-                        # comment:          data run < 317509
-                        double_tight_chargediso_35_eta_2p1_parameters,
-
-                        # trigger:          HLT_DoubleMediumChargedIsoPFTau40_Trk1_TightID_eta2p1_Reg
-                        # final tau filter: hltDoublePFTau40TrackPt1MediumChargedIsolationAndTightOOSCPhotonsDz02Reg
-                        # tau filter bit:   6
-                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
-                        # comment:          data run < 317509
-                        double_medium_chargediso_40_eta_2p1_parameters,
-
-                        # trigger:          HLT_DoubleTightChargedIsoPFTau40_Trk1_eta2p1_Reg
-                        # final tau filter: hltDoublePFTau40TrackPt1TightChargedIsolationDz02Reg
-                        # tau filter bit:   6
-                        # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
-                        # comment:          data run < 317509
-                        double_tight_chargediso_40_eta_2p1_parameters,
-                    ],
+                    "2018": tautau_trigger_2018,
                     "2017": [
                         # trigger:          HLT_DoubleTightChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg
                         # final tau filter: hltDoublePFTau35TrackPt1TightChargedIsolationAndTightOOSCPhotonsDz02Reg
@@ -905,6 +908,19 @@ def _add_tautau_triggers(
                         ]
                         for _era in ["2016preVFP", "2016postVFP"]
                     },
+                },
+            ),
+            # Tau embedding (2018): the embedded taus fire none of these HLT
+            # paths, and the only tau filter bit they carry is the embedding
+            # di-tau leg bit 23, so the embedding flags match that bit alone
+            # (triggers.TauTauTriggerFlagsEmbedding) under the same flag names.
+            "tautau_trigger_embedding": EraModifier(
+                {
+                    "2018": [
+                        _get_updated_dict(parameters, {"p1_filter_bit": 23, "p2_filter_bit": 23})
+                        for parameters in tautau_trigger_2018
+                    ],
+                    **{_era: [] for _era in ERAS_RUN2 + ERAS_RUN3 if _era != "2018"},
                 },
             ),
         },
