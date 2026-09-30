@@ -76,6 +76,23 @@ The embedding executable is built although the tag exists, because KingMaker bui
 and era. Never rerun that tag with other scopes: a reused tag does not rebuild an existing sample type,
 and new scopes come out empty.
 
+## The tau-ID measurement list
+
+`sm_2018_tau_id_measurement.txt` holds the samples of `sm_tau_id_measurement_config` (see the analysis
+README section "Tau-ID measurement"), which are those of jvoss's measurement production
+`SFs_EMB_Run2_04_08_26` (`KingMaker_v15_Run2/samples_run2_SFs_v15.txt`, 2018), resolved to the nicks
+of this sample database by DBS path, and for embedding by event and file counts:
+
+- data: `SingleMuon_Run2018{A,B,C,D}`;
+- MC: the inclusive `DYJetsToLL_M-10to50` and `DYJetsToLL_M-50` amcatnloFXFX (no PtZ bins, so no
+  `npartons` cut), the four single-top samples, the three `TTTo*` samples, the inclusive
+  `WJetsToLNu` amcatnloFXFX and `WW`, `WZ`, `ZZ`. The precedent also produced the madgraphMLM
+  `WJetsToLNu`, which its shapes did not use; it is left out as a generator alternative;
+- embedding: the `_mutau_` (mt) and `_muemb_` (mm) nicks of 2018 A-D.
+
+It is sorted with Python `sorted()`, one nick per line, with a trailing newline, and is produced with
+`--scopes mt,mm --shifts all` under a fresh production tag.
+
 ## Format
 
 `KingMaker/processor/tasks/CROWNBase.py::parse_samplelist` turns every line into a nick **verbatim** --
