@@ -251,14 +251,23 @@ TauEmbeddingMuonIsoBinnedSF_1 = Producer(
     scopes=["mt"],
 )
 
-# muon ID and iso-binned isolation SFs, in place of the MC MuonIDIso_SF group
+# muon ID and isolation SFs, in place of the MC MuonIDIso_SF group: iso-binned in
+# mt, the isolated SF of both muons in mm
 TauEmbeddingMuonIDIsoSF = ProducerGroup(
     name="TauEmbeddingMuonIDIsoSF",
     call=None,
     input=None,
     output=None,
-    scopes=["mt"],
-    subproducers={"mt": [TauEmbeddingMuonIDSF_1, TauEmbeddingMuonIsoBinnedSF_1]},
+    scopes=["mt", "mm"],
+    subproducers={
+        "mt": [TauEmbeddingMuonIDSF_1, TauEmbeddingMuonIsoBinnedSF_1],
+        "mm": [
+            TauEmbeddingMuonIDSF_1,
+            TauEmbeddingMuonIsoSF_1,
+            TauEmbeddingMuonIDSF_2,
+            TauEmbeddingMuonIsoSF_2,
+        ],
+    },
 )
 
 TauEmbeddingBoostedMuonIDSF_1 = Producer(

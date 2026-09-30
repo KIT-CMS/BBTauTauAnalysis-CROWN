@@ -6,10 +6,13 @@ rules (golden JSON, data JEC, no pileup or b-tag weights) already cover them,
 and the MC producers of the tau and electron corrections stay. This module
 adds what differs from both, per concern:
 
-- event level: MET filters, embedding weights, the generator tau pair;
+- event level: MET filters, embedding weights, the generator lepton pair;
 - light-lepton ID, isolation and trigger SFs of the Tau Embedding group;
 - the tt trigger, matched to the embedding filter bit, and its SF;
 - the tau energy scale and vsJet SF from the embedding tau payload, with shifts.
+
+The mm scope holds the mu -> mu embedded events, which only the tau-ID measurement
+profile builds (``embedding_scopes``).
 
 Every rule names ``samples="embedding"`` although ``setup`` only runs for
 embedding builds, so that each rule stays correct when read out of context.
@@ -20,7 +23,7 @@ columns embedding keeps are replaced, never removed and re-appended.
 from code_generation.configuration import Configuration
 from code_generation.rules import AppendProducer, RemoveProducer, ReplaceProducer
 
-from .constants import ET_SCOPES, HAD_TAU_SCOPES, MT_SCOPES, SL_SCOPES, TT_SCOPES
+from .constants import ET_SCOPES, HAD_TAU_SCOPES, MM_SCOPES, MT_SCOPES, SL_SCOPES, TT_SCOPES
 from .helpers import cpp_list
 from .producers import embedding, genparticles, scalefactors, taus, triggers
 from .quantities import output as q
@@ -33,11 +36,14 @@ TAU_PAYLOAD = (
     "payloads/tau_embedding/Run2-2018-UL-NanoAODv15/"
     "DeepTau2018v2p5_id_es_embedding2018UL.json.gz"
 )
-# MC generator pair producer of each scope, replaced by the embedded tau pair
+EMBEDDING_SCOPES = HAD_TAU_SCOPES + MM_SCOPES
+# MC generator pair producer of each scope and the PDG ID of the embedded
+# leptons that replace it: taus, or muons in mm
 GEN_PAIRS = {
-    "et": genparticles.ETGenPair,
-    "mt": genparticles.MTGenPair,
-    "tt": genparticles.TTGenPair,
+    "et": (genparticles.ETGenPair, 15),
+    "mt": (genparticles.MTGenPair, 15),
+    "tt": (genparticles.TTGenPair, 15),
+    "mm": (genparticles.MuMuGenPair, 13),
 }
 
 
@@ -75,9 +81,9 @@ def _add_event_level(configuration: Configuration):
         {"met_filters": [f for f in met_filters if f != "Flag_BadPFMuonDzFilter"]},
     )
     # embedding generator weight and selection SFs, the latter evaluated on the
-    # generator taus, which carry the kinematics of the replaced muons
+    # generator leptons, which carry the kinematics of the replaced muons
     configuration.add_config_parameters(
-        HAD_TAU_SCOPES,
+        EMBEDDING_SCOPES,
         {
             "embedding_selection_sf_file": "data/embedding/embeddingselection_2018UL.json.gz",
             "embedding_selection_trigger_sf": "m_sel_trg_kit_ratio",
@@ -85,7 +91,7 @@ def _add_event_level(configuration: Configuration):
         },
     )
     configuration.add_modification_rule(
-        HAD_TAU_SCOPES,
+        EMBEDDING_SCOPES,
         AppendProducer(
             producers=[
                 embedding.EmbeddingQuantities,
@@ -97,16 +103,16 @@ def _add_event_level(configuration: Configuration):
 
 
 def _add_generator_pair(configuration: Configuration):
-    # the generator taus of the embedded Z -> tautau decay
-    configuration.add_config_parameters(
-        HAD_TAU_SCOPES,
-        {
-            "truegen_mother_pdgid": 23,
-            "truegen_daughter_1_pdgid": 15,
-            "truegen_daughter_2_pdgid": 15,
-        },
-    )
-    for scope, gen_pair in GEN_PAIRS.items():
+    # the generator leptons of the embedded Z decay
+    for scope, (gen_pair, lepton_pdgid) in GEN_PAIRS.items():
+        configuration.add_config_parameters(
+            [scope],
+            {
+                "truegen_mother_pdgid": 23,
+                "truegen_daughter_1_pdgid": lepton_pdgid,
+                "truegen_daughter_2_pdgid": lepton_pdgid,
+            },
+        )
         configuration.add_modification_rule(
             [scope],
             ReplaceProducer(
@@ -125,18 +131,15 @@ def _add_generator_pair(configuration: Configuration):
 
 
 def _add_muon_scalefactors(configuration: Configuration):
-    # The iso SF takes the correction of the muon's iso bin; the trigger SF has
-    # no anti-isolated variant and applies at all iso values.
+    # The iso SF takes the correction of the muon's iso bin in mt and the isolated
+    # one for both muons in mm; the trigger SF of the first muon has no
+    # anti-isolated variant and applies at all iso values.
     configuration.add_config_parameters(
-        MT_SCOPES,
+        MT_SCOPES + MM_SCOPES,
         {
             "embedding_muon_sf_file": "data/embedding/muon_2018UL.json.gz",
             "embedding_muon_id_sf": "ID_pt_eta_bins",
             "embedding_muon_id_extrapolation": 1.0,
-            "embedding_muon_iso_edges": cpp_list([0.15, 0.25]),
-            "embedding_muon_iso_sfs": cpp_list(
-                ["Iso_pt_eta_bins", "AIso1_pt_eta_bins", "AIso2_pt_eta_bins"]
-            ),
             "embedding_muon_iso_extrapolation": 1.0,
             "singlemuon_trigger_sf": [
                 {
@@ -147,8 +150,20 @@ def _add_muon_scalefactors(configuration: Configuration):
             ],
         },
     )
-    configuration.add_modification_rule(
+    configuration.add_config_parameters(
         MT_SCOPES,
+        {
+            "embedding_muon_iso_edges": cpp_list([0.15, 0.25]),
+            "embedding_muon_iso_sfs": cpp_list(
+                ["Iso_pt_eta_bins", "AIso1_pt_eta_bins", "AIso2_pt_eta_bins"]
+            ),
+        },
+    )
+    configuration.add_config_parameters(
+        MM_SCOPES, {"embedding_muon_iso_sf": "Iso_pt_eta_bins"}
+    )
+    configuration.add_modification_rule(
+        MT_SCOPES + MM_SCOPES,
         ReplaceProducer(
             producers=[scalefactors.MuonIDIso_SF, embedding.TauEmbeddingMuonIDIsoSF],
             samples="embedding",
@@ -156,13 +171,13 @@ def _add_muon_scalefactors(configuration: Configuration):
     )
     # the common rules remove the MC trigger SF for embedding
     configuration.add_modification_rule(
-        MT_SCOPES,
+        MT_SCOPES + MM_SCOPES,
         AppendProducer(
             producers=[embedding.MTGenerateSingleMuonTriggerSF], samples="embedding"
         ),
     )
     configuration.add_outputs(
-        MT_SCOPES, embedding.MTGenerateSingleMuonTriggerSF.output_group
+        MT_SCOPES + MM_SCOPES, embedding.MTGenerateSingleMuonTriggerSF.output_group
     )
 
 
