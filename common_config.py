@@ -743,6 +743,45 @@ def add_muon_config(configuration: Configuration):
     )
 
 
+def add_kit_sf_lepton_id_config(configuration: Configuration):
+    """
+    Lepton IDs the lepton SFs of the Tau Embedding group (KIT) are measured for,
+    as in the legacy SM analysis, in place of the ones of add_electron_config
+    and add_muon_config: MVA WP90 electrons with the isolation pre-cuts 0.25
+    (loose) and 0.4 (tight), medium-ID muons, and the POG ID and isolation SFs
+    of these IDs.
+    """
+
+    configuration.add_config_parameters(
+        GLOBAL_SCOPES,
+        {
+            "loose_electron_max_iso": 0.25,
+            "loose_electron_id": "Electron_mvaIso_WP90",
+        },
+    )
+    configuration.add_config_parameters(
+        ELECTRON_SCOPES,
+        {
+            "tight_electron_max_iso": 0.4,
+            "tight_electron_id": "Electron_mvaIso_WP90",
+            "ele_id_sf_name": "wp90iso",
+        },
+    )
+    configuration.add_config_parameters(
+        MUON_SCOPES,
+        {
+            "tight_muon_id": "Muon_mediumId",
+            "muon_id_sf_name": "NUM_MediumID_DEN_TrackerMuons",
+            "muon_iso_sf_name": EraModifier(
+                {
+                    **{_era: "NUM_TightRelIso_DEN_MediumID" for _era in ERAS_RUN2},
+                    **{_era: "NUM_TightPFIso_DEN_MediumID" for _era in ERAS_RUN3},
+                },
+            ),
+        },
+    )
+
+
 def add_hadronic_tau_config(configuration: Configuration, era: str):
     """
     Selection requirements and corrections for hadronic taus.
@@ -2342,6 +2381,10 @@ def build_config(
     # muon selection and corrections for reconstruction, identification, and isolation
     add_muon_config(configuration)
 
+    # lepton IDs of the lepton SFs of the Tau Embedding group
+    if profile.kit_sf_lepton_ids:
+        add_kit_sf_lepton_id_config(configuration)
+
     # hadronic tau selection and corrections for identification and energy scale
     add_hadronic_tau_config(configuration, era)
 
@@ -2806,7 +2849,7 @@ def build_config(
         + jet_veto_map_producers
         + [
             ElectronPtCorrectionMC,
-            muons.MuonPtCorrection,
+            get_for_era(muons.MuonPtCorrection, era),
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
             jets.JetEnergyCorrectionMCRegressed,
@@ -3738,13 +3781,18 @@ def build_config(
             )),
         )
 
-    # Add muon ID and isolation scale factors to all scopes with muons 
+    # Add muon ID and isolation scale factors to all scopes with muons; the
+    # medium-ID muons of the KIT lepton SFs get no low-pt ID scale factor
+    lowpt_muon_sf_outputs = (
+        {q.id_lowpt_wgt_mu_1, q.id_lowpt_wgt_mu_2} if profile.kit_sf_lepton_ids else set()
+    )
     for _scope in MUON_SCOPES:
         configuration.add_outputs(
             [_scope],
             list(chain(
                 _output
                 for _output in scalefactors.MuonIDIso_SF.get_outputs(_scope)
+                if _output not in lowpt_muon_sf_outputs
             )),
         )
 

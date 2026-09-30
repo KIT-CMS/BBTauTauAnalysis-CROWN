@@ -43,6 +43,11 @@ class AnalysisProfile:
     # The corrections, triggers and MC shifts of the tau-ID SF and ES measurement
     # (tau_id_measurement.py) in place of the analysis ones.
     tau_id_measurement: bool = False
+    # The lepton IDs the lepton SFs of the Tau Embedding group (KIT) are measured
+    # for, as in the legacy SM analysis: MVA WP90 electrons with isolation
+    # pre-cuts, medium-ID muons, and the POG SFs of these IDs. Otherwise the IDs
+    # of add_electron_config and add_muon_config.
+    kit_sf_lepton_ids: bool = False
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -73,6 +78,7 @@ SM_PROFILE = AnalysisProfile(
     btag_payload_dir="payloads/btagging_efficiencies/upart/{era}",
     tau_channel_lepton_max_iso=0.5,
     embedding_scopes=("et", "mt", "tt"),
+    kit_sf_lepton_ids=True,
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the

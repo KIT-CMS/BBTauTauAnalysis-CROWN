@@ -143,6 +143,15 @@ to the legacy Run-2 path NMSSM keeps using:
   `btag_probe_jet_{pt,eta,hadron_flavour,upart}` via `xyh::btag_probe::masked_vector` -- the columns
   the downstream efficiency measurement reads.
 
+The SM profiles also set `kit_sf_lepton_ids`: they keep the lepton IDs the lepton SFs of the Tau
+Embedding group (KIT, used by the embedding) are measured for, as the legacy SM analysis did -- MVA
+WP90 electrons with the isolation pre-cuts 0.25 (loose) and 0.4 (tight), medium-ID muons, the POG SFs
+`wp90iso`, `NUM_MediumID_DEN_TrackerMuons` and `NUM_TightRelIso_DEN_MediumID`, and no low-p<sub>T</sub>
+muon ID SF column -- in place of the NMSSM object defaults (MVA WP80 electrons without isolation
+pre-cut, tight-ID muons). The electron reconstruction SF is written in et, em and ee for both
+analyses (`xyh::scalefactor::electron_reco`), and the muon p<sub>T</sub> calibration applies in Run 3
+only.
+
 All `/cvmfs/cms-griddata.cern.ch` pins are dated CAT-metadata snapshots, never the rolling `latest`
 symlink; after changing one, rerun the tests.
 

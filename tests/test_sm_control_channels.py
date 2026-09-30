@@ -114,15 +114,17 @@ def test_actual_cpp_generation_in_every_scope(module, sample):
 
 
 @pytest.mark.parametrize(
-    "scope,parameter", [("et", "tight_electron_max_iso"), ("mt", "tight_muon_max_iso")]
+    "scope,parameter,nmssm",
+    [("et", "tight_electron_max_iso", 10000.0), ("mt", "tight_muon_max_iso", 0.4)],
 )
-def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter):
+def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter, nmssm):
     """One SM production serves the nominal iso < 0.15 selection and the anti-isolated
-    sidebands up to 0.5; NMSSM keeps the 0.4 object default."""
+    sidebands up to 0.5; NMSSM keeps its object defaults (no electron isolation
+    pre-cut, muons up to 0.4)."""
     for module, expected in (
         ("sm_config", 0.5),
         ("sm_btag_efficiency_config", 0.5),
-        ("nmssm_config", 0.4),
+        ("nmssm_config", nmssm),
     ):
         assert (
             build(module, "ttbar", scopes=(scope,)).config_parameters[scope]["nominal"][
@@ -130,3 +132,36 @@ def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter):
             ]
             == expected
         ), module
+
+
+@pytest.mark.parametrize(
+    "module,electron_id,ele_sf,muon_id,muon_sfs",
+    [
+        (
+            "sm_config",
+            "Electron_mvaIso_WP90",
+            "wp90iso",
+            "Muon_mediumId",
+            ("NUM_MediumID_DEN_TrackerMuons", "NUM_TightRelIso_DEN_MediumID"),
+        ),
+        (
+            "nmssm_config",
+            "Electron_mvaIso_WP80",
+            "wp80iso",
+            "Muon_tightId",
+            ("NUM_TightID_DEN_TrackerMuons", "NUM_TightRelIso_DEN_TightID"),
+        ),
+    ],
+)
+def test_lepton_ids_and_their_sfs(module, electron_id, ele_sf, muon_id, muon_sfs):
+    """SM keeps the lepton IDs the KIT (Tau Embedding group) lepton SFs are measured
+    for, NMSSM those of the object defaults, each with the POG SFs of its IDs."""
+    config = build(module, "ttbar", scopes=("et", "mt"))
+    electron = config.config_parameters["et"]["nominal"]
+    muon = config.config_parameters["mt"]["nominal"]
+    assert (electron["tight_electron_id"], electron["ele_id_sf_name"]) == (electron_id, ele_sf)
+    assert (muon["tight_muon_id"], muon["muon_id_sf_name"], muon["muon_iso_sf_name"]) == (
+        muon_id,
+        *muon_sfs,
+    )
+    assert config.config_parameters["global"]["nominal"]["loose_electron_id"] == electron_id
