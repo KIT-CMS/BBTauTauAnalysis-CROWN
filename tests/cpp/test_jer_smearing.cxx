@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
             name + "_l2l3res", name, "pt", "eta", "phi", "area", "id",
             with_gen ? "gen_pt" : "no_gen", with_gen ? "gen_eta" : "no_gen",
             with_gen ? "gen_phi" : "no_gen", "rho", "seed", payload, algo,
-            jes_tag, jer_tag, {""}, 0, jer_shift, reapply_jes, "2018");
+            jes_tag, jer_tag, "nominal", 0, jer_shift, reapply_jes, "2018");
     };
     df = correct(df, "nominal", true, "nom");
     df = correct(df, "unmatched", false, "nom");
@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
     // HEM variation: only the down shift scales, by 0.8 for -2.5 < eta < -1.3
     // and by 0.65 for -3.0 < eta <= -2.5, within -1.57 < phi < -0.87
     using physicsobject::jet::jec::apply_jes_shifts;
-    const std::vector<std::string> hem{"HEMIssue"};
+    const std::string hem{"HEMIssue"};
     const std::vector<correction::Correction *> none;
     const bool hem_ok =
         std::abs(apply_jes_shifts(50.f, -2.0f, -1.2f, 6, hem, -1, none) -
