@@ -14,15 +14,13 @@ import pytest
 
 from analysis_configurations.bbtautau import sm_tau_id_measurement_config
 from analysis_configurations.bbtautau.tests.helpers import (
+    V15_EMBEDDING_BRANCHES,
     build,
     find_producer,
     generate_code,
+    nanoaod_inputs,
     output_names,
     producer_names,
-)
-from analysis_configurations.bbtautau.tests.test_embedding_run2_v15_config import (
-    BRANCHES,
-    nanoaod_inputs,
 )
 
 MODULE = "sm_tau_id_measurement_config"
@@ -228,7 +226,7 @@ def test_mm_embedding_is_the_mu_to_mu_embedding():
 
 def test_every_nanoaod_input_exists_in_the_v15_embedding_files():
     """The muemb 2018A files carry the same 1476 branches as the mutau fixture."""
-    branches = set(BRANCHES.read_text().split())
+    branches = set(V15_EMBEDDING_BRANCHES.read_text().split())
     assert not nanoaod_inputs(measurement("embedding", ("all",))) - branches
 
 

@@ -19,6 +19,12 @@ import tempfile
 from typing import NamedTuple
 
 from analysis_configurations.bbtautau.constants import ERAS, LEGACY_AVAILABLE_SAMPLES, SCOPES
+from code_generation.quantity import NanoAODQuantity
+
+# The branches of one v15 embedding file (mutau 2018A nano_1)
+V15_EMBEDDING_BRANCHES = (
+    Path(__file__).resolve().parent / "fixtures/nanoaod_v15_embedding_2018_branches.txt"
+)
 
 
 @functools.lru_cache(maxsize=None)
@@ -122,3 +128,33 @@ def find_producer(config, scope, name):
         if found is not None:
             return found
     raise AssertionError(f"no producer {name!r} in scope {scope!r}")
+
+
+def nanoaod_inputs(config):
+    """NanoAOD branches ``config`` reads: producer inputs, through groups, NanoAOD
+    outputs and the MET filters."""
+
+    def walk(producer, scope):
+        inputs = (
+            producer.input.get(scope, []) if isinstance(producer.input, dict) else []
+        )
+        yield from (q.name for q in inputs or [] if isinstance(q, NanoAODQuantity))
+        members = getattr(producer, "producers", None)
+        if isinstance(members, dict):
+            members = members.get(scope, [])
+        for member in members or []:
+            yield from walk(member, scope)
+
+    names = {
+        name
+        for scope in config.producers
+        for p in config.producers[scope]
+        for name in walk(p, scope)
+    }
+    names |= {
+        q.name
+        for scope in config.outputs
+        for q in config.outputs[scope]
+        if isinstance(q, NanoAODQuantity)
+    }
+    return names | set(config.config_parameters["global"]["nominal"]["met_filters"])
