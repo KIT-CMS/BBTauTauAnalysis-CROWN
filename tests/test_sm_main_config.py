@@ -17,6 +17,7 @@ from analysis_configurations.bbtautau.tests.helpers import (
     FakeArgs,
     build,
     find_producer,
+    generate,
     output_names,
     producer_names,
 )
@@ -131,6 +132,17 @@ def test_sm_dyw_recoil_wiring():
     ttbar = build("sm_config", "ttbar", scopes=ALL_SCOPES)
     names = producer_names(ttbar, "mt") | producer_names(ttbar, "global")
     assert "RenameMet" in names and not {"GenBosonQuantities", "MetScopes"} & names
+
+
+@pytest.mark.parametrize("module", ["sm_config", "nmssm_config"])
+def test_mt_generates_with_every_shift(module):
+    """The single-muon trigger SF shifts carry the trigger flag the SF producer
+    gates on; without it, code generation with shifts=all failed in mt."""
+    outputs = generate(module, "ttbar", shifts=("all",)).outputs["mt"]
+    assert {
+        f"trg_wgt_single_mu24__CMS_eff_m_trigger_2018{variation}"
+        for variation in ("Up", "Down")
+    } <= outputs
 
 
 @pytest.mark.parametrize(
