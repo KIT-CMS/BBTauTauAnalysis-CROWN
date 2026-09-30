@@ -61,18 +61,17 @@ def add_prefiring_shifts(
     # Extract the year from the era string (e.g., "2016preVFP" -> "2016")
     year = era[:4]
 
-    # Add up and down variation for each shift
-    for direction in ["up", "down"]:
-        postfix = {"up": "Up", "down": "Dn"}[direction]
-        quantity = getattr(
-            nanoAOD_run2,
-            f"L1PreFiringWeight_{postfix}",
-        )
+    # Add up and down variation for each shift, the NanoAOD branches carry the
+    # suffixes "Up" and "Dn"
+    for direction, suffix in [("up", "Up"), ("down", "Dn")]:
         configuration.add_shift(
             SystematicShiftByQuantity(
                 name=f"CMS_ecal_prefiring_{year}{direction.capitalize()}",
                 quantity_change={
-                    nanoAOD_run2.L1PreFiringWeight_Nom: quantity,
+                    nanoAOD_run2.L1PreFiringWeight_Nom: getattr(
+                        nanoAOD_run2,
+                        f"L1PreFiringWeight_{suffix}",
+                    ),
                 },
                 scopes=["global"],
             ),

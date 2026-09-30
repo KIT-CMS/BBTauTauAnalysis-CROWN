@@ -1,5 +1,7 @@
 import unittest
 
+from code_generation.producer import Producer
+
 from analysis_configurations.bbtautau.variations.bjet_tagging import (
     add_bjet_tagging_fixed_wp_shifts,
     add_bjet_tagging_shape_shifts,
@@ -25,8 +27,11 @@ class CaptureConfiguration:
         )
 
 
-class DummyProducer:
-    """Dummy producer class to simulate a producer for testing purposes."""
+class DummyProducer(Producer):
+    """Dummy producer class to simulate a producer for testing purposes.
+
+    It derives from Producer, because the shift helpers accept producers only.
+    """
 
     def __init__(self, name, scopes):
         self.name = name
@@ -99,7 +104,7 @@ class AddBJetTaggingFixedWPShiftsTest(unittest.TestCase):
             self.assertEqual(
                 shift_info["exclude_samples"],
                 expected_exclude,
-                f"exclude_samples mismatch for shift {shift_info["shift"].shiftname}",
+                f"exclude_samples mismatch for shift {shift_info['shift'].shiftname}",
             )
 
     def test_total_shift_count(self):
@@ -189,7 +194,7 @@ class AddBJetTaggingShapeShiftsTest(unittest.TestCase):
             self.assertEqual(
                 sorted(shift_info["exclude_samples"]),
                 expected_exclude,
-                f"exclude_samples mismatch for shift {shift_info["shift"].shiftname}",
+                f"exclude_samples mismatch for shift {shift_info['shift'].shiftname}",
             )
 
     def test_total_shift_count(self):
