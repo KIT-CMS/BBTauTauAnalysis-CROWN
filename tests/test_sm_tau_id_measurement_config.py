@@ -182,6 +182,11 @@ def test_tag_and_probe_and_grid_columns(scope):
             assert {"gen_match_1", "gen_match_2", *TRIGGER_SFS} <= outputs
 
 
+@pytest.mark.parametrize("sample,applied", [("dyjets", True), ("wjets", True), ("ttbar", False)])
+def test_recoil_correction_of_dy_and_w(sample, applied):
+    assert parameters(measurement(sample), "mt")["apply_recoil_correction"] is applied
+
+
 def test_no_btag_sf():
     """The measurement weights no b-tag SF, like the precedent."""
     outputs = generate_code(MODULE, "dyjets", scopes=SCOPES).outputs
@@ -238,9 +243,9 @@ def test_every_predecessor_shape_systematic_has_its_shifts(scope):
 
 
 def test_no_mc_shift_leaves_its_columns_nominal():
-    """Every tau and trigger shift sets parameters its producer reads, and there are
-    no shifts of the vsJet SF the measurement measures nor of the POG muon SFs it
-    replaces."""
+    """Every tau, trigger and recoil shift sets parameters its producer reads, and
+    there are no shifts of the vsJet SF the measurement measures nor of the POG muon
+    SFs it replaces."""
     config = measurement("dyjets", ("all",))
     shifts = {name.removeprefix("__"): change for name, change in config.shifts["mt"].items()}
     readers = {
@@ -248,6 +253,8 @@ def test_no_mc_shift_leaves_its_columns_nominal():
         "CMS_fake_t_DeepTau2018v2p5_VSmu": "TauIDVsMuSF2",
         "CMS_scale_t_": "TauPtCorrectionMC",
         "CMS_eff_m_trigger": "MTGenerateSingleMuonTriggerSF_MC",
+        "CMS_scale_met_RecoilCalibration": "RecoilCorrectionMet",
+        "CMS_res_met_RecoilCalibration": "RecoilCorrectionMet",
     }
     for prefix, producer in readers.items():
         read = find_producer(config, "mt", producer).parameters["mt"]
