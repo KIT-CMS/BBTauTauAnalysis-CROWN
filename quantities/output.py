@@ -377,6 +377,9 @@ jet_p4_regressed_1 = Quantity("jet_p4_regressed_1")
 jpt_1 = Quantity("jpt_1")
 jpt_nano_1 = Quantity("jpt_nano_1")
 jpt_raw_1 = Quantity("jpt_raw_1")
+jpt_l1_1 = Quantity("jpt_l1_1")
+jpt_l2rel_1 = Quantity("jpt_l2rel_1")
+jpt_l2l3res_1 = Quantity("jpt_l2l3res_1")
 jpt_regressed_1 = Quantity("jpt_regressed_1")
 jpt_regressed_resolution_1 = Quantity("jpt_regressed_resolution_1")
 jeta_1 = Quantity("jeta_1")
@@ -387,6 +390,9 @@ jet_p4_regressed_2 = Quantity("jet_p4_regressed_2")
 jpt_2 = Quantity("jpt_2")
 jpt_nano_2 = Quantity("jpt_nano_2")
 jpt_raw_2 = Quantity("jpt_raw_2")
+jpt_l1_2 = Quantity("jpt_l1_2")
+jpt_l2rel_2 = Quantity("jpt_l2rel_2")
+jpt_l2l3res_2 = Quantity("jpt_l2l3res_2")
 jpt_regressed_2 = Quantity("jpt_regressed_2")
 jpt_regressed_resolution_2 = Quantity("jpt_regressed_resolution_2")
 jeta_2 = Quantity("jeta_2")
@@ -621,6 +627,8 @@ iso_wgt_ele_boosted_1 = Quantity("iso_wgt_ele_boosted_1")
 # Muon weights
 id_wgt_mu_1 = Quantity("id_wgt_mu_1")
 id_wgt_mu_2 = Quantity("id_wgt_mu_2")
+id_lowpt_wgt_mu_1 = Quantity("id_lowpt_wgt_mu_1")
+id_lowpt_wgt_mu_2 = Quantity("id_lowpt_wgt_mu_2")
 iso_wgt_mu_1 = Quantity("iso_wgt_mu_1")
 iso_wgt_mu_2 = Quantity("iso_wgt_mu_2")
 reco_wgt_mu_boosted_1 = Quantity("reco_wgt_mu_boosted_1")
@@ -722,6 +730,18 @@ transformed_kinfit_chi2_boosted = Quantity("transformed_kinfit_chi2_boosted")
 transformed_boosted_mt_1 = Quantity("transformed_boosted_mt_1")
 
 lhe_drell_yan_decay_flavor = Quantity("lhe_drell_yan_decay_flavor")
+
+
+# ------------------------------------------------------------------------------
+# Muon collection
+# ------------------------------------------------------------------------------
+
+#region
+
+# Corrected muon pt
+Muon_pt_corrected = Quantity("Muon_pt_corrected")
+
+#endregion
 
 # ------------------------------------------------------------------------------
 # Jet collection

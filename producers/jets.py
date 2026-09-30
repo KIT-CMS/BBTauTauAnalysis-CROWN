@@ -2,6 +2,8 @@
 Producers for AK4 jet energy scale and resolution corrections, object selections, overlap vetoes, and quantities to be stored.
 """
 
+from itertools import chain
+
 from ..quantities import output as q
 from ..quantities import nanoAOD
 from analysis_configurations.quantities import nanoAODv9_run2, nanoAODv12_run3
@@ -494,18 +496,25 @@ class StepwiseJERCProducerMetaConfiguration():
         config_parameter_prefix="ak4jet",
     ):
 
-        for key, value in self._default_inputs.items():
-            setattr(self, key, input.get(key, value) if input else value)
-        for key, value in (input or {}).items():
-            if key not in self._default_inputs:
-                setattr(self, key, value)
-        for key, value in self._default_outputs.items():
-            setattr(self, key, output.get(key, value) if output else value)
-        for key, value in (output or {}).items():
-            if key not in self._default_outputs:
-                setattr(self, key, value)
+        # Set default inputs and outputs as attributes
+        for key, value in chain(
+            self._default_inputs.items(),
+            self._default_outputs.items(),
+        ):
+            setattr(self, key, value)
 
+        # Override default values with inputs and outputs to this constructor
+        # Set default inputs and outputs as attributes
+        for key, value in chain(
+            (input if input is not None else {}).items(),
+            (output if output is not None else {}).items(),
+        ):
+            setattr(self, key, value)
+
+        # Set scopes
         self.scopes = scopes
+
+        # Set the prefix for configuration parameters
         self.config_parameter_prefix = config_parameter_prefix
 
     def producers(self, name: str, data=False, mass=True):
@@ -590,7 +599,7 @@ class StepwiseJERCProducerMetaConfiguration():
             "{{{self.config_parameter_prefix}_jec_algo}}",
             "{{{self.config_parameter_prefix}_jes_tag_mc}}",
             "{{{self.config_parameter_prefix}_jer_tag}}",
-            {{{self.config_parameter_prefix}_jes_sources}},
+            "{{{self.config_parameter_prefix}_jes_source}}",
             {{{self.config_parameter_prefix}_jes_shift_factor}},
             "{{{self.config_parameter_prefix}_jer_shift}}",
             {{{self.config_parameter_prefix}_reapply_jes}},
@@ -1094,6 +1103,48 @@ jpt_regressed_2 = Producer(
     output=[q.jpt_regressed_2],
     scopes=SCOPES,
 )
+jpt_l1_1 = Producer(
+    name="jpt_l1_1",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[q.Jet_l1Pt, q.good_jet_collection],
+    output=[q.jpt_l1_1],
+    scopes=SCOPES,
+)
+jpt_l1_2 = Producer(
+    name="jpt_l1_2",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
+    input=[q.Jet_l1Pt, q.good_jet_collection],
+    output=[q.jpt_l1_2],
+    scopes=SCOPES,
+)
+jpt_l2rel_1 = Producer(
+    name="jpt_l2rel_1",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[q.Jet_l2relPt, q.good_jet_collection],
+    output=[q.jpt_l2rel_1],
+    scopes=SCOPES,
+)
+jpt_l2rel_2 = Producer(
+    name="jpt_l2rel_2",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
+    input=[q.Jet_l2relPt, q.good_jet_collection],
+    output=[q.jpt_l2rel_2],
+    scopes=SCOPES,
+)
+jpt_l2l3res_1 = Producer(
+    name="jpt_l2l3res_1",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
+    input=[q.Jet_l2l3resPt, q.good_jet_collection],
+    output=[q.jpt_l2l3res_1],
+    scopes=SCOPES,
+)
+jpt_l2l3res_2 = Producer(
+    name="jpt_l2l3res_2",
+    call="event::quantity::Get<float>({df}, {output}, {input}, 1)",
+    input=[q.Jet_l2l3resPt, q.good_jet_collection],
+    output=[q.jpt_l2l3res_2],
+    scopes=SCOPES,
+)
 jpt_regressed_resolution_1 = Producer(
     name="jpt_regressed_resolution_1",
     call="event::quantity::Get<float>({df}, {output}, {input}, 0)",
@@ -1131,6 +1182,9 @@ BasicJetQuantities = ProducerGroup(
         jtag_value_1,
         jpt_nano_1,
         jpt_raw_1,
+        jpt_l1_1,
+        jpt_l2rel_1,
+        jpt_l2l3res_1,
         jpt_regressed_1,
         jpt_regressed_resolution_1,
         jpt_2,
@@ -1139,6 +1193,9 @@ BasicJetQuantities = ProducerGroup(
         jtag_value_2,
         jpt_nano_2,
         jpt_raw_2,
+        jpt_l1_2,
+        jpt_l2rel_2,
+        jpt_l2l3res_2,
         jpt_regressed_2,
         jpt_regressed_resolution_2,
         mjj,

@@ -1,0 +1,232 @@
+import re
+
+from code_generation.configuration import Configuration
+from code_generation.systematics import SystematicShift
+from code_generation.producer import Producer, ProducerGroup
+from ..producers import jets as jets
+from ..producers import scalefactors as scalefactors
+
+
+def _add_jes_shift(
+    configuration: Configuration,
+    shift_name: str,
+    jes_source_name: str,
+    jec_producers: list[Producer | ProducerGroup],
+    jec_scopes: tuple[str],
+    bjet_tagging_sf_producer: Producer | ProducerGroup | None = None,
+    bjet_tagging_sf_scopes: tuple[str] | None = None,
+    exclude_samples: list[str] | None = None,
+):
+    """
+    Add up and down variations of a jet energy scale uncertainty source to
+    the configuration.
+    """
+
+    # Define JES shift factors for 
+    jes_shift_factor = {
+        "up": 1,
+        "down": -1,
+    }
+
+    for direction in ["up", "down"]:
+        # Construct the shift's name: Remove 'Regrouped_' prefix, remove
+        # underscore before era, and add direction. add a 'jes' prefix
+        m = re.match(r"(Regrouped_)?([^_]*)(_(.*))?", jes_source_name)
+        if m is None:
+            raise ValueError(
+                "Name of jet energy scale uncertainty source '{jes_source}' "
+                + "could not be parsed."
+            )
+
+        # Construct the shift configuration and the producers that are affected
+        shift_config = {
+            jec_scopes: {
+                "ak4jet_jes_shift_factor": jes_shift_factor[direction],
+                "ak4jet_jes_sources": jes_source_name,
+            },
+        }
+        producers = {jec_scopes: jec_producers}
+
+        # Check if b jet tagging SF producer has been passed. If yes, add the
+        # producer and the corresponding shift
+        if (
+            bjet_tagging_sf_producer is not None
+            and bjet_tagging_sf_scopes is not None
+        ):
+            # Sanitize scope variable and construct name of the shift passed
+            # to the b jet tagging SF producer
+            shift_value = (
+                direction
+                + "_jes"
+                + m.group(2)
+                + (m.group(3) or '')
+            )
+
+            # Extend dictionaries for producers and shift config. Prevent that
+            # JEC definitions are overwritten.
+            shift_config.setdefault(bjet_tagging_sf_scopes, {}).update({
+                "bjet_sf_variation": shift_value,
+            })
+            producers.setdefault(bjet_tagging_sf_scopes, []).append(
+                bjet_tagging_sf_producer
+            )
+
+        # Add shift to the configuration
+        configuration.add_shift(
+            SystematicShift(
+                name=f"{shift_name}{direction.capitalize()}",
+                shift_config=shift_config,
+                producers=producers,
+            ),
+            exclude_samples=exclude_samples,
+        )
+
+
+def add_jec_shifts(
+    configuration: Configuration,
+    era: str,
+    jec_producers: list[Producer | ProducerGroup],
+    bjet_tagging_sf_producer: Producer | ProducerGroup = None,
+):
+    """
+    Add systematic uncertainties related to the jet energy calibration (JEC)
+    procedure.
+
+    The function adds a systematic up and down shift for each uncertainty
+    source in the jet energy scale (reduced scheme) and for the
+    jet energy resolution (one inclusive uncertainty).
+
+    The prodedure follows the JME recommentations for
+    [JES](https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1) and
+    [JER](https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution_1)
+    uncertainty treatment.
+
+    Notes
+    -----
+
+    If shape-based b jet tagging SF are used, the corresponding producer should
+    be varied simultaneously with the jet energy calibration shifts. In this
+    case, do not forget to add the `bjet_tagging_sf_producer` parameter to this
+    function.
+    """
+
+    # Get scopes of JEC producers, check for consistency
+    jec_scopes = {tuple(sorted(p.scopes)) for p in jec_producers}
+    if len(jec_scopes) != 1:
+        raise ValueError(
+            "JEC producers passed to add_jec_shifts are not consistent in "
+            + "their scope definition."
+        )
+    jec_scopes = tuple(jec_scopes.pop())
+
+    # Get scopes of b jet tagging SF producer
+    bjet_tagging_sf_scopes = None
+    if bjet_tagging_sf_producer is not None:
+        bjet_tagging_sf_scopes = tuple(bjet_tagging_sf_producer.scopes)
+
+    # Samples to exclude (where jets are already taken from data)
+    exclude_samples = ["data", "embedding", "embedding_mc"]
+
+    # -------------------------------------------------------------------------
+    # Jet energy scale
+    # -------------------------------------------------------------------------
+
+    # Comment: If needed, the JES source groups could be extended to a more
+    # granular scheme. Here, the "default" recommendation is implemented.
+    # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1
+
+    # Groups of uncertainty sources in jet energy scale corrections. The
+    # HEMIssue uncertainty is only included in 2018
+    jes_sources = [
+        {
+            "correction_name": "Regrouped_Absolute",
+            "cms_name": "CMS_scale_j_Absolute",
+        },
+        {
+            "correction_name": f"Regrouped_Absolute_{era}",
+            "cms_name": f"CMS_scale_j_Absolute_{era}",
+        },
+        {
+            "correction_name": "Regrouped_FlavorQCD",
+            "cms_name": "CMS_scale_j_FlavorQCD",
+        },
+        {
+            "correction_name": "Regrouped_BBEC1",
+            "cms_name": "CMS_scale_j_BBEC1",
+        },
+        {
+            "correction_name": f"Regrouped_BBEC1_{era}",
+            "cms_name": f"CMS_scale_j_BBEC1_{era}",
+        },
+        {
+            "correction_name": "Regrouped_HF",
+            "cms_name": "CMS_scale_j_HF",
+        },
+        {
+            "correction_name": f"Regrouped_HF_{era}",
+            "cms_name": f"CMS_scale_j_HF_{era}",
+        },
+        {
+            "correction_name": "Regrouped_EC2",
+            "cms_name": "CMS_scale_j_EC2",
+        },
+        {
+            "correction_name": f"Regrouped_EC2_{era}",
+            "cms_name": f"CMS_scale_j_EC2_{era}",
+        },
+        {
+            "correction_name": "Regrouped_RelativeBal",
+            "cms_name": "CMS_scale_j_RelativeBal",
+        },
+        {
+            "correction_name": f"Regrouped_RelativeSample_{era}",
+            "cms_name": f"CMS_scale_j_RelativeSample_{era}",
+        },
+    ]
+    if era == "2018":
+        jes_sources.append({
+            "correction_name": "HEMIssue",
+            "cms_name": f"CMS_HEM_{era}",
+        })
+
+    for jes_source in jes_sources:
+        # Add up and down variation to the configuration
+        _add_jes_shift(
+            configuration,
+            jes_source["cms_name"],
+            jes_source["correction_name"],
+            jec_producers,
+            jec_scopes=jec_scopes,
+            bjet_tagging_sf_producer=bjet_tagging_sf_producer,
+            bjet_tagging_sf_scopes=bjet_tagging_sf_scopes,
+            exclude_samples=exclude_samples,
+        )
+
+    # -------------------------------------------------------------------------
+    # Jet energy resolution
+    # -------------------------------------------------------------------------
+
+    # Comment: If needed, the JER uncertainties could be extended to a more
+    # granular scheme by shifting different (p_T, eta) regions independently.
+    # Here, the "default" recommendation is implemented.
+    # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution_1
+
+    for direction in ["up", "down"]:
+        # Add shift to the configuration
+        configuration.add_shift(
+            SystematicShift(
+                name=f"CMS_res_j_{era}{direction.capitalize()}",
+                shift_config={
+                    jec_scopes: {
+                        "ak4jet_jer_shift": direction,
+                    },
+                },
+                producers={
+                    jec_scopes: jec_producers,
+                },
+            ),
+            exclude_samples=exclude_samples,
+        )
+
+    return configuration
+

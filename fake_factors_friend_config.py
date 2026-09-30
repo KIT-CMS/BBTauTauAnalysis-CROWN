@@ -11,18 +11,18 @@ from code_generation.systematics import SystematicShift
 from .constants import TT_SCOPES, ERAS_RUN2, ERAS_RUN3, SL_SCOPES, FH_SCOPES
 
 
-FAKE_FACTOR_VERSION = "fake-factors-2026-07-28"
+FAKE_FACTOR_VERSION = "fake-factors-2026-09-26"
 
 
 def build_config(
     era: str,
     sample: str,
-    scopes: List[str],
-    shifts: List[str],
-    available_sample_types: List[str],
-    available_eras: List[str],
-    available_scopes: List[str],
-    quantities_map: Union[str, None] = None,
+    scopes: list[str],
+    shifts: list[str],
+    available_sample_types: list[str],
+    available_eras: list[str],
+    available_scopes: list[str],
+    quantities_map: str | None = None,
 ):
 
     # -------------------------------------------------------------------------
@@ -67,7 +67,7 @@ def build_config(
                             for _era in ERAS_RUN2
                         },
                         **{
-                            _era: f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/{_era}/FF_corrections_{_channel}.json.gz"
+                            _era: f"payloads/fake_factors/{FAKE_FACTOR_VERSION}/{_era}/FF_corrections_{_channel}_default.json.gz"
                             for _era in ERAS_RUN3
                         },
                     },
