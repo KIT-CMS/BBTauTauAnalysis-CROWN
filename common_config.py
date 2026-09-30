@@ -3054,11 +3054,15 @@ def build_config(
         configuration.add_config_parameters(MM_SCOPES + EM_SCOPES, {"tight_muon_min_pt": 15.0})
         for control_scopes, control_producers in [
             (EE_SCOPES + EM_SCOPES, [scalefactors.EleID_SF]),
-            (MM_SCOPES + EM_SCOPES, [scalefactors.MuonIDIso_SF]),
+            (EM_SCOPES, [scalefactors.MuonIDIso_SF]),
         ]:
             configuration.add_modification_rule(control_scopes, RemoveProducer(
                 producers=control_producers, samples=["data", "embedding", "embedding_mc"],
             ))
+        # mm embedding (tau-ID measurement) replaces them in embedding_run2_v15
+        configuration.add_modification_rule(
+            MM_SCOPES, RemoveProducer(producers=[scalefactors.MuonIDIso_SF], samples=["data"])
+        )
 
     # Extra lepton vetoes in channels, requires `Veto<object>` and
     # `VetoSecond<object>` to be added to the correct scopes
