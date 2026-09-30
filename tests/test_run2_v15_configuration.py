@@ -32,20 +32,14 @@ def test_analysis_identity_is_bbtautau():
 
 def test_tau_pt_correction_matches_current_crown_signature():
     call = taus.TauPtCorrectionMC.call
+    assert "physicsobject::tau::experimental::PtCorrectionMC(" in call
     ordered_arguments = [
+        '"{tau_vsjet_es_sf_file}"',
+        '"{tau_ES_json_name}"',
         '"{tau_id_algorithm}"',
         '"{tau_ides_sf_vsjet_wp}"',
         '"{tau_ides_sf_vsele_wp}"',
-        "{vec_open}{tight_tau_decay_modes}{vec_close}",
-        '"{tau_elefake_es_DM0_barrel}"',
-        '"{tau_elefake_es_DM1_barrel}"',
-        '"{tau_elefake_es_DM0_endcap}"',
-        '"{tau_elefake_es_DM1_endcap}"',
-        '"{tau_mufake_es}"',
-        '"{tau_ES_shift_DM0}"',
-        '"{tau_ES_shift_DM1}"',
-        '"{tau_ES_shift_DM10}"',
-        '"{tau_ES_shift_DM11}"',
+        '"{tau_es_variation}"',
     ]
     positions = [call.index(argument) for argument in ordered_arguments]
     assert positions == sorted(positions)

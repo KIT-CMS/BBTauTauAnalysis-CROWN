@@ -206,7 +206,12 @@ def test_sm_fake_factors_build_on_embedding(scope, tmp_path):
     quantities_map = json.loads(Path(MAP_FF_2018).read_text())
     ttbar = quantities_map["quantities"]["2018"].pop("ttbar")
     quantities_map["quantities"]["2018"]["embedding"] = {
-        name: {"": inputs[""], "embTauEs3prongUp": inputs["tauEsUp"]}
+        name: {
+            "": inputs[""],
+            "CMS_scale_t_emb_DeepTau2018v2p5_DM10_2018Up": inputs[
+                "CMS_scale_t_DeepTau2018v2p5_DM0_pt20to40_genTau_2018Up"
+            ],
+        }
         for name, inputs in ttbar.items()
     }
     quantities_map["metadata"]["sample_type"] = "embedding"
@@ -216,7 +221,7 @@ def test_sm_fake_factors_build_on_embedding(scope, tmp_path):
         "2018", "embedding", [scope], {"all"}, LEGACY_AVAILABLE_SAMPLES,
         sm_fake_factors.AVAILABLE_ERAS, SCOPES, str(path),
     )
-    assert "__embTauEs3prongUp" in config.shifts[scope]
+    assert "__CMS_scale_t_emb_DeepTau2018v2p5_DM10_2018Up" in config.shifts[scope]
     assert len(ff_shifts(config, scope)) == (68 if scope == "tt" else 34)
 
 
