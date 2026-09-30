@@ -994,6 +994,44 @@ TauEmbeddingMuonIsoSF_2_MC = Producer(
     scopes=["mm", "em"],
 )
 
+# muon ID and isolation SFs of the first muon (mt) or of both (mm), in place of
+# the POG MuonIDIso_SF group
+TauEmbeddingMuonIDIsoSF_MC = ProducerGroup(
+    name="TauEmbeddingMuonIDIsoSF_MC",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["mt", "mm"],
+    subproducers={
+        "mt": [TauEmbeddingMuonIDSF_1_MC, TauEmbeddingMuonIsoSF_1_MC],
+        "mm": [
+            TauEmbeddingMuonIDSF_1_MC,
+            TauEmbeddingMuonIsoSF_1_MC,
+            TauEmbeddingMuonIDSF_2_MC,
+            TauEmbeddingMuonIsoSF_2_MC,
+        ],
+    },
+)
+
+# single-muon trigger SFs of the first muon, one per configured trigger
+MTGenerateSingleMuonTriggerSF_MC = ExtendedVectorProducer(
+    name="MTGenerateSingleMuonTriggerSF_MC",
+    call="""embedding::muon::Scalefactor(
+        {df}, 
+        correctionManager, 
+        {output}, 
+        {input}, 
+        "{mc_muon_sf_file}", 
+        "{mc_trigger_sf}", 
+        "mc", 
+        {mc_muon_trg_extrapolation})
+        """,
+    input=[q.pt_1, q.eta_1],
+    output="flagname",
+    scopes=["mt", "mm"],
+    vec_config="singlemuon_trigger_sf_mc",
+)
+
 TauEmbeddingBoostedMuonIDSF_1_MC = Producer(
     name="TauEmbeddingBoostedMuonIDSF_1_MC",
     call="""embedding::muon::Scalefactor(
