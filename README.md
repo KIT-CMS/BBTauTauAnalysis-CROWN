@@ -214,8 +214,10 @@ below and drops the MC vsJet and POG muon SF shifts (`tau_id_measurement.setup`,
 
 The energy scale grid is not produced in CROWN: the embedded taus stay uncorrected (energy scale 1,
 no vsJet SF, no tau shifts) and are selected from 20/1.2 GeV on, so that ShapeSmith can scale their
-kinematics per grid point, up to +20 %, and still cut at 20 GeV. The MC tau energy scale shifts are
-the only shifts whose name contains `CMS_scale_t`, so this substring selects them and nothing else.
+kinematics per grid point, up to +20 %, and still cut at 20 GeV. NanoAOD stores taus from 18 GeV on,
+so grid points above +11 % miss the taus that would enter from below 18 GeV; the precedent's grid,
+produced in CROWN from the same NanoAOD, missed them as well. The MC tau energy scale shifts are the
+only shifts whose name contains `CMS_scale_t`, so this substring selects them and nothing else.
 
 ### Corrections and their precedent
 
@@ -226,7 +228,7 @@ everything not listed is the `sm_config` one.
 | Correction | This configuration | Source | Precedent | `sm_config` |
 |---|---|---|---|---|
 | Trigger (data, MC, embedding; mt, mm) | `trg_single_mu24` &#124;&#124; `trg_single_mu27`: HLT_IsoMu24/27, p<sub>T</sub> > 25/28 GeV, &#124;&eta;&#124; < 2.5, filter bit 3 | NanoAOD trigger objects | same (`MTGenerateSingleMuonTriggerFlags`) | IsoMu24 only (bit 1, 26 GeV, &#124;&eta;&#124; < 2.4), plus Mu50/Mu100 |
-| Muon trigger SF, MC | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` of the first muon, type `mc` | KIT `data/embedding/muon_2018UL.json.gz`: `Trg_IsoMu24`, `Trg_IsoMu27`, `Trg_IsoMu27_or_IsoMu24_pt_eta_bins` | `MTGenerateSingleMuonTriggerSF_MC` | POG `NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight` |
+| Muon trigger SF, MC | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` of the first muon, type `mc`, evaluated at every p<sub>T</sub> (`_mu27` is meaningful above 28 GeV only, as the predecessor's weight uses it) | KIT `data/embedding/muon_2018UL.json.gz`: `Trg_IsoMu24`, `Trg_IsoMu27`, `Trg_IsoMu27_or_IsoMu24_pt_eta_bins` | `MTGenerateSingleMuonTriggerSF_MC` | POG `NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight` |
 | Muon trigger SF, embedding | the same three, type `emb` | same payload | `MTGenerateSingleMuonTriggerSF` (mt, mm) | `Trg_IsoMu24` only (mt) |
 | Muon ID/iso SF, MC | `ID_pt_eta_bins`, `Iso_pt_eta_bins`, type `mc`, first muon (mt), both (mm) | KIT `muon_2018UL` | `PrivateMuonIDSF/IsoSF_{1,2}_MC` | POG `NUM_MediumID_DEN_TrackerMuons`, `NUM_TightRelIso_DEN_MediumID` |
 | Muon ID/iso SF, embedding | mt: ID + iso-binned (Part A), mm: `ID`, `Iso_pt_eta_bins` of both muons, type `emb` | KIT `muon_2018UL` | `TauEmbeddingMuonIDSF/IsoSF_{1,2}` (mt: `Iso` only, equal below iso 0.15) | &ndash; |
