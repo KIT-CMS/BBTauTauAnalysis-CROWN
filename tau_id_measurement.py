@@ -9,6 +9,7 @@ precedent listed in the README section "Tau-ID measurement":
   SFs of the Tau Embedding group (type "mc" in MC, "emb" in embedding);
 - the KIT muon ID and isolation SFs in MC, of both muons in mm;
 - the MC tau energy scale of vsJet Loose and vsJet SFs for Medium and Tight;
+- the recoil correction of DY and W;
 - the MC shifts of the analysis, except for the vsJet SF it measures and the POG
   muon SFs it replaces, and the shift of its KIT trigger SF.
 
@@ -26,6 +27,7 @@ from .variations.triggers import add_single_muon_trigger_extrapolation_shifts
 MEASUREMENT_SCOPES = MT_SCOPES + MM_SCOPES
 MC_SAMPLES = ("dyjets", "wjets", "ttbar", "singletop", "diboson")
 NOT_MC = ["data", "embedding", "embedding_mc"]
+RECOIL_SAMPLES = ("dyjets", "wjets")
 # trigger flags as in the measurement production: filter bit 3 (1mu), |eta| < 2.5
 SINGLE_MUON_TRIGGERS = [
     {
@@ -63,6 +65,7 @@ def setup(configuration: Configuration, era: str, sample: str, scopes: list[str]
     _add_muon_triggers(configuration, sample)
     _add_mc_muon_scalefactors(configuration)
     _add_mc_tau_corrections(configuration)
+    _add_recoil_corrections(configuration, sample)
     _add_mc_shifts(configuration, era)
 
 
@@ -127,6 +130,13 @@ def _add_mc_tau_corrections(configuration: Configuration):
                 for wp in ("Medium", "Tight")
             ],
         },
+    )
+
+
+def _add_recoil_corrections(configuration: Configuration, sample: str):
+    # the merged SM wjets sample is not in the common list
+    configuration.add_config_parameters(
+        MEASUREMENT_SCOPES, {"apply_recoil_correction": sample in RECOIL_SAMPLES}
     )
 
 
