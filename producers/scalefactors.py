@@ -1201,7 +1201,7 @@ BJetWPUParT_SF = Producer(
         "{bjet_eff_name}",
         "{bjet_eff_sample_type}",
         "{bjet_sf_variation_bc}",
-        "{bjet_sf_variation_lf}"
+        "{bjet_sf_variation_light}"
     )
     """,
     input=[

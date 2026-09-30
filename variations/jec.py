@@ -54,7 +54,7 @@ def _add_jes_shift(
         shift_config = {
             jec_scopes: {
                 "ak4jet_jes_shift_factor": jes_shift_factor[direction],
-                "ak4jet_jes_sources": jes_source_name,
+                "ak4jet_jes_source": jes_source_name,
             },
         }
         producers = {jec_scopes: jec_producers}

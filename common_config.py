@@ -1993,7 +1993,7 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
             # nominal variation of the shape SFs (Run 2, 2022/2023) and the key
             # the b-tag shape shifts write; _lf/_bc are read by BJetWPUParT_SF
             "bjet_sf_variation": "central",
-            "bjet_sf_variation_lf": "central",
+            "bjet_sf_variation_light": "central",
             "bjet_sf_variation_bc": "central",
             "bjet_btag_wp_name": "M",
         },
@@ -4159,7 +4159,8 @@ def build_config(
         configuration,
         era,
         get_for_era(met.MetRecoilCorrection, era),
-        _get_recoil_calibration_samples(),
+        # the merged SM "wjets" joins via sm_merged_dyw (empty for NMSSM)
+        _get_recoil_calibration_samples() + sm_merged_dyw,
     )
 
     #endregion

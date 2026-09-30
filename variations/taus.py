@@ -1,3 +1,5 @@
+import re
+
 from code_generation.configuration import Configuration
 from code_generation.producer import Producer, ProducerGroup
 from ..producers import pairselection as pairselection
@@ -9,6 +11,11 @@ from ..constants import ERAS_RUN2
 from ._util import add_systematic_shift, KeyValueShift
 
 
+# Exclude data, as well as embedding samples, which have their own tau
+# corrections
+EXCLUDE_SAMPLES = ["data", "embedding", "embedding_mc"]
+
+
 def _get_run2_2022_2023_tau_id_vs_jet_shifts(
     era: str,
     tau_id_algorithm: str,
@@ -16,13 +23,17 @@ def _get_run2_2022_2023_tau_id_vs_jet_shifts(
     """
     Shift specifications of the tau ID vs jet scale factor variations for 2022
     and 2023.
+
+    The correction file names the variations with the direction as suffix and
+    separates the era period from the year, e.g. `syst_2022_preEE_up`.
     """
+    era_token = re.sub(r"^(\d{4})(pre|post)", r"\1_\2", era)
     return [
         *[
             KeyValueShift(
                 name=f"CMS_eff_t_{tau_id_algorithm}_VSjet_dm_stat{i}_DM{dm}_{era}",
                 key="tau_id_sf_vsjet_variation",
-                value=f"{{direction}}_stat{i}_dm{dm}",
+                value=f"stat{i}_dm{dm}_{{direction}}",
             )
             for i in range(1, 3)
             for dm in [0, 1, 10, 11]
@@ -30,12 +41,12 @@ def _get_run2_2022_2023_tau_id_vs_jet_shifts(
         KeyValueShift(
             name=f"CMS_eff_t_{tau_id_algorithm}_VSjet_dm_syst_alleras",
             key="tau_id_sf_vsjet_variation",
-            value="{direction}_syst_alleras",
+            value="syst_alleras_{direction}",
         ),
         KeyValueShift(
             name=f"CMS_eff_t_{tau_id_algorithm}_VSjet_dm_syst_{era}",
             key="tau_id_sf_vsjet_variation",
-            value=f"{{direction}}_syst_{era}",
+            value=f"syst_{era_token}_{{direction}}",
         ),
     ]
 
@@ -107,7 +118,13 @@ def add_tau_id_vs_jet_shifts(
 
     # Add up and down variation for each shift
     for shift in shifts:
-        add_systematic_shift(configuration, shift, producers, scopes=scopes)
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
 
 
 def add_tau_id_vs_e_shifts(
@@ -142,7 +159,13 @@ def add_tau_id_vs_e_shifts(
 
     # Add up and down variation for each shift
     for shift in shifts:
-        add_systematic_shift(configuration, shift, producers, scopes=scopes)
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
 
 
 def add_tau_id_vs_mu_shifts(
@@ -168,7 +191,7 @@ def add_tau_id_vs_mu_shifts(
     shifts = [
         KeyValueShift(
             name=f"CMS_fake_t_{tau_id_algorithm}_VSmu_{eta_region}_{era}",
-            key="tau_id_sf_vsele_variation",
+            key="tau_id_sf_vsmu_variation",
             value=f"{{direction}}_custom_{eta_region}",
         )
         for eta_region in (f"wheel{i}" for i in range(1, 6))
@@ -176,7 +199,13 @@ def add_tau_id_vs_mu_shifts(
 
     # Add up and down variation for each shift
     for shift in shifts:
-        add_systematic_shift(configuration, shift, producers, scopes=scopes)
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
 
 
 def add_tau_es_shifts(
@@ -248,4 +277,5 @@ def add_tau_es_shifts(
                     "tt": [],
                 },
             },
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
         )
