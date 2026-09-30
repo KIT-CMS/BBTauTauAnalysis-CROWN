@@ -167,6 +167,8 @@ def test_mt_generates_with_every_shift(module):
         ("sm_btag_efficiency_config", "2017", "ttbar", "does not support era '2017'"),
         ("sm_btag_efficiency_config", "2018", "data", "does not accept sample 'data'"),
         ("sm_config", "2022postEE", "ttbar", "does not support era '2022postEE'"),
+        ("sm_tau_id_measurement_config", "2017", "dyjets", "does not support era '2017'"),
+        ("sm_tau_id_measurement_config", "2018", "hh2b2tau", "does not accept sample 'hh2b2tau'"),
     ],
 )
 def test_module_level_gates_fire_before_build_config(module, era, sample, message):
