@@ -238,6 +238,7 @@ everything not listed is the `sm_config` one.
 | vsJet SF, MC | `id_wgt_tau_vsJet_{Medium,Tight}_2`, wp_VSe VVLoose, `dm` | POG | Loose, Medium, Tight, VVLoose, `dm` | Medium |
 | vsJet SF, embedding | none | &ndash; | none | embedding payload |
 | vsEle / vsMu SF | `id_wgt_tau_vsEle_{VVLoose,Tight}_2`; `id_wgt_tau_vsMu_Tight_2` for both vsEle WPs (the v15 payload has no vsEle input) | POG | the same values, one vsMu column per vsEle WP | same |
+| b-tag SF | none | &ndash; | none | strict UParTAK4 weight |
 | Embedding tau p<sub>T</sub> threshold | 20/1.2 GeV | grid applied in ShapeSmith | 20 GeV, grid in CROWN | 20 GeV |
 
 The predecessor's MC also computed a Z p<sub>T</sub> reweighting that its shapes did not use; 2018
