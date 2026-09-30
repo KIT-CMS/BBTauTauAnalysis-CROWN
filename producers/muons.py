@@ -9,6 +9,29 @@ from code_generation.producer import Producer
 from ..constants import MM_SCOPES, MT_SCOPES, MUON_SCOPES, GLOBAL_SCOPES, SCOPES
 
 
+
+#
+# ENERGY SCALE CORRECTIONS
+#
+
+# electron scale correction for data in Run 3
+MuonPtCorrection = Producer(
+    name="MuonPtCorrection",
+    call='physicsobject::muon::PtCorrection({df}, correctionManager, {output}, {input}, 20.0, "{muon_es_file}", "{muon_es_variation}", {is_data})',
+    input=[
+        nanoAOD.Muon_pt,
+        nanoAOD.Muon_eta,
+        nanoAOD.Muon_phi,
+        nanoAOD.Muon_charge,
+        nanoAOD.Muon_nTrackerLayers,
+        nanoAOD.luminosityBlock,
+        nanoAOD.event,
+    ],
+    output=[q.Muon_pt_corrected],
+    scopes=GLOBAL_SCOPES,
+)
+
+
 #
 # OBJECT SELECTION
 #
@@ -19,7 +42,7 @@ BaseMuons = Producer(
     name="BaseMuons",
     call="xyh::object_selection::muon({df}, {output}, {input}, \"{loose_muon_id}\", {loose_muon_min_pt}, {loose_muon_max_abs_eta}, {loose_muon_max_abs_dxy}, {loose_muon_max_abs_dz}, {loose_muon_max_iso})",
     input=[
-        nanoAOD.Muon_pt,
+        q.Muon_pt_corrected,
         nanoAOD.Muon_eta,
         nanoAOD.Muon_dxy,
         nanoAOD.Muon_dz,
@@ -34,7 +57,7 @@ GoodMuons = Producer(
     name="GoodMuons",
     call="xyh::object_selection::muon({df}, {output}, {input}, \"{tight_muon_id}\", {tight_muon_min_pt}, {tight_muon_max_abs_eta}, {tight_muon_max_abs_dxy}, {tight_muon_max_abs_dz}, {tight_muon_max_iso})",
     input=[
-        nanoAOD.Muon_pt,
+        q.Muon_pt_corrected,
         nanoAOD.Muon_eta,
         nanoAOD.Muon_dxy,
         nanoAOD.Muon_dz,
@@ -122,7 +145,7 @@ DiMuonVeto = Producer(
     name="DiMuonVeto",
     call="xyh::vetoes::dimuon({df}, {output}, {input}, {dimu_muon_min_pt}, {dimu_muon_max_abs_eta}, {dimu_muon_max_iso}, {dimu_muon_max_abs_dxy}, {dimu_muon_max_abs_dz}, {dimu_muon_min_delta_r})",
     input=[
-        nanoAOD.Muon_pt,
+        q.Muon_pt_corrected,
         nanoAOD.Muon_eta,
         nanoAOD.Muon_phi,
         nanoAOD.Muon_pfRelIso04_all,

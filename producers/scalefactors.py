@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from code_generation.quantity import Quantity
@@ -12,21 +14,87 @@ from ..constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, SL_SCOPES, ELECTRON_SCO
 # The readout is done via correctionlib
 ############################
 
-Muon_1_ID_SF = Producer(
-    name="MuonID_SF",
-    call="""physicsobject::muon::scalefactor::IsoAndID(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{muon_sf_file}", 
-        "{muon_id_sf_name}", 
-        "{muon_id_sf_variation}")
-        """,
+def muon_id_sf(
+    name,
+    input,
+    output,
+    scopes,
+    call_parameters=None,
+):
+    # Define the function parameters and update the default values with the
+    # user input
+    call_parameters_keys = [
+        "muon_sf_file",
+        "muon_id_sf_name",
+        "muon_id_sf_variation",
+    ]
+    _call_parameters = OrderedDict(
+        [
+            (key, key)
+            for key in call_parameters_keys
+        ]
+    )
+    if call_parameters is not None:
+        _call_parameters.update(call_parameters)
+
+    # Validate that call parameters have the correct order
+    assert list(_call_parameters.keys()) == call_parameters_keys, "Call parameters do not have the correct order"
+
+    # Construct the call parameters string
+    call = (
+        "physicsobject::muon::scalefactor::IsoAndID("
+        + ", ".join([
+            "{df}",
+            "correctionManager",
+            "{output}",
+            "{input}",
+            *[f"\"{{{p}}}\"" for p in _call_parameters.values()]
+        ])
+        + ")"
+    )
+
+    return Producer(
+        name=name,
+        call=call,
+        input=input,
+        output=output,
+        scopes=scopes,
+    )
+
+
+Muon_1_ID_SF = muon_id_sf(
+    "Muon_1_ID_SF",
     input=[q.pt_1, q.eta_1],
     output=[q.id_wgt_mu_1],
     scopes=["mt", "mm"],
 )
+
+Muon_2_ID_SF = muon_id_sf(
+    "Muon_2_ID_SF",
+    input=[q.pt_2, q.eta_2],
+    output=[q.id_wgt_mu_2],
+    scopes=["em", "mm"],
+)
+
+Muon_1_ID_LowPt_SF = muon_id_sf(
+    "Muon_1_ID_LowPt_SF",
+    input=[q.pt_1, q.eta_1],
+    output=[q.id_lowpt_wgt_mu_1],
+    scopes=["mt", "mm"],
+    call_parameters={
+        "muon_sf_file": "muon_lowpt_sf_file",
+        "muon_id_sf_name": "muon_id_lowpt_sf_name",
+        "muon_id_sf_variation": "muon_id_lowpt_sf_variation",
+    },
+)
+
+Muon_2_ID_LowPt_SF = muon_id_sf(
+    "Muon_2_ID_LowPt_SF",
+    input=[q.pt_2, q.eta_2],
+    output=[q.id_lowpt_wgt_mu_2],
+    scopes=["em", "mm"],
+)
+
 Muon_1_Iso_SF = Producer(
     name="MuonIso_SF",
     call="""physicsobject::muon::scalefactor::IsoAndID(
@@ -42,21 +110,7 @@ Muon_1_Iso_SF = Producer(
     output=[q.iso_wgt_mu_1],
     scopes=["mt", "mm"],
 )
-Muon_2_ID_SF = Producer(
-    name="MuonID_SF",
-    call="""physicsobject::muon::scalefactor::IsoAndID(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{muon_sf_file}", 
-        "{muon_id_sf_name}", 
-        "{muon_id_sf_variation}")
-        """,
-    input=[q.pt_2, q.eta_2],
-    output=[q.id_wgt_mu_2],
-    scopes=["em", "mm"],
-)
+
 Muon_2_Iso_SF = Producer(
     name="MuonIso_SF",
     call="""physicsobject::muon::scalefactor::IsoAndID(
@@ -72,6 +126,7 @@ Muon_2_Iso_SF = Producer(
     output=[q.iso_wgt_mu_2],
     scopes=["em", "mm"],
 )
+
 MuonIDIso_SF = ProducerGroup(
     name="MuonIDIso_SF",
     call=None,
@@ -81,16 +136,20 @@ MuonIDIso_SF = ProducerGroup(
     subproducers={
         "mt": [
             Muon_1_ID_SF,
+            Muon_1_ID_LowPt_SF,
             Muon_1_Iso_SF,
         ],
         "em": [
             Muon_2_ID_SF,
+            Muon_2_ID_LowPt_SF,
             Muon_2_Iso_SF,
         ],
         "mm": [
             Muon_1_ID_SF,
+            Muon_1_ID_LowPt_SF,
             Muon_1_Iso_SF,
             Muon_2_ID_SF,
+            Muon_2_ID_LowPt_SF,
             Muon_2_Iso_SF,
         ],
     },
@@ -474,13 +533,12 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
 #########################
 Ele_1_Reco_SF = Producer(
     name="Ele_1_Reco_SF",
-    call="""physicsobject::electron::scalefactor::Id(
+    call="""physicsobject::electron::scalefactor::RecoRun3(
         {df}, 
         correctionManager, 
         {output}, 
         {input}, 
         "{ele_sf_year_id}", 
-        "{ele_reco_sf_name}", 
         "{ele_sf_file}", 
         "{ele_sf_cset_name}", 
         "{ele_reco_sf_variation}")
@@ -491,13 +549,12 @@ Ele_1_Reco_SF = Producer(
 )
 Ele_2_Reco_SF = Producer(
     name="Ele_2_Reco_SF",
-    call="""physicsobject::electron::scalefactor::Id(
+    call="""physicsobject::electron::scalefactor::RecoRun3(
         {df}, 
         correctionManager, 
         {output}, 
         {input}, 
         "{ele_sf_year_id}", 
-        "{ele_reco_sf_name}", 
         "{ele_sf_file}", 
         "{ele_sf_cset_name}", 
         "{ele_reco_sf_variation}")
@@ -506,8 +563,8 @@ Ele_2_Reco_SF = Producer(
     output=[q.reco_wgt_ele_2],
     scopes=["ee"],
 )
-Ele_1_IDWP90_SF = Producer(
-    name="Ele_1_IDWP90_SF",
+Ele_1_ID_SF = Producer(
+    name="Ele_1_ID_SF",
     call="""physicsobject::electron::scalefactor::Id(
         {df}, 
         correctionManager, 
@@ -523,8 +580,8 @@ Ele_1_IDWP90_SF = Producer(
     output=[q.id_wgt_ele_1],
     scopes=["em", "ee", "et"],
 )
-Ele_2_IDWP90_SF = Producer(
-    name="Ele_2_IDWP90_SF",
+Ele_2_ID_SF = Producer(
+    name="Ele_2_ID_SF",
     call="""physicsobject::electron::scalefactor::Id(
         {df}, 
         correctionManager, 
@@ -548,18 +605,18 @@ EleID_SF = ProducerGroup(
     scopes=["em", "ee", "et"],
     subproducers={
         "em": [
-            #Ele_1_Reco_SF,  TODO a bit tedious to implement
-            Ele_1_IDWP90_SF,
+            Ele_1_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_ID_SF,
         ],
         "ee": [
-            #Ele_1_Reco_SF,  TODO a bit tedious to implement
-            #Ele_2_Reco_SF,  TODO a bit tedious to implement
-            Ele_1_IDWP90_SF,
-            Ele_2_IDWP90_SF,
+            Ele_1_Reco_SF,  # TODO a bit tedious to implement
+            Ele_2_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_ID_SF,
+            Ele_2_ID_SF,
         ],
         "et": [
-            #Ele_1_Reco_SF,  TODO a bit tedious to implement
-            Ele_1_IDWP90_SF,
+            Ele_1_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_ID_SF,
         ],
     },
 )
@@ -580,8 +637,8 @@ Ele_1_Reco_SF_boosted = Producer(
     output=[q.reco_wgt_ele_boosted_1],
     scopes=["et"],
 )
-Ele_1_IDWP90_SF_boosted = Producer(
-    name="Ele_1_IDWP90_SF_boosted",
+Ele_1_ID_SF_boosted = Producer(
+    name="Ele_1_ID_SF_boosted",
     call="""physicsobject::electron::scalefactor::Id(
         {df}, 
         correctionManager, 
@@ -606,7 +663,7 @@ EleID_SF_boosted = ProducerGroup(
     subproducers={
         "et": [
             #Ele_1_Reco_SF_boosted,
-            Ele_1_IDWP90_SF_boosted
+            Ele_1_ID_SF_boosted
         ],
     },
 )
