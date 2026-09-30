@@ -199,6 +199,27 @@ def test_sm_corrections_do_not_shift_the_raw_fake_factor(scope):
         assert any(not leaf.endswith("_raw") for leaf in shifted), name
 
 
+@pytest.mark.parametrize("scope", ["et", "mt", "tt"])
+def test_sm_fake_factors_build_on_embedding(scope, tmp_path):
+    """The friend runs on the embedding n-tuples like on MC and propagates their tau
+    energy scale shifts, here the ttbar fixture relabelled as embedding."""
+    quantities_map = json.loads(Path(MAP_FF_2018).read_text())
+    ttbar = quantities_map["quantities"]["2018"].pop("ttbar")
+    quantities_map["quantities"]["2018"]["embedding"] = {
+        name: {"": inputs[""], "embTauEs3prongUp": inputs["tauEsUp"]}
+        for name, inputs in ttbar.items()
+    }
+    quantities_map["metadata"]["sample_type"] = "embedding"
+    path = tmp_path / "quantities_map.json"
+    path.write_text(json.dumps(quantities_map))
+    config = sm_fake_factors.build_config(
+        "2018", "embedding", [scope], {"all"}, LEGACY_AVAILABLE_SAMPLES,
+        sm_fake_factors.AVAILABLE_ERAS, SCOPES, str(path),
+    )
+    assert "__embTauEs3prongUp" in config.shifts[scope]
+    assert len(ff_shifts(config, scope)) == (68 if scope == "tt" else 34)
+
+
 def test_nmssm_fake_factor_shifts_follow_the_payload():
     config = build_all_shifts(fake_factors_friend_config, "2024", "mt", MAP_FF_2024)
     assert_shifts_set_payload_keys(config, "mt")
