@@ -182,6 +182,12 @@ def test_tag_and_probe_and_grid_columns(scope):
             assert {"gen_match_1", "gen_match_2", *TRIGGER_SFS} <= outputs
 
 
+def test_no_btag_sf():
+    """The measurement weights no b-tag SF, like the precedent."""
+    outputs = generate_code(MODULE, "dyjets", scopes=SCOPES).outputs
+    assert not {o for scope in SCOPES for o in outputs[scope] if o.startswith("btag_weight")}
+
+
 def test_embedding_taus_stay_uncorrected():
     """By-value ES of 1, no vsJet SF, the lowered pT threshold and no emb* shifts."""
     config = measurement("embedding", ("all",))

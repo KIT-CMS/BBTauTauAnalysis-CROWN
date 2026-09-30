@@ -87,12 +87,14 @@ SM_BTAG_EFFICIENCY_PROFILE = replace(
 )
 
 # The SM selection in mt and mm with the corrections and MC shifts of the tau-ID
-# SF and ES measurement. The embedded taus stay uncorrected and keep a lower pT
-# threshold, so that the ES grid applied downstream (up to +20 %) still finds
-# every tau above 20 GeV.
+# SF and ES measurement, which applies no b-tag SF. The embedded taus stay
+# uncorrected and keep a lower pT threshold, so that the ES grid applied
+# downstream (up to +20 %) still finds every tau above 20 GeV.
 SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     SM_PROFILE,
     name="sm_tau_id_measurement",
+    btag_payload_dir=None,
+    enable_btag_sf=False,
     embedding_scopes=("mt", "mm"),
     embedding_tau_corrections=False,
     embedding_min_tau_pt=20.0 / 1.2,
