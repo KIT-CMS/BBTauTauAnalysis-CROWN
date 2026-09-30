@@ -40,6 +40,9 @@ class AnalysisProfile:
     embedding_scopes: Tuple[str, ...] = ()
     embedding_tau_corrections: bool = True
     embedding_min_tau_pt: Optional[float] = None
+    # The corrections, triggers and MC shifts of the tau-ID SF and ES measurement
+    # (tau_id_measurement.py) in place of the analysis ones.
+    tau_id_measurement: bool = False
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -81,4 +84,17 @@ SM_BTAG_EFFICIENCY_PROFILE = replace(
     mc_only=True,
     enable_btag_sf=False,
     enable_probe_jet_collection=True,
+)
+
+# The SM selection in mt and mm with the corrections and MC shifts of the tau-ID
+# SF and ES measurement. The embedded taus stay uncorrected and keep a lower pT
+# threshold, so that the ES grid applied downstream (up to +20 %) still finds
+# every tau above 20 GeV.
+SM_TAU_ID_MEASUREMENT_PROFILE = replace(
+    SM_PROFILE,
+    name="sm_tau_id_measurement",
+    embedding_scopes=("mt", "mm"),
+    embedding_tau_corrections=False,
+    embedding_min_tau_pt=20.0 / 1.2,
+    tau_id_measurement=True,
 )

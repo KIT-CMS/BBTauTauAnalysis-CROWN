@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 
 from analysis_configurations.bbtautau import sm_tau_id_measurement_config
-from analysis_configurations.bbtautau.tau_variations import POG_TAU_VSJET_2018_COMPONENTS
 from analysis_configurations.bbtautau.tests.helpers import (
     build,
     find_producer,
@@ -34,59 +33,45 @@ TRIGGER_SFS = {
     "trg_wgt_single_mu27": "Trg_IsoMu27_pt_eta_bins",
     "trg_wgt_single_mu24ormu27": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
 }
-JES_SOURCES = [
-    "AbsoluteMPFBias", "AbsoluteScale", "AbsoluteStat", "FlavorQCD", "Fragmentation",
-    "PileUpDataMC", "PileUpPtBB", "PileUpPtEC1", "PileUpPtEC2", "PileUpPtHF",
-    "PileUpPtRef", "RelativeBal", "RelativeFSR", "RelativeJEREC1", "RelativeJEREC2",
-    "RelativeJERHF", "RelativePtBB", "RelativePtEC1", "RelativePtEC2", "RelativePtHF",
-    "RelativeSample2018", "RelativeStatEC", "RelativeStatFSR", "RelativeStatHF",
-    "SinglePionECAL", "SinglePionHCAL", "TimePtEta", "Total", "HEMIssue",
+# the regrouped JES sources of the common shifts; the predecessor's 28 individual
+# sources are not produced
+REGROUPED_JES_SOURCES = [
+    "Absolute", "Absolute_2018", "BBEC1", "BBEC1_2018", "EC2", "EC2_2018",
+    "FlavorQCD", "HF", "HF_2018", "RelativeBal", "RelativeSample_2018",
 ]
-# the predecessor's family spelling of a JES source, where it differs
-JES_FAMILY_NAMES = {
-    "PileUpPtEC1": "PileupPtEC1",
-    "PileUpPtRef": "PileupPtRef",
-    "RelativeSample2018": "RelativeSample",
-}
+PT_BINS = ("20to40", "40to60", "60toInf")
 # Shape systematics of the predecessor measurement (jvoss's synced shapes of
 # SFs_EMB_Run2_04_08_26__full), family -> the CROWN shifts behind it. Weight-only
 # families (CMS_fake_j, CMS_htt_ttbarShape) and the embedding ttbar contamination
-# are built downstream from nominal columns and are listed in the README.
+# are built downstream from nominal columns and are listed in the README. The vsJet
+# SF families have no shifts: the measurement measures the SF.
 PREDECESSOR_SHIFTS = {
-    "CMS_PileUp": ["PileUp"],
-    "CMS_eff_m_trigger_Run2018": ["singleMuonTriggerSF"],
+    "CMS_PileUp": ["CMS_pileup_2018"],
+    "CMS_eff_m_trigger_Run2018": ["CMS_eff_m_trigger_2018"],
+    **{f"CMS_eff_t_dm{dm}_Run2018": [] for dm in (0, 1, 10, 11)},
     **{
-        f"CMS_eff_t_dm{dm}_Run2018": [
-            f"vsJetTau{component}DM{dm}" for component in ("Stat1", "Stat2", "SystTes")
+        f"CMS_fake_m_WH{wheel}_Run2018": [f"CMS_fake_t_DeepTau2018v2p5_VSmu_wheel{wheel}_2018"]
+        for wheel in range(1, 6)
+    },
+    "CMS_res_met_Run2018": ["CMS_res_met_RecoilCalibration_2018"],
+    "CMS_scale_met_Run2018": ["CMS_scale_met_RecoilCalibration_2018"],
+    "CMS_scale_fake_m_Run2018": [
+        f"CMS_scale_t_DeepTau2018v2p5_genMuon_wheel{wheel}_2018" for wheel in range(1, 6)
+    ],
+    "CMS_scale_met_unclustered_energy_Run2018": ["CMS_scale_met_unclustered_energy_2018"],
+    **{
+        f"CMS_scale_t_dm{dm}_Run2018": [
+            f"CMS_scale_t_DeepTau2018v2p5_DM{dm}_pt{pt}_genTau_2018" for pt in PT_BINS
         ]
         for dm in (0, 1, 10, 11)
     },
-    **{f"CMS_fake_m_WH{wheel}_Run2018": [f"vsMuWheel{wheel}"] for wheel in range(1, 6)},
-    "CMS_res_met_Run2018": ["metRecoilResol"],
-    "CMS_scale_met_Run2018": ["metRecoilResp"],
-    "CMS_scale_fake_m_Run2018": ["tauMuFakeEs"],
-    "CMS_scale_met_unclustered_energy_Run2018": ["metUnclusteredEn"],
-    **{
-        f"CMS_scale_t_dm{dm}_Run2018": [f"tauEs{token}"]
-        for dm, token in [
-            (0, "1prong0pizero"), (1, "1prong1pizero"),
-            (10, "3prong0pizero"), (11, "3prong1pizero"),
-        ]
-    },
-    **{
-        f"CMS_scale_j_{JES_FAMILY_NAMES.get(source, source)}": [f"jesUnc{source}"]
-        for source in JES_SOURCES
-        if source != "HEMIssue"
-    },
-    "CMS_scale_j_HEMIssue_Run2018": ["jesUncHEMIssue"],
+    "CMS_scale_j_<source>": [f"CMS_scale_j_{source}" for source in REGROUPED_JES_SOURCES],
+    "CMS_scale_j_HEMIssue_Run2018": ["CMS_HEM_2018"],
 }
 # families of the tau and the trigger, which the predecessor has in mt only
 MT_ONLY_FAMILIES = (
     "CMS_eff_t", "CMS_scale_t", "CMS_fake_m", "CMS_scale_fake_m", "CMS_eff_m_trigger",
 )
-# the vsJet SF components correlated across decay modes, which no predecessor
-# family carries (its per-DM shifts evaluated the nominal SF)
-CORRELATED_VSJET_SHIFTS = ["vsJetTauSyst2018", "vsJetTauSystAllEras"]
 
 
 def measurement(sample, shifts=("none",), scopes=SCOPES):
@@ -244,23 +229,19 @@ def test_every_predecessor_shape_systematic_has_its_shifts(scope):
             continue
         for base in bases:
             assert {f"{base}Up", f"{base}Down"} <= shifts, family
-    if scope == "mt":
-        for base in CORRELATED_VSJET_SHIFTS:
-            assert {f"{base}Up", f"{base}Down"} <= shifts
 
 
 def test_no_mc_shift_leaves_its_columns_nominal():
-    """Every tau and trigger shift sets parameters its producer reads (the
-    add_tauVariations vsJet, vsEle and vsMu shifts set keys no producer reads), and
-    the POG muon SF shifts are gone with the POG SFs."""
+    """Every tau and trigger shift sets parameters its producer reads, and there are
+    no shifts of the vsJet SF the measurement measures nor of the POG muon SFs it
+    replaces."""
     config = measurement("dyjets", ("all",))
     shifts = {name.removeprefix("__"): change for name, change in config.shifts["mt"].items()}
-    pog_muon_sf_shifts = ("vsEle", "muonIdSF", "muonIsoSF", "singleMuTriggerSF")
     readers = {
-        "vsJetTau": "TauIDVsJetSF2",
-        "vsMuWheel": "TauIDVsMuSF2",
-        "tauEs": "TauPtCorrectionMC",
-        "singleMuonTriggerSF": "MTGenerateSingleMuonTriggerSF_MC",
+        "CMS_fake_t_DeepTau2018v2p5_VSe": "TauIDVsEleSF2",
+        "CMS_fake_t_DeepTau2018v2p5_VSmu": "TauIDVsMuSF2",
+        "CMS_scale_t_": "TauPtCorrectionMC",
+        "CMS_eff_m_trigger": "MTGenerateSingleMuonTriggerSF_MC",
     }
     for prefix, producer in readers.items():
         read = find_producer(config, "mt", producer).parameters["mt"]
@@ -268,24 +249,7 @@ def test_no_mc_shift_leaves_its_columns_nominal():
         assert matching, prefix
         for name, change in matching.items():
             assert set(change) <= read, name
-    assert not {name for name in shifts if name.startswith(pog_muon_sf_shifts)}
-
-
-def test_pog_vsjet_components_are_not_nominal():
-    """Each component key exists in the POG payload for its decay modes."""
-    correctionlib = pytest.importorskip("correctionlib")
-    config = measurement("dyjets")
-    params = parameters(config, "mt")
-    vsjet = correctionlib.CorrectionSet.from_file(params["tau_vsjet_es_sf_file"])[
-        "DeepTau2018v2p5VSjet"
-    ]
-    for key, decay_modes in POG_TAU_VSJET_2018_COMPONENTS.values():
-        for dm in decay_modes:
-            for wp in ("Medium", "Tight"):
-                nominal = vsjet.evaluate(30.0, dm, 5, wp, "VVLoose", "nom", "dm")
-                for syst in (f"{key}_up", f"{key}_down"):
-                    shifted = vsjet.evaluate(30.0, dm, 5, wp, "VVLoose", syst, "dm")
-                    assert shifted != nominal, (syst, dm, wp)
+    assert not {name for name in shifts if name.startswith(("CMS_eff_t_", "CMS_eff_m_i"))}
 
 
 def test_sample_list_covers_every_sample_type():

@@ -118,6 +118,27 @@ def add_single_electron_trigger_extrapolation_shifts(
     )
 
 
+def add_single_muon_trigger_extrapolation_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup] | Producer | ProducerGroup,
+    scope: str,
+):
+    """
+    Add shifts for single-muon trigger scale factors from the payloads of the
+    Tau Embedding group for the given era and scope. The shifts carry the name
+    of the single-muon trigger shifts of the MUO scale factors.
+    """
+    _add_trigger_extrapolation_shifts(
+        configuration,
+        f"CMS_eff_m_trigger_{era}",
+        producers,
+        scope,
+        config_key="singlemuon_trigger_sf_mc",
+        extrapolation_key="mc_muon_trg_extrapolation",
+    )
+
+
 def add_single_muon_trigger_shifts(
     configuration: Configuration,
     era: str,

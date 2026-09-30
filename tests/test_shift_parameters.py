@@ -20,6 +20,7 @@ SURFACES = [
     ("sm_config", "ttbar", "2018", tuple(SCOPES)),
     ("sm_config", "dyjets", "2018", tuple(SCOPES)),
     ("sm_config", "embedding", "2018", ("et", "mt", "tt")),
+    ("sm_tau_id_measurement_config", "dyjets", "2018", ("mt", "mm")),
     ("nmssm_config", "ttbar", "2024", tuple(SCOPES)),
     ("nmssm_config", "dyjets_amcatnlo_ll", "2022postEE", tuple(SCOPES)),
 ]

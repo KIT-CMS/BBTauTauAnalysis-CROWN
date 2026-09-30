@@ -45,6 +45,7 @@ from .variations.triggers import (
     add_single_muon_trigger_shifts,
 )
 from . import embedding_run2_v15
+from . import tau_id_measurement
 from . import btag_payloads
 
 from code_generation.configuration import Configuration
@@ -2513,30 +2514,6 @@ def build_config(
     #
 
 
-    # Trigger scale factors for measurements in the embedding workflow
-    configuration.add_config_parameters(
-        MUON_SCOPES,
-        {
-            "singlemuon_trigger_sf_mc": [
-                {
-                    "flagname": "trg_wgt_single_mu24",
-                    "mc_trigger_sf": "Trg_IsoMu24_pt_eta_bins",
-                    "mc_muon_trg_extrapolation": 1.0,  # for nominal case
-                },
-                {
-                    "flagname": "trg_wgt_single_mu27",
-                    "mc_trigger_sf": "Trg_IsoMu27_pt_eta_bins",
-                    "mc_muon_trg_extrapolation": 1.0,  # for nominal case
-                },
-                {
-                    "flagname": "trg_wgt_single_mu24ormu27",
-                    "mc_trigger_sf": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
-                    "mc_muon_trg_extrapolation": 1.0,  # for nominal case
-                },
-            ]
-        },
-    )
-
     # Run-2 2018 single-electron trigger scale factor measured with the same
     # method and payload as TauAnalysis. Ele115-only events have no dedicated
     # correction in this payload; the configured weight describes Ele32. The
@@ -4035,8 +4012,10 @@ def build_config(
 
     #region
 
-    # Add muon ID and isolation SF shifts
-    add_muon_id_iso_shifts(configuration, era, [scalefactors.MuonIDIso_SF])
+    # Add muon ID and isolation SF shifts (the tau-ID measurement replaces the
+    # POG SFs, see tau_id_measurement)
+    if not profile.tau_id_measurement:
+        add_muon_id_iso_shifts(configuration, era, [scalefactors.MuonIDIso_SF])
 
     #endregion
 
@@ -4044,23 +4023,25 @@ def build_config(
 
     #region
 
-    # Add hadronic tau ID vs jet SF shifts to semileptonic scopes (producer for
-    # second lepton candidate in pair)
-    add_tau_id_vs_jet_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsJetSF2],
-        scopes=SL_SCOPES,
-    )
+    # The tau-ID measurement measures the vsJet SF and has no shifts of it
+    if not profile.tau_id_measurement:
+        # Add hadronic tau ID vs jet SF shifts to semileptonic scopes (producer
+        # for second lepton candidate in pair)
+        add_tau_id_vs_jet_shifts(
+            configuration,
+            era,
+            [scalefactors.TauIDVsJetSF2],
+            scopes=SL_SCOPES,
+        )
 
-    # Add hadronic tau ID vs jet SF shifts to fullhadronic scopes (producers for
-    # first and second lepton candidate in pair)
-    add_tau_id_vs_jet_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
-        scopes=TT_SCOPES,
-    )
+        # Add hadronic tau ID vs jet SF shifts to fullhadronic scopes
+        # (producers for first and second lepton candidate in pair)
+        add_tau_id_vs_jet_shifts(
+            configuration,
+            era,
+            [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
+            scopes=TT_SCOPES,
+        )
 
     # Add hadronic tau ID vs electron SF shifts to semileptonic scopes (producer
     # for second lepton candidate in pair)
@@ -4223,13 +4204,15 @@ def build_config(
             )
 
     # Add shifts for single muon trigger SFs to scopes with at least one muon
-    for scope in MUON_SCOPES:
-        add_single_muon_trigger_shifts(
-            configuration,
-            era,
-            [scalefactors.SingleMuTriggerSF],
-            scope,
-        )
+    # (the tau-ID measurement replaces the POG SF, see tau_id_measurement)
+    if not profile.tau_id_measurement:
+        for scope in MUON_SCOPES:
+            add_single_muon_trigger_shifts(
+                configuration,
+                era,
+                [scalefactors.SingleMuTriggerSF],
+                scope,
+            )
 
     # Add shifts for double tau trigger SFs in tt scope
     add_double_tautau_trigger_shifts(
@@ -4249,6 +4232,13 @@ def build_config(
     add_qcd_scale_shifts(configuration, era, event.LHE_Scale_weight)
 
     #endregion
+
+    # -------------------------------------------------------------------------
+    # Tau-ID SF and ES measurement
+    # -------------------------------------------------------------------------
+
+    if profile.tau_id_measurement:
+        tau_id_measurement.setup(configuration, era, sample, scopes)
 
     # -------------------------------------------------------------------------
     # Optimization and validation
