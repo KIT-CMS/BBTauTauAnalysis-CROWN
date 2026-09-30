@@ -320,7 +320,7 @@ def add_electron_config(configuration: Configuration):
 
     The corrections include scale factors for reconstruction and identification
     efficiencies at the working points used for electrons in this analysis. Separate corrections to
-    electrons in $\mu \to \tau$-embedded events are defined as well.
+    electrons in $\\mu \\to \\tau$-embedded events are defined as well.
 
     This function adds configuration parameters for two types of muon collections:
 
@@ -379,8 +379,8 @@ def add_electron_config(configuration: Configuration):
             "loose_electron_max_abs_eta": 2.5,
             "loose_electron_max_abs_dxy": 0.045,
             "loose_electron_max_abs_dz": 0.2,
-            "loose_electron_max_iso": 0.25,
-            "loose_electron_id": "Electron_mvaIso_WP90",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90
+            "loose_electron_max_iso": 10000.0,
+            "loose_electron_id": "Electron_mvaIso_WP80",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90
         },
     )
 
@@ -406,8 +406,8 @@ def add_electron_config(configuration: Configuration):
             "tight_electron_max_abs_eta": 2.5,
             "tight_electron_max_abs_dxy": 0.045,
             "tight_electron_max_abs_dz": 0.2,
-            "tight_electron_max_iso": 0.4,
-            "tight_electron_id": "Electron_mvaIso_WP90",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90,
+            "tight_electron_max_iso": 10000.0,
+            "tight_electron_id": "Electron_mvaIso_WP80",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90,
         },
     )
 
@@ -472,8 +472,8 @@ def add_electron_config(configuration: Configuration):
                     "2025": "2025Prompt",
                 }
             ),
-            "ele_reco_sf_name": "RecoAbove20",  # TODO needs to be modified for 2022 and 2023
-            "ele_id_sf_name": "wp90iso",
+            # "ele_reco_sf_name": "RecoAbove20",  # TODO needs to be modified for 2022 and 2023
+            "ele_id_sf_name": "wp80iso",
             "ele_reco_sf_variation": "sf",  # "sf" is nominal, "sfup"/"sfdown" are up/down variations
             "ele_id_sf_variation": "sf",  # "sf" is nominal, "sfup"/"sfdown" are up/down variations
         },
@@ -592,7 +592,7 @@ def add_muon_config(configuration: Configuration):
             "tight_muon_max_abs_dxy": 0.045,
             "tight_muon_max_abs_dz": 0.2,
             "tight_muon_max_iso": 0.4,
-            "tight_muon_id": "Muon_mediumId",
+            "tight_muon_id": "Muon_tightId",
         },
     )
 
@@ -627,11 +627,20 @@ def add_muon_config(configuration: Configuration):
         {
             "muon_sf_file": EraModifier(
                 {
-                    **{
-                        _era: f"data/jsonpog-integration/POG/MUO/{_campaign}/muon_Z.json.gz"
-                        for _era, _campaign in CORRECTIONLIB_CAMPAIGNS.items()
-                        if _era in ERAS_RUN2
-                    },
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2017-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2018-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23CSep23-Summer23-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-18/muon_Z.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-18/muon_Z.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-25Prompt-Summer24-NanoAODv15/2026-04-28/muon_Z.json.gz",
+                },
+            ),
+            "muon_lowpt_sf_file": EraModifier(
+                {
                     "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
                     "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
                     "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2017-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
@@ -656,22 +665,46 @@ def add_muon_config(configuration: Configuration):
                     }
                 }
             ),
-            "muon_id_sf_name": "NUM_MediumID_DEN_TrackerMuons",  # correction for mediumId WP
+            "muon_id_sf_name": "NUM_TightID_DEN_TrackerMuons",  # correction for mediumId WP
+            "muon_id_lowpt_sf_name": "NUM_TightID_DEN_TrackerMuons",  # correction for mediumId WP
             "muon_iso_sf_name": EraModifier(  # correction for TightPFIso WP (PF isolation < 0.15)
                 {
                     **{
-                        _era: "NUM_TightRelIso_DEN_MediumID"
+                        _era: "NUM_TightRelIso_DEN_TightID"
                         for _era in ERAS_RUN2
                     },
                     **{
-                        _era: "NUM_TightPFIso_DEN_MediumID"
+                        _era: "NUM_TightPFIso_DEN_TightID"
                         for _era in ERAS_RUN3
                     },
                 },
             ),
             "muon_reco_sf_variation": "nominal",  # "nominal" is nominal, "systup"/"systdown" are up/down variations
             "muon_id_sf_variation": "nominal",  # "nominal" is nominal, "systup"/"systdown" are up/down variations
+            "muon_id_lowpt_sf_variation": "nominal",  # "nominal" is nominal, "systup"/"systdown" are up/down variations
             "muon_iso_sf_variation": "nominal",  # "nominal" is nominal, "systup"/"systdown" are up/down variations
+        },
+    )
+
+    # Muon energy scale corrections
+    configuration.add_config_parameters(
+        GLOBAL_SCOPES,
+        {
+            "muon_es_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"
+                        for _era in ERAS_RUN2
+                    },
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-18/muon_scalesmearing.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-18/muon_scalesmearing.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23CSep23-Summer23-NanoAODv12/2026-06-18/muon_scalesmearing.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-18/muon_scalesmearing.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-18/muon_scalesmearing.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-25Prompt-Summer24-NanoAODv15/2026-04-28/muon_scalesmearing.json.gz",
+                },
+            ),
+            "muon_es_variation": "nom",
         },
     )
 
@@ -1289,7 +1322,7 @@ def add_ak4jet_config(configuration: Configuration):
         {
             "ak4jet_min_pt": 30.0,
             "ak4jet_max_abs_eta": 2.5,
-            "ak4jet_id_wp": 2,  # 0 == fail, 2 == pass(tight) & fail(tightLepVeto), 6 == pass(tight) & pass(tightLepVeto)
+            "ak4jet_id_wp": 2,  # 0 == fail, 2 == pass(tight), 6 == pass(tightLepVeto)
             "ak4jet_apply_jet_horn_veto": "true",
             "ak4jet_puid_wp": EraModifier(
                 {
@@ -1338,7 +1371,7 @@ def add_ak4jet_config(configuration: Configuration):
         "2022postEE": "Summer22EE_22Sep2023_V4",
         "2023preBPix": "Summer23Prompt23_V4",
         "2023postBPix": "Summer23BPixPrompt23_V4",
-        "2024": "Summer24Prompt24_V3",
+        "2024": "Summer24Prompt24_V5",
         "2025": "Summer24Prompt25_V3",
     }
 
@@ -1376,7 +1409,7 @@ def add_ak4jet_config(configuration: Configuration):
                     "2022postEE": "Summer22EE_22Sep2023_JRV2",
                     "2023preBPix": "Summer23Prompt23_RunCv123_JRV2",
                     "2023postBPix": "Summer23BPixPrompt23_RunD_JRV2",
-                    "2024": "Summer24Prompt24_JRV1",
+                    "2024": "Summer24Prompt24_JRV2",
                     "2025": "Summer24Prompt25_JRV2",
                 }
             ),
@@ -1941,7 +1974,7 @@ def add_zpt_weight_config(configuration: Configuration):
                         _era: f"data/hleprare/DYweightCorrlib/DY_pTll_weights_{_era}_v5.json.gz"
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
                     },
-                    "2025": f"data/hleprare/DYweightCorrlib/DY_pTll_weights_2024_v5.json.gz",
+                    "2025": "data/hleprare/DYweightCorrlib/DY_pTll_weights_2024_v5.json.gz",
                 },
             ),
             "zpt_weight_name": "DY_pTll_reweighting",
@@ -2606,6 +2639,7 @@ def build_config(
         + jet_veto_map_producers
         + [
             ElectronPtCorrectionMC,
+            muons.MuonPtCorrection,
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
             jets.JetEnergyCorrectionMCRegressed,
@@ -3340,6 +3374,12 @@ def build_config(
             q.jpt_nano_2,
             q.jpt_raw_1,
             q.jpt_raw_2,
+            q.jpt_l1_1,
+            q.jpt_l1_2,
+            q.jpt_l2rel_1,
+            q.jpt_l2rel_2,
+            q.jpt_l2l3res_1,
+            q.jpt_l2l3res_2,
             q.jpt_regressed_1,
             q.jpt_regressed_2,
             q.jpt_regressed_resolution_1,
@@ -3383,10 +3423,10 @@ def build_config(
             q.metphi,
             q.met_raw,
             q.metphi_raw,
-            q.metSumEt_raw,
             q.met_uncorrected,
             q.metphi_uncorrected,
             q.metSumEt,
+            q.metSumEt_raw,
             q.metcov00,
             q.metcov01,
             q.metcov10,
