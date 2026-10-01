@@ -3,6 +3,14 @@ from code_generation.producer import Producer, ProducerGroup
 from code_generation.systematics import SystematicShift
 
 
+def _shifted_entries(entries: list[dict], **parameters) -> list[dict]:
+    """
+    Copies of the entries of a vector configuration (one per trigger) with the
+    given parameters set. The nominal entries stay untouched.
+    """
+    return [{**entry, **parameters} for entry in entries]
+
+
 def add_single_electron_trigger_shifts(
     configuration: Configuration,
     era: str,
@@ -23,14 +31,13 @@ def add_single_electron_trigger_shifts(
     exclude_samples = ["data", "embedding", "embedding_mc"]
 
     # Get the nominal configuration
-    nominal_config = configuration.config_parameters[scope]["ele_trigger_sf"][0]
+    nominal_config = configuration.config_parameters[scope]["ele_trigger_sf"]
 
     for direction in ["up", "down"]:
         # Create a new configuration for the shifted SFs
-        shifted_config = nominal_config.copy()
-        shifted_config.update({
-            "e_trigger_variation":  f"sf{direction}"
-        })
+        shifted_config = _shifted_entries(
+            nominal_config, e_trigger_variation=f"sf{direction}"
+        )
 
         # Add the shift to the configuration 
         configuration.add_shift(
@@ -38,13 +45,98 @@ def add_single_electron_trigger_shifts(
                 name=f"CMS_eff_e_trigger_{era}{direction.capitalize()}",
                 shift_config={
                     scope: {
-                        "ele_trigger_sf": [shifted_config],
+                        "ele_trigger_sf": shifted_config,
                     }
                 },
                 producers={scope: producers},
             ),
             exclude_samples=exclude_samples,
         )
+
+
+def _add_trigger_extrapolation_shifts(
+    configuration: Configuration,
+    name: str,
+    producers: list[Producer | ProducerGroup] | Producer | ProducerGroup,
+    scope: str,
+    config_key: str,
+    extrapolation_key: str,
+):
+    """
+    Add shifts for trigger scale factors from the payloads of the Tau Embedding
+    group, which carry no uncertainty. As in TauAnalysis-CROWN, the scale
+    factors are scaled by 1.02 (up) and 0.98 (down) via their extrapolation
+    factor.
+    """
+
+    # If producers is a single Producer or ProducerGroup, convert it to a list
+    if isinstance(producers, (Producer, ProducerGroup)):
+        producers = [producers]
+
+    # Exclude data, as well as embedding samples, which have their own trigger
+    # scale factors
+    exclude_samples = ["data", "embedding", "embedding_mc"]
+
+    # Get the nominal configuration
+    nominal_config = configuration.config_parameters[scope][config_key]
+
+    for direction, extrapolation in [("up", 1.02), ("down", 0.98)]:
+        # Create a new configuration for the shifted SFs
+        shifted_config = _shifted_entries(
+            nominal_config, **{extrapolation_key: extrapolation}
+        )
+
+        # Add the shift to the configuration
+        configuration.add_shift(
+            SystematicShift(
+                name=f"{name}{direction.capitalize()}",
+                shift_config={scope: {config_key: shifted_config}},
+                producers={scope: producers},
+            ),
+            exclude_samples=exclude_samples,
+        )
+
+
+def add_single_electron_trigger_extrapolation_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup] | Producer | ProducerGroup,
+    scope: str,
+):
+    """
+    Add shifts for single-electron trigger scale factors from the payloads of
+    the Tau Embedding group for the given era and scope. The shifts carry the
+    name of the single-electron trigger shifts of the EGM scale factors.
+    """
+    _add_trigger_extrapolation_shifts(
+        configuration,
+        f"CMS_eff_e_trigger_{era}",
+        producers,
+        scope,
+        config_key="singlelectron_trigger_sf_mc",
+        extrapolation_key="mc_electron_trg_extrapolation",
+    )
+
+
+def add_single_muon_trigger_extrapolation_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup] | Producer | ProducerGroup,
+    scope: str,
+):
+    """
+    Add shifts for single-muon trigger scale factors from the payloads of the
+    Tau Embedding group for the given era and scope. The shifts carry the name
+    of the single-muon trigger shifts of the MUO scale factors.
+    """
+    _add_trigger_extrapolation_shifts(
+        configuration,
+        f"CMS_eff_m_trigger_{era}",
+        producers,
+        scope,
+        config_key="singlemuon_trigger_sf_mc",
+        extrapolation_key="mc_muon_trg_extrapolation",
+    )
 
 
 def add_single_muon_trigger_shifts(
@@ -67,14 +159,13 @@ def add_single_muon_trigger_shifts(
     exclude_samples = ["data", "embedding", "embedding_mc"]
 
     # Get the nominal configuration
-    nominal_config = configuration.config_parameters[scope]["mu_trigger_sf"][0]
+    nominal_config = configuration.config_parameters[scope]["mu_trigger_sf"]
 
     for direction in ["up", "down"]:
         # Create a new configuration for the shifted SFs
-        shifted_config = nominal_config.copy()
-        shifted_config.update({
-            "mu_trigger_variation":  f"syst{direction}"
-        })
+        shifted_config = _shifted_entries(
+            nominal_config, m_trigger_variation=f"syst{direction}"
+        )
 
         # Add the shift to the configuration 
         configuration.add_shift(
@@ -82,7 +173,7 @@ def add_single_muon_trigger_shifts(
                 name=f"CMS_eff_m_trigger_{era}{direction.capitalize()}",
                 shift_config={
                     scope: {
-                        "mu_trigger_sf": [shifted_config],
+                        "mu_trigger_sf": shifted_config,
                     }
                 },
                 producers={scope: producers},
@@ -120,14 +211,12 @@ def add_double_electron_tau_trigger_shifts(
 
     for direction in ["up", "down"]:
         # Create a new configuration for the shifted SFs
-        shifted_config_leg1 = nominal_config_leg1.copy()[0]
-        shifted_config_leg1.update({
-            "et_trigger_leg1_variation": f"sf{direction}"
-        })
-        shifted_config_leg2 = nominal_config_leg2.copy()[0]
-        shifted_config_leg2.update({
-            "et_trigger_leg2_variation": direction
-        })
+        shifted_config_leg1 = _shifted_entries(
+            nominal_config_leg1, et_trigger_leg1_variation=f"sf{direction}"
+        )
+        shifted_config_leg2 = _shifted_entries(
+            nominal_config_leg2, et_trigger_leg2_variation=direction
+        )
 
         # Add the shift to the configuration 
         configuration.add_shift(
@@ -135,8 +224,8 @@ def add_double_electron_tau_trigger_shifts(
                 name=f"CMS_trig_t_etau_Medium_eff_{era}{direction.capitalize()}",
                 shift_config={
                     scope: {
-                        "double_eletau_trigger_leg1_sf": [shifted_config_leg1],
-                        "double_eletau_trigger_leg2_sf": [shifted_config_leg2],
+                        "double_eletau_trigger_leg1_sf": shifted_config_leg1,
+                        "double_eletau_trigger_leg2_sf": shifted_config_leg2,
                     }
                 },
                 producers={scope: producers},
@@ -174,14 +263,12 @@ def add_double_muon_tau_trigger_shifts(
 
     for direction in ["up", "down"]:
         # Create a new configuration for the shifted SFs
-        shifted_config_leg1 = nominal_config_leg1.copy()[0]
-        shifted_config_leg1.update({
-            "mt_trigger_leg1_variation": f"syst{direction}"
-        })
-        shifted_config_leg2 = nominal_config_leg2.copy()[0]
-        shifted_config_leg2.update({
-            "mt_trigger_leg2_variation": direction
-        })
+        shifted_config_leg1 = _shifted_entries(
+            nominal_config_leg1, mt_trigger_leg1_variation=f"syst{direction}"
+        )
+        shifted_config_leg2 = _shifted_entries(
+            nominal_config_leg2, mt_trigger_leg2_variation=direction
+        )
 
         # Add the shift to the configuration 
         configuration.add_shift(
@@ -189,8 +276,8 @@ def add_double_muon_tau_trigger_shifts(
                 name=f"CMS_trig_t_mutau_Medium_eff_{era}{direction.capitalize()}",
                 shift_config={
                     scope: {
-                        "double_mutau_trigger_leg1_sf": [shifted_config_leg1],
-                        "double_mutau_trigger_leg2_sf": [shifted_config_leg2],
+                        "double_mutau_trigger_leg1_sf": shifted_config_leg1,
+                        "double_mutau_trigger_leg2_sf": shifted_config_leg2,
                     }
                 },
                 producers={scope: producers},
@@ -228,14 +315,12 @@ def add_double_tautau_trigger_shifts(
 
     for direction in ["up", "down"]:
         # Create a new configuration for the shifted SFs
-        shifted_config_leg1 = nominal_config_leg1.copy()[0]
-        shifted_config_leg1.update({
-            "tt_trigger_leg1_variation": direction
-        })
-        shifted_config_leg2 = nominal_config_leg2.copy()[0]
-        shifted_config_leg2.update({
-            "tt_trigger_leg2_variation": direction
-        })
+        shifted_config_leg1 = _shifted_entries(
+            nominal_config_leg1, tt_trigger_leg1_variation=direction
+        )
+        shifted_config_leg2 = _shifted_entries(
+            nominal_config_leg2, tt_trigger_leg2_variation=direction
+        )
 
         # Add the shift to the configuration 
         configuration.add_shift(
@@ -243,8 +328,8 @@ def add_double_tautau_trigger_shifts(
                 name=f"CMS_trig_t_ditau_Medium_eff_{era}{direction.capitalize()}",
                 shift_config={
                     scope: {
-                        "double_tautau_trigger_leg1_sf": [shifted_config_leg1],
-                        "double_tautau_trigger_leg2_sf": [shifted_config_leg2],
+                        "double_tautau_trigger_leg1_sf": shifted_config_leg1,
+                        "double_tautau_trigger_leg2_sf": shifted_config_leg2,
                     }
                 },
                 producers={scope: producers},
