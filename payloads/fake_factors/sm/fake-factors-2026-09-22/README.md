@@ -42,6 +42,6 @@ with ShapeSmith on the embedding production replaces them, in a new dated direct
   `QCD_non_closure_CorrStatShiftUp` 103 (median 4.7), `QCD_non_closure_CorrSystMCShiftUp` 65. All tt
   shifts stay within 0.63-1.53.
 
-KingMaker's framework-tarball hash does not cover `payloads/`, and friend outputs are keyed by
-production and friend tag only: friends made with a new payload need `force_repack_tarball` and a
-new `--friend-tag`.
+KingMaker reuses an existing friend tarball and keys friend outputs by production and friend tag only:
+friends made with a new payload need a new `--friend-tag` (`force_repack_tarball` does not help, the
+framework tarball holds no payloads).
