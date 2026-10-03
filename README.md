@@ -85,9 +85,10 @@ input stays nominal under that shift (info log only).
 
 Payloads: the NMSSM Run-3 ones stay at `payloads/fake_factors/<version>/<era>/` (2022 and 2023:
 `fake-factors-2026-06-10`, 2024 and 2025: `fake-factors-2026-09-26`, which has no 2024 tt payload), new ones go to
-`payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payload is the commissioning payload
-`payloads/fake_factors/sm/fake-factors-2026-09-22/2018/` (see its README; its shifts are for wiring
-checks only). A new payload goes into a new dated directory, and only the entry in `SM_PAYLOAD_DIRS` /
+`payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payload is
+`payloads/fake_factors/sm/fake-factors-2026-10-03/2018/`, measured with ShapeSmith on `sm2018_binned_v5`
+with embedding (see its README); jvoss's `fake-factors-2026-09-22` stays as the base of the edited test
+payloads. A new payload goes into a new dated directory, and only the entry in `SM_PAYLOAD_DIRS` /
 `NMSSM_PAYLOAD_DIRS` changes. Friend tarballs and outputs are keyed by production and friend tag
 only, so producing friends with a new payload on an existing production needs a new `--friend-tag`.
 

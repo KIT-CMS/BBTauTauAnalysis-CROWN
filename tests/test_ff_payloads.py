@@ -12,11 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from analysis_configurations.bbtautau import ff_payloads
+from analysis_configurations.bbtautau import ff_payloads, sm_fake_factors
 from analysis_configurations.bbtautau.producers import fakefactors
 
-PAYLOADS = Path(__file__).resolve().parents[1] / "payloads" / "fake_factors"
-SM_2018 = PAYLOADS / "sm" / "fake-factors-2026-09-22" / "2018"
+ANALYSIS = Path(__file__).resolve().parents[1]
+PAYLOADS = ANALYSIS / "payloads" / "fake_factors"
+SM_2018 = ANALYSIS / sm_fake_factors.SM_PAYLOAD_DIRS["2018"]  # the production payload
+SM_2018_COMMISSIONING = PAYLOADS / "sm" / "fake-factors-2026-09-22" / "2018"  # base of the edited payloads
 NMSSM_2023 = PAYLOADS / "fake-factors-2026-06-10" / "2023postBPix"
 NMSSM_2025 = PAYLOADS / "fake-factors-2026-09-26" / "2025"
 LEGS = [("et", "lt"), ("mt", "lt"), ("tt", "leading"), ("tt", "subleading")]
@@ -129,7 +131,7 @@ def test_shift_names_normalize_only_the_direction():
 def sm_mt():
     """Editable copies of the two SM mt payloads, written by ``write`` to a directory."""
     return {
-        kind: copy.deepcopy(_load(SM_2018 / f"{kind}_mt.json.gz"))
+        kind: copy.deepcopy(_load(SM_2018_COMMISSIONING / f"{kind}_mt.json.gz"))
         for kind in ("fake_factors", "FF_corrections")
     }
 
@@ -244,7 +246,7 @@ def test_input_that_is_no_quantity(tmp_path, sm_mt):
 
 def test_duplicate_shift_name_across_tt_legs(tmp_path):
     payloads = {
-        kind: copy.deepcopy(_load(SM_2018 / f"{kind}_tt.json.gz"))
+        kind: copy.deepcopy(_load(SM_2018_COMMISSIONING / f"{kind}_tt.json.gz"))
         for kind in ("fake_factors", "FF_corrections")
     }
     subleading = correction(payloads, "QCD_subleading_fake_factors")

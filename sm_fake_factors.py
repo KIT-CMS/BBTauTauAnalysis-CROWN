@@ -4,7 +4,7 @@ from code_generation.friend_trees import FriendTreeConfiguration  # noqa: F401  
 from .friend_common import build_fake_factor_friend
 
 # Payload directory per era, relative to the analysis directory.
-SM_PAYLOAD_DIRS = {"2018": "payloads/fake_factors/sm/fake-factors-2026-09-22/2018"}
+SM_PAYLOAD_DIRS = {"2018": "payloads/fake_factors/sm/fake-factors-2026-10-03/2018"}
 AVAILABLE_ERAS = list(SM_PAYLOAD_DIRS)
 
 
