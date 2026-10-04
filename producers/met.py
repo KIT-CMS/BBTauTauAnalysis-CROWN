@@ -4,7 +4,7 @@ from analysis_configurations.quantities import nanoAODv12_run3
 from code_generation.producer import Producer, ProducerGroup
 
 from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2, ERAS_RUN3
-from ..helpers import era_producer_groups
+from ..helpers import era_producer_groups, get_for_era, override_eras
 
 #
 # HELPER FUNCTIONS
@@ -82,6 +82,24 @@ def met_cov_producers(
 # PF MET covariance matrix elements
 # - In nanoAODv12, the MET covariance matrix elements are only available for PFMET.
 # - In nanoAODv15, the MET covariance matrix elements can be taken from PuppiMET.
+#   This holds for Run 3 (2024, 2025) as well as for the Run-2 UL reprocessing,
+#   which renames the PF MET collection MET_* -> PFMET_* and drops the v9/v12
+#   MET_covXX/XY/YY branches; the output quantities are identical either way.
+MetCovPuppi = met_cov_producers(
+    name="MetCov",
+    input_quantities={
+        "met_cov_xx": nanoAOD.PuppiMET_covXX,
+        "met_cov_xy": nanoAOD.PuppiMET_covXY,
+        "met_cov_yy": nanoAOD.PuppiMET_covYY,
+    },
+    output_quantities={
+        "met_cov_00": q.metcov00,
+        "met_cov_01": q.metcov01,
+        "met_cov_10": q.metcov10,
+        "met_cov_11": q.metcov11,
+    },
+    scopes=GLOBAL_SCOPES,
+)
 MetCov = {
     tuple(ERAS_RUN2) + ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): met_cov_producers(
         name="MetCov",
@@ -98,21 +116,7 @@ MetCov = {
         },
         scopes=GLOBAL_SCOPES,
     ),
-    ("2024", "2025"): met_cov_producers(
-        name="MetCov",
-        input_quantities={
-            "met_cov_xx": nanoAOD.PuppiMET_covXX,
-            "met_cov_xy": nanoAOD.PuppiMET_covXY,
-            "met_cov_yy": nanoAOD.PuppiMET_covYY,
-        },
-        output_quantities={
-            "met_cov_00": q.metcov00,
-            "met_cov_01": q.metcov01,
-            "met_cov_10": q.metcov10,
-            "met_cov_11": q.metcov11,
-        },
-        scopes=GLOBAL_SCOPES,
-    ),
+    ("2024", "2025"): MetCovPuppi,
 }
 
 # PuppiMET vector without recoil corrections and missing propagation of changes
@@ -247,22 +251,35 @@ MetJetCorrection = {
 }
 
 # MET functions running in the global scope
-MetGlobal = era_producer_groups(
-    "MetGlobal",
-    [
-        MetCov,
-        MetVectorUncorrected,
-        MetPtUncorrected,
-        MetPhiUncorrected,
-        MetSumEt,
-        MetVectorRaw,
-        MetPtRaw,
-        MetPhiRaw,
-        MetSumEtRaw,
-        MetJetCorrection,
-    ],
-    GLOBAL_SCOPES,
-)
+_MET_GLOBAL_MEMBERS = [
+    MetCov,
+    MetVectorUncorrected,
+    MetPtUncorrected,
+    MetPhiUncorrected,
+    MetSumEt,
+    MetVectorRaw,
+    MetPtRaw,
+    MetPhiRaw,
+    MetSumEtRaw,
+    MetJetCorrection,
+]
+MetGlobal = era_producer_groups("MetGlobal", _MET_GLOBAL_MEMBERS, GLOBAL_SCOPES)
+
+
+def met_global(met_cov_overrides=None):
+    """
+    `MetGlobal` with the covariance producer replaced for the eras in
+    `met_cov_overrides` (era -> producer). The Run-2 NanoAOD-v15 inputs drop
+    the v9/v12 MET_covXX/XY/YY branches and take the covariance from PuppiMET
+    like 2024/2025; every other member reads branches present in v15.
+    """
+    if not met_cov_overrides:
+        return MetGlobal
+    return era_producer_groups(
+        "MetGlobal",
+        [override_eras(MetCov, met_cov_overrides)] + _MET_GLOBAL_MEMBERS[1:],
+        GLOBAL_SCOPES,
+    )
 
 # Propagate changes in the lepton energy scales to MET
 MetLeptonCorrection = Producer(

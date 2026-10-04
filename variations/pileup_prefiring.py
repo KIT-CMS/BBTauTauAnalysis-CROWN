@@ -1,5 +1,6 @@
 from code_generation.configuration import Configuration
 from code_generation.producer import Producer, ProducerGroup
+from code_generation.systematics import SystematicShiftByQuantity
 from ..quantities import nanoAOD_run2
 
 from ._util import add_systematic_shift, KeyValueShift
@@ -60,16 +61,19 @@ def add_prefiring_shifts(
     # Extract the year from the era string (e.g., "2016preVFP" -> "2016")
     year = era[:4]
 
-    # Add up and down variation for each shift
-    for direction in ["up", "down"]:
+    # Add up and down variation for each shift, the NanoAOD branches carry the
+    # suffixes "Up" and "Dn"
+    for direction, suffix in [("up", "Up"), ("down", "Dn")]:
         configuration.add_shift(
-            name=f"CMS_ecal_prefiring_{year}{direction.capitalize()}",
-            quantity_change={
-                nanoAOD_run2.L1PreFiringWeight_Nom: getattr(
-                    nanoAOD_run2,
-                    f"L1PreFiringWeight_{direction.capitalize()}",
-                ),
-            },
-            scopes=["global"],
+            SystematicShiftByQuantity(
+                name=f"CMS_ecal_prefiring_{year}{direction.capitalize()}",
+                quantity_change={
+                    nanoAOD_run2.L1PreFiringWeight_Nom: getattr(
+                        nanoAOD_run2,
+                        f"L1PreFiringWeight_{suffix}",
+                    ),
+                },
+                scopes=["global"],
+            ),
             exclude_samples=exclude_samples,
         )

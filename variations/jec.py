@@ -7,6 +7,18 @@ from ..producers import jets as jets
 from ..producers import scalefactors as scalefactors
 
 
+# Era token of the era-specific JES sources in the JME payloads, e.g.
+# Regrouped_Absolute_2022EE, where it differs from the CROWN era name
+JES_SOURCE_ERA = {
+    "2016preVFP": "2016APV",
+    "2016postVFP": "2016",
+    "2022preEE": "2022",
+    "2022postEE": "2022EE",
+    "2023preBPix": "2023",
+    "2023postBPix": "2023BPix",
+}
+
+
 def _add_jes_shift(
     configuration: Configuration,
     shift_name: str,
@@ -42,7 +54,7 @@ def _add_jes_shift(
         shift_config = {
             jec_scopes: {
                 "ak4jet_jes_shift_factor": jes_shift_factor[direction],
-                "ak4jet_jes_sources": jes_source_name,
+                "ak4jet_jes_source": jes_source_name,
             },
         }
         producers = {jec_scopes: jec_producers}
@@ -137,13 +149,14 @@ def add_jec_shifts(
 
     # Groups of uncertainty sources in jet energy scale corrections. The
     # HEMIssue uncertainty is only included in 2018
+    jes_era = JES_SOURCE_ERA.get(era, era)
     jes_sources = [
         {
             "correction_name": "Regrouped_Absolute",
             "cms_name": "CMS_scale_j_Absolute",
         },
         {
-            "correction_name": f"Regrouped_Absolute_{era}",
+            "correction_name": f"Regrouped_Absolute_{jes_era}",
             "cms_name": f"CMS_scale_j_Absolute_{era}",
         },
         {
@@ -155,7 +168,7 @@ def add_jec_shifts(
             "cms_name": "CMS_scale_j_BBEC1",
         },
         {
-            "correction_name": f"Regrouped_BBEC1_{era}",
+            "correction_name": f"Regrouped_BBEC1_{jes_era}",
             "cms_name": f"CMS_scale_j_BBEC1_{era}",
         },
         {
@@ -163,7 +176,7 @@ def add_jec_shifts(
             "cms_name": "CMS_scale_j_HF",
         },
         {
-            "correction_name": f"Regrouped_HF_{era}",
+            "correction_name": f"Regrouped_HF_{jes_era}",
             "cms_name": f"CMS_scale_j_HF_{era}",
         },
         {
@@ -171,7 +184,7 @@ def add_jec_shifts(
             "cms_name": "CMS_scale_j_EC2",
         },
         {
-            "correction_name": f"Regrouped_EC2_{era}",
+            "correction_name": f"Regrouped_EC2_{jes_era}",
             "cms_name": f"CMS_scale_j_EC2_{era}",
         },
         {
@@ -179,7 +192,7 @@ def add_jec_shifts(
             "cms_name": "CMS_scale_j_RelativeBal",
         },
         {
-            "correction_name": f"Regrouped_RelativeSample_{era}",
+            "correction_name": f"Regrouped_RelativeSample_{jes_era}",
             "cms_name": f"CMS_scale_j_RelativeSample_{era}",
         },
     ]
