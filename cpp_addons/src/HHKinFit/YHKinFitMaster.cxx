@@ -617,7 +617,7 @@ double YHKinFitMaster::ConstrainEnergy(ROOT::Math::PtEtaPhiEVector p4_mother,
 
     int loopCount = 0;
 
-    while (abs(M_reco - M_truth) > 0.0001) {
+    while (std::abs(M_reco - M_truth) > 0.0001) {
         loopCount++;
 
         if (loopCount >= 100) {

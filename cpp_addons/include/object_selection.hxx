@@ -42,10 +42,10 @@ inline auto select_jet(const ROOT::RVec<float> &pt,
     // jet horn veto: veto jets in 2.5 < eta < 3.0 with a pt smaller than 50 GeV
     // jets that have this flag set to "true" shall be ignored, i.e., selected
     // jets should have !jet_horn_veto
-    auto jet_horn_veto = (abs(eta) > 2.5) && (abs(eta) < 3.0) && (pt < 50.0);
+    auto jet_horn_veto = (std::abs(eta) > 2.5) && (std::abs(eta) < 3.0) && (pt < 50.0);
 
     // create the selection mask
-    auto mask = ((pt > min_pt) && (abs(eta) < abs_max_eta) && (id >= id_wp) &&
+    auto mask = ((pt > min_pt) && (std::abs(eta) < abs_max_eta) && (id >= id_wp) &&
                  !(apply_jet_horn_veto && jet_horn_veto));
     return mask;
 }

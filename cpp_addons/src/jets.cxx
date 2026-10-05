@@ -182,8 +182,8 @@ float apply_jer(
         if (
             std::stoi(era.substr(0, 4)) >= 2022
             && std::stoi(era.substr(0, 4)) <= 2024
-            && abs(jet_eta) > 2.5
-            && abs(jet_eta) < 3.0
+            && std::abs(jet_eta) > 2.5
+            && std::abs(jet_eta) < 3.0
         ) {
             c_jer = 1.0;
         } else {
@@ -1079,12 +1079,12 @@ ROOT::RDF::RNode CorrectJetIDRun3NanoV12(
         for (int i = 0; i < jet_pt.size(); ++i) {
             // evaluate if the jet passes the tight WP
             bool pass_tight = false;
-            if (abs(jet_eta.at(i)) <= 2.7) {
+            if (std::abs(jet_eta.at(i)) <= 2.7) {
                 pass_tight = jet_id.at(i) & (1 << 1);
-            } else if (abs(jet_eta.at(i)) > 2.7 && abs(jet_eta.at(i)) <= 3.0) {
+            } else if (std::abs(jet_eta.at(i)) > 2.7 && std::abs(jet_eta.at(i)) <= 3.0) {
                 pass_tight =
                     (jet_id.at(i) & (1 << 1)) && (jet_ne_hef.at(i) < 0.99);
-            } else if (abs(jet_eta.at(i)) > 3.0) {
+            } else if (std::abs(jet_eta.at(i)) > 3.0) {
                 pass_tight =
                     (jet_id.at(i) & (1 << 1)) && (jet_ne_em_ef.at(i) < 0.4);
             }
@@ -1092,7 +1092,7 @@ ROOT::RDF::RNode CorrectJetIDRun3NanoV12(
             // evaluate if the jet passes the tight WP and fulfills the lepton
             // veto
             bool pass_tight_lep_veto = false;
-            if (abs(jet_eta.at(i)) <= 2.7) {
+            if (std::abs(jet_eta.at(i)) <= 2.7) {
                 pass_tight_lep_veto = pass_tight && (jet_mu_ef.at(i) < 0.8) &&
                                       (jet_ch_em_ef.at(i) < 0.8);
             } else {
