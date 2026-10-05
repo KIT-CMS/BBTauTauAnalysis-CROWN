@@ -141,7 +141,7 @@ boostedLVMu1 = Producer(
     name="boostedLVMu1",
     call="lorentzvector::Build({df}, {output}, {input}, 0)",
     input=[
-        nanoAOD.Muon_pt,
+        q.Muon_pt_corrected,
         nanoAOD.Muon_eta,
         nanoAOD.Muon_phi,
         nanoAOD.Muon_mass,
@@ -154,7 +154,7 @@ boostedLVMu1_uncorrected = Producer(
     name="boostedLVMu1_uncorrected",
     call="lorentzvector::Build({df}, {output}, {input}, 0)",
     input=[
-        nanoAOD.Muon_pt,
+        q.Muon_pt_corrected,
         nanoAOD.Muon_eta,
         nanoAOD.Muon_phi,
         nanoAOD.Muon_mass,
