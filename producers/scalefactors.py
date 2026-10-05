@@ -223,6 +223,7 @@ def _create_tau_id_vsjet_sf_producer(
     # define names of common parameters
     vsjet_wp = "vsjet_wp"
     tau_ides_sf_vsele_wp = "tau_ides_sf_vsele_wp"
+    tau_ides_sf_vsmu_wp = "tau_ides_sf_vsmu_wp"
     tau_id_sf_vsjet_sf_dependence = "tau_id_sf_vsjet_sf_dependence"
 
     call_fn = ""
@@ -231,6 +232,7 @@ def _create_tau_id_vsjet_sf_producer(
         "correctionManager",
         "{output}", 
         "{input}", 
+        "\"{era}\"", 
         "\"{tau_ides_sf_file}\"",
         "\"{discriminator}\"", 
     ]
@@ -238,6 +240,7 @@ def _create_tau_id_vsjet_sf_producer(
     parameters.extend([
         f"\"{{{vsjet_wp}}}\"", 
         f"\"{{{tau_ides_sf_vsele_wp}}}\"", 
+        f"\"{{{tau_ides_sf_vsmu_wp}}}\"", 
         f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"",
         "\"{tau_id_sf_vsjet_variation}\""
     ])
@@ -533,7 +536,7 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
 #########################
 Ele_1_Reco_SF = Producer(
     name="Ele_1_Reco_SF",
-    call="""physicsobject::electron::scalefactor::RecoRun3(
+    call="""physicsobject::electron::scalefactor::Reco(
         {df}, 
         correctionManager, 
         {output}, 
@@ -549,7 +552,7 @@ Ele_1_Reco_SF = Producer(
 )
 Ele_2_Reco_SF = Producer(
     name="Ele_2_Reco_SF",
-    call="""physicsobject::electron::scalefactor::RecoRun3(
+    call="""physicsobject::electron::scalefactor::Reco(
         {df}, 
         correctionManager, 
         {output}, 
