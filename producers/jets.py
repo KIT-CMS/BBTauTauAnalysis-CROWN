@@ -169,6 +169,25 @@ JetEmEf = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
+# Create a dummy delta phi column (value 0) for this collection for 2022-2023,
+# use the NANOAOD value otherwise
+JetMuonSubtrDeltaPhi = {
+    tuple(["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]): Producer(
+        name="JetMuonSubtrDeltaPhi",
+        call="event::quantity::Define<float>({df}, {output}, {input}, 0.0)",
+        input=[nanoAOD.nJet],
+        output=[q.Jet_muonSubtrDeltaPhi],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN2 + ["2024", "2025"]): Producer(
+        name="JetMuonSubtrDeltaPhi",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Jet_muonSubtrDeltaPhi],
+        output=[q.Jet_muonSubtrDeltaPhi],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
+
 # Jet pt correction factor for PNet/UParT-based regression
 # - For 2022 and 2023, the PNet regression is used
 # - For Run 2 and from 2024 on, the UParT regression is used
@@ -280,6 +299,7 @@ AuxJetCollectionQuantities = era_producer_groups(
         JetRawMass,
         JetRawMuonSubtrPt,
         JetEmEf,
+        JetMuonSubtrDeltaPhi,
         JetRegPtRawCorr,
         JetRegPtRawCorrNeutrino,
         JetRegPtRawRes,
@@ -355,6 +375,25 @@ CorrT1METJetID = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
+# Create a dummy delta phi column (value 0) for this collection for 2022-2023,
+# use the NANOAOD value otherwise
+CorrT1METJetMuonSubtrDeltaPhi = {
+    tuple(["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]): Producer(
+        name="CorrT1METJetMuonSubtrDeltaPhi",
+        call="event::quantity::Define<float>({df}, {output}, {input}, 0.0)",
+        input=[nanoAOD.nCorrT1METJet],
+        output=[q.CorrT1METJet_muonSubtrDeltaPhi],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN2 + ["2024", "2025"]): Producer(
+        name="CorrT1METJetMuonSubtrDeltaPhi",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.CorrT1METJet_muonSubtrDeltaPhi],
+        output=[q.CorrT1METJet_muonSubtrDeltaPhi],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
+
 # Group of auxiliary `CorrT1METJet` collection quantities
 AuxCorrT1METJetCollectionQuantities = era_producer_groups(
     "AuxCorr1T1METJetCollectionQuantities",
@@ -362,6 +401,7 @@ AuxCorrT1METJetCollectionQuantities = era_producer_groups(
         CorrT1METJetRawMuonSubtrPt,
         CorrT1METJetID,
         CorrT1METJetEmEF,
+        CorrT1METJetMuonSubtrDeltaPhi,
     ],
     GLOBAL_SCOPES,
 )
@@ -448,6 +488,11 @@ Type1JetCollection = ProducerGroup(
             (
                 (q.Jet_EmEF, q.CorrT1METJet_EmEnergyFraction),
                 q.Type1Jet_EmEF,
+                "float",
+            ),
+            (
+                (q.Jet_muonSubtrDeltaPhi, q.CorrT1METJet_muonSubtrDeltaPhi),
+                q.Type1Jet_muonSubtrDeltaPhi,
                 "float",
             ),
         ]

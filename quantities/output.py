@@ -762,6 +762,7 @@ Jet_regPtRawCorrNeutrino = Quantity("Jet_regPtRawCorrNeutrino")
 Jet_regPtRawRes = Quantity("Jet_regPtRawRes")
 Jet_rawPtRegressed = Quantity("Jet_rawPtRegressed")
 Jet_rawMassRegressed = Quantity("Jet_rawMassRegressed")
+Jet_muonSubtrDeltaPhi = Quantity("Jet_muonSubtrDeltaPhi_new")
 
 # Outputs of the jet energy calibration
 Jet_jecResult = Quantity("Jet_jecResult")
@@ -792,6 +793,7 @@ Jet_rawPtRegressedResolution = Quantity("Jet_rawPtRegressedResolution")
 CorrT1METJet_rawMuonSubtrPt = Quantity("CorrT1METJet_rawMuonSubtrPt")
 CorrT1METJet_ID = Quantity("CorrT1METJet_ID")
 CorrT1METJet_EmEnergyFraction = Quantity("CorrT1METJet_EmEnergyFraction")
+CorrT1METJet_muonSubtrDeltaPhi = Quantity("CorrT1METJet_muonSubtrDeltaPhi_new")
 
 #endregion
 
@@ -809,6 +811,7 @@ Type1Jet_phi = Quantity("Type1Jet_phi")
 Type1Jet_area = Quantity("Type1Jet_area")
 Type1Jet_ID = Quantity("Type1Jet_ID")
 Type1Jet_EmEF = Quantity("Type1Jet_EmEF")
+Type1Jet_muonSubtrDeltaPhi = Quantity("Type1Jet_muonSubtrDeltaPhi")
 
 # Outputs of the jet energy calibration
 Type1Jet_jecResult = Quantity("Type1Jet_jecResult")
