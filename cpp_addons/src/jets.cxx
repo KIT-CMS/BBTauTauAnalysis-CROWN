@@ -11,6 +11,7 @@
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
 #include <algorithm>
+#include <cmath>
 
 namespace physicsobject {
 

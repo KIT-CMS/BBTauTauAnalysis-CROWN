@@ -8,6 +8,7 @@
 #include "ROOT/RDataFrame.hxx"
 #include "ROOT/RVec.hxx"
 #include <vector>
+#include <cmath>
 
 // namespace xyh
 namespace xyh {

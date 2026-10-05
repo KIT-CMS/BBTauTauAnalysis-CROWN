@@ -7,6 +7,7 @@
 #include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
+#include <cmath>
 
 YHKinFitMaster::YHKinFitMaster(
     ROOT::Math::PtEtaPhiEVector bjet1, float bjet_reso_1,
