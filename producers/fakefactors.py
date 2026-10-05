@@ -85,9 +85,9 @@ FakeFactorClosureCorrectionSemileptonicQCDInput = Producer(
     )
     """,
     input=[
-        q.pt_1,
         q.tau_decaymode_2,
         q.mass_2,
+        q.pt_1,
     ],
     output=[q.ff_corr_closure_input_qcd],
     scopes=SL_SCOPES,
@@ -103,9 +103,9 @@ FakeFactorClosureCorrectionSemileptonicTTInput = Producer(
     )
     """,
     input=[
-        q.pt_1,
         q.tau_decaymode_2,
         q.mass_2,
+        q.pt_1,
     ],
     output=[q.ff_corr_closure_input_tt],
     scopes=SL_SCOPES,
@@ -192,11 +192,11 @@ FakeFactorClosureCorrectionFullhadronicLeadingQCDInput = Producer(
     )
     """,
     input=[
-        q.pt_2,
         q.tau_decaymode_1,
         q.tau_decaymode_2,
         q.mass_1,
         q.mass_2,
+        q.pt_2,
     ],
     output=[q.ff_1_corr_closure_input_qcd],
     scopes=FH_SCOPES,
@@ -212,11 +212,11 @@ FakeFactorClosureCorrectionFullhadronicLeadingTTInput = Producer(
     )
     """,
     input=[
-        q.pt_2,
         q.tau_decaymode_1,
         q.tau_decaymode_2,
         q.mass_1,
         q.mass_2,
+        q.pt_2,
     ],
     output=[q.ff_1_corr_closure_input_tt],
     scopes=FH_SCOPES,
@@ -299,11 +299,11 @@ FakeFactorClosureCorrectionFullhadronicSubleadingQCDInput = Producer(
     )
     """,
     input=[
-        q.pt_1,
         q.tau_decaymode_2,
         q.tau_decaymode_1,
         q.mass_2,
         q.mass_1,
+        q.pt_1,
     ],
     output=[q.ff_2_corr_closure_input_qcd],
     scopes=FH_SCOPES,
@@ -319,12 +319,11 @@ FakeFactorClosureCorrectionFullhadronicSubleadingTTInput = Producer(
     )
     """,
     input=[
-
-        q.pt_1,
         q.tau_decaymode_2,
         q.tau_decaymode_1,
         q.mass_2,
         q.mass_1,
+        q.pt_1,
     ],
     output=[q.ff_2_corr_closure_input_tt],
     scopes=FH_SCOPES,
