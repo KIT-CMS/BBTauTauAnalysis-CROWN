@@ -2148,6 +2148,10 @@ def add_met_corrections_config(configuration: Configuration):
             "t1jet_min_pt": 15.0,
             "t1jet_max_abs_eta": 5.2,
             "t1jet_max_em_ef": 0.9,
+            # jets counted by the Run-2 recoil correction with the Run-2
+            # NanoAOD-v15 inputs (HTT recipe)
+            "recoil_jet_min_pt": 30.0,
+            "recoil_jet_max_abs_eta": 4.7,
             "propagate_jets_to_met": SampleModifier(
                 {
                     "data": False,
@@ -2203,6 +2207,8 @@ def add_met_corrections_config(configuration: Configuration):
             "apply_recoil_response_systematic": False,
             "recoil_systematic_shift_up": False,
             "recoil_systematic_shift_down": False,
+            # jets counted with the Run-2 NanoAOD-v15 inputs (HTT recipe)
+            "recoil_jet_veto_min_delta_r": 0.5,
         },
     )
 
@@ -2684,17 +2690,22 @@ def build_config(
     MetGlobal = get_for_era(met.met_global(met_cov_overrides), era)
 
     # MET scope quantities producer
-    # For a detailed description, see producers/met.py
-    MetScopes = get_for_era(met.MetScopes, era)
+    # For a detailed description, see producers/met.py. With the v15 inputs, the
+    # Run-2 recoil correction counts the jets of the HTT recipe.
+    MetScopes = v15_or(met.MetScopesWithRecoilJets, met.MetScopes)
+    MetRecoilCorrection = v15_or(
+        met.MetRecoilCorrectionWithRecoilJets, met.MetRecoilCorrection
+    )
 
     # Base jet selection
     # - In Run 2, the CHS collection is used and pileup ID is applied.
     # - In Run 3, the PUPPI collection is used and no pileup ID is applied; the jet ID needs to
     #   be corrected in 2022 and 2023 due to a bug.
     # - In 2024, the jet ID must be calculated from base NANOAOD variables and a correction JSON
-    # - The Run-2 v15 inputs are AK4 PUPPI without Jet_puId, so no pileup ID.
+    # - The Run-2 v15 inputs are AK4 PUPPI without Jet_puId, so no pileup ID;
+    #   they also select the jets the Run-2 recoil correction counts.
     base_jet_selection_producers = v15_or(
-        [jets.BaseJetSelectionWithoutPUID],
+        [jets.BaseJetSelectionWithoutPUID, met.GoodRecoilJets],
         {
             tuple(ERAS_RUN2): [jets.BaseJetSelectionWithPUID],
             tuple(ERAS_RUN3): [jets.BaseJetSelectionWithoutPUID],
@@ -3145,7 +3156,7 @@ def build_config(
     configuration.add_modification_rule(
         SCOPES,
         ReplaceProducer(
-            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
+            producers=[MetRecoilCorrection, met.RenameMet],
             exclude_samples=[
                 "dyjets_madgraph",
                 "dyjets_amcatnlo",
@@ -4204,7 +4215,7 @@ def build_config(
     add_recoil_calibration_shifts(
         configuration,
         era,
-        get_for_era(met.MetRecoilCorrection, era),
+        MetRecoilCorrection,
         # the merged SM "wjets" joins via sm_merged_dyw (empty for NMSSM)
         _get_recoil_calibration_samples() + sm_merged_dyw,
     )

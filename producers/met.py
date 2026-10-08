@@ -303,9 +303,57 @@ MetLeptonCorrection = Producer(
     scopes=SCOPES,
 )
 
-# Recoil correction evaluation via correctionlib
-MetRecoilCorrection = {
-    tuple(ERAS_RUN2): Producer(
+# Jets counted by the Run-2 recoil correction with the Run-2 NanoAOD-v15
+# inputs, following the HTT recipe: pT > 30 GeV, |eta| < 4.7, jet ID, and
+# DeltaR > 0.5 to both pair objects. The legacy Run-2 path counts all jets.
+GoodRecoilJets = Producer(
+    name="GoodRecoilJets",
+    call="xyh::object_selection::jet({df}, {output}, {input}, {recoil_jet_min_pt}, {recoil_jet_max_abs_eta}, {ak4jet_id_wp}, false)",
+    input=[
+        q.Jet_correctedPt,
+        nanoAOD.Jet_eta,
+        q.Jet_ID,
+    ],
+    output=[q.good_recoil_jets_mask],
+    scopes=GLOBAL_SCOPES,
+)
+
+VetoOverlappingRecoilJets = Producer(
+    name="VetoOverlappingRecoilJets",
+    call="physicsobject::jet::VetoOverlappingJets({df}, {output}, {input}, {recoil_jet_veto_min_delta_r})",
+    input=[
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.p4_1,
+        q.p4_2,
+    ],
+    output=[q.recoil_jet_overlap_veto_mask],
+    scopes=SCOPES,
+)
+
+RecoilJetsMask = Producer(
+    name="RecoilJetsMask",
+    call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
+    input=[q.good_recoil_jets_mask, q.recoil_jet_overlap_veto_mask],
+    output=[q.recoil_jets_mask],
+    scopes=SCOPES,
+)
+
+RecoilJetPt = Producer(
+    name="RecoilJetPt",
+    call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
+    input=[q.Jet_correctedPt, q.recoil_jets_mask],
+    output=[q.Jet_recoilPt],
+    scopes=SCOPES,
+)
+
+
+def _recoil_correction_run2(jet_pt):
+    """
+    Run-2 recoil correction from the ROOT files. It counts the jets above
+    30 GeV in `jet_pt` (+1 for W+jets).
+    """
+    return Producer(
         name="RecoilCorrectionMet",
         call="""
         met::RecoilCorrection(
@@ -326,11 +374,16 @@ MetRecoilCorrection = {
             q.met_p4_leptoncorrected,
             q.gen_boson_p4,
             q.gen_vis_boson_p4,
-            q.Jet_correctedPt,
+            jet_pt,
         ],
         output=[q.met_p4_recoilcorrected],
         scopes=SCOPES,
-    ),
+    )
+
+
+# Recoil correction evaluation via correctionlib
+MetRecoilCorrection = {
+    tuple(ERAS_RUN2): _recoil_correction_run2(q.Jet_correctedPt),
     tuple(ERAS_RUN3): Producer(
         name="RecoilCorrectionMet",
         call=(
@@ -367,6 +420,24 @@ MetScopes = era_producer_groups(
         MetRecoilCorrection,
     ],
     SCOPES,
+)
+
+# The same with the Run-2 NanoAOD-v15 inputs, whose recoil correction counts
+# the jets of the HTT recipe (GoodRecoilJets runs in the global scope)
+MetRecoilCorrectionWithRecoilJets = _recoil_correction_run2(q.Jet_recoilPt)
+MetScopesWithRecoilJets = ProducerGroup(
+    name="MetScopes",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        VetoOverlappingRecoilJets,
+        RecoilJetsMask,
+        RecoilJetPt,
+        MetLeptonCorrection,
+        MetRecoilCorrectionWithRecoilJets,
+    ],
 )
 
 # Dummy producer to rename the MET if recoil corrections are applied to the
