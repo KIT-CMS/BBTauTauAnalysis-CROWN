@@ -2403,6 +2403,20 @@ def build_config(
     # MET corrections
     add_met_corrections_config(configuration)
 
+    # Run-2 v15 recoil correction: the legacy file with the Z pT bins its labels
+    # name (payloads/recoil_corrections/README.md)
+    if use_run2_v15_inputs:
+        configuration.add_config_parameters(
+            SCOPES,
+            {
+                "recoil_correction_file": EraModifier(
+                    {
+                        "2018": "payloads/recoil_corrections/Type1_PuppiMET_2018_zptbins.root",
+                    }
+                ),
+            },
+        )
+
     # Z pt reweighting
     # TODO needs to be refined for run 3, not considered at the moment (https://github.com/kit-cms/XYHBBTauTauAnalysis-CROWN/issues/7)
     #add_z_pt_reweighting_config(configuration)
