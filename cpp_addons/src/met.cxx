@@ -33,7 +33,7 @@ METType1Correction(ROOT::RDF::RNode df, const std::string &outputname,
         // Select jets for the type-I correction
         auto jet_index =
             ROOT::VecOps::Nonzero(t1jet_pt_corrected >= t1jet_min_pt &&
-                                  std::abs(t1jet_eta) <= t1jet_max_abs_eta &&
+                                  ROOT::VecOps::abs(t1jet_eta) <= t1jet_max_abs_eta &&
                                   t1jet_em_ef <= t1jet_max_em_ef);
 
         // Calculate the difference vector between the fully corrected and
