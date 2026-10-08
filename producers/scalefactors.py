@@ -232,7 +232,6 @@ def _create_tau_id_vsjet_sf_producer(
         "correctionManager",
         "{output}", 
         "{input}", 
-        "\"{era}\"", 
         "\"{tau_ides_sf_file}\"",
         "\"{discriminator}\"", 
     ]
@@ -240,7 +239,7 @@ def _create_tau_id_vsjet_sf_producer(
     parameters.extend([
         f"\"{{{vsjet_wp}}}\"", 
         f"\"{{{tau_ides_sf_vsele_wp}}}\"", 
-        f"\"{{{tau_ides_sf_vsmu_wp}}}\"", 
+        f"{{{tau_ides_sf_vsmu_wp}}}", 
         f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"",
         "\"{tau_id_sf_vsjet_variation}\""
     ])
