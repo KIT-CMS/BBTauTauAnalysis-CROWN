@@ -171,6 +171,23 @@ def test_sm_recoil_correction_counts_the_recipe_jets():
     assert recoil.get_inputs("mt")[-1].name == "Jet_correctedPt"
 
 
+def test_sm_recoil_file_has_the_labelled_z_pt_bins():
+    """The legacy 2018 recoil file has the Z pT bin edges 0-5 instead of the
+    0/10/20/30/50/1000 GeV its labels name; the v15 path reads the fixed copy."""
+    ROOT = pytest.importorskip("ROOT")
+    path = build("sm_config", "dyjets").config_parameters["mt"]["nominal"][
+        "recoil_correction_file"
+    ]
+    assert path.startswith("payloads/")
+    file = ROOT.TFile.Open(str(Path(__file__).resolve().parents[1] / path))
+    axis = file.Get("ZPtBinsH").GetXaxis()
+    edges = [axis.GetBinLowEdge(i) for i in range(1, axis.GetNbins() + 2)]
+    labels = [axis.GetBinLabel(i) for i in range(1, axis.GetNbins() + 1)]
+    file.Close()
+    assert edges == [0, 10, 20, 30, 50, 1000]
+    assert labels == ["Pt0to10", "Pt10to20", "Pt20to30", "Pt30to50", "PtGt50"]
+
+
 @pytest.mark.parametrize("sample", ["dyjets", "wjets"])
 def test_sm_recoil_shifts_set_the_run2_flags(sample):
     """The Run-2 recoil producer reads bool flags, not the Run-3 variation name."""
