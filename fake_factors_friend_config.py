@@ -1,5 +1,4 @@
 from __future__ import annotations  # needed for type annotations in > python 3.7
-from typing import List, Union
 from .producers import fakefactors as fakefactors
 from .producers import scalefactors as scalefactors
 from .producers import pairquantities as pairquantities
@@ -11,7 +10,7 @@ from code_generation.systematics import SystematicShift
 from .constants import TT_SCOPES, ERAS_RUN2, ERAS_RUN3, SL_SCOPES, FH_SCOPES
 
 
-FAKE_FACTOR_VERSION = "fake-factors-2026-09-26"
+FAKE_FACTOR_VERSION = "fake-factors-2026-10-03"
 
 
 def build_config(

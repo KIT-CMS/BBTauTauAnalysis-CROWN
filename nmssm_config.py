@@ -641,15 +641,15 @@ def add_muon_config(configuration: Configuration):
             ),
             "muon_lowpt_sf_file": EraModifier(
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2017-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2018-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-18/muon_Z.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-18/muon_Z.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23CSep23-Summer23-NanoAODv12/2026-06-18/muon_Z.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-18/muon_Z.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-18/muon_Z.json.gz",
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/muon_JPsi.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/muon_JPsi.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2017-UL-NanoAODv9/2024-07-02/muon_JPsi.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2018-UL-NanoAODv9/2024-07-02/muon_JPsi.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-18/muon_JPsi.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-18/muon_JPsi.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23CSep23-Summer23-NanoAODv12/2026-06-18/muon_JPsi.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-23DSep23-Summer23BPix-NanoAODv12/2026-06-18/muon_JPsi.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-06-18/muon_JPsi.json.gz",
                     "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run3-25Prompt-Summer24-NanoAODv15/2026-04-28/muon_Z.json.gz",
                 },
             ),
@@ -892,7 +892,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
-                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-25Prompt-Summer24-NanoAODv15/2026-08-05/tau.json.gz",
                 }
             ),
             "tau_trigger_sf_file": EraModifier(
@@ -906,7 +906,7 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23CSep23-Summer23-NanoAODv12/2025-12-25/tau.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-25/tau.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
-                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-01-14/tau.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run3-25Prompt-Summer24-NanoAODv15/2026-08-05/tau.json.gz",
                 }
             ),
             "tau_ES_json_name": "tau_energy_scale",
@@ -945,6 +945,28 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
         {
             "tau_ides_sf_vsele_wp": "Tight",
         }
+    )
+    configuration.add_config_parameters(
+        ET_SCOPES + TT_SCOPES,
+        {
+            "tau_ides_sf_vsmu_wp": EraModifier(
+                {
+                    "2025": '"VLoose"',
+                },
+                default='""',
+            ),
+        }
+    )
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "tau_ides_sf_vsmu_wp": EraModifier(
+                {
+                    "2025": '"Tight"',
+                },
+                default='""',
+            ),
+        },
     )
 
     # hadronic tau identification corrections for DeepTau discriminator vs jets
@@ -1399,6 +1421,20 @@ def add_ak4jet_config(configuration: Configuration):
                     "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jet_jerc.json.gz",
                 },
             ),
+            "ak4regjet_jec_file": EraModifier(
+                {
+                    "2016preVFP": "DOES_NOT_EXIST",
+                    "2016postVFP": "DOES_NOT_EXIST",
+                    "2017": "DOES_NOT_EXIST",
+                    "2018": "DOES_NOT_EXIST",
+                    "2022preEE": "payloads/jerc_regression/2022preEE/regJet_jerc.json.gz",
+                    "2022postEE": "payloads/jerc_regression/2022postEE/regJet_jerc.json.gz",
+                    "2023preBPix": "payloads/jerc_regression/2023preBPix/regJet_jerc.json.gz",
+                    "2023postBPix": "payloads/jerc_regression/2023postBPix/regJet_jerc.json.gz",
+                    "2024": "payloads/jerc_regression/2024/regJet_jerc.json.gz",
+                    "2025": "payloads/jerc_regression/2025/regJet_jerc.json.gz",
+                },
+            ),
             "ak4jet_jer_tag": EraModifier(
                 {
                     "2016preVFP": "Summer20UL16APV_JRV3",
@@ -1416,6 +1452,22 @@ def add_ak4jet_config(configuration: Configuration):
             "ak4jet_jes_tag_data": EraModifier(common_jes_tags),
             "ak4jet_jes_tag_mc": EraModifier(common_jes_tags),
             "ak4jet_jec_algo": "AK4PFPuppi",
+            "ak4regjet_jec_algo": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: "AK4PFPuppiPNetRegressionPlusNeutrino"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        _era: "AK4PFPuppiUParTRegressionPlusNeutrino"
+                        for _era in ["2024", "2025"]
+                    },
+                }
+            )
         },
     )
 
@@ -1814,7 +1866,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23CSep23-Summer23-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-08-20/btagging.json.gz",
                     "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2026-03-10/btagging.json.gz",
-                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-25Prompt-Summer24-NanoAODv15/2026-06-26/btagging.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/Run3-25Prompt-Summer24-NanoAODv15/2026-09-21/btagging.json.gz",
                 }
             ),
             "bjet_sf_wp_name": EraModifier(
@@ -3425,6 +3477,10 @@ def build_config(
             q.metphi_raw,
             q.met_uncorrected,
             q.metphi_uncorrected,
+            q.met_leptoncorrected,
+            q.metphi_leptoncorrected,
+            q.met_jetcorrected,
+            q.metphi_jetcorrected,
             q.metSumEt,
             q.metSumEt_raw,
             q.metcov00,
