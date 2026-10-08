@@ -58,10 +58,15 @@ float apply_jes_l1(const float &jet_pt, const float &jet_eta,
 
 float apply_jes_l2rel(const float &jet_pt, const float &jet_eta,
                       const float &jet_phi, const std::string &era,
+                      const std::string &jec_algo,
                       const correction::Correction *jes_l2rel_evaluator) {
     // Calculate the L2rel-corrected pt
     float pt_corrected;
-    if (std::stoi(era.substr(0, 4)) <= 2022 || era == "2023preBPix") {
+    if (
+        (std::stoi(era.substr(0, 4)) <= 2022 || era == "2023preBPix")
+        || (jec_algo.find("UParT") != std::string::npos)
+        || (jec_algo.find("PNet") != std::string::npos)
+    ) {
         // For era <= 2023preBPix, phi is not an input argument
         pt_corrected =
             jet_pt * jes_l2rel_evaluator->evaluate({jet_eta, jet_pt});
@@ -207,7 +212,8 @@ JECResult apply_full_jec_mc(
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, const float &random_normal,
+    const std::string &jec_algo, const float &jet_radius, const std::string &era,
+    const float &random_normal,
     const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
@@ -218,7 +224,7 @@ JECResult apply_full_jec_mc(
     auto jet_pt_l1 =
         apply_jes_l1(jet_pt, jet_eta, jet_area, rho, jes_l1_evaluator);
     auto jet_pt_l2rel =
-        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jes_l2rel_evaluator);
+        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jec_algo, jes_l2rel_evaluator);
     auto jet_pt_syst = apply_jes_shifts(jet_pt_l2rel, jet_eta, jet_phi, jet_id,
                                         jes_shift_source, jes_shift_factor,
                                         jes_shift_evaluators);
@@ -273,14 +279,14 @@ JECResult apply_jes_shifts_and_jer_mc(
 JECResult apply_full_jec_data(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const float &jet_area, const float &rho, const unsigned int &run,
-    const std::string &era, const correction::Correction *jes_l1_evaluator,
+    const std::string &era, const std::string &jec_algo, const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const correction::Correction *jes_l2l3res_evaluator) {
     // Apply the consecutive steps of the jet energy calibration
     auto jet_pt_l1 =
         apply_jes_l1(jet_pt, jet_eta, jet_area, rho, jes_l1_evaluator);
     auto jet_pt_l2rel =
-        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jes_l2rel_evaluator);
+        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jec_algo, jes_l2rel_evaluator);
     auto jet_pt_l2l3res =
         apply_jes_l2l3res(jet_pt_l2rel, jet_eta, static_cast<float>(run), era,
                           jes_l2l3res_evaluator);
@@ -565,7 +571,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
 
     // Function to retrieve the JEC result with intermediate steps
     auto func_jec_result = [jes_shift_source, jes_shift_factor, jer_shift,
-                            jet_radius, reapply_jes, era, jes_l1_evaluator,
+                            jec_algo, jet_radius, reapply_jes, era, jes_l1_evaluator,
                             jes_l2rel_evaluator, jes_shift_evaluators,
                             jer_resolution_evaluator, jer_scalefactor_evaluator,
                             jer_scalefactor_uncertainty_evaluator](
@@ -594,7 +600,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             jet_jec_result = ROOT::VecOps::Map(
                 jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area, random_normal,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era,
+                 jes_shift_factor, jer_shift, jec_algo, jet_radius, era,
                  jes_l1_evaluator, jes_l2rel_evaluator, jes_shift_evaluators,
                  jer_resolution_evaluator, jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
@@ -604,7 +610,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                     return apply_full_jec_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, jet_area, rho,
                         genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era, random_normal,
+                        jes_shift_factor, jer_shift, jec_algo, jet_radius, era, random_normal,
                         jes_l1_evaluator, jes_l2rel_evaluator,
                         jes_shift_evaluators, jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
@@ -800,7 +806,7 @@ PtCorrectionData(ROOT::RDF::RNode df,
 
     // Function to retrieve the JEC result with intermediate steps
     auto func_jec_result =
-        [era, reapply_jes, jes_l1_evaluator, jes_l2rel_evaluator,
+        [era, jec_algo, reapply_jes, jes_l1_evaluator, jes_l2rel_evaluator,
          jes_l2l3res_evaluator](const ROOT::RVec<float> &jet_pt_raw,
                                 const ROOT::RVec<float> &jet_eta,
                                 const ROOT::RVec<float> &jet_phi,
@@ -814,13 +820,13 @@ PtCorrectionData(ROOT::RDF::RNode df,
                 // momenta for the full collection.
                 jet_jec_result = ROOT::VecOps::Map(
                     jet_pt_raw, jet_eta, jet_phi, jet_area,
-                    [rho, run, era, jes_l1_evaluator, jes_l2rel_evaluator,
-                     jes_l2l3res_evaluator](
+                    [rho, run, era, jec_algo, jes_l1_evaluator,
+                     jes_l2rel_evaluator, jes_l2l3res_evaluator](
                         const float &jet_pt, const float &jet_eta,
                         const float &jet_phi, const float &jet_area) {
                         return apply_full_jec_data(
                             jet_pt, jet_eta, jet_phi, jet_area, rho, run, era,
-                            jes_l1_evaluator, jes_l2rel_evaluator,
+                            jec_algo, jes_l1_evaluator, jes_l2rel_evaluator,
                             jes_l2l3res_evaluator);
                     });
             } else {

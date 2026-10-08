@@ -43,6 +43,7 @@ float apply_jes_l1(const float &jet_pt, const float &jet_eta,
                    const correction::Correction *jes_l1_evaluator);
 float apply_jes_l2rel(const float &jet_pt, const float &jet_eta,
                       const float &jet_phi, const std::string &era,
+                      const std::string &jec_algo,
                       const correction::Correction *jes_l2rel_evaluator);
 float apply_jes_l2l3res(const float &jet_pt, const float &jet_eta,
                         const float &run, const std::string &era,
@@ -67,7 +68,8 @@ JECResult apply_full_jec_mc(
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, const float &random_normal,
+    const std::string &jec_algo, const float &jet_radius,
+    const std::string &era, const float &random_normal,
     const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
@@ -88,7 +90,8 @@ JECResult apply_jes_shifts_and_jer_mc(
 JECResult
 apply_full_jec_data(const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_area,
-                    const float &rho,
+                    const float &rho, const unsigned int &run,
+                    const std::string &era, const std::string &jec_algo,
                     const correction::Correction *jes_l1_evaluator,
                     const correction::Correction *jes_l2rel_evaluator,
                     const correction::Correction *jes_l2l3res_evaluator);
