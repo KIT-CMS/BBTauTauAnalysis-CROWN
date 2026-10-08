@@ -533,18 +533,32 @@ class StepwiseJERCProducerMetaConfiguration():
         "jet_corrected_mass": q.Jet_correctedMass,
     }
 
+    _default_config_parameter_keys = {
+        "jec_file": "ak4jet_jec_file",
+        "jec_algo": "ak4jet_jec_algo",
+        "jes_tag_mc": "ak4jet_jes_tag_mc",
+        "jer_tag": "ak4jet_jer_tag",
+        "jes_tag_data": "ak4jet_jes_tag_data",
+        "reapply_jes": "ak4jet_reapply_jes",
+        "jes_source": "ak4jet_jes_source",
+        "jes_shift_factor": "ak4jet_jes_shift_factor",
+        "jer_shift": "ak4jet_jer_shift",
+        "jer_master_seed": "ak4jet_jer_master_seed",
+    }
+
     def __init__(
         self,
         input=None,
         output=None,
+        config_parameter_keys=None,
         scopes=None,
-        config_parameter_prefix="ak4jet",
     ):
 
         # Set default inputs and outputs as attributes
         for key, value in chain(
             self._default_inputs.items(),
             self._default_outputs.items(),
+            self._default_config_parameter_keys.items(),
         ):
             setattr(self, key, value)
 
@@ -553,14 +567,12 @@ class StepwiseJERCProducerMetaConfiguration():
         for key, value in chain(
             (input if input is not None else {}).items(),
             (output if output is not None else {}).items(),
+            (config_parameter_keys if config_parameter_keys is not None else {}).items()
         ):
             setattr(self, key, value)
 
         # Set scopes
         self.scopes = scopes
-
-        # Set the prefix for configuration parameters
-        self.config_parameter_prefix = config_parameter_prefix
 
     def producers(self, name: str, data=False, mass=True):
         # Construct list of producers for the group
@@ -601,10 +613,10 @@ class StepwiseJERCProducerMetaConfiguration():
                 correctionManager,
                 {{output}},
                 {{input}},
-                "{{{self.config_parameter_prefix}_jec_file}}",
-                "{{{self.config_parameter_prefix}_jec_algo}}",
-                "{{{self.config_parameter_prefix}_jes_tag_data}}",
-                {{{self.config_parameter_prefix}_reapply_jes}},
+                "{{{self.jec_file}}}",
+                "{{{self.jec_algo}}}",
+                "{{{self.jes_tag_data}}}",
+                {{{self.reapply_jes}}},
                 "{{era}}"
             )
             """
@@ -640,14 +652,14 @@ class StepwiseJERCProducerMetaConfiguration():
             correctionManager,
             {{output}},
             {{input}},
-            "{{{self.config_parameter_prefix}_jec_file}}",
-            "{{{self.config_parameter_prefix}_jec_algo}}",
-            "{{{self.config_parameter_prefix}_jes_tag_mc}}",
-            "{{{self.config_parameter_prefix}_jer_tag}}",
-            "{{{self.config_parameter_prefix}_jes_source}}",
-            {{{self.config_parameter_prefix}_jes_shift_factor}},
-            "{{{self.config_parameter_prefix}_jer_shift}}",
-            {{{self.config_parameter_prefix}_reapply_jes}},
+            "{{{self.jec_file}}}",
+            "{{{self.jec_algo}}}",
+            "{{{self.jes_tag_mc}}}",
+            "{{{self.jer_tag}}}",
+            "{{{self.jes_source}}}",
+            {{{self.jes_shift_factor}}},
+            "{{{self.jer_shift}}}",
+            {{{self.reapply_jes}}},
             "{{era}}"
         )
         """
@@ -746,6 +758,10 @@ JetEnergyCorrectionRegressedTemplate = StepwiseJERCProducerMetaConfiguration(
         "jet_l2l3res_pt": q.Jet_l2l3resPtRegressed,
         "jet_corrected_pt": q.Jet_correctedPtRegressed,
         "jet_corrected_mass": q.Jet_correctedMassRegressed,
+    },
+    config_parameter_keys={
+        "jec_file": "ak4regjet_jec_file",
+        "jec_algo": "ak4regjet_jec_algo",
     },
     scopes=GLOBAL_SCOPES,
 )

@@ -1421,6 +1421,20 @@ def add_ak4jet_config(configuration: Configuration):
                     "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-25Prompt-Summer24-NanoAODv15/2026-07-16/jet_jerc.json.gz",
                 },
             ),
+            "ak4regjet_jec_file": EraModifier(
+                {
+                    "2016preVFP": "DOES_NOT_EXIST",
+                    "2016postVFP": "DOES_NOT_EXIST",
+                    "2017": "DOES_NOT_EXIST",
+                    "2018": "DOES_NOT_EXIST",
+                    "2022preEE": "payloads/jerc_regression/2022preEE/regJet_jerc.json.gz",
+                    "2022postEE": "payloads/jerc_regression/2022postEE/regJet_jerc.json.gz",
+                    "2023preBPix": "payloads/jerc_regression/2023preBPix/regJet_jerc.json.gz",
+                    "2023postBPix": "payloads/jerc_regression/2023postBPix/regJet_jerc.json.gz",
+                    "2024": "payloads/jerc_regression/2024/regJet_jerc.json.gz",
+                    "2025": "payloads/jerc_regression/2025/regJet_jerc.json.gz",
+                },
+            ),
             "ak4jet_jer_tag": EraModifier(
                 {
                     "2016preVFP": "Summer20UL16APV_JRV3",
@@ -1438,6 +1452,22 @@ def add_ak4jet_config(configuration: Configuration):
             "ak4jet_jes_tag_data": EraModifier(common_jes_tags),
             "ak4jet_jes_tag_mc": EraModifier(common_jes_tags),
             "ak4jet_jec_algo": "AK4PFPuppi",
+            "ak4regjet_jec_algo": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: "AK4PFPuppiPNetRegressionPlusNeutrino"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        _era: "AK4PFPuppiUParTRegressionPlusNeutrino"
+                        for _era in ["2024", "2025"]
+                    },
+                }
+            )
         },
     )
 
