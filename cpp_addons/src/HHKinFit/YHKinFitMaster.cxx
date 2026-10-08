@@ -405,8 +405,8 @@ TMatrixD YHKinFitMaster::CalcCov(ROOT::Math::PtEtaPhiEVector p4, double dE) {
 
 double YHKinFitMaster::CalcBjetResolution(ROOT::Math::PtEtaPhiEVector p4,
                                           double res) {
-    double pt_res = p4.Pt() * res;
-    double dE = pt_res * p4.P() / sin(p4.Theta()) / p4.E();
+    // double pt_res = p4.Pt() * res;
+    double dE = res * p4.P() / sin(p4.Theta()) / p4.E();
     return dE;
 }
 
