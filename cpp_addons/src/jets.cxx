@@ -135,7 +135,7 @@ float apply_jer(
     const correction::Correction *jer_scalefactor_evaluator,
     const correction::Correction *jer_scalefactor_uncertainty_evaluator,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 &randgen) {
+    const std::string &era, const float &random_normal) {
     // Get the JER MC resolution and data-MC scale factor for the smearing
     auto resol = jer_resolution_evaluator->evaluate({jet_eta, jet_pt, rho});
     auto sf = 1.0;
@@ -188,7 +188,7 @@ float apply_jer(
         ) {
             c_jer = 1.0;
         } else {
-            c_jer = 1 + randgen.Gaus(0, resol) *
+            c_jer = 1 + random_normal * resol *
                         (std::sqrt(std::max(std::pow(sf, 2) - 1.0, 0.0)));
         }
     }
@@ -207,7 +207,7 @@ JECResult apply_full_jec_mc(
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, TRandom3 &randgen,
+    const float &jet_radius, const std::string &era, const float &random_normal,
     const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
@@ -226,7 +226,7 @@ JECResult apply_full_jec_mc(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
         jer_resolution_evaluator, jer_scalefactor_evaluator,
         jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
-        randgen);
+        random_normal);
 
     // Create the JECResult which also contains intermediate results of the
     // calibration
@@ -245,7 +245,7 @@ JECResult apply_jes_shifts_and_jer_mc(
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
     const std::string &jes_shift_source, const int &jes_shift_factor,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 &randgen,
+    const std::string &era, const float &random_normal,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
     const correction::Correction *jer_scalefactor_evaluator,
@@ -258,7 +258,7 @@ JECResult apply_jes_shifts_and_jer_mc(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
         jer_resolution_evaluator, jer_scalefactor_evaluator,
         jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
-        randgen);
+        random_normal);
 
     // Create the JECResult which also contains intermediate results of the
     // calibration
@@ -580,6 +580,10 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                                const float &rho, const unsigned int &seed) {
         // Random value generator for jet energy resolution smearing
         TRandom3 randgen = TRandom3(seed);
+        ROOT::RVec<float> random_normal(jet_pt_raw.size());
+        for (auto &z : random_normal) {
+            z = randgen.Gaus(0., 1.);
+        }
 
         ROOT::RVec<JECResult> jet_jec_result;
         if (reapply_jes) {
@@ -588,19 +592,19 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             // for single jets and wrap it with ROOT::VecOps::Map to retrieve
             // the calibrated momenta for the full collection.
             jet_jec_result = ROOT::VecOps::Map(
-                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
+                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area, random_normal,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era, &randgen,
+                 jes_shift_factor, jer_shift, jet_radius, era,
                  jes_l1_evaluator, jes_l2rel_evaluator, jes_shift_evaluators,
                  jer_resolution_evaluator, jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
-                    const float &jet_area) {
+                    const float &jet_area, const float random_normal) {
                     return apply_full_jec_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, jet_area, rho,
                         genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era, randgen,
+                        jes_shift_factor, jer_shift, jet_radius, era, random_normal,
                         jes_l1_evaluator, jes_l2rel_evaluator,
                         jes_shift_evaluators, jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
@@ -613,19 +617,19 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             // function for single jets and wrap it with ROOT::VecOps::Map to
             // retrieve the calibrated momenta for the full collection.
             jet_jec_result = ROOT::VecOps::Map(
-                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
+                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area, random_normal,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era, &randgen,
+                 jes_shift_factor, jer_shift, jet_radius, era,
                  jes_shift_evaluators, jer_resolution_evaluator,
                  jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
-                    const float &jet_area) {
+                    const float &jet_area, const float &random_normal) {
                     return apply_jes_shifts_and_jer_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, rho, genjet_pt,
                         genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era, randgen,
+                        jes_shift_factor, jer_shift, jet_radius, era, random_normal,
                         jes_shift_evaluators, jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
                         jer_scalefactor_uncertainty_evaluator);
