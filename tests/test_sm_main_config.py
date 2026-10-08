@@ -143,6 +143,34 @@ def test_sm_dyw_recoil_wiring():
     assert "RenameMet" in names and not {"GenBosonQuantities", "MetScopes"} & names
 
 
+def test_sm_recoil_correction_counts_the_recipe_jets():
+    """The v15 recoil correction counts the jets of the HTT recipe (pT > 30 GeV,
+    |eta| < 4.7, jet ID, DeltaR > 0.5 to both pair objects), not all NanoAOD jets;
+    NMSSM keeps all jets."""
+    config = build("sm_config", "dyjets")
+
+    def inputs(name):
+        return [q.name for q in find_producer(config, "mt", name).get_inputs("mt")]
+
+    assert inputs("RecoilCorrectionMet")[-1] == "Jet_recoilPt"
+    assert inputs("RecoilJetPt") == ["Jet_correctedPt", "recoil_jets_mask"]
+    assert inputs("RecoilJetsMask") == [
+        "good_recoil_jets_mask",
+        "recoil_jet_overlap_veto_mask",
+    ]
+    assert inputs("VetoOverlappingRecoilJets")[-2:] == ["p4_1", "p4_2"]
+    assert "{ak4jet_id_wp}" in find_producer(config, "global", "GoodRecoilJets").call
+    params = config.config_parameters
+    assert (
+        params["global"]["nominal"]["recoil_jet_min_pt"],
+        params["global"]["nominal"]["recoil_jet_max_abs_eta"],
+        params["mt"]["nominal"]["recoil_jet_veto_min_delta_r"],
+    ) == (30.0, 4.7, 0.5)
+    nmssm = build("nmssm_config", "dyjets_amcatnlo")
+    recoil = find_producer(nmssm, "mt", "RecoilCorrectionMet")
+    assert recoil.get_inputs("mt")[-1].name == "Jet_correctedPt"
+
+
 @pytest.mark.parametrize("sample", ["dyjets", "wjets"])
 def test_sm_recoil_shifts_set_the_run2_flags(sample):
     """The Run-2 recoil producer reads bool flags, not the Run-3 variation name."""
