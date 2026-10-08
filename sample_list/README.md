@@ -111,6 +111,11 @@ aborts the run. Therefore:
   schemes; adding either on top of the NJet/PtZ partition double counts. The same holds for the
   madgraphMLM inclusive W/DY samples (a generator alternative, not an addition) and for
   `TuneCP5up`/`TuneCP5down` datasets, which are systematic variations, not extra statistics.
+- **Never add a sample whose phase space another one already covers.** The lists take ttZ from
+  `TTZToLLNuNu_M-10`, `TTZToQQ` and `TTZToLL_M-1to10` and ZZ &rarr; 2&nu;2q from `ZZTo2Q2Nu`, as the
+  legacy SM analysis did; the inclusive LO `ttZJets` madgraphMLM, `TTZToNuNu` (contained in
+  `TTZToLLNuNu_M-10`) and `ZZTo2Nu2Q_5f` (the same process as `ZZTo2Q2Nu`) would count it twice.
+  `ttWJets` stays, it is the only 2018 v15 ttW sample.
 - **Keep the four lists consistent** along the two axes above: a nick added to one belongs in the
   others too, unless it is data -- then only in the non-`_mc` pair.
 - **Keep every MC category populated.** Each `sample_type` in a list must exist on the `sample_type`
@@ -120,9 +125,11 @@ aborts the run. Therefore:
 
 Load the database JSON and look up every line: each nick must be a key with `era == "2018"`, and the
 set of `sample_type` values must equal `sm_btag_efficiency_config.AVAILABLE_SAMPLES` for an `_mc` list,
-plus `data` for a full one. Filtering the same JSON by `era` and `sample_type` is also how candidate
-nicks for a new list or a new era are found; for a new era, add `sm_<era>_*.txt` next to this file and
-pass the matching `--era`/`--nanoAOD-version` to `ProduceNtuples` (the file name itself is not parsed).
+plus `data` for a full one; `tests/test_sm_main_config.py` checks the four lists this way, together
+with their lengths (77 / 65 / 69 / 57 nicks). Filtering the same JSON by `era` and `sample_type` is
+also how candidate nicks for a new list or a new era are found; for a new era, add `sm_<era>_*.txt`
+next to this file and pass the matching `--era`/`--nanoAOD-version` to `ProduceNtuples` (the file name
+itself is not parsed).
 
 ## Known gaps
 

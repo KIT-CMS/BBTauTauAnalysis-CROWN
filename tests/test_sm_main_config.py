@@ -3,15 +3,21 @@
 Each assertion pins a value that would otherwise regress silently into wrong physics
 or a broken grid job: the truth-gen mothers and LHE dispatch per sample, the pinned
 UParTAK4 b-tag and v15 jet/electron wiring, the per-variation weight columns, the
-DY/W recoil treatment, and the era/sample gates.
+DY/W recoil treatment, the era/sample gates and the sample lists.
 """
 
 import importlib
+import json
+from pathlib import Path
 from unittest import mock
 
 import pytest
 
-from analysis_configurations.bbtautau import btag_payloads, generate
+from analysis_configurations.bbtautau import (
+    btag_payloads,
+    generate,
+    sm_btag_efficiency_config,
+)
 from analysis_configurations.bbtautau.constants import SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     FakeArgs,
@@ -24,6 +30,8 @@ from analysis_configurations.bbtautau.tests.helpers import (
 
 ALL_SCOPES = tuple(SCOPES)
 LHE_PRODUCERS = {"LHE_Scale_weight", "NMSSM_LHE_Scale_weight"}
+# inclusive LO ttZ, ttZ -> nunu (in TTZToLLNuNu_M-10) and the twin of ZZTo2Q2Nu
+DOUBLE_COUNTED = ("ttZJets_", "TTZToNuNu_", "ZZTo2Nu2Q_5f_")
 
 
 # module, sample, bb mother pdgid, tautau mother pdgid, the only LHE producer that may
@@ -196,3 +204,25 @@ def test_nmssm_2018_keeps_legacy_jet_and_btag_path():
     assert "id_wgt_bjet" in outs and not {
         o for o in outs if o.startswith("btag_weight_upart")
     }
+
+
+def test_sm_sample_lists_follow_their_rules():
+    """sample_list/README.md: each ``_mc`` list is its full list without the 12 data
+    nicks, every MC sample type is populated, and no list double counts ttZ or ZZ."""
+    analysis = Path(__file__).resolve().parents[1]
+    database = analysis.parents[2] / "sample_database/nanoAOD_v15/datasets.json"
+    if not database.is_file():
+        pytest.skip("KingMaker's sample_database is required")
+    datasets = json.loads(database.read_text())
+    for name, length in [("binned", 77), ("inclusive", 69)]:
+        nicks = (analysis / f"sample_list/sm_2018_{name}.txt").read_text().splitlines()
+        mc = [nick for nick in nicks if datasets[nick]["sample_type"] != "data"]
+        assert len(nicks) == length and len(nicks) - len(mc) == 12, name
+        assert (analysis / f"sample_list/sm_2018_{name}_mc.txt").read_text() == "".join(
+            f"{nick}\n" for nick in mc
+        )
+        assert {datasets[nick]["era"] for nick in nicks} == {"2018"}
+        assert {datasets[nick]["sample_type"] for nick in mc} == set(
+            sm_btag_efficiency_config.AVAILABLE_SAMPLES
+        )
+        assert not [nick for nick in nicks if nick.startswith(DOUBLE_COUNTED)], name
