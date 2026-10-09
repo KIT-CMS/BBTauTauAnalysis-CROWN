@@ -287,26 +287,24 @@ def add_embedding_tau_id_vs_jet_shifts(
     era: str,
     producers: list[Producer | ProducerGroup],
     scopes: list[str],
-    pt_bins: list[tuple[int, int | str]],
     tau_id_algorithm: str = "DeepTau2018v2p5",
 ):
     """
     Add shifts for tau ID vs jet scale factors of tau-embedded events for the
     given era.
 
-    The scale factors have been measured in bins of the hadronic tau decay mode
-    and pt. Shifts are performed independently for each of these 2D bins.
+    The scale factors are applied in bins of the hadronic tau decay mode. Shifts
+    are performed independently for each decay mode.
     """
 
-    # Independent shifts of the tau ID vs jet scale factor in each DM and pt bin
+    # Independent shifts of the tau ID vs jet scale factor in each DM
     shifts = [
         KeyValueShift(
-            name=f"CMS_eff_t_emb_{tau_id_algorithm}_VSjet_DM{dm}_pt{pt_start}to{pt_stop}_{era}",
+            name=f"CMS_eff_t_emb_{tau_id_algorithm}_VSjet_DM{dm}_{era}",
             key="tau_id_sf_vsjet_variation",
-            value=f"{{direction}}_custom_dm{dm}_pt{pt_start}to{pt_stop}",
+            value=f"{{direction}}_custom_dm{dm}",
         )
         for dm in [0, 1, 10, 11]
-        for pt_start, pt_stop in pt_bins
     ]
 
     # Add up and down variation for each shift

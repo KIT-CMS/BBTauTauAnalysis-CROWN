@@ -235,31 +235,29 @@ def _add_tautau_trigger(configuration: Configuration):
 
 def _add_tau_corrections(configuration: Configuration, era: str):
     # The MC tau energy scale and vsJet SF producers read the embedding payload,
-    # with the MC working points; the vsJet SF is binned in pT in all channels.
+    # with the MC working points. Both are binned in the decay mode only, like
+    # the POG corrections of MC: the pT-binned energy scale steps at an
+    # uncorrected pT of 40 GeV, which leaves an empty band just below 40 GeV in
+    # the corrected pT.
     configuration.add_config_parameters(
         HAD_TAU_SCOPES,
         {
             "tau_vsjet_es_sf_file": TAU_PAYLOAD,
-            "tau_id_sf_vsjet_sf_dependence": "pt",
+            "tau_ES_json_name": "tau_energy_scale_dm_binned",
+            "tau_id_sf_vsjet_sf_dependence": "dm",
         },
     )
     # The payload fills DM11 with the fitted 3-prong category of DM10; the
     # shifts vary each decay mode on its own.
     add_embedding_tau_es_shifts(configuration, era, taus.TauPtCorrectionMC)
     add_embedding_tau_id_vs_jet_shifts(
-        configuration,
-        era,
-        [scalefactors.TauIDVsJetSF2],
-        SL_SCOPES,
-        pt_bins=[(20, 40), (40, "Inf")],
+        configuration, era, [scalefactors.TauIDVsJetSF2], SL_SCOPES
     )
-    # the tt selection requires both taus above 40 GeV
     add_embedding_tau_id_vs_jet_shifts(
         configuration,
         era,
         [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
         TT_SCOPES,
-        pt_bins=[(40, "Inf")],
     )
 
 
