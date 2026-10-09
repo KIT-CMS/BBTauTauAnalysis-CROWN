@@ -2511,7 +2511,9 @@ def build_config(
 
     # Run-2 v15 electron energy correction: the era's pinned (dated, not
     # "latest") Run-2 UL v15 EGM scale+smearing payload has the Run-3
-    # "SmearAndSyst" structure, so the Run-3 producer evaluates it unchanged.
+    # "Scale" (data) and "SmearAndSyst" (MC) structure, so the Run-3 producers
+    # evaluate it unchanged. Unlike v9, v15 electrons come without scale and
+    # smearing applied.
     if use_run2_v15_inputs:
         configuration.add_config_parameters(
             GLOBAL_SCOPES,
@@ -2525,6 +2527,7 @@ def build_config(
                         for _era in ERAS_RUN2
                     }
                 ),
+                "ele_es_sf_data_name": "Scale",
                 "ele_es_sf_mc_name": "SmearAndSyst",
             },
         )
@@ -2677,12 +2680,15 @@ def build_config(
     # between NanoAODv9 and NanoAODv15). Currently, the Run 2 producers just
     # rename the electron pt in NANOAOD.
     #
-    # The v15 inputs ship the raw inputs (Electron_deltaEtaSC, Electron_r9) of
-    # the Run-3-style scale+smear producer, so the v15 path uses it for Run 2.
+    # The v15 inputs ship the raw inputs (Electron_deltaEtaSC, Electron_r9,
+    # Electron_seedGain) of the Run-3-style scale+smear producers, so the v15
+    # path uses them for Run 2.
     ElectronPtCorrectionMC = v15_or(
         electrons.ElectronPtCorrectionMC[tuple(ERAS_RUN3)], electrons.ElectronPtCorrectionMC
     )
-    ElectronPtCorrectionData = get_for_era(electrons.ElectronPtCorrectionData, era)
+    ElectronPtCorrectionData = v15_or(
+        electrons.ElectronPtCorrectionData[tuple(ERAS_RUN3)], electrons.ElectronPtCorrectionData
+    )
 
     # Jet ID producer (first member of the auxiliary `Jet` group, see
     # producers/jets.py). v15 drops the precomputed Jet_jetId branch, so the v15

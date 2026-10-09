@@ -113,6 +113,21 @@ def test_upart_btag_and_v15_input_wiring():
     )
 
 
+def test_v15_data_electrons_get_the_egm_scale():
+    """v15 electrons come without scale and smearing: data take the "Scale" of the
+    pinned EGM payload through the Run-3 producer, as MC take its "SmearAndSyst"."""
+    config = build("sm_config", "data")
+    producer = find_producer(config, "global", "ElectronPtCorrectionData")
+    assert "physicsobject::electron::PtCorrectionData" in producer.call
+    params = config.config_parameters["global"]["nominal"]
+    assert params["ele_es_sf_data_name"] == "Scale"
+    assert "/EGM/Run2-2018-UL-NanoAODv15/" in params["ele_es_file"]
+    correctionlib = pytest.importorskip("correctionlib")
+    scale = correctionlib.CorrectionSet.from_file(params["ele_es_file"]).compound["Scale"]
+    # the input order PtCorrectionData evaluates
+    assert [i.name for i in scale.inputs] == ["syst", "run", "ScEta", "r9", "pt", "seedGain"]
+
+
 def test_upart_weight_variation_columns_match_discovery():
     variations = btag_payloads.discover_upart_variations(
         btag_payloads.btv_upart_payload("2018")
