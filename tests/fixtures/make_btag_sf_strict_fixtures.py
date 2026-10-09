@@ -11,6 +11,8 @@ They mirror the real payload SCHEMA:
     ``UParTAK4_comb`` / ``UParTAK4_light`` / ``UParTAK4_wp_values``.
     SF nesting: Category(systematic) -> Category(working_point) ->
     Category(flavor:int) -> Binning(abseta) -> Binning(pt) -> value.
+    As in the real payload, the ``UParTAK4_comb`` pt binning starts at 30 GeV
+    and its flow, also below 30 GeV, is the last bin.
     ``UParTAK4_comb`` carries flavors {5, 4} and a comb-only systematic
     component ``hf`` (``up_hf`` / ``down_hf``); ``UParTAK4_light`` carries
     flavor {0} and the ``correlated`` / ``uncorrelated`` components. NO
@@ -36,8 +38,12 @@ Documented values (see the C++ test for the hand-computed weights):
   UParTAK4_comb SF(flavor 5): base = {L:0.98, M:0.95, T:0.90, XT:0.85, XXT:0.80}
   UParTAK4_comb SF(flavor 4): base = {L:0.90, M:0.88, T:0.85, XT:0.82, XXT:0.80}
     systematic delta: central 0, up +0.10, down -0.10, up_hf +0.10, down_hf -0.10
+    pt bins [30, 100) and [100, 1000) GeV: base + delta and base + delta + 0.05;
+    flow (also below 30 GeV): the last bin
   UParTAK4_light SF(flavor 0): base = {L:0.98, M:0.96, T:0.94, XT:0.92, XXT:0.90}
     systematic delta: central 0, up +/-0.05, correlated +/-0.03, uncorrelated +/-0.02
+  btag_efficiency (every regime): the values below from 30 GeV, half of them
+  from 20 to 30 GeV
   btag_efficiency valid:
     flavor 5: {L:0.80, M:0.60, T:0.40, XT:0.25, XXT:0.10}
     flavor 4: {L:0.50, M:0.30, T:0.15, XT:0.08, XXT:0.03}
@@ -96,8 +102,22 @@ EFF_ABOVE_ONE = {
 }
 
 
-def pt_binning(value):
-    """Single-bin pt binning with a constant flow value."""
+# Offset of the last b/c-jet pt bin, the payload's flow value
+COMB_LAST_BIN_OFFSET = 0.05
+
+
+def pt_binning(value, flavor):
+    """pt binning: b/c jets are calibrated from 30 GeV and their flow is the
+    last bin, light jets have a single bin from 20 GeV."""
+    if flavor in (4, 5):
+        last = value + COMB_LAST_BIN_OFFSET
+        return {
+            "nodetype": "binning",
+            "input": "pt",
+            "edges": [30.0, 100.0, 1000.0],
+            "content": [value, last],
+            "flow": last,
+        }
     return {
         "nodetype": "binning",
         "input": "pt",
@@ -107,13 +127,13 @@ def pt_binning(value):
     }
 
 
-def abseta_binning(value, edge=2.4):
+def abseta_binning(value, flavor, edge=2.4):
     """Single-bin abseta binning; flow=error mirrors the real payload."""
     return {
         "nodetype": "binning",
         "input": "abseta",
         "edges": [0.0, edge],
-        "content": [pt_binning(value)],
+        "content": [pt_binning(value, flavor)],
         "flow": "error",
     }
 
@@ -123,7 +143,10 @@ def flavor_category(base, systematic, wp, flavors):
         "nodetype": "category",
         "input": "flavor",
         "content": [
-            {"key": flavor, "value": abseta_binning(base[flavor][wp] + systematic)}
+            {
+                "key": flavor,
+                "value": abseta_binning(base[flavor][wp] + systematic, flavor),
+            }
             for flavor in flavors
         ],
     }
@@ -204,8 +227,8 @@ def eff_flavor_category(regime, wp):
                         {
                             "nodetype": "binning",
                             "input": "pt",
-                            "edges": [20.0, 1000.0],
-                            "content": [regime[flavor][wp]],
+                            "edges": [20.0, 30.0, 1000.0],
+                            "content": [0.5 * regime[flavor][wp], regime[flavor][wp]],
                             "flow": "clamp",
                         }
                     ],

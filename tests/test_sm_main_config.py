@@ -81,6 +81,9 @@ def test_upart_btag_and_v15_input_wiring():
         "UParTAK4_comb",
         "UParTAK4_light",
     )
+    # b/c jets below the lowest calibrated pT of the comb SFs take the SF there
+    assert sf["bjet_sf_bc_min_pt"] == btag_payloads.load_upart_comb_min_pt(payload) == 30.0
+    assert "{bjet_sf_bc_min_pt}" in find_producer(config, "mt", "StrictUParTBtagWeightNominal").call
     # the efficiency lookup keys on the sample's own name and reads the per-channel payload
     assert sf["bjet_eff_sample_type"] == "ttbar"
     assert (

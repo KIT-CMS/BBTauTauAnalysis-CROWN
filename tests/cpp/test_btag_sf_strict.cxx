@@ -18,7 +18,10 @@
 //   (g) jet failing ALL WPs (score below the loosest, L) -> jet_w ==
 //       (1 - SF(L)*eff(L)) / (1 - eff(L)), the untagged-probability branch;
 //   (h) efficiency > 1 -> throws;
-//   (i) a jet flavor outside {0, 4, 5} -> throws.
+//   (i) a jet flavor outside {0, 4, 5} -> throws;
+//   (j) b-jet below the calibrated pT range (30 GeV) -> SF of the first bin,
+//       twice the deviation for a variation;
+//   (k) ... with the efficiency at the jet pT.
 //
 // The WP score thresholds are not passed in: the consumer reads them from the
 // SF payload's UParTAK4_wp_values correction, which the fixture generator
@@ -51,6 +54,9 @@
 namespace {
 
 int g_failures = 0;
+
+// Lowest pT edge of the fixture's UParTAK4_comb pt binning
+constexpr float kBcMinPt = 30.0f;
 
 // Relative-tolerance float comparison for the hand-computed algebra.
 bool approx_equal(double a, double b, double tol = 1e-6) {
@@ -100,7 +106,7 @@ double run_weight(correctionManager::CorrectionManager &mgr,
     auto out = xyh::scalefactor::btagging_strict::multi_wp_event_weight(
         node, mgr, "btag_weight_upart", "Jet_pt", "Jet_eta", "Jet_flavor",
         "Jet_score", "Jet_mask", BTAG_FIXTURE_SF, BTAG_FIXTURE_EFF,
-        eff_sample_type, variation_comb, variation_light);
+        eff_sample_type, kBcMinPt, variation_comb, variation_light);
     return out.Take<double>("btag_weight_upart").GetValue().at(0);
 }
 
@@ -264,6 +270,39 @@ int main() {
                        "central", "central");
         });
         check(did_throw, "(i) unknown jet flavor throws");
+    }
+
+    // ------------------------------------------------------------------
+    // (j) A b-jet below the calibrated pT range takes the SF of the first bin
+    // (30-100 GeV), not the payload's flow (the last bin, +0.05), with twice
+    // the deviation of a variation. pt 25 GeV, score 0.4 (M/T bin), "valid"
+    // efficiencies below 30 GeV: eff(M) = 0.30, eff(T) = 0.20.
+    //   central: (0.95*0.30 - 0.90*0.20) / 0.10 = 1.05
+    //   up_hf:   SF + 2*0.10 -> (1.15*0.30 - 1.10*0.20) / 0.10 = 1.25
+    // (the flow would give 1.10 and 1.20, an undoubled up_hf 1.15)
+    // ------------------------------------------------------------------
+    {
+        double w_central = run_weight(mgr, {25.0f}, {1.0f}, {5}, {0.4f}, {1},
+                                      "valid", "central", "central");
+        double w_up = run_weight(mgr, {25.0f}, {1.0f}, {5}, {0.4f}, {1},
+                                 "valid", "up_hf", "central");
+        check(approx_equal(w_central, 1.05),
+              "(j) b-jet below 30 GeV takes the first-bin SF");
+        check(approx_equal(w_up, 1.25),
+              "(j) b-jet below 30 GeV doubles the variation");
+    }
+
+    // ------------------------------------------------------------------
+    // (k) ... while its efficiency stays at the jet pT. Fails all WPs
+    // (score 0.05), pt 25 GeV: eff(L) = 0.40, SF(L) = 0.98:
+    //   (1 - 0.98*0.40) / (1 - 0.40) = 0.608 / 0.60
+    // (the efficiency at 30 GeV would give 1.08, the flow SF of 1.03 0.98)
+    // ------------------------------------------------------------------
+    {
+        double w = run_weight(mgr, {25.0f}, {1.0f}, {5}, {0.05f}, {1}, "valid",
+                              "central", "central");
+        check(approx_equal(w, 0.608 / 0.60),
+              "(k) b-jet below 30 GeV keeps the efficiency at its pT");
     }
 
     if (g_failures > 0) {

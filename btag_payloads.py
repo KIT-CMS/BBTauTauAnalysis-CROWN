@@ -62,6 +62,35 @@ def load_upart_wps(path: str) -> Dict[str, float]:
     }
 
 
+def _pt_binnings(node):
+    """Yield every ``pt`` binning node below ``node``."""
+    if isinstance(node, dict):
+        if node.get("nodetype") == "binning" and node.get("input") == "pt":
+            yield node
+        for value in node.values():
+            yield from _pt_binnings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _pt_binnings(value)
+
+
+def load_upart_comb_min_pt(path: str) -> float:
+    """Read the lowest calibrated pT of the ``UParTAK4_comb`` (b/c jet) SFs.
+
+    The first edge of the pT binnings, which must be the same in every
+    systematic, working point and flavour.
+    """
+    payload = load_payload(path)
+    correction = get_correction(payload, COMB_SF_CORRECTION, path)
+    edges = {binning["edges"][0] for binning in _pt_binnings(correction["data"])}
+    if len(edges) != 1:
+        raise ValueError(
+            f"{COMB_SF_CORRECTION} in '{path}' has no common lowest pT edge: "
+            f"{sorted(edges)}"
+        )
+    return float(edges.pop())
+
+
 def discover_upart_variations(path: str) -> Dict[str, Set[str]]:
     """Return the systematic-variation keys of the two UParTAK4 SF corrections.
 
