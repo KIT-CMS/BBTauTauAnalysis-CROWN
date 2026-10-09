@@ -1,5 +1,7 @@
 # SM 2018 fake factors, 2026-10-03 (commissioning)
 
+Superseded by `fake-factors-2026-10-09` (v6); kept for reference.
+
 `2018/` holds the six fake-factor payloads of the SM HH &rightarrow; bb&tau;&tau; analysis that
 `sm_fake_factors.py` reads (`SM_PAYLOAD_DIRS`). They are the first payloads measured with ShapeSmith on
 the embedding production. They commission the fake-factor friend and the `jet_fakes: ff` analysis; they
