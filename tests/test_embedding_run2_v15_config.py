@@ -136,8 +136,8 @@ def test_tau_corrections_read_the_embedding_payload_with_the_analysis_working_po
     )
     assert [p["vsjet_wp"] for p in params["vsjet_tau_id_sf"]] == ["Medium"]
     assert (params["tau_ES_json_name"], params["tau_id_sf_vsjet_sf_dependence"]) == (
-        "tau_energy_scale",
-        "pt",
+        "tau_energy_scale_dm_binned",
+        "dm",
     )
     # vsE/vsMu stay with the POG SFs, which are 1 for genuine taus
     assert params["tau_ides_sf_file"] == POG_TAU_FILE
@@ -197,10 +197,8 @@ def test_rendered_calls_of_the_embedding_producers():
     assert flags.count("15, 15, {23}, {23}, 0.4)") == 4 and "HLT_" not in flags
 
 
-def expected_shifts(scope):
-    """The payload tau shifts, one per decay mode (and pT bin for the vsJet SF); tt,
-    which selects taus above 40 GeV, carries no 20-40 GeV vsJet shifts."""
-    pt_bins = ("40toInf",) if scope == "tt" else ("20to40", "40toInf")
+def expected_shifts():
+    """The payload tau shifts, one per decay mode."""
     shifts = {}
     for direction in ("Up", "Down"):
         value = direction.lower()
@@ -208,10 +206,9 @@ def expected_shifts(scope):
             shifts[f"CMS_scale_t_emb_DeepTau2018v2p5_DM{dm}_2018{direction}"] = {
                 "tau_es_variation": f"{value}_custom_genTau_dm{dm}"
             }
-            for pt in pt_bins:
-                shifts[f"CMS_eff_t_emb_DeepTau2018v2p5_VSjet_DM{dm}_pt{pt}_2018{direction}"] = {
-                    "tau_id_sf_vsjet_variation": f"{value}_custom_dm{dm}_pt{pt}"
-                }
+            shifts[f"CMS_eff_t_emb_DeepTau2018v2p5_VSjet_DM{dm}_2018{direction}"] = {
+                "tau_id_sf_vsjet_variation": f"{value}_custom_dm{dm}"
+            }
     return shifts
 
 
@@ -219,7 +216,7 @@ def expected_shifts(scope):
 def test_embedding_shifts_are_the_payload_tau_shifts_and_reach_their_producers(scope):
     config = embedding(shifts=("all",))
     shifts = shifts_of(config, scope)
-    assert shifts == expected_shifts(scope)
+    assert shifts == expected_shifts()
     es_reader = find_producer(config, scope, "TauPtCorrectionMC").parameters[scope]
     vsjet_readers = [
         find_producer(config, scope, name).parameters[scope]
@@ -233,18 +230,30 @@ def test_embedding_shifts_are_the_payload_tau_shifts_and_reach_their_producers(s
 
 
 def test_tau_payload_contract():
-    """The two corrections read from the payload cover the analysis working points and
-    are 1 for every tau that is not a genuine hadronic tau."""
+    """The two corrections read from the payload cover the analysis working points,
+    are flat in pT (no step at 40 GeV), and are 1 for every tau that is not a
+    genuine hadronic tau."""
     correctionlib = pytest.importorskip("correctionlib")
     payload = ANALYSIS / embedding_run2_v15.TAU_PAYLOAD
     corrections = correctionlib.CorrectionSet.from_file(str(payload))
     names = {c["name"] for c in json.load(gzip.open(payload))["corrections"]}
-    assert {"DeepTau2018v2p5VSjet", "tau_energy_scale"} <= names
-    vsjet, es = corrections["DeepTau2018v2p5VSjet"], corrections["tau_energy_scale"]
+    assert {"DeepTau2018v2p5VSjet", "tau_energy_scale_dm_binned"} <= names
+    vsjet = corrections["DeepTau2018v2p5VSjet"]
+    es = corrections["tau_energy_scale_dm_binned"]
     for vsele in ("VVLoose", "Tight"):
         for syst in ("nom", "up", "down"):
             for dm in (0, 1, 10, 11):
-                assert vsjet.evaluate(45.0, dm, 5, "Medium", vsele, syst, "pt") > 0
+                assert {
+                    vsjet.evaluate(pt, dm, 5, "Medium", vsele, syst, "dm")
+                    for pt in (25.0, 39.9, 40.1, 100.0)
+                } == {vsjet.evaluate(45.0, dm, 5, "Medium", vsele, syst, "dm")}
+                assert vsjet.evaluate(45.0, dm, 5, "Medium", vsele, syst, "dm") > 0
+                assert {
+                    es.evaluate(pt, 1.0, dm, 5, "DeepTau2018v2p5", "Medium", vsele, syst)
+                    for pt in (25.0, 39.9, 40.1, 100.0)
+                } == {
+                    es.evaluate(45.0, 1.0, dm, 5, "DeepTau2018v2p5", "Medium", vsele, syst)
+                }
                 assert (
                     es.evaluate(
                         45.0, 1.0, dm, 5, "DeepTau2018v2p5", "Medium", vsele, syst
@@ -253,7 +262,7 @@ def test_tau_payload_contract():
                 )
                 for genmatch in (0, 1, 2, 3, 4, 6):
                     assert (
-                        vsjet.evaluate(45.0, dm, genmatch, "Medium", vsele, syst, "pt")
+                        vsjet.evaluate(45.0, dm, genmatch, "Medium", vsele, syst, "dm")
                         == 1.0
                     )
                     assert (
