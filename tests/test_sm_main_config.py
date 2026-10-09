@@ -188,6 +188,24 @@ def test_sm_recoil_file_has_the_labelled_z_pt_bins():
     assert labels == ["Pt0to10", "Pt10to20", "Pt20to30", "Pt30to50", "PtGt50"]
 
 
+@pytest.mark.parametrize(
+    "module,sample,propagate",
+    [
+        ("sm_config", "ttbar", False),
+        ("sm_config", "dyjets", False),
+        ("sm_config", "data", False),
+        ("sm_config", "embedding", False),
+        ("nmssm_config", "ttbar", True),
+        ("nmssm_config", "data", False),
+    ],
+)
+def test_jet_propagation_to_the_met(module, sample, propagate):
+    """The v15 nominal MET of MC is the NanoAOD PuppiMET, as in data and embedding;
+    NMSSM propagates the re-applied JEC to the MET of MC."""
+    params = build(module, sample).config_parameters["global"]["nominal"]
+    assert params["propagate_jets_to_met"] is propagate
+
+
 @pytest.mark.parametrize("sample", ["dyjets", "wjets"])
 def test_sm_recoil_shifts_set_the_run2_flags(sample):
     """The Run-2 recoil producer reads bool flags, not the Run-3 variation name."""

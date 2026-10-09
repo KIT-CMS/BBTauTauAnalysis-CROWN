@@ -2403,9 +2403,14 @@ def build_config(
     # MET corrections
     add_met_corrections_config(configuration)
 
-    # Run-2 v15 recoil correction: the legacy file with the Z pT bins its labels
-    # name (payloads/recoil_corrections/README.md)
+    # Run-2 v15 MET: the nominal MET of MC is the NanoAOD PuppiMET, as in data
+    # and embedding, without the re-applied JEC and JER; the recoil correction
+    # reads the legacy file with the Z pT bins its labels name
+    # (payloads/recoil_corrections/README.md)
     if use_run2_v15_inputs:
+        configuration.add_config_parameters(
+            GLOBAL_SCOPES, {"propagate_jets_to_met": False}
+        )
         configuration.add_config_parameters(
             SCOPES,
             {
