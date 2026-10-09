@@ -1347,14 +1347,15 @@ def _strict_upart_weight_producer(name, output_quantity, variation_comb, variati
     """One multi_wp_event_weight Producer for a fixed (comb, light) variation.
 
     The two variation keys are known at config time and baked into the call;
-    the payload files and the efficiency sample_type remain config parameters
-    resolved per scope. The WP thresholds are read from the SF payload by the
-    C++ consumer.
+    the payload files, the efficiency sample_type and the lowest calibrated
+    b/c-jet pT remain config parameters resolved per scope. The WP thresholds
+    are read from the SF payload by the C++ consumer.
     """
     call = (
         "xyh::scalefactor::btagging_strict::multi_wp_event_weight("
         "{df}, correctionManager, {output}, {input}, "
         '"{bjet_sf_file}", "{bjet_eff_file}", "{bjet_eff_sample_type}", '
+        "{bjet_sf_bc_min_pt}, "
         '"' + variation_comb + '", "' + variation_light + '")'
     )
     return Producer(

@@ -44,8 +44,8 @@ ROOT::RDF::RNode multi_wp_event_weight(
     const std::string &jet_eta, const std::string &jet_flavor,
     const std::string &jet_score, const std::string &jet_mask,
     const std::string &sf_file, const std::string &eff_file,
-    const std::string &eff_sample_type, const std::string &variation_comb,
-    const std::string &variation_light) {
+    const std::string &eff_sample_type, const float &bc_min_pt,
+    const std::string &variation_comb, const std::string &variation_light) {
 
     const std::string logger_name =
         "xyh::scalefactor::btagging_strict::multi_wp_event_weight";
@@ -102,7 +102,7 @@ ROOT::RDF::RNode multi_wp_event_weight(
 
     auto event_weight =
         [comb_evaluator, light_evaluator, eff_evaluator, thresholds,
-         variation_comb, variation_light, eff_sample_type,
+         bc_min_pt, variation_comb, variation_light, eff_sample_type,
          logger_name](const ROOT::RVec<float> &pts,
                       const ROOT::RVec<float> &etas,
                       const ROOT::RVec<UChar_t> &flavors_uc,
@@ -149,14 +149,26 @@ ROOT::RDF::RNode multi_wp_event_weight(
                                              kin + ")");
                 }
 
+                // b/c jets below the calibrated pT range take the SF of its
+                // first bin with twice the deviation of the variation.
+                const bool below_bc_range =
+                    (flavor == 5 || flavor == 4) && pt < bc_min_pt;
+                const double sf_pt = below_bc_range ? bc_min_pt + 1e-3 : pt;
+
                 // Evaluate a SF for a WP, rethrowing correctionlib failures
                 // (e.g. an unknown variation key) with the jet kinematics.
                 auto eval_sf = [&](const std::string &wp) -> double {
                     try {
-                        return sf_evaluator->evaluate(
+                        const double sf = sf_evaluator->evaluate(
                             {sf_variation, wp, flavor,
-                             static_cast<double>(abs_eta),
-                             static_cast<double>(pt)});
+                             static_cast<double>(abs_eta), sf_pt});
+                        if (!below_bc_range || sf_variation == "central") {
+                            return sf;
+                        }
+                        const double central = sf_evaluator->evaluate(
+                            {"central", wp, flavor,
+                             static_cast<double>(abs_eta), sf_pt});
+                        return central + 2.0 * (sf - central);
                     } catch (const std::exception &error) {
                         throw std::runtime_error(
                             logger_name +

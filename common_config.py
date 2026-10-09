@@ -2063,12 +2063,16 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
         )
         # Parameters of the strict UParTAK4 multi-WP event-weight producer
         # (scheduled in build_config): the efficiency is looked up under the
-        # sample's own name.
+        # sample's own name, and b/c jets below the lowest calibrated pT of
+        # the comb SFs take the SF at that pT.
         configuration.add_config_parameters(
             SCOPES,
             {
                 "bjet_eff_sample_type": SampleModifier(
                     {sample_type: sample_type for sample_type in sample_types}
+                ),
+                "bjet_sf_bc_min_pt": btag_payloads.load_upart_comb_min_pt(
+                    upart_payload
                 ),
             },
         )

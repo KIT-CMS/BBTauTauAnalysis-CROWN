@@ -68,6 +68,12 @@ namespace btagging_strict {
 // pass "central" on the side that does not carry a requested systematic
 // component (a comb-only component keeps light central, and vice versa).
 //
+// b/c jets below `bc_min_pt`, the lowest calibrated pT of `UParTAK4_comb`,
+// take the SF at that pT with twice its deviation from central for the
+// variations (BTV convention, CMSSW BTagCalibrationReader::eval_auto_bounds);
+// the payload's pT flow would return the highest bin. Their efficiencies stay
+// at the jet pT.
+//
 // STRICT throw conditions (all but the first carry the offending jet's
 // pt / eta / flavor / score in the std::runtime_error message):
 //   * `UParTAK4_wp_values` thresholds that are non-finite or not strictly
@@ -127,6 +133,7 @@ static const char *kEfficiencyCorrection = "btag_efficiency";
  * @param eff_file path to the b-tag efficiency payload
  * @param eff_sample_type value of the efficiency payload's `sample_type`
  *     category for this sample
+ * @param bc_min_pt lowest calibrated pT of the b/c-jet SFs
  * @param variation_comb systematic key evaluated for b/c jets on UParTAK4_comb
  * @param variation_light systematic key evaluated for light jets on
  *     UParTAK4_light
@@ -139,8 +146,8 @@ ROOT::RDF::RNode multi_wp_event_weight(
     const std::string &jet_eta, const std::string &jet_flavor,
     const std::string &jet_score, const std::string &jet_mask,
     const std::string &sf_file, const std::string &eff_file,
-    const std::string &eff_sample_type, const std::string &variation_comb,
-    const std::string &variation_light);
+    const std::string &eff_sample_type, const float &bc_min_pt,
+    const std::string &variation_comb, const std::string &variation_light);
 
 } // end namespace btagging_strict
 
