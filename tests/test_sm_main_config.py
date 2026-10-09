@@ -3,7 +3,8 @@
 Each assertion pins a value that would otherwise regress silently into wrong physics
 or a broken grid job: the truth-gen mothers and LHE dispatch per sample, the pinned
 UParTAK4 b-tag and v15 jet/electron wiring, the per-variation weight columns, the
-DY/W recoil treatment, the era/sample gates and the sample lists.
+DY/W recoil treatment, the diagnostic columns, the era/sample gates and the sample
+lists.
 """
 
 import importlib
@@ -30,6 +31,10 @@ from analysis_configurations.bbtautau.tests.helpers import (
 
 ALL_SCOPES = tuple(SCOPES)
 LHE_PRODUCERS = {"LHE_Scale_weight", "NMSSM_LHE_Scale_weight"}
+PILEUP_COLUMNS = {"npv_good", "rho"}
+FLAVOUR_COLUMNS = {
+    f"{jets}_hadronFlavour_{index}" for jets in ("jet", "bpair") for index in (1, 2)
+}
 # inclusive LO ttZ, ttZ -> nunu (in TTZToLLNuNu_M-10) and the twin of ZZTo2Q2Nu
 DOUBLE_COUNTED = ("ttZJets_", "TTZToNuNu_", "ZZTo2Nu2Q_5f_")
 
@@ -222,6 +227,28 @@ def test_jet_propagation_to_the_met(module, sample, propagate):
     NMSSM propagates the re-applied JEC to the MET of MC."""
     params = build(module, sample).config_parameters["global"]["nominal"]
     assert params["propagate_jets_to_met"] is propagate
+
+
+@pytest.mark.parametrize("sample", ["ttbar", "data", "embedding"])
+def test_pileup_and_jet_flavour_columns(sample):
+    """npv_good and rho in every sample kind, the jet hadron flavours in MC only,
+    in every scope; NMSSM writes neither."""
+    scopes = ("et", "mt", "tt") if sample == "embedding" else ALL_SCOPES
+    config = build("sm_config", sample, scopes=scopes)
+    for scope in scopes:
+        outputs = output_names(config, scope)
+        assert PILEUP_COLUMNS <= outputs, scope
+        if sample == "ttbar":
+            assert FLAVOUR_COLUMNS <= outputs, scope
+        else:
+            assert not FLAVOUR_COLUMNS & outputs, scope
+    if sample == "ttbar":
+        bpair = find_producer(config, "mt", "bpair_hadronFlavour_1").get_inputs("mt")
+        assert [q.name for q in bpair] == ["Jet_hadronFlavour", "dibjetpair"]
+        jet = find_producer(config, "mt", "jet_hadronFlavour_1").get_inputs("mt")
+        assert [q.name for q in jet] == ["Jet_hadronFlavour", "good_jet_collection"]
+    nmssm = output_names(build("nmssm_config", sample if sample != "embedding" else "ttbar"), "mt")
+    assert not (PILEUP_COLUMNS | FLAVOUR_COLUMNS) & nmssm
 
 
 @pytest.mark.parametrize("sample", ["dyjets", "wjets"])

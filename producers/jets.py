@@ -1231,6 +1231,49 @@ BasicJetQuantities = ProducerGroup(
     ],
 )
 
+# Hadron flavour of the two leading jets and of the b-pair jets (MC only)
+jet_hadronFlavour_1 = Producer(
+    name="jet_hadronFlavour_1",
+    call="event::quantity::Get<UChar_t>({df}, {output}, {input}, 0)",
+    input=[nanoAOD.Jet_hadronFlavour, q.good_jet_collection],
+    output=[q.jet_hadronFlavour_1],
+    scopes=SCOPES,
+)
+jet_hadronFlavour_2 = Producer(
+    name="jet_hadronFlavour_2",
+    call="event::quantity::Get<UChar_t>({df}, {output}, {input}, 1)",
+    input=[nanoAOD.Jet_hadronFlavour, q.good_jet_collection],
+    output=[q.jet_hadronFlavour_2],
+    scopes=SCOPES,
+)
+bpair_hadronFlavour_1 = Producer(
+    name="bpair_hadronFlavour_1",
+    call="event::quantity::Get<UChar_t>({df}, {output}, {input}, 0)",
+    input=[nanoAOD.Jet_hadronFlavour, q.dibjetpair],
+    output=[q.bpair_hadronFlavour_1],
+    scopes=SCOPES,
+)
+bpair_hadronFlavour_2 = Producer(
+    name="bpair_hadronFlavour_2",
+    call="event::quantity::Get<UChar_t>({df}, {output}, {input}, 1)",
+    input=[nanoAOD.Jet_hadronFlavour, q.dibjetpair],
+    output=[q.bpair_hadronFlavour_2],
+    scopes=SCOPES,
+)
+JetHadronFlavours = ProducerGroup(
+    name="JetHadronFlavours",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        jet_hadronFlavour_1,
+        jet_hadronFlavour_2,
+        bpair_hadronFlavour_1,
+        bpair_hadronFlavour_2,
+    ],
+)
+
 ##########################
 # Basic b-Jet Quantities
 # nbtag, pt, eta, phi, b-tag value

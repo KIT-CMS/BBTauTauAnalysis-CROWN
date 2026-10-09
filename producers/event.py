@@ -104,6 +104,24 @@ npartons = Producer(
     scopes=["global"],
 )
 
+# Pileup proxies: number of good primary vertices and the median energy
+# density rho
+npv_good = Producer(
+    name="npv_good",
+    call="event::quantity::Rename<UChar_t>({df}, {output}, {input})",
+    input=[nanoAOD.PV_npvsGood],
+    output=[q.npv_good],
+    scopes=["global"],
+)
+
+rho = Producer(
+    name="rho",
+    call="event::quantity::Rename<float>({df}, {output}, {input})",
+    input=[nanoAOD.Rho_fixedGridRhoFastjetAll],
+    output=[q.rho],
+    scopes=["global"],
+)
+
 PUweights = Producer(
     name="PUweights",
     call="""event::reweighting::Pileup(

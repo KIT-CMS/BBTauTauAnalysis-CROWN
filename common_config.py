@@ -2718,6 +2718,12 @@ def build_config(
     )
     MetGlobal = get_for_era(met.met_global(met_cov_overrides), era)
 
+    # Diagnostic columns, with the v15 inputs only (v9 stores PV_npvsGood and
+    # Jet_hadronFlavour as Int_t): the pileup proxies and, in MC, the hadron
+    # flavour of the two leading jets and of the b-pair jets
+    pileup_producers = [event.npv_good, event.rho] if use_run2_v15_inputs else []
+    jet_flavour_producers = [jets.JetHadronFlavours] if use_run2_v15_inputs else []
+
     # MET scope quantities producer
     # For a detailed description, see producers/met.py. With the v15 inputs, the
     # Run-2 recoil correction counts the jets of the HTT recipe.
@@ -2883,6 +2889,7 @@ def build_config(
             AuxCorrT1METJetCollectionQuantities,
             jets.Type1JetCollection,
         ]
+        + pileup_producers
         + prefire_weight_producers
         + base_jet_selection_producers
         # + fat_jet_id_producers
@@ -2919,7 +2926,7 @@ def build_config(
         met.MetQuantities,
         pairquantities.DiTauPairMETQuantities,
         genparticles.GenMatching,
-    ]
+    ] + jet_flavour_producers
     # + xbb_sf_producers
     # + fj_genjet_producers
     if strip_analysis_bjets:
@@ -2929,6 +2936,7 @@ def build_config(
             jets.BasicBJetQuantities,
             pairquantities_bbpair.AllBBPairProducers,
             genparticles.GenDiBjetPairQuantities,
+            jets.JetHadronFlavours,
             bjet_id_sf_producer,
         ]
         scope_producers = [
@@ -3467,14 +3475,12 @@ def build_config(
         ),
     )
 
-    # Remove the generator-level b jet pair quantities from data and embedding
-    # samples
+    # Remove the generator-level b jet pair quantities and the jet hadron
+    # flavours from data and embedding samples
     configuration.add_modification_rule(
         SCOPES,
         RemoveProducer(
-            producers=[
-                genparticles.GenDiBjetPairQuantities,
-            ],
+            producers=[genparticles.GenDiBjetPairQuantities] + jet_flavour_producers,
             samples=["data", "embedding", "embedding_mc"],
         ),
     )
@@ -3720,6 +3726,15 @@ def build_config(
         q.pt_dijet,
         q.jet_hemisphere,
     ]
+    if use_run2_v15_inputs:
+        scope_outputs += [
+            q.npv_good,
+            q.rho,
+            q.jet_hadronFlavour_1,
+            q.jet_hadronFlavour_2,
+            q.bpair_hadronFlavour_1,
+            q.bpair_hadronFlavour_2,
+        ]
     if strip_analysis_bjets:
         # probe-jet profile: drop the selected-bb-pair layer and the b-tag SF weight
         analysis_bjet_layer_outputs = [
@@ -3762,6 +3777,10 @@ def build_config(
             q.genjet_mass_2,
             q.genjet_hadFlavour_2,
             q.genjet_m_inv,
+            q.jet_hadronFlavour_1,
+            q.jet_hadronFlavour_2,
+            q.bpair_hadronFlavour_1,
+            q.bpair_hadronFlavour_2,
             q.n_bjets,
             q.id_wgt_bjet,
             q.pt_tautaubb,
