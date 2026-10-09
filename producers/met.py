@@ -440,8 +440,8 @@ MetScopesWithRecoilJets = ProducerGroup(
     ],
 )
 
-# Dummy producer to rename the MET if recoil corrections are applied to the
-# sample
+# Replaces the recoil correction for samples without one, so their MET keeps
+# the propagated lepton energy scales
 RenameMet = Producer(
     name="RenameMet",
     call="""
@@ -451,7 +451,7 @@ RenameMet = Producer(
         {input}
     )
     """,
-    input=[q.met_p4_jetcorrected],
+    input=[q.met_p4_leptoncorrected],
     output=[q.met_p4_recoilcorrected],
     scopes=SCOPES,
 )

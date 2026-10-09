@@ -229,6 +229,26 @@ def test_jet_propagation_to_the_met(module, sample, propagate):
     assert params["propagate_jets_to_met"] is propagate
 
 
+@pytest.mark.parametrize(
+    "module,sample,final_met",
+    [
+        ("sm_config", "ttbar", "RenameMet"),
+        ("sm_config", "data", "RenameMet"),
+        ("sm_config", "embedding", "RenameMet"),
+        ("sm_config", "dyjets", "RecoilCorrectionMet"),
+        ("nmssm_config", "ttbar", "RenameMet"),
+    ],
+)
+def test_met_keeps_the_lepton_propagation(module, sample, final_met):
+    """The final MET starts from the lepton-corrected MET, also in samples whose
+    recoil correction is replaced by a rename."""
+    scopes = ("et", "mt", "tt")
+    config = build(module, sample, scopes=scopes)
+    for scope in scopes:
+        inputs = find_producer(config, scope, final_met).get_inputs(scope)
+        assert inputs[0].name == "met_p4_leptoncorrected", scope
+
+
 @pytest.mark.parametrize("sample", ["ttbar", "data", "embedding"])
 def test_pileup_and_jet_flavour_columns(sample):
     """npv_good and rho in every sample kind, the jet hadron flavours in MC only,
