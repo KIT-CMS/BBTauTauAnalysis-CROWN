@@ -4,7 +4,7 @@ from analysis_configurations.quantities import nanoAODv12_run3
 from code_generation.producer import Producer, ProducerGroup
 
 from ..constants import GLOBAL_SCOPES, SCOPES, ERAS_RUN2, ERAS_RUN3
-from ..helpers import era_producer_groups
+from ..helpers import era_producer_groups, get_for_era, override_eras
 
 #
 # HELPER FUNCTIONS
@@ -82,6 +82,24 @@ def met_cov_producers(
 # PF MET covariance matrix elements
 # - In nanoAODv12, the MET covariance matrix elements are only available for PFMET.
 # - In nanoAODv15, the MET covariance matrix elements can be taken from PuppiMET.
+#   This holds for Run 3 (2024, 2025) as well as for the Run-2 UL reprocessing,
+#   which renames the PF MET collection MET_* -> PFMET_* and drops the v9/v12
+#   MET_covXX/XY/YY branches; the output quantities are identical either way.
+MetCovPuppi = met_cov_producers(
+    name="MetCov",
+    input_quantities={
+        "met_cov_xx": nanoAOD.PuppiMET_covXX,
+        "met_cov_xy": nanoAOD.PuppiMET_covXY,
+        "met_cov_yy": nanoAOD.PuppiMET_covYY,
+    },
+    output_quantities={
+        "met_cov_00": q.metcov00,
+        "met_cov_01": q.metcov01,
+        "met_cov_10": q.metcov10,
+        "met_cov_11": q.metcov11,
+    },
+    scopes=GLOBAL_SCOPES,
+)
 MetCov = {
     tuple(ERAS_RUN2) + ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): met_cov_producers(
         name="MetCov",
@@ -98,21 +116,7 @@ MetCov = {
         },
         scopes=GLOBAL_SCOPES,
     ),
-    ("2024", "2025"): met_cov_producers(
-        name="MetCov",
-        input_quantities={
-            "met_cov_xx": nanoAOD.PuppiMET_covXX,
-            "met_cov_xy": nanoAOD.PuppiMET_covXY,
-            "met_cov_yy": nanoAOD.PuppiMET_covYY,
-        },
-        output_quantities={
-            "met_cov_00": q.metcov00,
-            "met_cov_01": q.metcov01,
-            "met_cov_10": q.metcov10,
-            "met_cov_11": q.metcov11,
-        },
-        scopes=GLOBAL_SCOPES,
-    ),
+    ("2024", "2025"): MetCovPuppi,
 }
 
 # PuppiMET vector without recoil corrections and missing propagation of changes
@@ -247,22 +251,35 @@ MetJetCorrection = {
 }
 
 # MET functions running in the global scope
-MetGlobal = era_producer_groups(
-    "MetGlobal",
-    [
-        MetCov,
-        MetVectorUncorrected,
-        MetPtUncorrected,
-        MetPhiUncorrected,
-        MetSumEt,
-        MetVectorRaw,
-        MetPtRaw,
-        MetPhiRaw,
-        MetSumEtRaw,
-        MetJetCorrection,
-    ],
-    GLOBAL_SCOPES,
-)
+_MET_GLOBAL_MEMBERS = [
+    MetCov,
+    MetVectorUncorrected,
+    MetPtUncorrected,
+    MetPhiUncorrected,
+    MetSumEt,
+    MetVectorRaw,
+    MetPtRaw,
+    MetPhiRaw,
+    MetSumEtRaw,
+    MetJetCorrection,
+]
+MetGlobal = era_producer_groups("MetGlobal", _MET_GLOBAL_MEMBERS, GLOBAL_SCOPES)
+
+
+def met_global(met_cov_overrides=None):
+    """
+    `MetGlobal` with the covariance producer replaced for the eras in
+    `met_cov_overrides` (era -> producer). The Run-2 NanoAOD-v15 inputs drop
+    the v9/v12 MET_covXX/XY/YY branches and take the covariance from PuppiMET
+    like 2024/2025; every other member reads branches present in v15.
+    """
+    if not met_cov_overrides:
+        return MetGlobal
+    return era_producer_groups(
+        "MetGlobal",
+        [override_eras(MetCov, met_cov_overrides)] + _MET_GLOBAL_MEMBERS[1:],
+        GLOBAL_SCOPES,
+    )
 
 # Propagate changes in the lepton energy scales to MET
 MetLeptonCorrection = Producer(
@@ -286,9 +303,57 @@ MetLeptonCorrection = Producer(
     scopes=SCOPES,
 )
 
-# Recoil correction evaluation via correctionlib
-MetRecoilCorrection = {
-    tuple(ERAS_RUN2): Producer(
+# Jets counted by the Run-2 recoil correction with the Run-2 NanoAOD-v15
+# inputs, following the HTT recipe: pT > 30 GeV, |eta| < 4.7, jet ID, and
+# DeltaR > 0.5 to both pair objects. The legacy Run-2 path counts all jets.
+GoodRecoilJets = Producer(
+    name="GoodRecoilJets",
+    call="xyh::object_selection::jet({df}, {output}, {input}, {recoil_jet_min_pt}, {recoil_jet_max_abs_eta}, {ak4jet_id_wp}, false)",
+    input=[
+        q.Jet_correctedPt,
+        nanoAOD.Jet_eta,
+        q.Jet_ID,
+    ],
+    output=[q.good_recoil_jets_mask],
+    scopes=GLOBAL_SCOPES,
+)
+
+VetoOverlappingRecoilJets = Producer(
+    name="VetoOverlappingRecoilJets",
+    call="physicsobject::jet::VetoOverlappingJets({df}, {output}, {input}, {recoil_jet_veto_min_delta_r})",
+    input=[
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.p4_1,
+        q.p4_2,
+    ],
+    output=[q.recoil_jet_overlap_veto_mask],
+    scopes=SCOPES,
+)
+
+RecoilJetsMask = Producer(
+    name="RecoilJetsMask",
+    call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
+    input=[q.good_recoil_jets_mask, q.recoil_jet_overlap_veto_mask],
+    output=[q.recoil_jets_mask],
+    scopes=SCOPES,
+)
+
+RecoilJetPt = Producer(
+    name="RecoilJetPt",
+    call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
+    input=[q.Jet_correctedPt, q.recoil_jets_mask],
+    output=[q.Jet_recoilPt],
+    scopes=SCOPES,
+)
+
+
+def _recoil_correction_run2(jet_pt):
+    """
+    Run-2 recoil correction from the ROOT files. It counts the jets above
+    30 GeV in `jet_pt` (+1 for W+jets).
+    """
+    return Producer(
         name="RecoilCorrectionMet",
         call="""
         met::RecoilCorrection(
@@ -309,11 +374,16 @@ MetRecoilCorrection = {
             q.met_p4_leptoncorrected,
             q.gen_boson_p4,
             q.gen_vis_boson_p4,
-            q.Jet_correctedPt,
+            jet_pt,
         ],
         output=[q.met_p4_recoilcorrected],
         scopes=SCOPES,
-    ),
+    )
+
+
+# Recoil correction evaluation via correctionlib
+MetRecoilCorrection = {
+    tuple(ERAS_RUN2): _recoil_correction_run2(q.Jet_correctedPt),
     tuple(ERAS_RUN3): Producer(
         name="RecoilCorrectionMet",
         call=(
@@ -352,8 +422,26 @@ MetScopes = era_producer_groups(
     SCOPES,
 )
 
-# Dummy producer to rename the MET if recoil corrections are applied to the
-# sample
+# The same with the Run-2 NanoAOD-v15 inputs, whose recoil correction counts
+# the jets of the HTT recipe (GoodRecoilJets runs in the global scope)
+MetRecoilCorrectionWithRecoilJets = _recoil_correction_run2(q.Jet_recoilPt)
+MetScopesWithRecoilJets = ProducerGroup(
+    name="MetScopes",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        VetoOverlappingRecoilJets,
+        RecoilJetsMask,
+        RecoilJetPt,
+        MetLeptonCorrection,
+        MetRecoilCorrectionWithRecoilJets,
+    ],
+)
+
+# Replaces the recoil correction for samples without one, so their MET keeps
+# the propagated lepton energy scales
 RenameMet = Producer(
     name="RenameMet",
     call="""
@@ -363,7 +451,7 @@ RenameMet = Producer(
         {input}
     )
     """,
-    input=[q.met_p4_jetcorrected],
+    input=[q.met_p4_leptoncorrected],
     output=[q.met_p4_recoilcorrected],
     scopes=SCOPES,
 )

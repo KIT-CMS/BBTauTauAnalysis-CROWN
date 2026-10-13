@@ -1,8 +1,8 @@
 from code_generation.producer import Producer, ProducerGroup, ExtendedVectorProducer
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
+from . import scalefactors, triggers
 
-"""
 EmbeddingGenWeight = Producer(
     name="EmbeddingGenWeight",
     call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
@@ -67,27 +67,19 @@ TauEmbeddingIsTightTrailingMuon = Producer(
     output=[q.emb_isTightTrailingMuon],
     scopes=["et", "mt", "tt", "em", "mm", "ee"],
 )
-TauEmbeddingnInitialPairCandidates = Producer(
-    name="TauEmbeddingInitialPairCandidates",
-    call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
-    input=[nanoAOD.TauEmbedding_InitialPairCandidates],
-    output=[q.emb_InitialPairCandidates],
-    scopes=["et", "mt", "tt", "em", "mm", "ee"],
-)
-TauEmbeddingSelectionOldMass = Producer(
-    name="TauEmbeddingSelectionOldMass",
-    call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
-    input=[nanoAOD.TauEmbedding_SelectionOldMass],
-    output=[q.emb_SelectionOldMass],
-    scopes=["et", "mt", "tt", "em", "mm", "ee"],
-)
-TauEmbeddingSelectionNewMass = Producer(
-    name="TauEmbeddingSelectionNewMass",
-    call="event::quantity::Rename<Float_t>({df}, {output}, {input})",
-    input=[nanoAOD.TauEmbedding_SelectionNewMass],
-    output=[q.emb_SelectionNewMass],
-    scopes=["et", "mt", "tt", "em", "mm", "ee"],
-)
+# TauEmbeddingnInitialPairCandidates / TauEmbeddingSelectionOldMass /
+# TauEmbeddingSelectionNewMass are intentionally NOT defined here (unlike the
+# reference `unittest` analysis config): they read
+# nanoAOD.TauEmbedding_nInitialPairCandidates / TauEmbedding_SelectionOldMass /
+# TauEmbedding_SelectionNewMass, none of which exist in the NanoAOD v15 Run 3
+# schema this analysis's `nanoAOD` alias resolves to
+# (analysis_configurations/quantities/nanoAODv15_run3.py) -- only in the
+# legacy v9 Run 2 schema. Defining them would raise AttributeError at import
+# time for every build (not just embedding samples), since this module is
+# imported unconditionally by tau_embedding_settings.py. Re-add them (with
+# their emb_InitialPairCandidates / emb_SelectionOldMass / emb_SelectionNewMass
+# outputs, currently unused) once/if those branches are added to the v15
+# schema.
 
 EmbeddingQuantities = ProducerGroup(
     name="EmbeddingQuantities",
@@ -105,19 +97,15 @@ EmbeddingQuantities = ProducerGroup(
         TauEmbeddingIsMediumTrailingMuon,
         TauEmbeddingIsTightLeadingMuon,
         TauEmbeddingIsTightTrailingMuon,
-        TauEmbeddingnInitialPairCandidates,
-        TauEmbeddingSelectionOldMass,
-        TauEmbeddingSelectionNewMass,
     ],
 )
-"""
 
 
 # Selection scalefactor
 
 TauEmbeddingTriggerSelectionSF = Producer(
     name="TauEmbeddingTriggerSelectionSF",
-    call="""embedding::scalefactor::selectionTrigger(
+    call="""embedding::scalefactor::SelectionTrigger(
         {df}, 
         correctionManager, 
         {output}, 
@@ -242,6 +230,46 @@ TauEmbeddingMuonIsoSF_2 = Producer(
     scopes=["mm", "em"],
 )
 
+# isolation SF of the muon's iso bin: Iso_pt_eta_bins below the first edge,
+# the anti-isolated AIso* corrections above
+TauEmbeddingMuonIsoBinnedSF_1 = Producer(
+    name="TauEmbeddingMuonIsoBinnedSF_1",
+    call="""xyh::scalefactor::embedding_iso_binned(
+        {df}, 
+        correctionManager, 
+        {output}, 
+        {input}, 
+        "{embedding_muon_sf_file}", 
+        {vec_open}{embedding_muon_iso_edges}{vec_close}, 
+        {vec_open}{embedding_muon_iso_sfs}{vec_close}, 
+        "emb", 
+        {embedding_muon_iso_extrapolation}, 
+        true)
+        """,
+    input=[q.pt_1, q.eta_1, q.iso_1],
+    output=[q.iso_wgt_mu_1],
+    scopes=["mt"],
+)
+
+# muon ID and isolation SFs, in place of the MC MuonIDIso_SF group: iso-binned in
+# mt, the isolated SF of both muons in mm
+TauEmbeddingMuonIDIsoSF = ProducerGroup(
+    name="TauEmbeddingMuonIDIsoSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["mt", "mm"],
+    subproducers={
+        "mt": [TauEmbeddingMuonIDSF_1, TauEmbeddingMuonIsoBinnedSF_1],
+        "mm": [
+            TauEmbeddingMuonIDSF_1,
+            TauEmbeddingMuonIsoSF_1,
+            TauEmbeddingMuonIDSF_2,
+            TauEmbeddingMuonIsoSF_2,
+        ],
+    },
+)
+
 TauEmbeddingBoostedMuonIDSF_1 = Producer(
     name="TauEmbeddingBoostedMuonIDSF_1",
     call="""embedding::muon::Scalefactor(
@@ -361,6 +389,37 @@ TauEmbeddingElectronIsoSF_2 = Producer(
     scopes=["ee"],
 )
 
+# isolation SF of the electron's iso bin: Iso_pt_eta_bins below the edge,
+# AIso_pt_eta_bins above
+TauEmbeddingElectronIsoBinnedSF_1 = Producer(
+    name="TauEmbeddingElectronIsoBinnedSF_1",
+    call="""xyh::scalefactor::embedding_iso_binned(
+        {df}, 
+        correctionManager, 
+        {output}, 
+        {input}, 
+        "{embedding_electron_sf_file}", 
+        {vec_open}{embedding_electron_iso_edges}{vec_close}, 
+        {vec_open}{embedding_electron_iso_sfs}{vec_close}, 
+        "emb", 
+        {embedding_electron_iso_extrapolation}, 
+        false)
+        """,
+    input=[q.pt_1, q.eta_1, q.iso_1],
+    output=[q.iso_wgt_ele_1],
+    scopes=["et"],
+)
+
+# electron ID and iso-binned isolation SFs, in place of the MC EleID_SF group
+TauEmbeddingElectronIDIsoSF = ProducerGroup(
+    name="TauEmbeddingElectronIDIsoSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["et"],
+    subproducers={"et": [TauEmbeddingElectronIDSF_1, TauEmbeddingElectronIsoBinnedSF_1]},
+)
+
 TauEmbeddingBoostedElectronIDSF_1 = Producer(
     name="TauEmbeddingBoostedElectronIDSF_1",
     call="""embedding::electron::Scalefactor(
@@ -408,6 +467,18 @@ ETGenerateSingleElectronTriggerSF = ExtendedVectorProducer(
     output="flagname",
     scopes=["et", "ee"],
     vec_config="singlelectron_trigger_sf",
+)
+
+# Di-tau trigger flags matched to the embedding filter bit, followed by the MC
+# trigger SF that reads them. The SF takes the flag names as parameters, so only
+# the group orders it after the flags.
+TauTauTriggerFlagsAndSFEmbedding = ProducerGroup(
+    name="TauTauTriggerFlagsAndSFEmbedding",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["tt"],
+    subproducers=[triggers.TauTauTriggerFlagsEmbedding, scalefactors.TauTauTriggerSF],
 )
 
 # Di-tau trigger SFs

@@ -36,5 +36,13 @@ ROOT::RDF::RNode BestYHKinFit(
     const std::string &kinfit_mh_YToTauTau,
     const std::string &kinfit_chi2_YToTauTau,
     const std::string &kinfit_prob_YToTauTau);
+
+ROOT::RDF::RNode
+sm_hh_kinfit(ROOT::RDF::RNode df, const std::vector<std::string> &outputs,
+             const std::string &tau_p4_1, const std::string &tau_p4_2,
+             const std::string &b_p4_1, const std::string &b_reso_1,
+             const std::string &b_p4_2, const std::string &b_reso_2,
+             const std::string &met_p4, const std::string &met_cov_xx,
+             const std::string &met_cov_xy, const std::string &met_cov_yy);
 } // namespace hhkinfit
 #endif /* GUARDHHKINFIT_H */

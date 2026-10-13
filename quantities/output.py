@@ -40,6 +40,8 @@ kinfit_prob = Quantity("kinfit_prob")
 kinfit_pull1 = Quantity("kinfit_pull1")
 kinfit_pull2 = Quantity("kinfit_pull2")
 kinfit_pullBalance = Quantity("kinfit_pullBalance")
+# SM fixed-mass (m(H->bb)=125, m(H->tautau)=125) HH kinematic fit output
+kinfit_mHH = Quantity("kinfit_mHH")
 kinfit_convergence_YToBB_boosted = Quantity("kinfit_convergence_YToBB_boosted")
 kinfit_mX_YToBB_boosted = Quantity("kinfit_mX_YToBB_boosted")
 kinfit_mY_YToBB_boosted = Quantity("kinfit_mY_YToBB_boosted")
@@ -95,6 +97,9 @@ good_jets_with_veto_mask_boosted = Quantity("good_jets_with_veto_mask")
 base_bjets_mask = Quantity("base_bjets_mask")
 good_bjets_mask = Quantity("good_bjets_mask")
 good_bjets_with_veto_mask = Quantity("good_bjets_with_veto_mask")
+# Kinematic b-jet acceptance (before the b-tag WP cut) cleaned of lepton
+# overlaps: the jet set the strict UParTAK4 multi-WP event weight reweights.
+base_bjets_with_veto_mask = Quantity("base_bjets_with_veto_mask")
 base_photons_mask = Quantity("base_photons_mask")
 Tau_pt_ele_corrected = Quantity("Tau_pt_ele_corrected")
 Tau_pt_ele_mu_corrected = Quantity("Tau_pt_mu_corrected")
@@ -254,6 +259,7 @@ bpair_eta_1 = Quantity("bpair_eta_1")
 bpair_phi_1 = Quantity("bpair_phi_1")
 bpair_mass_1 = Quantity("bpair_mass_1")
 bpair_btag_value_1 = Quantity("bpair_btag_value_1")
+bpair_hadronFlavour_1 = Quantity("bpair_hadronFlavour_1")
 bpair_reg_res_1 = Quantity("bpair_reg_res_1")
 bpair_p4_regressed_1 = Quantity("bpair_p4_regressed_1")
 bpair_pt_regressed_1 = Quantity("bpair_pt_regressed_1")
@@ -267,6 +273,7 @@ bpair_eta_2 = Quantity("bpair_eta_2")
 bpair_phi_2 = Quantity("bpair_phi_2")
 bpair_mass_2 = Quantity("bpair_mass_2")
 bpair_btag_value_2 = Quantity("bpair_btag_value_2")
+bpair_hadronFlavour_2 = Quantity("bpair_hadronFlavour_2")
 bpair_reg_res_2 = Quantity("bpair_reg_res_2")
 bpair_p4_regressed_2 = Quantity("bpair_p4_regressed_2")
 bpair_pt_regressed_2 = Quantity("bpair_pt_regressed_2")
@@ -385,6 +392,7 @@ jpt_regressed_resolution_1 = Quantity("jpt_regressed_resolution_1")
 jeta_1 = Quantity("jeta_1")
 jphi_1 = Quantity("jphi_1")
 jtag_value_1 = Quantity("jtag_value_1")
+jet_hadronFlavour_1 = Quantity("jet_hadronFlavour_1")
 jet_p4_2 = Quantity("jet_p4_2")
 jet_p4_regressed_2 = Quantity("jet_p4_regressed_2")
 jpt_2 = Quantity("jpt_2")
@@ -398,6 +406,7 @@ jpt_regressed_resolution_2 = Quantity("jpt_regressed_resolution_2")
 jeta_2 = Quantity("jeta_2")
 jphi_2 = Quantity("jphi_2")
 jtag_value_2 = Quantity("jtag_value_2")
+jet_hadronFlavour_2 = Quantity("jet_hadronFlavour_2")
 mjj = Quantity("mjj")
 bjet_p4_1 = Quantity("bjet_p4_1")
 bpt_1 = Quantity("bpt_1")
@@ -543,6 +552,11 @@ met_p4_uncorrected = Quantity("met_p4_uncorrected")
 met_p4_leptoncorrected = Quantity("met_p4_leptoncorrected")
 met_p4_jetcorrected = Quantity("met_p4_jetcorrected")
 met_p4_recoilcorrected = Quantity("met_p4_recoilcorrected")
+# jets counted by the Run-2 recoil correction (Run-2 NanoAOD-v15 inputs)
+good_recoil_jets_mask = Quantity("good_recoil_jets_mask")
+recoil_jet_overlap_veto_mask = Quantity("recoil_jet_overlap_veto_mask")
+recoil_jets_mask = Quantity("recoil_jets_mask")
+Jet_recoilPt = Quantity("Jet_recoilPt")
 gen_boson_p4 = Quantity("gen_boson_p4")
 gen_vis_boson_p4 = Quantity("gen_vis_boson_p4")
 gen_boson_pt = Quantity("gen_boson_pt")
@@ -551,6 +565,8 @@ recoil_genboson_p4 = Quantity("recoil_genboson_p4")
 recoil_vis_genboson_p4 = Quantity("recoil_vis_genboson_p4")
 genbosonmass = Quantity("genbosonmass")
 npartons = Quantity("npartons")
+npv_good = Quantity("npv_good")
+rho = Quantity("rho")
 met = Quantity("met")
 metphi = Quantity("metphi")
 metSumEt = Quantity("metSumEt")
@@ -640,6 +656,12 @@ emb_iso_wgt_mu_boosted_1 = Quantity("emb_iso_wgt_mu_boosted_1")
 # btag weight
 btag_weight = Quantity("btag_weight")
 btag_weight_boosted = Quantity("btag_weight_boosted")
+# Strict UParTAK4 multi-WP b-tag event weight (UParT b-tag path). The nominal
+# column plus the pt-flow clamp diagnostic; the per-variation weight columns
+# (btag_weight_upart_<variation>) are created at config time from the payload's
+# discovered systematic variations by
+# producers.scalefactors.build_strict_upart_btag_weight.
+btag_weight_upart = Quantity("btag_weight_upart")
 # ditau trigger weights
 trg_wgt_double_tau_1 = Quantity("trg_wgt_double_tau_1")
 trg_wgt_double_tau_2 = Quantity("trg_wgt_double_tau_2")
@@ -818,6 +840,17 @@ Type1Jet_l2l3resPt = Quantity("Type1Jet_l2l3resPt")
 Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
 
 # endregion
+
+# ------------------------------------------------------------------------------
+# Payload-independent UParT probe-jet collection (sm_btag_efficiency_config)
+# ------------------------------------------------------------------------------
+# Per-jet probe mask (1 = probe) and the four equal-length exported vectors
+# it selects: corrected pt, eta, hadron flavour (int), and UParTAK4 B score.
+btag_probe_jet_mask = Quantity("btag_probe_jet_mask")
+btag_probe_jet_pt = Quantity("btag_probe_jet_pt")
+btag_probe_jet_eta = Quantity("btag_probe_jet_eta")
+btag_probe_jet_hadron_flavour = Quantity("btag_probe_jet_hadron_flavour")
+btag_probe_jet_upart = Quantity("btag_probe_jet_upart")
 
 # ------------------------------------------------------------------------------
 # Fake factor quantities

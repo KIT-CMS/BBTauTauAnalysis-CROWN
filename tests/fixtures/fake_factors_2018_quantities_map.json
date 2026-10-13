@@ -1,0 +1,35 @@
+{
+  "quantities": {
+    "2018": {
+      "ttbar": {
+        "et": {
+          "": [
+            "pt_1", "pt_2", "n_jets", "mt_1", "pt_tautau", "tau_decaymode_2",
+            "met", "mt_tot", "iso_1"
+          ],
+          "CMS_scale_t_DeepTau2018v2p5_DM0_pt20to40_genTau_2018Up": ["pt_2", "pt_tautau", "mt_tot"]
+        },
+        "mt": {
+          "": [
+            "pt_1", "pt_2", "n_jets", "mt_1", "pt_tautau", "tau_decaymode_2",
+            "jpt_1", "met", "mt_tot", "mass_2", "iso_1"
+          ],
+          "CMS_scale_t_DeepTau2018v2p5_DM0_pt20to40_genTau_2018Up": ["pt_2", "pt_tautau", "mt_tot", "mass_2"]
+        },
+        "tt": {
+          "": [
+            "pt_1", "pt_2", "n_jets", "m_vis", "pt_tautau", "pt_vis",
+            "tau_decaymode_1", "tau_decaymode_2", "met", "mt_tot",
+            "mass_1", "mass_2"
+          ],
+          "CMS_scale_t_DeepTau2018v2p5_DM0_pt20to40_genTau_2018Up": ["pt_1", "pt_2", "m_vis", "pt_tautau", "pt_vis", "mt_tot"]
+        }
+      }
+    }
+  },
+  "metadata": {
+    "era": "2018",
+    "sample_type": "ttbar",
+    "config": "test_ntuple"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "quantities": {
+    "2018": {
+      "ttbar": {
+        "mt": {
+          "": [
+            "pt_1", "pt_2", "eta_1", "eta_2", "phi_1", "phi_2",
+            "mass_1", "mass_2", "met", "metphi",
+            "metcov00", "metcov01", "metcov11",
+            "tau_decaymode_1", "tau_decaymode_2"
+          ]
+        }
+      }
+    }
+  },
+  "metadata": {
+    "era": "2018",
+    "sample_type": "ttbar",
+    "config": "test_ntuple"
+  }
+}
