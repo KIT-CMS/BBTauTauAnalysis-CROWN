@@ -13,7 +13,11 @@
 //     functions (reference/fakefactors_two_process.hxx, the friend before C15)
 //     bit for bit;
 //   - every leg must give sum_p f_p * max(FF_p * prod C, 0), evaluated here in
-//     double precision, within 1e-5, and every process must contribute.
+//     double precision, within 1e-5, and every process must contribute;
+//   - every leg must give that sum in the float arithmetic of the friend (every
+//     value rounded to float, the corrections applied in their order, the
+//     terms summed in payload order) bit for bit, which fixes the values of the
+//     QCD + W + ttbar legs as the reference fixes those of the two-process ones.
 //
 // Build it with -ffp-contract=off: the friend is built with ROOT's
 // -march=nocona, which has no fused multiply-add, and a reference fused by the
@@ -135,22 +139,25 @@ Inputs with_syst(const std::vector<float> &values, const std::string &syst) {
     return result;
 }
 
-// The expected fake factor in double precision; `terms` gets the term of each
-// process
-double expected(correctionManager::CorrectionManager &mgr, const Leg &leg,
-                const std::vector<std::vector<float>> &inputs,
-                const std::vector<std::string> &syst, bool corrected,
-                std::vector<double> &terms) {
+// The expected fake factor in precision T: double for the formula, float for
+// the arithmetic of the friend (every value rounded to float, the corrections
+// applied in their order, the terms summed in payload order); `terms` gets the
+// term of each process
+template <typename T>
+T expected(correctionManager::CorrectionManager &mgr, const Leg &leg,
+           const std::vector<std::vector<float>> &inputs,
+           const std::vector<std::string> &syst, bool corrected,
+           std::vector<T> &terms) {
     const std::size_t n_p = leg.processes.size();
     auto fractions = mgr.loadCorrection(leg.ff_file, leg.fraction);
-    std::vector<double> products(n_p);
+    std::vector<T> products(n_p);
     for (std::size_t p = 0; p < n_p; ++p) {
         products[p] = mgr.loadCorrection(leg.ff_file, leg.ff_names[p])
                           ->evaluate(with_syst(inputs[1 + p], syst[1 + p]));
     }
     for (std::size_t c = 0; corrected && c < leg.corr_names.size(); ++c) {
         const auto values = with_syst(inputs[1 + n_p + c], syst[1 + n_p + c]);
-        const double correction =
+        const T correction =
             leg.corr_compound[c]
                 ? mgr.loadCompoundCorrection(leg.corr_file, leg.corr_names[c])
                       ->evaluate(values)
@@ -162,13 +169,14 @@ double expected(correctionManager::CorrectionManager &mgr, const Leg &leg,
             }
         }
     }
-    double sum = 0.0;
-    terms.assign(n_p, 0.0);
+    T sum = 0;
+    terms.assign(n_p, T(0));
     for (std::size_t p = 0; p < n_p; ++p) {
         Inputs values = with_syst(inputs[0], syst[0]);
         values.insert(values.begin(), leg.processes[p]);
-        terms[p] = fractions->evaluate(values) * std::max(products[p], 0.0);
-        sum += terms[p];
+        const T fraction = fractions->evaluate(values);
+        terms[p] = fraction * std::max(products[p], T(0));
+        sum = p == 0 ? terms[p] : sum + terms[p];
     }
     return sum;
 }
@@ -267,8 +275,8 @@ int test_leg(correctionManager::CorrectionManager &mgr, const Leg &leg) {
         return 1;
     }
 
-    std::size_t bit_mismatches = 0, value_mismatches = 0, nonzero = 0,
-                compared = 0;
+    std::size_t bit_mismatches = 0, float_mismatches = 0, value_mismatches = 0,
+                nonzero = 0, compared = 0;
     std::vector<std::size_t> contributions(n_p, 0);
     for (std::size_t k = 0; k < configurations.size(); ++k) {
         for (ULong64_t e = 0; e < kEvents; ++e) {
@@ -288,6 +296,13 @@ int test_leg(correctionManager::CorrectionManager &mgr, const Leg &leg) {
                 expected(mgr, leg, values, configurations[k], false, raw_terms);
             const double expected_corrected = expected(
                 mgr, leg, values, configurations[k], true, corrected_terms);
+            std::vector<float> float_terms;
+            float_mismatches += !same_bits(
+                raw, expected(mgr, leg, values, configurations[k], false,
+                              float_terms));
+            float_mismatches += !same_bits(
+                corrected, expected(mgr, leg, values, configurations[k], true,
+                                    float_terms));
             for (const auto &[got, want] :
                  {std::pair<double, double>{raw, expected_raw},
                   std::pair<double, double>{corrected, expected_corrected}}) {
@@ -314,13 +329,14 @@ int test_leg(correctionManager::CorrectionManager &mgr, const Leg &leg) {
         every_process = every_process && contributions[p] > 0;
         terms += " " + leg.processes[p] + " " + std::to_string(contributions[p]);
     }
-    const bool ok = bit_mismatches == 0 && value_mismatches == 0 &&
-                    nonzero > 0 && every_process;
+    const bool ok = bit_mismatches == 0 && float_mismatches == 0 &&
+                    value_mismatches == 0 && nonzero > 0 && every_process;
     std::cout << (ok ? "PASS " : "FAIL ") << leg.label << ": "
               << configurations.size() << " configurations x " << kEvents
               << " events, processes " << n_p << ", corrections " << n_c
               << ", " << compared << " values against the reference ("
-              << bit_mismatches << " differ in a bit), " << value_mismatches
+              << bit_mismatches << " differ in a bit), " << float_mismatches
+              << " differ in a bit from the float sum, " << value_mismatches
               << " off the formula, " << nonzero << " non-zero; terms > 0:"
               << terms << std::endl;
     return ok ? 0 : 1;

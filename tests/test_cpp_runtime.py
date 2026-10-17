@@ -406,7 +406,9 @@ def test_fake_factor_sum_over_the_payload_processes(tmp_path):
     mt, tt; NMSSM 2023postBPix, 2025 mt) it reproduces the friend before C15 bit
     for bit, raw and corrected, nominal and with every syst key the friend
     shifts; on a QCD + W + ttbar payload (derived from SM 2018 et and mt) it
-    gives the three-process sum, with a W term.
+    gives the three-process sum, with a W term. Every leg gives that sum in the
+    float arithmetic of the friend (in payload order) bit for bit, which fixes
+    the values of the three-process legs as well.
 
     The friend is built in the CROWN container with ROOT's -march=nocona, which
     has no fused multiply-add, so every product is rounded before it is summed.
