@@ -203,8 +203,9 @@ the legacy Run-2 path NMSSM keeps using:
   `load_upart_wps` (working points) and `discover_upart_variations` (variation keys); MC efficiencies
   are committed per era and channel at
   `payloads/btagging_efficiencies/upart/<era>/btag_efficiency_<channel>.json.gz`
-  (`SM_PROFILE.btag_payload_dir = "payloads/btagging_efficiencies/upart/{era}"`; 2018 so far, the other
-  eras follow from their efficiency production). The
+  (`SM_PROFILE.btag_payload_dir = "payloads/btagging_efficiencies/upart/{era}"`; all four Run-2 eras,
+  measured on `smrun2_btag_eff_v1`, provenance and sha256 in
+  [`payloads/btagging_efficiencies/upart/README.md`](payloads/btagging_efficiencies/upart/README.md)). The
   multi-working-point event weight comes from the strict consumer
   `xyh::scalefactor::btagging_strict::multi_wp_event_weight` (`cpp_addons/*/btag_sf_strict.*`) with
   the working points of the profile, `btag_sf_working_points = ("T", "M")` (v7 spec E14, C14; parameter
@@ -225,7 +226,9 @@ the legacy Run-2 path NMSSM keeps using:
   `up_uncorrelated` value 1.154 (2016postVFP 1.099, 2017 1.035, 2018 1.032), so an efficiency
   &epsilon;(M) above 0.867 (2016postVFP 0.910) gives an untagged b jet a negative factor and the job
   throws. A 2016preVFP test run with the 2018 efficiencies as stand-in (&epsilon;(M) = 0.889 at 463 GeV)
-  stopped there; `check_btag_payload.py --sf-check` of every era's payload has to exclude it before P3. The `UParTAK4_comb` SFs of b/c jets are calibrated from
+  stopped there. The measured payloads pass `check_btag_payload.py --sf-check` in every era; the
+  smallest margin is 0.011 in 2016preVFP (&epsilon;(M) = 0.856 above 300 GeV, held by the 300 GeV b
+  edge). The `UParTAK4_comb` SFs of b/c jets are calibrated from
   30 GeV (`load_upart_comb_min_pt`, parameter `bjet_sf_bc_min_pt`), and the payload's p<sub>T</sub>
   flow would give the jets below the SF of the highest bin; following the BTV convention, they take
   the SF at 30 GeV with twice its deviation for the variations, and the efficiency at their own

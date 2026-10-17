@@ -33,9 +33,7 @@ V15_EMBEDDING_BRANCHES = (
 # be measured). Tests mark those cases with ``pending``, a strict xfail: once a
 # part exists, its cases pass and fail the run until the entry here is removed.
 PENDING = {
-    # payloads still to be measured: the [T,M] b-tag efficiencies with
-    # rem_htautau of every era, the embedding tau ID/ES of 2016 and 2017
-    "btag_efficiency_payloads": ("2016preVFP", "2016postVFP", "2017", "2018"),
+    # payloads still to be measured: the embedding tau ID/ES of 2016 and 2017
     "tau_embedding_payloads": ("2016preVFP", "2016postVFP", "2017"),
 }
 
