@@ -1,9 +1,11 @@
 """Fake-factor producers of one leg, built from its payload description.
 
-``ff_payloads`` reads the corrections of a leg (inputs in payload order, syst
-keys); this module turns them into CROWN producers: one ``BuildFloatVector``
-per correction, the raw fake factor (fractions and fake factors only) and the
-corrected one (times DR->SR and closure corrections).
+``ff_payloads`` reads the corrections of a leg (processes, inputs in payload
+order, syst keys); this module turns them into CROWN producers: one
+``BuildFloatVector`` per correction, the raw fake factor (fractions and fake
+factors only) and the corrected one (times DR->SR and closure corrections),
+both ``fakefactors::xyh::FakeFactor`` summed over the processes of the payload
+(QCD + ttbar or QCD + W + ttbar, v7 spec C15).
 """
 from typing import Dict, List, NamedTuple
 
@@ -32,20 +34,29 @@ class _Wiring(NamedTuple):
 # Role (ff_payloads.ROLES) -> names without the leg prefix.
 ROLE_WIRING = {
     "ff_qcd": _Wiring("qcd_name", "qcd_variation", "input_qcd"),
+    "ff_wjets": _Wiring("wjets_name", "wjets_variation", "input_wjets"),
     "ff_ttbar": _Wiring("tt_name", "tt_variation", "input_tt"),
     "fractions": _Wiring("fraction_name", "fraction_variation", "input_fraction"),
     "dr_sr_qcd": _Wiring(
         "corr_dr_sr_qcd_name", "dr_sr_corr_qcd_variation", "corr_dr_sr_input_qcd"
     ),
+    "dr_sr_wjets": _Wiring(
+        "corr_dr_sr_wjets_name", "dr_sr_corr_wjets_variation", "corr_dr_sr_input_wjets"
+    ),
     "closure_qcd": _Wiring(
         "corr_closure_qcd_name", "closure_corr_qcd_variation", "corr_closure_input_qcd"
+    ),
+    "closure_wjets": _Wiring(
+        "corr_closure_wjets_name",
+        "closure_corr_wjets_variation",
+        "corr_closure_input_wjets",
     ),
     "closure_ttbar": _Wiring(
         "corr_closure_tt_name", "closure_corr_tt_variation", "corr_closure_input_tt"
     ),
 }
 # The roles of the raw fake factor; the others are corrections.
-RAW_ROLES = ("ff_qcd", "ff_ttbar", "fractions")
+RAW_ROLES = ("ff_qcd", "ff_wjets", "ff_ttbar", "fractions")
 
 BUILD_FLOAT_VECTOR_CALL = """
     fakefactors::BuildFloatVector(
@@ -64,12 +75,8 @@ class FakeFactorProducers(NamedTuple):
 
 def fake_factor_producers(scope: str, leg: FakeFactorLeg) -> FakeFactorProducers:
     """The input-vector, raw and corrected fake-factor producers of ``leg``."""
-    raw = [c for c in leg.corrections if c.role in RAW_ROLES]
-    corrections = [c for c in leg.corrections if c.role not in RAW_ROLES]
-
-    def parameters(of, kind):
-        return [_parameter(leg, c, kind) for c in of]
-
+    fake_factors = list(leg.fake_factors)
+    corrections = list(leg.process_corrections)
     raw_output, corrected_output = LEG_OUTPUTS[leg.name]
     return FakeFactorProducers(
         inputs=[
@@ -84,28 +91,18 @@ def fake_factor_producers(scope: str, leg: FakeFactorLeg) -> FakeFactorProducers
         ],
         raw=Producer(
             name=f"RawFakeFactor_{leg.name}",
-            call=_call(
-                "RawFakeFactorSemileptonic",
-                ["ff_file", *parameters(raw, "name"), *parameters(raw, "variation")],
-            ),
-            input=[_input_vector(leg, c) for c in raw],
+            call=_call(leg, fake_factors, []),
+            input=[_input_vector(leg, c) for c in [leg.fractions, *fake_factors]],
             output=[raw_output],
             scopes=[scope],
         ),
         corrected=Producer(
             name=f"FakeFactor_{leg.name}",
-            call=_call(
-                "FakeFactorSemileptonic",
-                [
-                    "ff_file",
-                    *parameters(raw, "name"),
-                    "ff_corr_file",
-                    *parameters(corrections, "name"),
-                    *parameters(raw, "variation"),
-                    *parameters(corrections, "variation"),
-                ],
-            ),
-            input=[_input_vector(leg, c) for c in leg.corrections],
+            call=_call(leg, fake_factors, corrections),
+            input=[
+                _input_vector(leg, c)
+                for c in [leg.fractions, *fake_factors, *corrections]
+            ],
             output=[corrected_output],
             scopes=[scope],
         ),
@@ -149,15 +146,40 @@ def _payload_input(name: str, correction: FakeFactorCorrection) -> Quantity:
     return next(iter(matches.values()))
 
 
-def _call(function: str, parameters: List[str]) -> str:
-    """C++ call of ``fakefactors::xyh::<function>`` with the quoted ``parameters``."""
-    arguments = ",\n        ".join(f'"{{{parameter}}}"' for parameter in parameters)
+def _call(leg: FakeFactorLeg, fake_factors, corrections) -> str:
+    """C++ call of ``fakefactors::xyh::FakeFactor``: the processes of ``leg``
+    with their ``fake_factors`` and ``corrections`` (none for the raw fake
+    factor); the inputs come in the order fractions, fake factors, corrections.
+    """
+
+    def parameters(of, kind):
+        return _cpp_list(f'"{{{_parameter(leg, c, kind)}}}"' for c in of)
+
+    processes = _cpp_list(f'"{process}"' for process in leg.processes)
+    corr_processes = _cpp_list(f'"{c.process}"' for c in corrections)
+    corr_compound = _cpp_list(str(int(c.compound)) for c in corrections)
+    fractions = leg.fractions
     return f"""
-    fakefactors::xyh::{function}(
+    fakefactors::xyh::FakeFactor(
         {{df}},
         correctionManager,
         {{output}},
-        {{input}},
-        {arguments}
+        {{input_vec}},
+        {processes},
+        "{{ff_file}}",
+        {parameters(fake_factors, "name")},
+        "{{{_parameter(leg, fractions, "name")}}}",
+        "{'{ff_corr_file}' if corrections else ''}",
+        {parameters(corrections, "name")},
+        {corr_processes},
+        {corr_compound},
+        {parameters(fake_factors, "variation")},
+        "{{{_parameter(leg, fractions, "variation")}}}",
+        {parameters(corrections, "variation")}
     )
     """
+
+
+def _cpp_list(items) -> str:
+    """A C++ braced list in a producer call (braces are format fields there)."""
+    return "{vec_open}" + ", ".join(items) + "{vec_close}"

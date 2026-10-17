@@ -296,3 +296,78 @@ def test_nmssm_fake_factor_shifts_follow_the_payload():
         for direction in ["Up", "Down"]
     }
     assert set(ff_shifts(config, "mt")) == expected
+
+
+# --- fake factors with W (v7 spec C15) ------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def wjets_payload(tmp_path_factory):
+    """A QCD + W + ttbar payload of et and mt, derived from the SM 2018 one
+    (tests/fixtures/make_wjets_fake_factor_payload.py)."""
+    import sys
+
+    sys.path.insert(0, str(FIXTURES))
+    try:
+        import make_wjets_fake_factor_payload as wjets
+    finally:
+        sys.path.remove(str(FIXTURES))
+    source = Path(sm_fake_factors.__file__).parent / sm_fake_factors.SM_PAYLOAD_DIRS["2018"]
+    return wjets.make(source, tmp_path_factory.mktemp("wjets_payload"))
+
+
+def build_wjets_friend(payload, scope, shifts=("all",)):
+    from analysis_configurations.bbtautau.friend_common import build_fake_factor_friend
+
+    logging.disable(logging.CRITICAL)
+    try:
+        return build_fake_factor_friend(
+            str(payload), "2018", "ttbar", [scope], set(shifts), LEGACY_AVAILABLE_SAMPLES,
+            sm_fake_factors.AVAILABLE_ERAS, SCOPES, MAP_FF_2018,
+        )
+    finally:
+        logging.disable(logging.NOTSET)
+
+
+@pytest.mark.parametrize("scope", ["et", "mt"])
+def test_fake_factor_friend_with_wjets(wjets_payload, scope):
+    """C15: a QCD + W + ttbar payload adds the W fake factors, DR->SR correction and
+    closure to the sum and their shifts (W fake factors and W fractions also act on
+    the raw fake factor); the outputs stay the same columns."""
+    config = build_wjets_friend(wjets_payload, scope)
+    assert output_names(config, scope) == {"fake_factor_raw", "fake_factor"}
+    nominal = config.config_parameters[scope]["nominal"]
+    assert nominal["ff_wjets_name"] == "Wjets_fake_factors"
+    assert nominal["ff_corr_dr_sr_wjets_name"] == "Wjets_DR_SR_correction"
+    assert nominal["ff_corr_closure_wjets_name"] == "Wjets_compound_correction"
+    shifts = ff_shifts(config, scope)
+    assert len(shifts) == 54  # 34 of QCD + ttbar, 18 of W, 2 of the W fractions
+    assert shifts["__WjetsStatShiftUp"] == {"ff_wjets_variation": "WjetsStatShiftUp"}
+    assert shifts["__process_fractionsfrac_WjetsUp"] == {
+        "ff_fraction_variation": "process_fractionsfrac_Wjets_up"
+    }
+    for name, mapping in shifts.items():
+        (parameter,) = mapping
+        shifted = {q.name for q in config.outputs[scope] if name in q.get_shifts(scope)}
+        raw = parameter in RAW_VARIATIONS
+        assert ("fake_factor_raw" in shifted) == raw and "fake_factor" in shifted, name
+    (corrected,) = [p for p in config.producers[scope] if p.name == "FakeFactor_lt"]
+    assert '{vec_open}"QCD", "Wjets", "ttbar"{vec_close}' in corrected.call
+    assert '{vec_open}"QCD", "Wjets", "QCD", "Wjets", "ttbar"{vec_close}' in corrected.call
+    assert [q.name for q in corrected.input[scope]] == [
+        "ff_input_fraction", "ff_input_qcd", "ff_input_wjets", "ff_input_tt",
+        "ff_corr_dr_sr_input_qcd", "ff_corr_dr_sr_input_wjets",
+        "ff_corr_closure_input_qcd", "ff_corr_closure_input_wjets", "ff_corr_closure_input_tt",
+    ]
+
+
+@pytest.mark.parametrize("scope", ["et", "mt", "tt"])
+def test_two_process_friend_sums_qcd_and_ttbar(scope):
+    """The measured QCD + ttbar payload sums exactly these two processes, with the
+    corrections in the order of the friend before C15."""
+    config = build_all_shifts(sm_fake_factors, "2018", scope, MAP_FF_2018)
+    for producer in config.producers[scope]:
+        if producer.name.startswith("FakeFactor_"):
+            assert '{vec_open}"QCD", "ttbar"{vec_close}' in producer.call
+            assert '{vec_open}"QCD", "QCD", "ttbar"{vec_close}' in producer.call
+            assert "{vec_open}0, 1, 1{vec_close}" in producer.call
