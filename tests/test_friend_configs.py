@@ -29,6 +29,7 @@ from analysis_configurations.bbtautau import (
 )
 from analysis_configurations.bbtautau.constants import (
     ERAS,
+    ERAS_RUN2,
     LEGACY_AVAILABLE_SAMPLES,
     SCOPES,
 )
@@ -120,6 +121,54 @@ def test_friend_output_contracts(module, scope, quantities_map, expected):
         quantities_map,
     )
     assert output_names(config, scope) == expected
+
+
+def relabelled_map(path, era, tmp_path):
+    """The 2018 fixture quantities map relabelled to ``era``."""
+    quantities_map = json.loads(Path(path).read_text())
+    quantities_map["quantities"] = {era: quantities_map["quantities"].pop("2018")}
+    quantities_map["metadata"]["era"] = era
+    relabelled = tmp_path / f"{era}_{Path(path).name}"
+    relabelled.write_text(json.dumps(quantities_map))
+    return str(relabelled)
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize(
+    "module,quantities_map,expected",
+    [
+        (sm_fastmtt, MAP_FASTMTT, FASTMTT_LEAVES),
+        (sm_kinfit_resolved, MAP_KINFIT, SM_KINFIT_LEAVES),
+    ],
+    ids=["sm_fastmtt", "sm_kinfit_resolved"],
+)
+def test_sm_friends_build_in_every_run2_era(module, quantities_map, expected, era, tmp_path):
+    """The SM FastMTT and kinematic-fit friends hold no era-specific input."""
+    assert module.AVAILABLE_ERAS == ERAS_RUN2
+    config = module.build_config(
+        era,
+        "ttbar",
+        ["mt"],
+        {"none"},
+        LEGACY_AVAILABLE_SAMPLES,
+        module.AVAILABLE_ERAS,
+        SCOPES,
+        relabelled_map(quantities_map, era, tmp_path),
+    )
+    assert output_names(config, "mt") == expected
+
+
+def test_sm_fake_factor_payload_eras():
+    """Both 2016 halves read the one 2016 payload; an era is available once its
+    payload directory exists."""
+    eras = sm_fake_factors.PAYLOAD_ERAS
+    assert set(eras) == set(ERAS_RUN2)
+    assert eras["2016preVFP"] == eras["2016postVFP"] == "2016"
+    analysis = Path(sm_fake_factors.__file__).parent
+    assert sm_fake_factors.AVAILABLE_ERAS == list(sm_fake_factors.SM_PAYLOAD_DIRS)
+    for era, directory in sm_fake_factors.SM_PAYLOAD_DIRS.items():
+        assert directory == sm_fake_factors.PAYLOADS[eras[era]]
+        assert directory.endswith(f"/{eras[era]}") and (analysis / directory).is_dir(), era
 
 
 # --- fake-factor shifts ---------------------------------------------------------

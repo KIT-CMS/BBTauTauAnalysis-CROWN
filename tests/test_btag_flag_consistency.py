@@ -13,7 +13,7 @@ import json
 import pytest
 
 from analysis_configurations.bbtautau import btag_payloads
-from analysis_configurations.bbtautau.constants import ERAS
+from analysis_configurations.bbtautau.constants import ERAS, ERAS_RUN2
 from analysis_configurations.bbtautau.tests.helpers import build
 
 # Discriminant column -> the prefix its working-point-values correction must carry.
@@ -31,8 +31,9 @@ PARAMETERS = (
 )
 # Every entry point over the eras it supports; nmssm_config accepts all of them.
 CASES = [("nmssm_config", era) for era in ERAS] + [
-    ("sm_config", "2018"),
-    ("sm_btag_efficiency_config", "2018"),
+    (module, era)
+    for module in ("sm_config", "sm_btag_efficiency_config")
+    for era in ERAS_RUN2
 ]
 
 

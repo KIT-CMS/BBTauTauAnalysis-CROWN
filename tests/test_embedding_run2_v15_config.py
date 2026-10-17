@@ -17,7 +17,7 @@ import pytest
 
 from analysis_configurations.bbtautau import common_config, embedding_run2_v15
 from analysis_configurations.bbtautau.analysis_profiles import NMSSM_PROFILE, SM_PROFILE
-from analysis_configurations.bbtautau.constants import LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, LEGACY_AVAILABLE_SAMPLES, SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     V15_EMBEDDING_BRANCHES,
     build,
@@ -317,8 +317,13 @@ def test_profile_lowers_the_embedding_tau_pt_threshold():
     )
 
 
-def test_embedding_sample_list_follows_its_rule():
-    """sample_list/README.md: the sorted eltau/mutau/tautau 2018 embedding nicks."""
+EMBEDDING_LENGTHS = {"2016preVFP": 15, "2016postVFP": 9, "2017": 15, "2018": 12}
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_embedding_sample_list_follows_its_rule(era):
+    """sample_list/README.md: the sorted eltau/mutau/tautau embedding nicks of the
+    era, without the 2016 B ver1 nicks (no golden lumisection)."""
     database = ANALYSIS.parents[2] / "sample_database/nanoAOD_v15/datasets.json"
     if not database.is_file():
         pytest.skip("KingMaker's sample_database is required")
@@ -327,9 +332,10 @@ def test_embedding_sample_list_follows_its_rule():
         nick
         for nick, entry in datasets.items()
         if entry["sample_type"] == "embedding"
-        and entry["era"] == "2018"
+        and entry["era"] == era
+        and "_B_ver1_" not in nick
         and any(token in nick for token in ("_eltau_", "_mutau_", "_tautau_"))
     )
-    assert len(nicks) == 12
-    listed = (ANALYSIS / "sample_list/sm_2018_embedding.txt").read_text()
+    assert len(nicks) == EMBEDDING_LENGTHS[era]
+    listed = (ANALYSIS / f"sample_list/sm_{era}_embedding.txt").read_text()
     assert listed == "".join(f"{nick}\n" for nick in nicks)
