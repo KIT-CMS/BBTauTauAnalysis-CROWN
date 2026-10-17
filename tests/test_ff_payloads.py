@@ -257,3 +257,98 @@ def test_duplicate_shift_name_across_tt_legs(tmp_path):
             json.dump(payload, handle)
     with pytest.raises(ValueError, match="QCDStatShift.*QCD_fake_factors.*QCD_subleading_fake_factors"):
         ff_payloads.read_legs(str(tmp_path), "tt")
+
+
+# --- 4. the processes of the payload (v7 spec C15) ---------------------------------
+
+
+@pytest.fixture
+def wjets_mt(tmp_path):
+    """Editable copies of a QCD + W + ttbar mt payload, derived from the SM one."""
+    import sys
+
+    fixtures = Path(__file__).resolve().parent / "fixtures"
+    sys.path.insert(0, str(fixtures))
+    try:
+        import make_wjets_fake_factor_payload as wjets
+    finally:
+        sys.path.remove(str(fixtures))
+    directory = wjets.make(SM_2018, tmp_path / "source", scopes=("mt",))
+    return {
+        kind: copy.deepcopy(_load(directory / f"{kind}_mt.json.gz"))
+        for kind in ("fake_factors", "FF_corrections")
+    }
+
+
+def test_two_process_payloads_keep_their_roles():
+    for scope, leg in LEGS:
+        description = legs(SM_2018, scope)[leg]
+        assert description.processes == ("QCD", "ttbar")
+        assert [c.role for c in description.corrections] == [
+            "ff_qcd", "ff_ttbar", "fractions", "dr_sr_qcd", "closure_qcd", "closure_ttbar",
+        ]
+        assert [c.process for c in description.process_corrections] == ["QCD", "QCD", "ttbar"]
+        assert [c.compound for c in description.process_corrections] == [False, True, True]
+
+
+def test_wjets_payload_roles(tmp_path, wjets_mt):
+    (leg,) = ff_payloads.read_legs(write(tmp_path, wjets_mt), "mt")
+    assert leg.processes == ("QCD", "Wjets", "ttbar")
+    assert [c.role for c in leg.fake_factors] == ["ff_qcd", "ff_wjets", "ff_ttbar"]
+    assert [(c.role, c.process) for c in leg.process_corrections] == [
+        ("dr_sr_qcd", "QCD"), ("dr_sr_wjets", "Wjets"), ("closure_qcd", "QCD"),
+        ("closure_wjets", "Wjets"), ("closure_ttbar", "ttbar"),
+    ]
+    assert leg.correction("closure_wjets").name == "Wjets_compound_correction"
+    assert leg.correction("closure_wjets").inputs == leg.correction("closure_qcd").inputs
+    assert len(all_shift_keys(leg)) == 54
+    producers = fakefactors.fake_factor_producers("mt", leg)
+    assert len(producers.inputs) == 9
+
+
+def test_wjets_without_dr_sr_correction(tmp_path, wjets_mt):
+    """The W DR->SR correction is optional (if the measurement provides it)."""
+    payload = wjets_mt["FF_corrections"]
+    payload["corrections"] = [
+        c for c in payload["corrections"] if c["name"] != "Wjets_DR_SR_correction"
+    ]
+    (leg,) = ff_payloads.read_legs(write(tmp_path, wjets_mt), "mt")
+    assert "dr_sr_wjets" not in [c.role for c in leg.corrections]
+    assert [c.process for c in leg.process_corrections] == ["QCD", "QCD", "Wjets", "ttbar"]
+
+
+def test_wjets_fake_factors_required(tmp_path, wjets_mt):
+    payload = wjets_mt["fake_factors"]
+    payload["corrections"] = [c for c in payload["corrections"] if c["name"] != "Wjets_fake_factors"]
+    with pytest.raises(ValueError, match="Wjets_fake_factors.*fake_factors_mt"):
+        ff_payloads.read_legs(write(tmp_path, wjets_mt), "mt")
+
+
+def test_wjets_closure_required(tmp_path, wjets_mt):
+    payload = wjets_mt["FF_corrections"]
+    payload["compound_corrections"] = [
+        c for c in payload["compound_corrections"] if c["name"] != "Wjets_compound_correction"
+    ]
+    with pytest.raises(ValueError, match="Wjets_compound_correction"):
+        ff_payloads.read_legs(write(tmp_path, wjets_mt), "mt")
+
+
+def test_fraction_processes_must_be_a_known_set(tmp_path, sm_mt):
+    """{QCD, Wjets} without ttbar is no process set of the friend."""
+    fractions = correction(sm_mt, "process_fractions")
+
+    def rename(node):
+        if isinstance(node, dict):
+            if node.get("nodetype") == "category" and node.get("input") == "process":
+                for item in node["content"]:
+                    if item["key"] == "ttbar":
+                        item["key"] = "Wjets"
+            for value in node.values():
+                rename(value)
+        elif isinstance(node, list):
+            for value in node:
+                rename(value)
+
+    rename(fractions["data"])
+    with pytest.raises(ValueError, match=r"process_fractions.*\['QCD', 'Wjets'\]"):
+        ff_payloads.read_legs(write(tmp_path, sm_mt), "mt")

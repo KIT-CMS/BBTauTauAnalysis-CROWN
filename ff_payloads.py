@@ -14,8 +14,13 @@ Required conventions (``ValueError`` naming file and correction otherwise):
   ``"nominal"`` resolves to it, since fake factors have no nominal key. A
   ``nominal`` / ``<correction>nominal`` key, where present, equals it;
 - the inputs are ``[process] + real ... + syst``, with ``process`` only in the
-  fractions, whose process categories are exactly QCD and ttbar (the strings
-  the C++ passes);
+  fractions, whose process categories are the same everywhere and either
+  {QCD, ttbar} or {QCD, Wjets, ttbar} (v7 spec E18, C15): the processes of the
+  leg, whose fake factors the friend sums (``PROCESS_ORDER``);
+- every process of the leg has its fake factors ``{p}{s}_fake_factors`` and its
+  closure ``{p}{s}_compound_correction``; QCD has its DR->SR correction
+  ``QCD{s}_DR_SR_correction``, Wjets one ``Wjets{s}_DR_SR_correction`` if the
+  measurement provides it;
 - a syst key is ``nominal``, ``<correction>nominal`` or ends in
   Up/Down/_up/_down, and the selected Up and Down keys pair one to one;
 - the global non-closure keys ``{p}{s}_non_closure_Corr...`` are present in
@@ -35,7 +40,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Dict, Iterator, List, NamedTuple, Set, Tuple
+from typing import Dict, Iterator, List, NamedTuple, Optional, Set, Tuple
 
 from .payload_io import get_correction, load_payload
 
@@ -46,7 +51,11 @@ LEG_SUFFIXES = {"lt": "", "leading": "", "subleading": "_subleading"}
 # TauFakeFactors variable names that differ from the n-tuple columns.
 INPUT_ALIASES = {"njets": "n_jets", "nbtag": "n_bjets"}
 
-FRACTION_PROCESSES = {"QCD", "ttbar"}
+# The process sets a fake-factor payload may have, read from the process
+# categories of its fractions: QCD + ttbar, or QCD + W + ttbar (v7 spec E18). The
+# friend sums the processes in PROCESS_ORDER, TauFakeFactors' order.
+FRACTION_PROCESS_SETS = ({"QCD", "ttbar"}, {"QCD", "Wjets", "ttbar"})
+PROCESS_ORDER = ("QCD", "Wjets", "ttbar")
 DIRECTIONS = ("Up", "Down", "_up", "_down")
 EXCLUDED_BAND_KEYS = ("SystBandHigh", "SystBandLow")
 
@@ -55,18 +64,34 @@ class _Role(NamedTuple):
     name: str
     file: str  # "fake_factors" or "FF_corrections"
     correction: str  # correction name, {s} is the leg suffix
+    process: Optional[str]  # the process it belongs to, None for the fractions
     compound: bool = False
+    optional: bool = False  # used only if the payload has it
 
 
-# The corrections of one leg, in the order of the C++ inputs.
+# The corrections of one leg, in the order of the C++ inputs; the roles of a
+# process the payload does not have are skipped.
 ROLES = (
-    _Role("ff_qcd", "fake_factors", "QCD{s}_fake_factors"),
-    _Role("ff_ttbar", "fake_factors", "ttbar{s}_fake_factors"),
-    _Role("fractions", "fake_factors", "process_fractions{s}"),
-    _Role("dr_sr_qcd", "FF_corrections", "QCD{s}_DR_SR_correction"),
-    _Role("closure_qcd", "FF_corrections", "QCD{s}_compound_correction", True),
-    _Role("closure_ttbar", "FF_corrections", "ttbar{s}_compound_correction", True),
+    _Role("ff_qcd", "fake_factors", "QCD{s}_fake_factors", "QCD"),
+    _Role("ff_wjets", "fake_factors", "Wjets{s}_fake_factors", "Wjets"),
+    _Role("ff_ttbar", "fake_factors", "ttbar{s}_fake_factors", "ttbar"),
+    _Role("fractions", "fake_factors", "process_fractions{s}", None),
+    _Role("dr_sr_qcd", "FF_corrections", "QCD{s}_DR_SR_correction", "QCD"),
+    _Role(
+        "dr_sr_wjets", "FF_corrections", "Wjets{s}_DR_SR_correction", "Wjets",
+        optional=True,
+    ),
+    _Role("closure_qcd", "FF_corrections", "QCD{s}_compound_correction", "QCD", True),
+    _Role(
+        "closure_wjets", "FF_corrections", "Wjets{s}_compound_correction", "Wjets", True
+    ),
+    _Role(
+        "closure_ttbar", "FF_corrections", "ttbar{s}_compound_correction", "ttbar", True
+    ),
 )
+# The roles of the fake factors themselves (the raw fake factor); the others
+# but the fractions are corrections of the fake factor of their process.
+FAKE_FACTOR_ROLES = ("ff_qcd", "ff_wjets", "ff_ttbar")
 
 
 @dataclass(frozen=True)
@@ -76,12 +101,38 @@ class FakeFactorCorrection:
     file: str
     inputs: Tuple[str, ...]  # n-tuple columns, in payload order
     shift_keys: Tuple[str, ...]
+    process: Optional[str] = None  # None for the fractions
+    compound: bool = False
 
 
 @dataclass(frozen=True)
 class FakeFactorLeg:
     name: str
     corrections: Tuple[FakeFactorCorrection, ...]  # in ROLES order
+    processes: Tuple[str, ...]  # in PROCESS_ORDER
+
+    def correction(self, role: str) -> FakeFactorCorrection:
+        """The correction of ``role``; ``KeyError`` if the leg has none."""
+        for correction in self.corrections:
+            if correction.role == role:
+                return correction
+        raise KeyError(f"leg '{self.name}' has no correction of role '{role}'")
+
+    @property
+    def fake_factors(self) -> Tuple[FakeFactorCorrection, ...]:
+        """The fake factors, one per process, in the order of ``processes``."""
+        return tuple(c for c in self.corrections if c.role in FAKE_FACTOR_ROLES)
+
+    @property
+    def fractions(self) -> FakeFactorCorrection:
+        return self.correction("fractions")
+
+    @property
+    def process_corrections(self) -> Tuple[FakeFactorCorrection, ...]:
+        """The corrections of the fake factors (DR->SR, closure), in ROLES order."""
+        return tuple(
+            c for c in self.corrections if c.role not in FAKE_FACTOR_ROLES + ("fractions",)
+        )
 
 
 def payload_files(payload_dir: str, scope: str) -> Dict[str, str]:
@@ -123,15 +174,33 @@ def read_legs(payload_dir: str, scope: str) -> Tuple[FakeFactorLeg, ...]:
         kind: (path, load_payload(path))
         for kind, path in payload_files(payload_dir, scope).items()
     }
-    legs = tuple(
-        FakeFactorLeg(
-            leg,
-            tuple(_read_correction(payloads, role, LEG_SUFFIXES[leg]) for role in ROLES),
-        )
-        for leg in SCOPE_LEGS[scope]
-    )
+    legs = tuple(_read_leg(payloads, leg) for leg in SCOPE_LEGS[scope])
     _check_unique_shift_names(legs, scope)
     return legs
+
+
+def _read_leg(payloads, leg: str) -> FakeFactorLeg:
+    """The corrections of ``leg`` for the processes of its fractions."""
+    suffix = LEG_SUFFIXES[leg]
+    (fractions_role,) = [role for role in ROLES if role.name == "fractions"]
+    path, payload = payloads[fractions_role.file]
+    fractions = get_correction(payload, fractions_role.correction.format(s=suffix), path)
+    present = _fraction_processes(fractions, path)
+    processes = tuple(p for p in PROCESS_ORDER if p in present)
+    corrections = []
+    for role in ROLES:
+        if role.process is not None and role.process not in processes:
+            continue
+        if role.optional and not _has_correction(payloads[role.file][1], role, suffix):
+            continue
+        corrections.append(_read_correction(payloads, role, suffix))
+    return FakeFactorLeg(leg, tuple(corrections), processes)
+
+
+def _has_correction(payload: dict, role: _Role, suffix: str) -> bool:
+    kind = "compound_corrections" if role.compound else "corrections"
+    name = role.correction.format(s=suffix)
+    return any(c["name"] == name for c in payload.get(kind) or [])
 
 
 def _read_correction(payloads, role: _Role, suffix: str) -> FakeFactorCorrection:
@@ -144,8 +213,6 @@ def _read_correction(payloads, role: _Role, suffix: str) -> FakeFactorCorrection
     else:
         correction = get_correction(payload, name, path)
         keys = _directional_keys(correction, path)
-    if fractions:
-        _check_fraction_processes(correction, path)
     shift_keys = sorted(
         key for key in keys if not any(band in key for band in EXCLUDED_BAND_KEYS)
     )
@@ -156,6 +223,8 @@ def _read_correction(payloads, role: _Role, suffix: str) -> FakeFactorCorrection
         file=path,
         inputs=_input_names(correction, fractions, path),
         shift_keys=tuple(shift_keys),
+        process=role.process,
+        compound=role.compound,
     )
 
 
@@ -246,15 +315,25 @@ def _input_names(correction: dict, fractions: bool, path: str) -> Tuple[str, ...
     return tuple(INPUT_ALIASES.get(name, name) for name, _ in body)
 
 
-def _check_fraction_processes(correction: dict, path: str) -> None:
-    for category in _categories_on(correction["data"], "process"):
-        processes = {item["key"] for item in category["content"]}
-        if processes != FRACTION_PROCESSES:
-            raise ValueError(
-                f"correction '{correction['name']}' in '{path}': process "
-                f"categories {sorted(processes)}, the C++ evaluates exactly "
-                f"{sorted(FRACTION_PROCESSES)}"
-            )
+def _fraction_processes(correction: dict, path: str) -> Set[str]:
+    """The processes of the fractions: the same keys in every process category,
+    one of FRACTION_PROCESS_SETS."""
+    found = [
+        {item["key"] for item in category["content"]}
+        for category in _categories_on(correction["data"], "process")
+    ]
+    allowed = [sorted(processes) for processes in FRACTION_PROCESS_SETS]
+    if not found or any(processes != found[0] for processes in found):
+        raise ValueError(
+            f"correction '{correction['name']}' in '{path}': process categories "
+            f"{sorted(sorted(p) for p in found)} differ; each must be one of {allowed}"
+        )
+    if found[0] not in FRACTION_PROCESS_SETS:
+        raise ValueError(
+            f"correction '{correction['name']}' in '{path}': process categories "
+            f"{sorted(found[0])}, the friend sums {allowed}"
+        )
+    return found[0]
 
 
 def _categories_on(node, input_name: str) -> Iterator[dict]:

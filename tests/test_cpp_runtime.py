@@ -6,6 +6,8 @@ up next to root-config when the Python module ships no headers, and fmt is used
 header-only because LCG's spdlog bundles fmt v11.
 """
 
+import gzip
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -270,3 +272,111 @@ def test_matched_trigger_object_quantity(tmp_path):
         [CPP / "test_trigger_matched_object.cxx"],
     )
     subprocess.run([str(binary)], check=True)
+
+
+# --- fake factor summed over the processes of the payload (v7 spec C15) ---------
+
+FF_PAYLOADS = ANALYSIS / "payloads/fake_factors"
+# legs whose fake factor the frozen two-process reference must reproduce bit for
+# bit: (label, payload directory, scopes)
+FF_REFERENCE_LEGS = [
+    ("sm2018", FF_PAYLOADS / "sm/fake-factors-2026-10-09/2018", ("et", "mt", "tt")),
+    ("nmssm2023postBPix", FF_PAYLOADS / "fake-factors-2026-06-10/2023postBPix", ("mt",)),
+    ("nmssm2025", FF_PAYLOADS / "fake-factors-2026-09-26/2025", ("mt",)),
+]
+
+
+def _binning_centres(node, name, values):
+    """Collect the bin centres of every binning on input ``name`` below ``node``."""
+    if isinstance(node, dict):
+        if node.get("nodetype") == "binning" and node.get("input") == name:
+            edges = node["edges"]
+            if isinstance(edges, dict):  # uniform binning
+                width = (edges["high"] - edges["low"]) / edges["n"]
+                edges = [edges["low"] + i * width for i in range(edges["n"] + 1)]
+            values.update(0.5 * (lo + hi) for lo, hi in zip(edges, edges[1:]))
+        for value in node.values():
+            _binning_centres(value, name, values)
+    elif isinstance(node, list):
+        for value in node:
+            _binning_centres(value, name, values)
+
+
+def fake_factor_plan(label, payload_dir, scopes, reference):
+    """Plan lines of tests/cpp/test_fake_factor_sum.cxx for the legs of
+    ``scopes``: files, processes, corrections, the bin centres of every input as
+    candidates, and the syst keys the friend shifts."""
+    from analysis_configurations.bbtautau import ff_payloads
+
+    lines = []
+    for scope in scopes:
+        payloads = {}
+        for leg in ff_payloads.read_legs(str(payload_dir), scope):
+            slots = [leg.fractions, *leg.fake_factors, *leg.process_corrections]
+            lines += [
+                f"leg {label}_{scope}_{leg.name} {int(reference)}",
+                f"ff_file {leg.fractions.file}",
+                f"corr_file {leg.process_corrections[0].file}",
+                f"fraction {leg.fractions.name}",
+            ]
+            lines += [f"process {c.process} {c.name}" for c in leg.fake_factors]
+            lines += [
+                f"correction {c.process} {c.name} {int(c.compound)}"
+                for c in leg.process_corrections
+            ]
+            for slot, correction in enumerate(slots):
+                if correction.file not in payloads:
+                    with gzip.open(correction.file, "rt") as handle:
+                        payloads[correction.file] = json.load(handle)
+                payload = payloads[correction.file]
+                plain = {c["name"]: c for c in payload["corrections"]}
+                if correction.compound:
+                    (compound,) = [
+                        c for c in payload["compound_corrections"]
+                        if c["name"] == correction.name
+                    ]
+                    nodes, inputs = [plain[m] for m in compound["stack"]], compound["inputs"]
+                else:
+                    nodes, inputs = [plain[correction.name]], plain[correction.name]["inputs"]
+                for name in [i["name"] for i in inputs if i["name"] not in ("process", "syst")]:
+                    values = set()
+                    _binning_centres([n["data"] for n in nodes], name, values)
+                    assert values, (correction.name, name)
+                    lines.append(
+                        f"values {slot} {len(values)} " + " ".join(repr(v) for v in sorted(values))
+                    )
+                lines += [f"variation {slot} {key}" for key in correction.shift_keys]
+    return lines
+
+
+def test_fake_factor_sum_over_the_payload_processes(tmp_path):
+    """C15: fakefactors::xyh::FakeFactor sums f_p * FF_p * corrections_p over the
+    processes of the payload. On the measured two-process payloads (SM 2018 et,
+    mt, tt; NMSSM 2023postBPix, 2025 mt) it reproduces the friend before C15 bit
+    for bit, raw and corrected, nominal and with every syst key the friend
+    shifts; on a QCD + W + ttbar payload (derived from SM 2018 et and mt) it
+    gives the three-process sum, with a W term."""
+    sys.path.insert(0, str(FIXTURES))
+    try:
+        import make_wjets_fake_factor_payload as wjets
+    finally:
+        sys.path.remove(str(FIXTURES))
+    reference = FF_REFERENCE_LEGS[0][1]
+    wjets_dir = wjets.make(reference, tmp_path / "wjets")
+    lines = []
+    for label, directory, scopes in FF_REFERENCE_LEGS:
+        lines += fake_factor_plan(label, directory, scopes, reference=True)
+    lines += fake_factor_plan("sm2018wjets", wjets_dir, ("et", "mt"), reference=False)
+    plan = tmp_path / "plan.txt"
+    plan.write_text("\n".join(lines) + "\n")
+    binary = compile_fixture(
+        tmp_path,
+        "fake_factor_sum",
+        [CPP / "test_fake_factor_sum.cxx", ADDONS / "src/fakefactors.cxx", CORRECTION_MANAGER],
+        defines=["-O2"],
+        correctionlib=True,
+    )
+    result = subprocess.run([str(binary), str(plan)], capture_output=True, text=True)
+    summary = [line for line in result.stdout.splitlines() if line.startswith(("PASS", "FAIL"))]
+    assert result.returncode == 0, "\n".join(summary) + result.stderr[-3000:]
+    assert len(summary) == 8 and all(line.startswith("PASS") for line in summary), summary
