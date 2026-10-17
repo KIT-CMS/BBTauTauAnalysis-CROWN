@@ -21,14 +21,16 @@ A config module may also declare `AVAILABLE_ERAS` and/or `AVAILABLE_SAMPLES`; `g
 * `nmssm_config.py` (`NMSSM_PROFILE`) - The main configuration to be used for the
   X &rightarrow; YH &rightarrow; bb&tau;&tau; search. All eras, legacy (v9 / Run-3) inputs.
 * `sm_config.py` (`SM_PROFILE`) - The SM HH &rightarrow; bb&tau;&tau; production configuration:
-  Run-2 NanoAOD-v15 inputs, UParTAK4 b-tagging, `AVAILABLE_ERAS = ["2018"]`, tau embedding in et, mt
-  and tt (see [Tau embedding](#tau-embedding)).
+  Run-2 NanoAOD-v15 inputs, UParTAK4 b-tagging, `AVAILABLE_ERAS = ERAS_RUN2` (2016preVFP, 2016postVFP,
+  2017, 2018), tau embedding in et, mt and tt (see [Tau embedding](#tau-embedding)). Sample lists per
+  era in `sample_list/` (see its `README.md`).
 * `sm_btag_efficiency_config.py` (`SM_BTAG_EFFICIENCY_PROFILE`, a `dataclasses.replace(SM_PROFILE,
   ...)`) - The same selection, MC only and without b-tag scale factors, plus the probe-jet collection
   the UParT b-tag MC efficiency is measured from downstream in `TauFakeFactors`. Being
   payload-independent, it never depends on the payload it exists to produce.
 * `sm_tau_id_measurement_config.py` (`SM_TAU_ID_MEASUREMENT_PROFILE`, `tau_id_measurement.py`) - The
-  n-tuples of the tau-ID SF and energy scale measurement for embedding, 2018, mt and mm (see
+  n-tuples of the tau-ID SF and energy scale measurement for embedding, mt and mm; the module accepts
+  every Run-2 era, `tau_id_measurement.setup` builds 2018 only so far (see
   [Tau-ID measurement](#tau-id-measurement)).
 
 ## Available Friend Configurations
@@ -38,13 +40,14 @@ The friend entries are thin wrappers around the shared `FriendTreeConfiguration`
 `build_fake_factor_friend` (fake factors).
 
 * `nmssm_fastmtt.py` / `sm_fastmtt.py` - Produce FastMTT friends (`m/pt/eta/phi_fastmtt`); the SM
-  module re-exports the NMSSM builder and only adds `AVAILABLE_ERAS = ["2018"]`.
+  module re-exports the NMSSM builder and only adds `AVAILABLE_ERAS = ERAS_RUN2`.
 * `nmssm_kinfit_resolved.py` / `nmssm_kinfit_boosted.py` - HH/YH kinematic fit over the NMSSM Y-mass
   hypotheses, resolved and boosted.
-* `sm_kinfit_resolved.py` - Fixed 125/125 GeV HH kinematic fit, 2018 only; outputs
+* `sm_kinfit_resolved.py` - Fixed 125/125 GeV HH kinematic fit, Run-2 eras; outputs
   `kinfit_convergence`, `kinfit_chi2`, `kinfit_prob`, `kinfit_mHH`.
 * `fake_factors_friend_config.py` / `sm_fake_factors.py` - Fake-factor friends, NMSSM (Run 3,
-  `NMSSM_PAYLOAD_DIRS`) and SM (2018, `SM_PAYLOAD_DIRS`); see [Fake-factor friends](#fake-factor-friends).
+  `NMSSM_PAYLOAD_DIRS`) and SM (the Run-2 eras with a payload, `SM_PAYLOAD_DIRS`); see
+  [Fake-factor friends](#fake-factor-friends).
 * `xyh_classifier_friend_config.py` - Produce PNN classifier friends for the NMSSM analysis.
 
 ### Fake-factor friends
@@ -94,6 +97,11 @@ outputs are keyed by production and friend tag only, and KingMaker packs the CRO
 producing friends with a new payload on an existing production needs a new `--friend-tag` and
 `--CROWNBuildFriend-force-repack-tarball`.
 
+The SM payloads are keyed by payload era (`sm_fake_factors.PAYLOAD_ERAS`): 2016preVFP and 2016postVFP share
+one 2016 payload, measured on both halves together. `PAYLOADS` maps a payload era to its directory, and
+`SM_PAYLOAD_DIRS` / `AVAILABLE_ERAS` hold the eras whose payload era has one (2018 so far); a new 2016
+payload is one entry, `"2016": ".../<version>/2016"`.
+
 ## Building
 
 Per-era wrapper scripts in `build_scripts/`, run from the CROWN repo root. All arguments are
@@ -103,7 +111,11 @@ positional and optional: `$1` samples, `$2` scopes, `$3` debug, `$4` steps
 ```bash
 bash analysis_configurations/bbtautau/build_scripts/test_build_2018.sh
 bash analysis_configurations/bbtautau/build_scripts/test_build_2018.sh hh2b2tau et,mt,tt false build sm_config
+bash analysis_configurations/bbtautau/build_scripts/test_build_2016preVFP.sh data,ttbar,dyjets mt false all sm_config
 ```
+
+There is one script per era: `test_build_{2016preVFP,2016postVFP,2017,2018}.sh` for Run 2 (test files:
+NanoAOD v15 SingleMuon, `TTTo2L2Nu` and `DYJetsToLL_LHEFilterPtZ-0To50` of the era) and one per Run-3 era.
 
 Each script configures and compiles in `<CROWN>/build_<era>[_<config>]/` -- the `_<config>` suffix is
 appended whenever `$5` is not `nmssm_config`, so builds for one era do not clobber each other -- and
@@ -117,14 +129,22 @@ names (`Configuration._is_valid_shift`): `jes` selects every `jesUnc*` shift, `b
 
 ## Run-2 NanoAOD-v15 inputs
 
-Both SM profiles set `use_run2_v15_inputs = True`. Only 2018 is enabled so far; the other Run-2 eras
-are meant to follow on the same code path, which is why nothing on it is named after an era. Relative
-to the legacy Run-2 path NMSSM keeps using:
+Both SM profiles set `use_run2_v15_inputs = True`, for all four Run-2 eras (2016preVFP, 2016postVFP,
+2017, 2018) on one code path, which is why nothing on it is named after an era; genuinely era-specific
+choices are era-keyed parameters. The embedding and the tau-ID measurement are still built for 2018
+only. Relative to the legacy Run-2 path NMSSM keeps using:
 
 - **Jet ID** -- v15 ships no usable `Jet_jetId`, so the AK4-PUPPI ID is evaluated from the composition
   branches by `producers/jets.py`'s `JetIDFromCorrectionlib` (the same producer 2024/2025 use), reading
   `payloads/jetid/Run2-<era>-UL-NanoAODv15/jetid.json.gz`. JME does not publish that file for Run 2 UL;
-  it is generated by the `jetid-payloads` repository (see `payloads/jetid/README.md`), 2018 only so far.
+  it is generated by the `jetid-payloads` repository for every era (see `payloads/jetid/README.md`;
+  2016 with the UL16 PUPPI cuts of JetID13TeVUL, `neMultiplicity` &ge; 1 at 2.7 < \|&eta;\| &le; 3.0).
+- **JEC and JER** -- the v15 AK4-PUPPI JERC payload of each era (`JME/Run2-<era>-UL-NanoAODv15/2026-06-05`)
+  with its tags: JES `Summer20UL16APVNanoV15_V1`, `Summer20UL16NanoV15_V1`, `Summer20UL17NanoV15_V1`,
+  `Summer20UL18NanoV15_V1` (data and MC); JER `Summer20UL16APV_JRV5`, `Summer20UL16_JRV5`,
+  `Summer19UL17_JRV4`, `Summer19UL18_JRV3`. No jet veto maps (not mandatory in Run 2); the
+  &eta;-&phi; occupancy of jets and b jets is validated in data/MC instead.
+- **MET filters** -- the UL recommendation: 2016 without, 2017 and 2018 with `Flag_ecalBadCalibFilter`.
 - **Electron scale and smearing** -- v15 electrons come without scale and smearing (v9 had them
   applied) but carry the Run-3-style inputs, so this path uses the Run-3 `ElectronPtCorrectionMC`
   (`SmearAndSyst`) and `ElectronPtCorrectionData` (`Scale`) producers against the era's pinned
@@ -135,13 +155,18 @@ to the legacy Run-2 path NMSSM keeps using:
   (`propagate_jets_to_met` false; the re-applied JEC/JER changed only the MC MET). The Run-2 recoil
   correction of DY and W counts the jets of the HTT recipe (p<sub>T</sub> > 30 GeV, |&eta;| < 4.7,
   jet ID, &Delta;R > 0.5 to both pair objects, `met.MetScopesWithRecoilJets`; +1 for W) instead of
-  all NanoAOD jets, and reads `payloads/recoil_corrections/Type1_PuppiMET_2018_zptbins.root`, the
-  legacy file with the Z p<sub>T</sub> bins its labels name (see the `README.md` there).
+  all NanoAOD jets, and reads the legacy PuppiMET files of CROWN,
+  `data/recoil_corrections/Type1_PuppiMET_<year>.root` (the 2016 file for both halves). Their
+  `ZPtBinsH` had the edges 0-5 instead of the 0/10/20/30/50/1000 GeV its labels name, so every event
+  with a generator Z p<sub>T</sub> above 4 GeV got the `PtGt50` correction; CROWN 27262f4 fixed the
+  edges, and the CROWN pin must contain it (`tests/test_sm_main_config.py` checks the edges per era).
 - **b-tagging** -- UParTAK4. `btag_payloads.py` reads the pinned per-era BTV payload
   (`BTV/Run2-<era>-UL-NanoAODv15/2026-06-18/btagging.json.gz`) with `btv_upart_payload`,
   `load_upart_wps` (working points) and `discover_upart_variations` (variation keys); MC efficiencies
-  are committed at `payloads/btagging_efficiencies/upart/2018/btag_efficiency_{et,mt,tt}.json.gz`
-  (`SM_PROFILE.btag_payload_dir = "payloads/btagging_efficiencies/upart/{era}"`). The
+  are committed per era and channel at
+  `payloads/btagging_efficiencies/upart/<era>/btag_efficiency_<channel>.json.gz`
+  (`SM_PROFILE.btag_payload_dir = "payloads/btagging_efficiencies/upart/{era}"`; 2018 so far, the other
+  eras follow from their efficiency production). The
   multi-working-point event weight comes from the strict consumer
   `xyh::scalefactor::btagging_strict::multi_wp_event_weight` (`cpp_addons/*/btag_sf_strict.*`), which
   takes the five WP thresholds from the SF payload's own `UParTAK4_wp_values` correction and throws
@@ -160,6 +185,13 @@ to the legacy Run-2 path NMSSM keeps using:
   every sample, and in MC the hadron flavour of the two leading jets (`jet_hadronFlavour_1/2`) and
   of the b-pair jets (`bpair_hadronFlavour_1/2`), in all six scopes.
 
+- **Hadronic taus** -- the TAU POG v15 payload `TAU/Run2-<era>-UL-NanoAODv15/2025-11-27` (no newer
+  snapshot as of 2026-10-16; re-pin when one appears). Some of its corrections are placeholders,
+  byte-identical copies of 2018 (`tests/test_run2_eras.py` checks the list): `DeepTau2018v2p5VSe` in
+  2016preVFP and 2016postVFP, `DeepTau2018v2p5VSmu` in 2016preVFP, 2016postVFP and 2017, and the
+  e &rarr; &tau; energy scale (`tau_energy_scale`, genmatch 1) in 2016preVFP and 2016postVFP. Their
+  uncertainties are correlated with 2018 downstream.
+
 The SM profiles also set `kit_sf_lepton_ids`: they keep the lepton IDs the lepton SFs of the Tau
 Embedding group (KIT, used by the embedding) are measured for, as the legacy SM analysis did -- MVA
 WP90 electrons with the isolation pre-cuts 0.25 (loose) and 0.4 (tight), medium-ID muons, the POG SFs
@@ -167,7 +199,12 @@ WP90 electrons with the isolation pre-cuts 0.25 (loose) and 0.4 (tight), medium-
 muon ID SF column -- in place of the NMSSM object defaults (MVA WP80 electrons without isolation
 pre-cut, tight-ID muons). The electron reconstruction SF is written in et, em and ee for both
 analyses (`xyh::scalefactor::electron_reco`), and the muon p<sub>T</sub> calibration applies in Run 3
-only.
+only. The KIT lepton SF files of MC are those of the era, `data/embedding/{electron,muon}_<era>UL.json.gz`
+(`mc_electron_sf_file`, `mc_muon_sf_file`).
+
+The light dilepton control channels ee, em and mm (`sm_light_controls`) exist in every Run-2 v15 era:
+15 GeV lepton legs, no lepton SFs on data, em without the electron trigger, and ee with the
+single-electron trigger SF of et.
 
 All `/cvmfs/cms-griddata.cern.ch` pins are dated CAT-metadata snapshots, never the rolling `latest`
 symlink; after changing one, rerun the tests.
@@ -193,7 +230,8 @@ case-insensitive substring, e.g. `CMS_scale_t` for all tau energy scale shifts.
 ## Tau embedding
 
 `sm_config` builds the 2018 &mu;&rarr;&tau; embedded samples (sample type `embedding`, list
-`sample_list/sm_2018_embedding.txt`) through `embedding_run2_v15.setup`; NMSSM keeps the legacy
+`sample_list/sm_2018_embedding.txt`; the lists of the other eras exist, their payloads and names do not
+yet) through `embedding_run2_v15.setup`; NMSSM keeps the legacy
 `tau_embedding_settings.setup_embedding`. `build_config` dispatches on `use_run2_v15_inputs`. Three
 profile fields steer the module: `embedding_scopes` (SM: et, mt, tt; any other scope or an era other
 than 2018 raises `ValueError`; the tau-ID measurement: mt and the &mu;&rarr;&mu; embedding in mm),
@@ -280,7 +318,7 @@ everything not listed is the `sm_config` one.
 | vsJet SF, MC | `id_wgt_tau_vsJet_{Medium,Tight}_2`, wp_VSe VVLoose, `dm` | POG | Loose, Medium, Tight, VVLoose, `dm` | Medium |
 | vsJet SF, embedding | none | &ndash; | none | embedding payload |
 | vsEle / vsMu SF | `id_wgt_tau_vsEle_{VVLoose,Tight}_2`; `id_wgt_tau_vsMu_Tight_2` for both vsEle WPs (the v15 payload has no vsEle input) | POG | the same values, one vsMu column per vsEle WP | same |
-| MET recoil correction | DY and W (`dyjets`, `wjets`), jets of the HTT recipe | `payloads/recoil_corrections/Type1_PuppiMET_2018_zptbins.root` | DY and W (`MetCorrections_Run2`) | same |
+| MET recoil correction | DY and W (`dyjets`, `wjets`), jets of the HTT recipe | CROWN `data/recoil_corrections/Type1_PuppiMET_2018.root` (Z p<sub>T</sub> edges fixed in 27262f4) | DY and W (`MetCorrections_Run2`) | same |
 | b-tag SF | none | &ndash; | none | strict UParTAK4 weight |
 | Embedding tau p<sub>T</sub> threshold | 20/1.2 GeV | grid applied in ShapeSmith | 20 GeV, grid in CROWN | 20 GeV |
 
@@ -327,7 +365,11 @@ python -m pytest analysis_configurations/bbtautau/tests
 The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer, SM HH kinematic fit, electron
 reconstruction weight, embedding iso-binned SF, FastMTT decay types, JER smearing) run inside the
 same pytest session (`tests/test_cpp_runtime.py`) and are skipped without `root-config`, `g++`,
-correctionlib and spdlog headers. `tests.helpers.generate_code` emits the C++ code of a configuration in a
+correctionlib and spdlog headers. `tests/test_run2_eras.py` checks the per-era inputs (MET filters,
+jet ID, KIT lepton and trigger SF names, b-tag efficiency and embedding tau payloads, TAU POG
+placeholders). Cases of an era that needs a part of the full Run-2 configuration not built yet, or a
+payload not measured yet, are strict xfails listed in `tests.helpers.PENDING`: they turn into failures
+once the part exists, and the entry goes. `tests.helpers.generate_code` emits the C++ code of a configuration in a
 subprocess, once per session; the embedding tests use it with a committed branch list of one v15
 embedding file (`tests/fixtures/nanoaod_v15_embedding_2018_branches.txt`). The synthetic b-tag fixtures
 (gitignored) are regenerated by the test from `tests/fixtures/make_btag_sf_strict_fixtures.py`.
