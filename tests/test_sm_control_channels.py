@@ -2,9 +2,10 @@
 
 import pytest
 
-from analysis_configurations.bbtautau.constants import SCOPES
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     build,
+    era_cases,
     find_producer,
     generate_code,
     output_names,
@@ -13,34 +14,40 @@ from analysis_configurations.bbtautau.tests.helpers import (
 
 CONTROLS = ("ee", "em", "mm")
 LEPTON_SFS = {
-    "ee": {
-        "id_wgt_ele_1",
-        "id_wgt_ele_2",
-        "reco_wgt_ele_1",
-        "reco_wgt_ele_2",
-        "trg_wgt_single_ele32",
-    },
-    "em": {
-        "id_wgt_ele_1",
-        "reco_wgt_ele_1",
-        "id_wgt_mu_2",
-        "iso_wgt_mu_2",
-        "trg_wgt_single_mu24",
-    },
-    "mm": {
-        "id_wgt_mu_1",
-        "iso_wgt_mu_1",
-        "id_wgt_mu_2",
-        "iso_wgt_mu_2",
-        "trg_wgt_single_mu24",
-    },
+    "ee": {"id_wgt_ele_1", "id_wgt_ele_2", "reco_wgt_ele_1", "reco_wgt_ele_2"},
+    "em": {"id_wgt_ele_1", "reco_wgt_ele_1", "id_wgt_mu_2", "iso_wgt_mu_2"},
+    "mm": {"id_wgt_mu_1", "iso_wgt_mu_1", "id_wgt_mu_2", "iso_wgt_mu_2"},
+}
+# trigger SF columns per era: the single-muon trigger in em and mm (the muon of em
+# is its second leg) and the single-electron trigger in ee; em has no electron
+# trigger
+MUON_TRIGGER_SF = {
+    "2016preVFP": "trg_wgt_single_mu22",
+    "2016postVFP": "trg_wgt_single_mu22",
+    "2017": "trg_wgt_single_mu27",
+    "2018": "trg_wgt_single_mu24",
+}
+ELECTRON_TRIGGER_SFS = {
+    "2016preVFP": {"trg_wgt_single_ele25"},
+    "2016postVFP": {"trg_wgt_single_ele25"},
+    "2017": {"trg_wgt_single_ele32", "trg_wgt_single_ele35"},
+    "2018": {"trg_wgt_single_ele32"},
 }
 Z_PAIR = {"ee": "ZElElPairSelection", "mm": "ZMuMuPairSelection"}
 
 
+def trigger_sfs(era):
+    return {
+        "ee": ELECTRON_TRIGGER_SFS[era],
+        "em": {MUON_TRIGGER_SF[era]},
+        "mm": {MUON_TRIGGER_SF[era]},
+    }
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize("sample", ["data", "ttbar", "dyjets"])
-def test_main_control_output_contract(sample):
-    config = build("sm_config", sample, scopes=CONTROLS)
+def test_main_control_output_contract(sample, era):
+    config = build("sm_config", sample, era=era, scopes=CONTROLS)
     for scope in CONTROLS:
         outputs, producers = output_names(config, scope), producer_names(config, scope)
         params = config.config_parameters[scope]["nominal"]
@@ -65,10 +72,21 @@ def test_main_control_output_contract(sample):
                 15.0,
                 0.4,
             )
-        assert "SingleEleTriggerSF" not in producers
+        # em takes no electron trigger, ee the trigger SF of et
+        assert "SingleEleTriggerFlags" not in producer_names(config, "em")
         # the Z pair comes from the core algorithm (pt ordering fixed upstream)
         assert Z_PAIR.get(scope, "EMPairSelection") in producers
         assert not {n for n in producers if n.startswith("ControlZ")}
+
+
+@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C7"))
+def test_ee_takes_the_kit_electron_trigger_sf(era):
+    """The POG Electron-HLT-SF does not exist for Run-2 UL; ee evaluates the trigger
+    SF of the Tau Embedding group, as et."""
+    config = build("sm_config", "ttbar", era=era, scopes=CONTROLS)
+    for scope in CONTROLS:
+        assert "SingleEleTriggerSF" not in producer_names(config, scope), scope
+    assert "ETGenerateSingleElectronTriggerSF_MC" in producer_names(config, "ee")
 
 
 def test_electron_reco_weight_is_the_era_keyed_addon_call():
@@ -89,6 +107,7 @@ def test_electron_reco_weight_is_the_era_keyed_addon_call():
         assert [q.name for q in reco.get_outputs("ee")] == [f"reco_wgt_ele_{leg}"]
 
 
+@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C8"))
 @pytest.mark.parametrize(
     "module,sample",
     [
@@ -97,11 +116,11 @@ def test_electron_reco_weight_is_the_era_keyed_addon_call():
         ("sm_btag_efficiency_config", "dyjets"),
     ],
 )
-def test_actual_cpp_generation_in_every_scope(module, sample):
+def test_actual_cpp_generation_in_every_scope(module, sample, era):
     """Placeholder expansion and source emission for all six scopes, not just DAG
     validation: data (no weight in any scope), MC with SFs and gen-boson recoil, and
     the MC-only efficiency profile."""
-    generated = generate_code(module, sample, scopes=tuple(SCOPES))
+    generated = generate_code(module, sample, era=era, scopes=tuple(SCOPES))
     assert list(generated.directory.rglob("*.cxx"))
     if sample == "data":
         for scope in SCOPES:
@@ -111,6 +130,15 @@ def test_actual_cpp_generation_in_every_scope(module, sample):
         for scope, expected in LEPTON_SFS.items():
             outputs = generated.outputs[scope]
             assert expected <= outputs, (scope, expected - outputs)
+
+
+@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C6", "C7"))
+def test_control_trigger_sf_columns(era):
+    """The trigger SF columns of the era's single-lepton triggers in ee, em and mm."""
+    generated = generate_code("sm_config", "dyjets", era=era, scopes=CONTROLS)
+    for scope, expected in trigger_sfs(era).items():
+        written = {o for o in generated.outputs[scope] if o.startswith("trg_wgt_")}
+        assert written == expected, scope
 
 
 @pytest.mark.parametrize(
