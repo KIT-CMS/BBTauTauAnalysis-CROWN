@@ -45,8 +45,11 @@ The friend entries are thin wrappers around the shared `FriendTreeConfiguration`
   hypotheses, resolved and boosted.
 * `sm_kinfit_resolved.py` - Fixed 125/125 GeV HH kinematic fit, Run-2 eras; outputs
   `kinfit_convergence`, `kinfit_chi2`, `kinfit_prob`, `kinfit_mHH`.
-* `fake_factors_friend_config.py` / `sm_fake_factors.py` - Fake-factor friends, NMSSM (Run 3,
-  `NMSSM_PAYLOAD_DIRS`) and SM (the Run-2 eras with a payload, `SM_PAYLOAD_DIRS`); see
+* `fake_factors_friend_config.py` / `sm_fake_factors.py` / `sm_fake_factors_w.py` - Fake-factor
+  friends, NMSSM (Run 3, `NMSSM_PAYLOAD_DIRS`) and SM (the Run-2 eras with a payload,
+  `SM_PAYLOAD_DIRS`): `sm_fake_factors` sums QCD + ttbar (friend `ff_v7`), `sm_fake_factors_w`
+  QCD + W + ttbar (friend `ff_v7_w`, v7 spec E18, P5), each from its own `PAYLOADS` table with the
+  shared 2016 mapping, and each rejects a payload of the other variant (`PROCESSES`). See
   [Fake-factor friends](#fake-factor-friends).
 * `xyh_classifier_friend_config.py` - Produce PNN classifier friends for the NMSSM analysis.
 
@@ -162,7 +165,18 @@ the legacy Run-2 path NMSSM keeps using:
   (`SmearAndSyst`) and `ElectronPtCorrectionData` (`Scale`) producers against the era's pinned
   `EGM/Run2-<era>-UL-NanoAODv15` payload; embedding keeps its own electron energy scale.
 - **MET covariance** -- v15 drops `MET_covXX/XY/YY`, so the covariance comes from `PuppiMET` through
-  `met.met_global(overrides)`.
+  `met.met_global(overrides)`, checked by `met.MetCovPuppiChecked` (`xyh::met_covariance::Checked`,
+  `cpp_addons/*/met_covariance.*`): a matrix that is not finite, not positive definite or has a
+  variance above sumEt<sup>2</sup> (the physical bound: no object resolution exceeds its
+  p<sub>T</sub>) is replaced by the PF MET covariance (`PFMET_covXX/XY/YY`, the matrix the Run-2
+  v9/v12 configurations used for all events), and if that fails too by a diagonal matrix at the bound
+  (no MET constraint). `metcov_source` (0 PuppiMET, 1 PF MET, 2 diagonal) is written in every scope.
+  The v15 PuppiMET covariance of 2016 is broken in about 1 % of the events (NaN, non-positive
+  determinants, values up to 1e14 GeV<sup>2</sup>; NanoAOD skims: DY 2016preVFP 1.3 %, data
+  2016preVFP 1.1 %, ttbar 2016postVFP 0.7 %, embedding 2016preVFP 0.4 %; selected events of the test
+  runs: ttbar 2016preVFP 0.3-1.5 % per channel, 2016postVFP 0.3-1.0 %, DY 2016preVFP mm 0.9 %), which
+  made `m_fastmtt` NaN or noise; 2017 and 2018 pass the check (the large 2017 values are below the bound and agree with the
+  PF MET ones). The handling is to be confirmed by the user; `metcov_source` allows a veto instead.
 - **MET** -- the re-calibrated jets are propagated to the PuppiMET in data, MC and embedding alike
   (`propagate_jets_to_met` true for every sample type; v7 spec E28, C19), so that the JEC (and in MC
   the JER smearing) act on the MET as on the jets; CROWN shifts the jets of data and MC equally (v6:
@@ -173,7 +187,10 @@ the legacy Run-2 path NMSSM keeps using:
   &#124;&eta;&#124; or EM-fraction cut) is subtracted from the MET. The low-p<sub>T</sub> jets of
   `CorrT1METJet` are not in it, which matters only for jets that cross 15 GeV with the new JEC (JME
   recommends recomputing type-1 MET from all jets; the difference method is the CROWN standard and the
-  KIT precedent, TauAnalysis-CROWN `propagateJets`). The Run-2 recoil
+  KIT precedent, TauAnalysis-CROWN `propagateJets`, which also applies the p<sub>T</sub> cut only).
+  This deviates from v7 spec C19, which lists &#124;&eta;&#124; < 5.2 and an EM fraction < 0.9 as
+  well (`t1jet_max_abs_eta`, `t1jet_max_em_ef` are set but only the Run-3 `met::Type1Correction`
+  reads them); to be confirmed by the user or added to the core propagation. The Run-2 recoil
   correction of DY and W counts the jets of the HTT recipe (p<sub>T</sub> > 30 GeV, |&eta;| < 4.7,
   jet ID, &Delta;R > 0.5 to both pair objects, `met.MetScopesWithRecoilJets`; +1 for W) instead of
   all NanoAOD jets, and reads the legacy PuppiMET files of CROWN,
@@ -203,7 +220,12 @@ the legacy Run-2 path NMSSM keeps using:
   `btag_weight_upart_{up,down}_{bc,light}_{correlated,uncorrelated}`: b/c jets (`UParTAK4_comb`) or light
   jets (`UParTAK4_light`) varied by the payload key `<direction>_<correlation>`, the other group central.
   With [T, M] the L/XT/XXT anomalies of the payload (SF(L) 1.058, SF(XT) > SF(T), SF&middot;&epsilon; > 1) do not
-  enter; they matter again for a later return to more working points. The `UParTAK4_comb` SFs of b/c jets are calibrated from
+  enter; they matter again for a later return to more working points. The variation columns can still
+  break the strict check outside 2018: above 300 GeV the M SF of b jets is 1.037 in 2016preVFP, its
+  `up_uncorrelated` value 1.154 (2016postVFP 1.099, 2017 1.035, 2018 1.032), so an efficiency
+  &epsilon;(M) above 0.867 (2016postVFP 0.910) gives an untagged b jet a negative factor and the job
+  throws. A 2016preVFP test run with the 2018 efficiencies as stand-in (&epsilon;(M) = 0.889 at 463 GeV)
+  stopped there; `check_btag_payload.py --sf-check` of every era's payload has to exclude it before P3. The `UParTAK4_comb` SFs of b/c jets are calibrated from
   30 GeV (`load_upart_comb_min_pt`, parameter `bjet_sf_bc_min_pt`), and the payload's p<sub>T</sub>
   flow would give the jets below the SF of the highest bin; following the BTV convention, they take
   the SF at 30 GeV with twice its deviation for the variations, and the efficiency at their own
@@ -232,7 +254,10 @@ the legacy Run-2 path NMSSM keeps using:
   luminosity block and event number (a hash, so that equal event numbers of different generator jobs
   fall independently). ShapeSmith vetoes the flagged events (JME recipe for UL); the `CMS_HEM_2018` jet
   energy scale shift is gone. Under the jet shifts of the tau-ID measurement the flag follows the
-  shifted jets. NMSSM keeps the HEM shift and has no flag.
+  shifted jets. NMSSM keeps the HEM shift and has no flag. Two details differ from v7 spec C20 and
+  are to be confirmed by the user: MC is selected by a hash of run, luminosity block and event number
+  (the spec names the event number), and the shifted jets of P1 give shifted `hem_veto` columns (the
+  spec names nominal jets). Measured flag rates: 2018 ttbar MC about 5 %, 2018D embedding 3.8 %.
 - **Electron SFs** (profile field `electron_sf_supercluster_eta`; v7 spec K7, C22) -- the EGM
   reconstruction and ID SFs are binned in the supercluster &eta;, so `EleID_SF_ScEta` evaluates them at
   `sc_eta_1/2` = `Electron_eta + Electron_deltaEtaSC` of the pair electrons
@@ -258,7 +283,18 @@ the legacy Run-2 path NMSSM keeps using:
   and ee); the flags select downstream. The KIT muon trigger SF replaces the POG one because its
   denominator (medium ID, iso < 0.15) is the SM selection, as in TauAnalysis v9, jvoss's v15
   production and smhtt_ul; MUO asks to "stick to centrally provided SFs" whenever possible, so the
-  choice is to be presented to MUO before the approval. The KIT files carry no uncertainties:
+  choice is to be presented to MUO before the approval. One MC bin is defective: in
+  `muon_2016preVFPUL` `Trg_pt_eta_bins` holds 2.756 for type `mc` at p<sub>T</sub> &ge; 200 GeV and
+  &#124;&eta;&#124; < 0.9 (impossible, SF &times; &epsilon;<sub>MC</sub> > 1; 0.933 at 100-200 GeV,
+  0.885 for embedding, 0.926 in 2016postVFP). `KitSingleMuonTriggerSF`
+  (`xyh::scalefactor::kit_muon_trigger`) therefore evaluates the muons above 199.9 GeV with
+  &#124;&eta;&#124; < 0.9 at 199.9 GeV in 2016preVFP (`tau_triggersetup.KIT_MUON_TRIGGER_SF_MC_MAX_PT`,
+  entries `mc_trigger_sf_max_pt[_max_abs_eta]`); every other era and bin is evaluated as it is. The
+  precedents evaluate the payload as it is, so this is to be confirmed by the user.
+  `tests/test_run2_eras.py` checks every KIT trigger SF where its flag fires (0.5-1.5, on the first
+  3 GeV of the turn-on 0-1.5); the 2017 Ele32 SF of embedding fails it (1.8-3.2 at 34-36 GeV and
+  1.57 < &#124;&eta;&#124; < 2.1, 0.47 at 42-50 GeV above &#124;&eta;&#124; 2.1) and is reported, not
+  changed (strict xfail). The KIT files carry no uncertainties:
   `CMS_eff_m_trigger_<era>` and `CMS_eff_e_trigger_<era>` scale the SFs by 1.02 / 0.98, the TauAnalysis
   convention. The EGM `Electron-HLT-SF` exists only in the Run-3 payloads, so every Run-2
   configuration, NMSSM included, evaluates the KIT electron SF. Di-tau (tt): 2016
@@ -274,7 +310,12 @@ the legacy Run-2 path NMSSM keeps using:
   byte-identical copies of 2018 (`tests/test_run2_eras.py` checks the list): `DeepTau2018v2p5VSe` in
   2016preVFP and 2016postVFP, `DeepTau2018v2p5VSmu` in 2016preVFP, 2016postVFP and 2017, and the
   e &rarr; &tau; energy scale (`tau_energy_scale`, genmatch 1) in 2016preVFP and 2016postVFP. Their
-  uncertainties are correlated with 2018 downstream.
+  uncertainties are correlated with 2018 downstream. The vsJet SF calls the core
+  `experimental::Id_vsJet` with the vsMu working point `tau_ides_sf_vsmu_wp` (core 14f82c1 and
+  later, so every pin with 27262f4), a C++ string literal because CROWN drops empty parameters: `""`
+  for every pinned payload, whose `DeepTau2018v2p5VSjet` takes pt, dm, genmatch, wp, wp_VSe, syst,
+  flag (`tests/test_run2_v15_configuration.py` checks the call against the core header and the
+  payload inputs per era).
 
 The SM profiles also set `kit_sf_lepton_ids`: they keep the lepton IDs the lepton SFs of the Tau
 Embedding group (KIT, used by the embedding) are measured for, as the legacy SM analysis did -- MVA
@@ -362,7 +403,11 @@ event weight takes the class of each tau downstream. Until ShapeSmith's own meas
 on the tau-ID production exists, the efficiencies are the POG v15 `tau_trigger` `eff_data` of the era
 (DeepTau2018v2p5, `ditau`): Medium for the isolated class and VVVLoose, the closest POG working point,
 for the anti-isolated one (`TT_EMBEDDING_TRIGGER_EFFICIENCIES`; the own payload brings
-`VVVLoose_not_Medium`). They have no shifts yet (v7 is nominal only, E34). The flags of the MC names stay
+`VVVLoose_not_Medium`). The AntiMedium value is a stopgap: VVVLoose contains the Medium taus, while
+the class is VVVLoose and not Medium (doc 12.6), so the datacards need an lnN for it until the own
+payload replaces it. Below the first p<sub>T</sub> edge of the POG payload (39.6 GeV, flow "error")
+the core evaluation catches the error and returns 1.0 (taus are selected from 20 GeV; the tt trigger
+p<sub>T</sub> cut of 40 GeV is applied downstream). They have no shifts yet (v7 is nominal only, E34). The flags of the MC names stay
 as diagnostic columns, matched to the filter bits of TauEmbeddingSamplesUL without an HLT path
 (`triggers.TauTauTriggerFlagsEmbedding`): 2016 the final filter (bits 1 and 8), 2017 and 2018 the
 embedding di-tau L2 filter bit 23. The KIT file `tau_trigger<era>_UL` (DeepTau2017v2p1) is no longer
@@ -498,8 +543,9 @@ python -m pytest analysis_configurations/bbtautau/tests
 
 The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer with all five and with the [T, M]
 working points and the K1 rule, SM HH kinematic fit, electron reconstruction weight, electron SFs at
-the supercluster eta, embedding iso-binned SF, FastMTT decay types, JER smearing, matched trigger
-object, HEM flag, fake factor summed over the payload processes) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
+the supercluster eta, embedding iso-binned SF and JER smearing with the payloads of every Run-2 era,
+FastMTT decay types, matched trigger object, HEM flag, fake factor summed over the payload processes,
+checked MET covariance, KIT muon trigger SF with its p<sub>T</sub> cap) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
 `root-config`, `g++`, correctionlib and spdlog headers. `tests/test_run2_eras.py` checks the per-era
 inputs (MET filters, jet ID, KIT lepton and trigger SF names, b-tag efficiency and embedding tau
 payloads, TAU POG placeholders), `tests/test_triggers.py` the trigger flags and SFs per era against
@@ -512,6 +558,15 @@ turn into failures once the payload exists, and the entry goes. `tests.helpers.g
 subprocess, once per session; the embedding tests use it with a committed branch list of one v15
 embedding file (`tests/fixtures/nanoaod_v15_embedding_2018_branches.txt`). The synthetic b-tag fixtures
 (gitignored) are regenerated by the test from `tests/fixtures/make_btag_sf_strict_fixtures.py`.
+`tests.helpers.build` and `generate_code` take the era without a default, so every test names it;
+the SM tests run in every Run-2 era, NMSSM in 2018.
+
+Neither pytest nor a code-generation dry run compiles the generated code, so a changed core signature
+(e.g. the vsMu working point of `experimental::Id_vsJet` from core 14f82c1 on) shows only in the
+build. `scripts/compile_check.sh <build dir> [jobs]` compiles one MC configuration per production in
+every Run-2 era in the CROWN container (`sm_config` ttbar in six scopes, `sm_btag_efficiency_config`
+ttbar, `sm_tau_id_measurement_config` dyjets in mt and mm, and the `sm_config` embedding of the eras
+with an embedding tau payload); run it after every core pin change and before a production.
 
 ## 2018 control production
 
