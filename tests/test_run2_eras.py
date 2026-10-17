@@ -127,7 +127,7 @@ def test_kit_muon_trigger_sf_names_exist(era):
         assert set(expected.values()) <= set(corrections(CROWN / path)), scope
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "btag_efficiency_payloads"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize("scope", SCOPES)
 def test_btag_efficiency_payload_of_the_era(era, scope):
     """The strict b-tag consumer looks up every MC sample type of the era's lists in
