@@ -71,7 +71,7 @@ function before, so a QCD + ttbar payload gives the former friend bit for bit
 copy, `tests/cpp/reference/fakefactors_two_process.hxx`, on the SM 2018 and two NMSSM payloads, nominal
 and with every shift, built with `-ffp-contract=off` because the friend is built with ROOT's
 `-march=nocona`, which has no fused multiply-add; a W payload derived from the SM one, `tests/fixtures/make_wjets_fake_factor_payload.py`,
-checks the three-process sum).
+checks the three-process sum, which every leg has to give in float, in payload order, bit for bit).
 
 | Scope | Legs (correction suffix) | Outputs |
 |---|---|---|
