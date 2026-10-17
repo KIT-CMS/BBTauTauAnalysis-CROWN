@@ -54,8 +54,9 @@ def era_cases(eras, *items):
 
 
 @functools.lru_cache(maxsize=None)
-def build(module_name, sample, era="2018", scopes=("mt",), shifts=("none",)):
-    """Build ``module_name``'s configuration; cached, and quiet about logging."""
+def build(module_name, sample, era, scopes=("mt",), shifts=("none",)):
+    """Build ``module_name``'s configuration for ``era`` (no default, so that every
+    test names its era); cached, and quiet about logging."""
     module = importlib.import_module(f"analysis_configurations.bbtautau.{module_name}")
     logging.disable(logging.CRITICAL)
     try:
@@ -89,7 +90,7 @@ with open(f"{directory}/outputs.json", "w") as f:
 
 
 @functools.lru_cache(maxsize=None)
-def generate_code(module_name, sample, era="2018", scopes=("mt",), shifts=("none",)):
+def generate_code(module_name, sample, era, scopes=("mt",), shifts=("none",)):
     """Generate the C++ code of one surface; cached, so each surface is generated once.
 
     Generation runs in a subprocess: it mutates module-level producers, so a second

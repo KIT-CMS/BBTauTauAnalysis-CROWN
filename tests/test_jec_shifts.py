@@ -22,11 +22,18 @@ JEC_MC_PRODUCERS = (
     "Type1JetEnergyCorrectionMCPt",
 )
 JET_SHIFTS = ("CMS_res_j", "CMS_scale_j", "CMS_HEM")
+# the era tokens of the era-specific JES sources in the Run-2 JME payloads
+JME_ERA_TOKENS = {"2016preVFP": "2016APV", "2016postVFP": "2016", "2017": "2017", "2018": "2018"}
+
+
+@pytest.fixture(scope="module", params=ERAS_RUN2)
+def era(request):
+    return request.param
 
 
 @pytest.fixture(scope="module")
-def config():
-    return build("sm_config", "ttbar", shifts=JET_SHIFTS)
+def config(era):
+    return build("sm_config", "ttbar", era=era, shifts=JET_SHIFTS)
 
 
 @pytest.fixture(scope="module")
@@ -64,24 +71,26 @@ def test_jet_shift_parameters_are_read_by_every_jec_producer(config, jet_shifts)
 @pytest.mark.parametrize(
     "shift,key,value",
     [
-        ("CMS_res_j_2018Up", "ak4jet_jer_shift", "up"),
-        ("CMS_res_j_2018Down", "ak4jet_jer_shift", "down"),
+        ("CMS_res_j_{era}Up", "ak4jet_jer_shift", "up"),
+        ("CMS_res_j_{era}Down", "ak4jet_jer_shift", "down"),
         ("CMS_scale_j_AbsoluteUp", "ak4jet_jes_source", "Regrouped_Absolute"),
         ("CMS_scale_j_AbsoluteUp", "ak4jet_jes_shift_factor", 1),
         (
-            "CMS_scale_j_RelativeSample_2018Down",
+            "CMS_scale_j_RelativeSample_{era}Down",
             "ak4jet_jes_source",
-            "Regrouped_RelativeSample_2018",
+            "Regrouped_RelativeSample_{jes_era}",
         ),
     ],
 )
-def test_jet_shift_values(jet_shifts, shift, key, value):
-    assert jet_shifts[shift][key] == value
+def test_jet_shift_values(jet_shifts, era, shift, key, value):
+    tokens = {"era": era, "jes_era": JME_ERA_TOKENS[era]}
+    value = value.format(**tokens) if isinstance(value, str) else value
+    assert jet_shifts[shift.format(**tokens)][key] == value
 
 
 def test_nmssm_keeps_the_hem_shift():
     """NMSSM has no HEM flag and keeps the HEMIssue shift of 2018."""
-    shifts = build("nmssm_config", "ttbar", shifts=("CMS_HEM",)).shifts["global"]
+    shifts = build("nmssm_config", "ttbar", era="2018", shifts=("CMS_HEM",)).shifts["global"]
     assert shifts["__CMS_HEM_2018Down"]["ak4jet_jes_source"] == "HEMIssue"
     assert shifts["__CMS_HEM_2018Down"]["ak4jet_jes_shift_factor"] == -1
     assert shifts["__CMS_HEM_2018Up"]["ak4jet_jes_shift_factor"] == 1

@@ -83,7 +83,8 @@ ABSENT_TT = {
 
 
 def embedding(shifts=("none",)):
-    return build("sm_config", "embedding", scopes=CHANNELS, shifts=shifts)
+    # 2018: the only era with an embedding tau ID/ES payload so far (PENDING)
+    return build("sm_config", "embedding", era="2018", scopes=CHANNELS, shifts=shifts)
 
 
 def build_profile(profile, scopes, shifts=("none",), era="2018"):
@@ -200,7 +201,7 @@ def test_every_nanoaod_input_exists_in_the_v15_embedding_files():
 @pytest.mark.parametrize("scope", CHANNELS)
 def test_output_contract(scope):
     # generated, because vector producers name their output columns only then
-    outputs = generate_code("sm_config", "embedding", scopes=CHANNELS).outputs[scope]
+    outputs = generate_code("sm_config", "embedding", era="2018", scopes=CHANNELS).outputs[scope]
     assert PRESENT[scope] <= outputs, PRESENT[scope] - outputs
     assert not (ABSENT | ABSENT_TT) & outputs
     assert "is_embedding" in outputs and "genWeight" in outputs
@@ -265,7 +266,7 @@ def test_rendered_calls_of_the_embedding_producers():
     checked as generated: iso edges and corrections per flavour with its eta
     convention, and the ditau flags matched to filter bit 23 without an HLT path,
     ahead of the trigger SF."""
-    src = generate_code("sm_config", "embedding", scopes=CHANNELS).directory
+    src = generate_code("sm_config", "embedding", era="2018", scopes=CHANNELS).directory
     text = {path.stem: path.read_text() for path in src.rglob("src/*/*.cxx")}
     muon = " ".join(text["TauEmbeddingMuonIDIsoSF"].split())
     assert (
