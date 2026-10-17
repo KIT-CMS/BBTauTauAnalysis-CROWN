@@ -61,6 +61,20 @@ class AnalysisProfile:
     # weight eps_data(tau1) * eps_data(tau2) without trigger requirement (v7 spec
     # E33, variant A); the filter-bit flags stay as diagnostic columns.
     tt_embedding_trigger: str = "eff_data"
+    # The L1 prefiring weight on MC only, in every Run-2 era (2018: the muon
+    # prefiring), written as prefiring_wgt with its NanoAOD Up/Dn columns and
+    # without prefiring shifts (v7 spec E11, C11; the tau-ID measurement adds
+    # them). Otherwise the weight on every sample of 2016 and 2017 with shifts.
+    prefiring_weight_columns: bool = False
+    # The 2018 HEM 15/16 event flag hem_veto (v7 spec E29, C20) in place of the
+    # HEM jet energy scale shift.
+    hem_veto_flag: bool = False
+    # The EGM electron ID and reconstruction SFs evaluated at the supercluster
+    # eta, eta + deltaEtaSC (v7 spec K7, C22), instead of the electron eta.
+    electron_sf_supercluster_eta: bool = False
+    # Working points of the strict UParTAK4 b-tag event weight, tightest first
+    # (v7 spec E14, C14).
+    btag_sf_working_points: Tuple[str, ...] = ("T", "M")
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -94,6 +108,10 @@ SM_PROFILE = AnalysisProfile(
     kit_sf_lepton_ids=True,
     kit_single_lepton_triggers=True,
     lepton_tau_cross_triggers=False,
+    prefiring_weight_columns=True,
+    hem_veto_flag=True,
+    electron_sf_supercluster_eta=True,
+    btag_sf_working_points=("T", "M"),
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the

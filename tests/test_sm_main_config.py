@@ -227,17 +227,17 @@ def test_sm_recoil_file_has_the_labelled_z_pt_bins(era):
 @pytest.mark.parametrize(
     "module,sample,propagate",
     [
-        ("sm_config", "ttbar", False),
-        ("sm_config", "dyjets", False),
-        ("sm_config", "data", False),
-        ("sm_config", "embedding", False),
+        ("sm_config", "ttbar", True),
+        ("sm_config", "dyjets", True),
+        ("sm_config", "data", True),
+        ("sm_config", "embedding", True),
         ("nmssm_config", "ttbar", True),
         ("nmssm_config", "data", False),
     ],
 )
 def test_jet_propagation_to_the_met(module, sample, propagate):
-    """The v15 nominal MET of MC is the NanoAOD PuppiMET, as in data and embedding;
-    NMSSM propagates the re-applied JEC to the MET of MC."""
+    """The v15 inputs propagate the re-applied JEC to the MET in data, MC and
+    embedding alike (v7 spec E28, C19); NMSSM in MC only."""
     params = build(module, sample).config_parameters["global"]["nominal"]
     assert params["propagate_jets_to_met"] is propagate
 

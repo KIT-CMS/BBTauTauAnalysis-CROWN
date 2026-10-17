@@ -164,6 +164,47 @@ def test_strict_upart_btag_weight_consumer(tmp_path):
     subprocess.run([str(binary)], check=True)
 
 
+def test_hem_veto_flag(tmp_path):
+    """C20: the 2018 HEM flag at the region edges (eta, phi, pT), with the
+    TightLeptonVeto ID, from run 319077 on in data and embedding, and for the
+    luminosity fraction of these runs in MC (deterministic per event)."""
+    binary = compile_fixture(
+        tmp_path,
+        "hem_veto",
+        [CPP / "test_hem_veto.cxx", ADDONS / "src/hem_veto.cxx"],
+    )
+    subprocess.run([str(binary)], check=True)
+
+
+@pytest.fixture(scope="module")
+def electron_supercluster_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("electron_supercluster"),
+        "electron_supercluster",
+        [
+            CPP / "test_electron_supercluster_eta.cxx",
+            CROWN / "src/electrons.cxx",
+            ADDONS / "src/electron_reco.cxx",
+            CORRECTION_MANAGER,
+        ],
+        correctionlib=True,
+    )
+
+
+@pytest.mark.parametrize("era", ["2016preVFP", "2016postVFP", "2017", "2018"])
+def test_electron_sfs_at_the_supercluster_eta(electron_supercluster_binary, era):
+    """C22: an electron with eta just below 1.444 (1.566) and supercluster eta just
+    above takes the ID and reco SF of the bin above, in the official EGM payload of
+    every era."""
+    folder, cset = ELECTRON_RECO_PAYLOADS[era]
+    payload = EGM_ROOT / folder / "electron.json.gz"
+    if not payload.is_file():
+        pytest.skip("Pinned official EGM payload requires CVMFS")
+    subprocess.run(
+        [str(electron_supercluster_binary), str(payload), cset, era, "wp90iso"], check=True
+    )
+
+
 def test_sm_hh_kinfit_compiles_and_converges(tmp_path):
     binary = compile_fixture(
         tmp_path,

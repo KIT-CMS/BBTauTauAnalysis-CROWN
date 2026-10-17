@@ -90,9 +90,9 @@ def test_ee_takes_the_kit_electron_trigger_sf(era):
 
 def test_electron_reco_weight_is_the_era_keyed_addon_call():
     """The reco weight picks the payload's pt category itself, so the call carries the
-    era id instead of a fixed category name."""
+    era id instead of a fixed category name; it reads the supercluster eta (C22)."""
     config = build("sm_config", "ttbar", scopes=CONTROLS)
-    for producer, leg in (("Ele_1_Reco_SF", 1), ("Ele_2_Reco_SF", 2)):
+    for producer, leg in (("Ele_1_Reco_SF_ScEta", 1), ("Ele_2_Reco_SF_ScEta", 2)):
         reco = find_producer(config, "ee", producer)
         assert (
             "xyh::scalefactor::electron_reco(" in reco.call
@@ -100,7 +100,7 @@ def test_electron_reco_weight_is_the_era_keyed_addon_call():
         )
         assert [q.name for q in reco.get_inputs("ee")] == [
             f"pt_{leg}",
-            f"eta_{leg}",
+            f"sc_eta_{leg}",
             f"phi_{leg}",
         ]
         assert [q.name for q in reco.get_outputs("ee")] == [f"reco_wgt_ele_{leg}"]

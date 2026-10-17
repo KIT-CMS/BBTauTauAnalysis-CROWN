@@ -179,6 +179,34 @@ electron_dxy_2 = Producer(
     output=[q.dxy_2],
     scopes=["ee"],
 )
+# Supercluster eta of the electrons, at which the EGM ID and reconstruction SFs
+# are evaluated (v7 spec K7, C22)
+electron_sc_eta_1 = Producer(
+    name="electron_sc_eta_1",
+    call="xyh::electron::supercluster_eta({df}, {output}, {input}, 0)",
+    input=[nanoAOD.Electron_eta, nanoAOD.Electron_deltaEtaSC, q.dileptonpair],
+    output=[q.sc_eta_1],
+    scopes=["et", "ee", "em"],
+)
+electron_sc_eta_2 = Producer(
+    name="electron_sc_eta_2",
+    call="xyh::electron::supercluster_eta({df}, {output}, {input}, 1)",
+    input=[nanoAOD.Electron_eta, nanoAOD.Electron_deltaEtaSC, q.dileptonpair],
+    output=[q.sc_eta_2],
+    scopes=["ee"],
+)
+ElectronSuperclusterEta = ProducerGroup(
+    name="ElectronSuperclusterEta",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["et", "ee", "em"],
+    subproducers={
+        "et": [electron_sc_eta_1],
+        "em": [electron_sc_eta_1],
+        "ee": [electron_sc_eta_1, electron_sc_eta_2],
+    },
+)
 tau_dxy_1 = Producer(
     name="tau_dxy_1",
     call="event::quantity::Get<float>({df}, {output}, {input}, 0)",

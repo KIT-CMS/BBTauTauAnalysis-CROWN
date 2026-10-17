@@ -99,10 +99,15 @@ def add_jec_shifts(
     era: str,
     jec_producers: list[Producer | ProducerGroup],
     bjet_tagging_sf_producer: Producer | ProducerGroup = None,
+    hem_shift: bool = True,
 ):
     """
     Add systematic uncertainties related to the jet energy calibration (JEC)
     procedure.
+
+    `hem_shift` adds the HEM 15/16 jet energy scale shift of 2018; profiles that
+    flag and veto the affected events instead (hem_veto, v7 spec E29) leave it
+    out.
 
     The function adds a systematic up and down shift for each uncertainty
     source in the jet energy scale (reduced scheme) and for the
@@ -148,7 +153,8 @@ def add_jec_shifts(
     # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1
 
     # Groups of uncertainty sources in jet energy scale corrections. The
-    # HEMIssue uncertainty is only included in 2018
+    # HEMIssue uncertainty is only included in 2018, unless the HEM events are
+    # vetoed
     jes_era = JES_SOURCE_ERA.get(era, era)
     jes_sources = [
         {
@@ -196,7 +202,7 @@ def add_jec_shifts(
             "cms_name": f"CMS_scale_j_RelativeSample_{era}",
         },
     ]
-    if era == "2018":
+    if era == "2018" and hem_shift:
         jes_sources.append({
             "correction_name": "HEMIssue",
             "cms_name": f"CMS_HEM_{era}",

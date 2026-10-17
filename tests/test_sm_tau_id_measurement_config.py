@@ -140,7 +140,8 @@ PREDECESSOR_SHIFTS = {
         for dm in (0, 1, 10, 11)
     },
     "CMS_scale_j_<source>": [f"CMS_scale_j_{source}" for source in REGROUPED_JES_SOURCES],
-    "CMS_scale_j_HEMIssue_Run2018": ["CMS_HEM_2018"],
+    # CMS_scale_j_HEMIssue_Run2018: replaced by the 2018 HEM flag hem_veto, which
+    # vetoes the affected events (v7 spec E29, C20)
 }
 # families of the tau and the trigger, which the predecessor has in mt only
 MT_ONLY_FAMILIES = (
@@ -236,12 +237,17 @@ def test_trigger_sfs_are_the_kit_sfs_of_the_first_muon(sample, producer, sf_type
 @pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize("sample", ("dyjets", "ttbar", "data", "embedding"))
 def test_prefiring_weight_of_mc(sample, era):
-    """E11: the MC carries prefiring_wgt (L1PreFiringWeight_Nom) in every era, 2018
-    included (the muon part), with the shift CMS_ecal_prefiring_<year> (E34
-    exception of the measurement); data and embedding have none."""
+    """E11: the MC carries prefiring_wgt (L1PreFiringWeight_Nom) and its Up/Dn
+    columns in every era, 2018 included (the muon part), with the shift
+    CMS_ecal_prefiring_<year> (E34 exception of the measurement); data and
+    embedding have none."""
     outputs = generate_code(MODULE, sample, era=era, scopes=SCOPES).outputs
+    columns = {"prefiring_wgt", "L1PreFiringWeight_Up", "L1PreFiringWeight_Dn"}
     for scope in SCOPES:
-        assert ("prefiring_wgt" in outputs[scope]) == (sample not in ("data", "embedding")), scope
+        if sample in ("data", "embedding"):
+            assert not columns & outputs[scope], scope
+        else:
+            assert columns <= outputs[scope], scope
     if sample in ("dyjets", "ttbar"):
         config = measurement(sample, ("all",), era=era)
         shifts = {name.removeprefix("__") for name in config.shifts["mt"]}
