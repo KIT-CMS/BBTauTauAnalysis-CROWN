@@ -178,6 +178,18 @@ def test_hem_veto_flag(tmp_path):
     subprocess.run([str(binary)], check=True)
 
 
+def test_checked_met_covariance(tmp_path):
+    """The Run-2 v15 MET covariance: the PuppiMET matrix if finite, positive
+    definite and within sumEt^2, else the PF MET matrix, else a diagonal one;
+    metcov_source records the choice."""
+    binary = compile_fixture(
+        tmp_path,
+        "met_covariance",
+        [CPP / "test_met_covariance.cxx", ADDONS / "src/met_covariance.cxx"],
+    )
+    subprocess.run([str(binary)], check=True)
+
+
 @pytest.fixture(scope="module")
 def electron_supercluster_binary(tmp_path_factory):
     return compile_fixture(

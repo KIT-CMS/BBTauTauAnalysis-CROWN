@@ -2762,9 +2762,9 @@ def build_config(
 
     # MET global quantities producer (see producers/met.py). v15 drops the
     # v9/v12 MET_covXX/XY/YY branches, so the v15 path takes the covariance
-    # from PuppiMET.
+    # from PuppiMET, checked and with the PF MET covariance as fallback.
     met_cov_overrides = (
-        {_era: met.MetCovPuppi for _era in ERAS_RUN2} if use_run2_v15_inputs else {}
+        {_era: met.MetCovPuppiChecked for _era in ERAS_RUN2} if use_run2_v15_inputs else {}
     )
     MetGlobal = get_for_era(met.met_global(met_cov_overrides), era)
 
@@ -3807,6 +3807,7 @@ def build_config(
     ]
     if use_run2_v15_inputs:
         scope_outputs += [
+            q.metcov_source,
             q.npv_good,
             q.rho,
             q.jet_hadronFlavour_1,
