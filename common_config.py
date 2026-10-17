@@ -494,10 +494,10 @@ def add_electron_config(configuration: Configuration):
         {
             "mc_electron_sf_file": EraModifier(
                 {
-                    "2016preVFP": "DOES_NOT_EXIST",  # TODO to be added when available
-                    "2016postVFP": "DOES_NOT_EXIST",  # TODO to be added when available
-                    "2017": "DOES_NOT_EXIST",  # TODO to be added when available
-                    "2018": "data/embedding/electron_2018UL.json.gz",
+                    **{
+                        _era: f"data/embedding/electron_{_era}UL.json.gz"
+                        for _era in ERAS_RUN2
+                    },
                     "2022preEE": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2022postEE": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
@@ -723,10 +723,10 @@ def add_muon_config(configuration: Configuration):
         {
             "mc_muon_sf_file": EraModifier(
                 {
-                    "2016preVFP": "DOES_NOT_EXIST",  # TODO to be added when available
-                    "2016postVFP": "DOES_NOT_EXIST",  # TODO to be added when available
-                    "2017": "DOES_NOT_EXIST",  # TODO to be added when available
-                    "2018": "data/embedding/muon_2018UL.json.gz",
+                    **{
+                        _era: f"data/embedding/muon_{_era}UL.json.gz"
+                        for _era in ERAS_RUN2
+                    },
                     "2022preEE": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2022postEE": "DOES_NOT_EXIST",  # TODO to be added when available
                     "2023preBPix": "DOES_NOT_EXIST",  # TODO to be added when available
@@ -2355,16 +2355,17 @@ def build_config(
         else scalefactors.SingleEleTriggerSF
     )
 
-    # Light dilepton control channels (ee, em, mm). Pinned to 2018 only because
-    # the ee trigger SF relies on the Tau Embedding group's 2018 payload above;
-    # the electron reconstruction weight itself is keyed by ele_sf_year_id and
-    # selects the payload's pt category per electron for every era.
-    sm_light_controls = profile.use_run2_v15_inputs and era == "2018"
-    ee_trigger_sf = single_ele_trigger_sf if sm_light_controls else scalefactors.SingleEleTriggerSF
-
     # Run-2 NanoAOD-v15 inputs: the era switches below take the v15 value
     # instead of the legacy era default.
     use_run2_v15_inputs = _use_run2_v15_inputs(profile, era)
+
+    # Light dilepton control channels (ee, em, mm) in every Run-2 v15 era:
+    # 15 GeV legs, no lepton SFs on data, em without the electron trigger, and
+    # ee with the single-electron trigger SF of et. The electron
+    # reconstruction weight is keyed by ele_sf_year_id and selects the
+    # payload's pt category per electron for every era.
+    sm_light_controls = use_run2_v15_inputs
+    ee_trigger_sf = single_ele_trigger_sf if sm_light_controls else scalefactors.SingleEleTriggerSF
 
     def v15_or(v15_value, era_map):
         return v15_value if use_run2_v15_inputs else get_for_era(era_map, era)

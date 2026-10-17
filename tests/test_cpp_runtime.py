@@ -22,11 +22,14 @@ CPP, ADDONS, FIXTURES = (
 )
 CORRECTION_MANAGER = CROWN / "src/utility/CorrectionManager.cxx"
 EGM_ROOT = Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM")
-# One pinned official EGM payload per category layout the reconstruction weight
-# handles: Run 2 UL (split at 20 GeV), Run 3 (splits at 20 and 75 GeV), and the
-# 2023 payloads that take phi as a further input.
+# The pinned official EGM payloads of the category layouts the reconstruction
+# weight handles: Run 2 UL (split at 20 GeV, every era), Run 3 (splits at 20 and
+# 75 GeV), and the 2023 payloads that take phi as a further input.
 ELECTRON_RECO_PAYLOADS = {
-    "2018": ("Run2-2018-UL-NanoAODv15/2025-12-05", "UL-Electron-ID-SF"),
+    **{
+        era: (f"Run2-{era}-UL-NanoAODv15/2025-12-05", "UL-Electron-ID-SF")
+        for era in ("2016preVFP", "2016postVFP", "2017", "2018")
+    },
     "2022Re-recoBCD": (
         "Run3-22CDSep23-Summer22-NanoAODv12/2025-12-15",
         "Electron-ID-SF",
