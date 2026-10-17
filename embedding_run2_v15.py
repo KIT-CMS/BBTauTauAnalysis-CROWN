@@ -163,7 +163,7 @@ def setup(configuration: Configuration, profile, era: str, scopes: list[str]):
     _add_event_level(configuration, payloads)
     _add_generator_pair(configuration)
     _add_muon_scalefactors(configuration, payloads)
-    _add_electron_scalefactors(configuration, payloads)
+    _add_electron_scalefactors(configuration, payloads, profile)
     _add_tautau_trigger(configuration, TT_EMBEDDING_TRIGGER_EFFICIENCIES[era])
     if profile.embedding_tau_corrections:
         _add_tau_corrections(configuration, era, tau_payload)
@@ -284,7 +284,9 @@ def _add_muon_scalefactors(configuration: Configuration, payloads: KitEmbeddingP
     )
 
 
-def _add_electron_scalefactors(configuration: Configuration, payloads: KitEmbeddingPayloads):
+def _add_electron_scalefactors(
+    configuration: Configuration, payloads: KitEmbeddingPayloads, profile
+):
     # The KIT ID90 and iso SFs replace the POG ID SF; the iso SF takes the
     # correction of the electron's iso bin. The MC trigger SF producer reads the
     # same payload (mc_electron_sf_file) and takes its embedding type for all iso
@@ -314,7 +316,10 @@ def _add_electron_scalefactors(configuration: Configuration, payloads: KitEmbedd
     configuration.add_modification_rule(
         ET_SCOPES,
         ReplaceProducer(
-            producers=[scalefactors.EleID_SF, embedding.TauEmbeddingElectronIDIsoSF],
+            producers=[
+                scalefactors.electron_id_sf(profile.electron_sf_supercluster_eta),
+                embedding.TauEmbeddingElectronIDIsoSF,
+            ],
             samples="embedding",
         ),
     )

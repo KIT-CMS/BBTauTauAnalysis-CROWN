@@ -39,9 +39,11 @@ def add_pileup_shifts(
         )
 
 
-# The eras whose MC build_config weights with the L1 prefiring weight
-# (event.PrefireWeight) and gives the prefiring shifts. The tau-ID measurement
-# adds the other Run-2 eras (2018: the muon prefiring, v7 spec E11).
+# The eras in which build_config weights every sample of the legacy profiles
+# with the L1 prefiring weight (event.PrefireWeight) and gives the prefiring
+# shifts. Profiles with prefiring_weight_columns weight MC of every Run-2 era
+# without shifts (2018: the muon prefiring, v7 spec E11, C11); the tau-ID
+# measurement adds the shifts there.
 COMMON_PREFIRING_ERAS = ("2016preVFP", "2016postVFP", "2017")
 
 

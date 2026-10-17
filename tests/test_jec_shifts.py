@@ -40,8 +40,10 @@ def jet_shifts(config):
 
 
 def test_all_jet_shifts_are_scheduled(jet_shifts):
-    # JER, HEMIssue (2018 only) and the eleven regrouped sources, up and down
-    assert len(jet_shifts) == 26, sorted(jet_shifts)
+    # JER and the eleven regrouped sources, up and down; the SM has no HEMIssue
+    # shift, the 2018 HEM flag replaces it (v7 spec E29, C20)
+    assert len(jet_shifts) == 24, sorted(jet_shifts)
+    assert not [name for name in jet_shifts if name.startswith("CMS_HEM")]
 
 
 def test_jet_shift_parameters_are_read_by_every_jec_producer(config, jet_shifts):
@@ -66,8 +68,6 @@ def test_jet_shift_parameters_are_read_by_every_jec_producer(config, jet_shifts)
         ("CMS_res_j_2018Down", "ak4jet_jer_shift", "down"),
         ("CMS_scale_j_AbsoluteUp", "ak4jet_jes_source", "Regrouped_Absolute"),
         ("CMS_scale_j_AbsoluteUp", "ak4jet_jes_shift_factor", 1),
-        ("CMS_HEM_2018Down", "ak4jet_jes_source", "HEMIssue"),
-        ("CMS_HEM_2018Down", "ak4jet_jes_shift_factor", -1),
         (
             "CMS_scale_j_RelativeSample_2018Down",
             "ak4jet_jes_source",
@@ -77,6 +77,14 @@ def test_jet_shift_parameters_are_read_by_every_jec_producer(config, jet_shifts)
 )
 def test_jet_shift_values(jet_shifts, shift, key, value):
     assert jet_shifts[shift][key] == value
+
+
+def test_nmssm_keeps_the_hem_shift():
+    """NMSSM has no HEM flag and keeps the HEMIssue shift of 2018."""
+    shifts = build("nmssm_config", "ttbar", shifts=("CMS_HEM",)).shifts["global"]
+    assert shifts["__CMS_HEM_2018Down"]["ak4jet_jes_source"] == "HEMIssue"
+    assert shifts["__CMS_HEM_2018Down"]["ak4jet_jes_shift_factor"] == -1
+    assert shifts["__CMS_HEM_2018Up"]["ak4jet_jes_shift_factor"] == 1
 
 
 def test_jer_shift_is_quoted_by_the_producer_call(config):

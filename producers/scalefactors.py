@@ -606,6 +606,59 @@ EleID_SF = ProducerGroup(
         ],
     },
 )
+
+# The same SFs at the supercluster eta of the electrons, eta + deltaEtaSC, in which
+# the EGM payloads are binned (v7 spec K7, C22): an electron with eta below the
+# barrel edge 1.444 and supercluster eta above it takes the SF of the bin above.
+def _at_supercluster_eta(producer, eta, sc_eta):
+    """``producer`` with the input ``eta`` replaced by ``sc_eta``."""
+    inputs = producer.input[producer.scopes[0]]
+    if eta not in inputs:
+        raise ValueError(f"{producer.name} does not read {eta.name}")
+    return Producer(
+        name=f"{producer.name}_ScEta",
+        call=producer.call,
+        input=[sc_eta if quantity is eta else quantity for quantity in inputs],
+        output=list(producer.output),
+        scopes=list(producer.scopes),
+    )
+
+
+Ele_1_Reco_SF_ScEta = _at_supercluster_eta(Ele_1_Reco_SF, q.eta_1, q.sc_eta_1)
+Ele_2_Reco_SF_ScEta = _at_supercluster_eta(Ele_2_Reco_SF, q.eta_2, q.sc_eta_2)
+Ele_1_ID_SF_ScEta = _at_supercluster_eta(Ele_1_ID_SF, q.eta_1, q.sc_eta_1)
+Ele_2_ID_SF_ScEta = _at_supercluster_eta(Ele_2_ID_SF, q.eta_2, q.sc_eta_2)
+EleID_SF_ScEta = ProducerGroup(
+    name="EleID_SF_ScEta",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["em", "ee", "et"],
+    subproducers={
+        "em": [
+            Ele_1_Reco_SF_ScEta,
+            Ele_1_ID_SF_ScEta,
+        ],
+        "ee": [
+            Ele_1_Reco_SF_ScEta,
+            Ele_2_Reco_SF_ScEta,
+            Ele_1_ID_SF_ScEta,
+            Ele_2_ID_SF_ScEta,
+        ],
+        "et": [
+            Ele_1_Reco_SF_ScEta,
+            Ele_1_ID_SF_ScEta,
+        ],
+    },
+)
+
+
+def electron_id_sf(supercluster_eta: bool) -> ProducerGroup:
+    """The electron reconstruction and ID SF group, at the supercluster eta
+    (AnalysisProfile.electron_sf_supercluster_eta) or at the electron eta."""
+    return EleID_SF_ScEta if supercluster_eta else EleID_SF
+
+
 Ele_1_Reco_SF_boosted = Producer(
     name="Ele_1_Reco_SF_boosted",
     call="""physicsobject::electron::scalefactor::Id(

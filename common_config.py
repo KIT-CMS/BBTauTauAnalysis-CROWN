@@ -2143,12 +2143,51 @@ def add_zpt_weight_config(configuration: Configuration):
     )
 
 
-def add_met_corrections_config(configuration: Configuration):
+# Luminosity fraction of the 2018 runs from 319077 on, the period with the HEM
+# 15/16 failure: 38.7459 of 59.8190 /fb, recorded luminosity of the lumisections
+# of the Legacy 2018 golden JSON (data/golden_json/Cert_314472-325175_13TeV_
+# Legacy2018_Collisions18_JSON.txt) from the UltraLegacy pileup JSON
+# (/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions18/2026-05-28/13TeV/
+# PileUp/UltraLegacy/pileup_latest.txt).
+HEM_AFFECTED_LUMI_FRACTION_2018 = 0.647719
+
+
+def add_hem_veto_config(configuration: Configuration, sample: str):
+    """
+    The 2018 HEM 15/16 event flag (v7 spec E29, C20), after the JME recipe for UL
+    (CMS Talk 38654, 43448): a loose jet (pT > 15 GeV, TightLeptonVeto ID) in
+    -3.0 < eta < -1.3, -1.57 < phi < -0.87, in data and embedding from run 319077
+    on, in MC for the luminosity fraction of these runs.
+    """
+    configuration.add_config_parameters(
+        GLOBAL_SCOPES,
+        {
+            "hem_veto_by_run": sample in ["data", "embedding"],
+            "hem_veto_jet_min_pt": 15.0,
+            "hem_veto_jet_id_wp": 6,  # TightLeptonVeto (jets.JetID: 2 tight, 6 both)
+            "hem_veto_min_eta": -3.0,
+            "hem_veto_max_eta": -1.3,
+            "hem_veto_min_phi": -1.57,
+            "hem_veto_max_phi": -0.87,
+            "hem_veto_first_run": 319077,
+            "hem_veto_affected_fraction": HEM_AFFECTED_LUMI_FRACTION_2018,
+        },
+    )
+
+
+def add_met_corrections_config(
+    configuration: Configuration, propagate_jets_in_every_sample: bool = False
+):
     """
     Configuration parameters for recoil corrections.
 
     This configuration applies to Run 3 eras only. Corrections are read from `correctionlib` files
     provided by the HLepRare group.
+
+    With `propagate_jets_in_every_sample` (the Run-2 v15 inputs, v7 spec E28,
+    C19), the re-calibrated jets are propagated to the MET in data and
+    embedding as well, which get the data calibration of the same jets
+    (JetEnergyCorrectionData); otherwise in simulation only.
     """
 
     # Selection of jets for Type-I MET corrections and propagation of JEC
@@ -2165,8 +2204,8 @@ def add_met_corrections_config(configuration: Configuration):
             "recoil_jet_max_abs_eta": 4.7,
             "propagate_jets_to_met": SampleModifier(
                 {
-                    "data": False,
-                    "embedding": False,
+                    "data": propagate_jets_in_every_sample,
+                    "embedding": propagate_jets_in_every_sample,
                 },
                 default=True,
             ),
@@ -2364,6 +2403,10 @@ def build_config(
     # instead of the legacy era default.
     use_run2_v15_inputs = _use_run2_v15_inputs(profile, era)
 
+    # Electron reconstruction and ID SFs, at the supercluster eta for the
+    # profiles with electron_sf_supercluster_eta (v7 spec K7, C22)
+    ele_id_sf = scalefactors.electron_id_sf(profile.electron_sf_supercluster_eta)
+
     # Light dilepton control channels (ee, em, mm) in every Run-2 v15 era:
     # 15 GeV legs, no lepton SFs on data, em without the electron trigger, and
     # ee with the single-electron trigger SF of et. The electron
@@ -2424,18 +2467,16 @@ def build_config(
     # Z pt reweighting
     add_zpt_weight_config(configuration)
 
-    # MET corrections
-    add_met_corrections_config(configuration)
-
-    # Run-2 v15 MET: the nominal MET of MC is the NanoAOD PuppiMET, as in data
-    # and embedding, without the re-applied JEC and JER. The recoil correction
-    # reads the era files of add_met_corrections_config (one 2016 file for both
+    # MET corrections. Run-2 v15 (v7 spec E28, C19): the re-calibrated jets
+    # (pT > t1jet_min_pt) are propagated to the PuppiMET with the difference
+    # method in data, MC and embedding alike, so that the JEC and JER act on the
+    # MET; the jets of CorrT1METJet are not in it. The recoil correction reads
+    # the era files of add_met_corrections_config (one 2016 file for both
     # halves), whose ZPtBinsH has the Z pT edges its labels name since CROWN
     # 27262f4.
-    if use_run2_v15_inputs:
-        configuration.add_config_parameters(
-            GLOBAL_SCOPES, {"propagate_jets_to_met": False}
-        )
+    add_met_corrections_config(
+        configuration, propagate_jets_in_every_sample=use_run2_v15_inputs
+    )
 
     # Z pt reweighting
     # TODO needs to be refined for run 3, not considered at the moment (https://github.com/kit-cms/XYHBBTauTauAnalysis-CROWN/issues/7)
@@ -2661,13 +2702,14 @@ def build_config(
     #
 
     # Prefiring weights
-    # Correction of this issue is only relevant for 2016 and 2017 data/MC
-    prefire_weight_producers = get_for_era(
-        {
-            COMMON_PREFIRING_ERAS: [event.PrefireWeight],
-        },
-        era,
-        default=[],
+    # - prefiring_weight_columns (v7 spec E11, C11): MC of every Run-2 era (2018:
+    #   the muon prefiring); the rule below removes it from data and embedding.
+    # - otherwise every sample of 2016 and 2017 (ECAL prefiring).
+    prefiring_mc_weight = profile.prefiring_weight_columns and era in ERAS_RUN2
+    prefire_weight_producers = (
+        [event.PrefireWeight]
+        if prefiring_mc_weight
+        else get_for_era({COMMON_PREFIRING_ERAS: [event.PrefireWeight]}, era, default=[])
     )
 
     # Electron pt correction
@@ -2762,6 +2804,14 @@ def build_config(
         era,
         default=[],
     )
+
+    # HEM 15/16 event flag: the HCAL endcap failure exists in 2018 only, so the
+    # guard is the era itself (v7 spec E29, C20); it replaces the HEM jet energy
+    # scale shift of the profile.
+    hem_veto_flag = profile.hem_veto_flag and era == "2018"
+    hem_veto_producers = [event.HemVetoFlag] if hem_veto_flag else []
+    if hem_veto_flag:
+        add_hem_veto_config(configuration, sample)
 
     # AK8 X -> bb tagging scale factors
     # The X -> bb tagging scale factors only exist for 2018 for now.
@@ -2887,6 +2937,7 @@ def build_config(
         + base_jet_selection_producers
         # + fat_jet_id_producers
         + jet_veto_map_producers
+        + hem_veto_producers
         + [
             ElectronPtCorrectionMC,
             get_for_era(muons.MuonPtCorrection, era),
@@ -2972,7 +3023,7 @@ def build_config(
             pairselection.LVTau2Uncorrected,
             pairquantities.ETDiTauPairQuantities,
             genparticles.ETGenDiTauPairQuantities,
-            scalefactors.EleID_SF,
+            ele_id_sf,
             triggers.SingleEleTriggerFlags,
             single_ele_trigger_sf,
             # scalefactors.DoubleEleTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
@@ -3047,7 +3098,7 @@ def build_config(
             pairselection.LVEl2Uncorrected,
             pairquantities.ElElPairQuantities,
             genparticles.ElElGenPairQuantities,
-            scalefactors.EleID_SF,
+            ele_id_sf,
             triggers.SingleEleTriggerFlags,
             ee_trigger_sf,
         ]
@@ -3093,12 +3144,18 @@ def build_config(
             pairselection.LVMu2Uncorrected,
             pairquantities.EMDiTauPairQuantities,
             genparticles.EMGenDiTauPairQuantities,
-            scalefactors.EleID_SF,
+            ele_id_sf,
             scalefactors.MuonIDIso_SF,
             triggers.SingleMuTriggerFlags,
             single_mu_trigger_sf,
         ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, em_ele_trigger_sf]),
     )
+
+    # The supercluster eta of the electrons, at which the SFs are evaluated (C22)
+    if profile.electron_sf_supercluster_eta:
+        configuration.add_producers(
+            ELECTRON_SCOPES, [pairquantities.ElectronSuperclusterEta]
+        )
 
     # The e-tau and mu-tau cross triggers (not in the SM, v7 spec E8); their flags
     # are computed but not written
@@ -3120,7 +3177,7 @@ def build_config(
         configuration.add_config_parameters(EE_SCOPES + EM_SCOPES, {"tight_electron_min_pt": 15.0})
         configuration.add_config_parameters(MM_SCOPES + EM_SCOPES, {"tight_muon_min_pt": 15.0})
         for control_scopes, control_producers in [
-            (EE_SCOPES + EM_SCOPES, [scalefactors.EleID_SF]),
+            (EE_SCOPES + EM_SCOPES, [ele_id_sf]),
             (EM_SCOPES, [scalefactors.MuonIDIso_SF]),
         ]:
             configuration.add_modification_rule(control_scopes, RemoveProducer(
@@ -3219,7 +3276,7 @@ def build_config(
         RemoveProducer(
             producers=[
                 single_ele_trigger_sf,
-                scalefactors.EleID_SF,
+                ele_id_sf,
             ],
             samples=["data"],
         ),
@@ -3342,6 +3399,16 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         ),
     )
+
+    # The prefiring weight of the SM profiles is MC only (E11)
+    if prefiring_mc_weight:
+        configuration.add_modification_rule(
+            GLOBAL_SCOPES,
+            RemoveProducer(
+                producers=[event.PrefireWeight],
+                samples=["data", "embedding", "embedding_mc"],
+            ),
+        )
 
     # Replace jet energy correction for data and embedding
     configuration.add_modification_rule(
@@ -3816,6 +3883,22 @@ def build_config(
             ],
         )
 
+    # The prefiring weight of MC with its NanoAOD Up/Dn columns, from which the
+    # nominal-only datacards take CMS_prefiring as lnN (E11, E34)
+    if prefiring_mc_weight and sample not in ["data", "embedding", "embedding_mc"]:
+        configuration.add_outputs(
+            SCOPES,
+            [
+                q.prefireweight,
+                nanoAOD_run2.L1PreFiringWeight_Up,
+                nanoAOD_run2.L1PreFiringWeight_Dn,
+            ],
+        )
+
+    # the 2018 HEM 15/16 flag, cut on downstream
+    if hem_veto_flag:
+        configuration.add_outputs(SCOPES, [q.hem_veto])
+
     # jet vetomap selection only applies to Run 3 analyses
     if era in ERAS_RUN3:
         configuration.add_outputs(
@@ -3827,13 +3910,18 @@ def build_config(
         )
 
 
+    # the supercluster eta of the electrons (C22)
+    if profile.electron_sf_supercluster_eta:
+        configuration.add_outputs(ELECTRON_SCOPES, [q.sc_eta_1])
+        configuration.add_outputs(EE_SCOPES, [q.sc_eta_2])
+
     # Add electron ID scale factors to all scopes with electrons
     for _scope in ELECTRON_SCOPES:
         configuration.add_outputs(
             [_scope],
             list(chain(
                 _output
-                for _output in scalefactors.EleID_SF.get_outputs(_scope)
+                for _output in ele_id_sf.get_outputs(_scope)
             )),
         )
 
@@ -4107,7 +4195,7 @@ def build_config(
     #region
 
     # Add electron ID SF shifts
-    add_electron_id_shifts(configuration, era, [scalefactors.EleID_SF])
+    add_electron_id_shifts(configuration, era, [ele_id_sf])
 
     # Add energy scale correction shifts for electrons
     add_electron_es_shifts(configuration, era, [ElectronPtCorrectionMC])
@@ -4217,7 +4305,7 @@ def build_config(
         # In Run 2 and 2024/2025, working point-based b jet tagging SFs are
         # used. No special treatment for JEC uncertainties is necessary here.
         add_jec_shifts(
-            configuration, era, jec_mc_producers)
+            configuration, era, jec_mc_producers, hem_shift=not hem_veto_flag)
 
     #endregion
 
@@ -4274,8 +4362,10 @@ def build_config(
     # Add shifts for pileup reweighting
     add_pileup_shifts(configuration, era, event.PUweights)
 
-    # Add shifts for prefiring (in 2016 and 2017)
-    if era in COMMON_PREFIRING_ERAS:
+    # Add shifts for prefiring (in 2016 and 2017). The SM profiles write the
+    # Up/Dn columns instead; of them only the tau-ID measurement adds the shifts
+    # (tau_id_measurement, the exception of v7 spec E34).
+    if era in COMMON_PREFIRING_ERAS and not prefiring_mc_weight:
         add_prefiring_shifts(configuration, era)
 
     #endregion

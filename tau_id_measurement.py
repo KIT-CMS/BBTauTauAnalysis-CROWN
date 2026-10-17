@@ -11,7 +11,8 @@ precedent listed in the README section "Tau-ID measurement":
   family, 2017 IsoMu27, 2018 IsoMu24 || IsoMu27 as the precedent;
 - the KIT muon ID and isolation SFs in MC, of both muons in mm;
 - the MC tau energy scale of vsJet Loose and vsJet SFs for Medium and Tight;
-- the L1 prefiring weight of MC (v7 spec E11, 2018 the muon part);
+- the L1 prefiring weight of MC (v7 spec E11, 2018 the muon part), written by
+  build_config with its Up/Dn columns (prefiring_weight_columns);
 - the MC shifts of the analysis, except for the vsJet SF it measures and the POG
   muon SFs it replaces, plus the shifts of its KIT trigger SF and the prefiring
   weight (the exception of v7 spec E34: the measurement production keeps its MC
@@ -27,11 +28,11 @@ uncorrected taus; ShapeSmith applies the energy scale grid downstream.
 """
 
 from code_generation.configuration import Configuration
-from code_generation.rules import AppendProducer, ReplaceProducer
+from code_generation.rules import ReplaceProducer
 
 from .constants import ERAS_RUN2, MM_SCOPES, MT_SCOPES
 from .helpers import cpp_list
-from .producers import event, scalefactors, triggers
+from .producers import scalefactors, triggers
 from .quantities import output as q
 from .tau_triggersetup import (
     KIT_SINGLE_LEPTON_MATCH_MAX_DELTA_R,
@@ -44,7 +45,7 @@ from .tau_triggersetup import (
     single_lepton_triggers,
     tau_leg_flags,
 )
-from .variations.pileup_prefiring import COMMON_PREFIRING_ERAS, add_prefiring_shifts
+from .variations.pileup_prefiring import add_prefiring_shifts
 from .variations.triggers import add_single_muon_trigger_extrapolation_shifts
 
 MEASUREMENT_SCOPES = MT_SCOPES + MM_SCOPES
@@ -84,7 +85,7 @@ TM_KIT_TRIGGER_SFS = {
         "trg_wgt_single_mu24ormu27": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
     },
 }
-# MC is weighted with the L1 prefiring weight in every era (E11)
+# The eras whose MC gets the prefiring shifts (E11; 2018: the muon prefiring)
 PREFIRING_ERAS = tuple(ERAS_RUN2)
 
 
@@ -105,7 +106,6 @@ def setup(configuration: Configuration, era: str, sample: str, scopes: list[str]
     _add_tau_leg_trigger_columns(configuration, era)
     _add_mc_muon_scalefactors(configuration)
     _add_mc_tau_corrections(configuration)
-    _add_prefiring(configuration, era, sample)
     _add_mc_shifts(configuration, era)
 
 
@@ -189,20 +189,6 @@ def _add_mc_tau_corrections(configuration: Configuration):
     )
 
 
-def _add_prefiring(configuration: Configuration, era: str, sample: str):
-    # L1PreFiringWeight_Nom on MC (E11); build_config adds the producer in
-    # COMMON_PREFIRING_ERAS for every sample, the measurement adds it in the other
-    # eras for MC.
-    if era not in PREFIRING_ERAS or sample not in MC_SAMPLES:
-        return
-    if event.PrefireWeight not in configuration.producers["global"]:
-        configuration.add_modification_rule(
-            "global",
-            AppendProducer(producers=[event.PrefireWeight], samples=list(MC_SAMPLES)),
-        )
-    configuration.add_outputs(MEASUREMENT_SCOPES, [q.prefireweight])
-
-
 def _add_mc_shifts(configuration: Configuration, era: str):
     # the other MC shifts are the common ones of build_config; the KIT trigger SF
     # shift CMS_eff_m_trigger_<era> (x 1.02 / 0.98) in mt, where the measurement
@@ -210,6 +196,7 @@ def _add_mc_shifts(configuration: Configuration, era: str):
     add_single_muon_trigger_extrapolation_shifts(
         configuration, era, [scalefactors.KitSingleMuonTriggerSF], "mt"
     )
-    # CMS_ecal_prefiring_<year>; build_config adds it in COMMON_PREFIRING_ERAS
-    if era in PREFIRING_ERAS and era not in COMMON_PREFIRING_ERAS:
+    # CMS_ecal_prefiring_<year> of the prefiring weight, which build_config
+    # writes on MC (prefiring_weight_columns) without shifts
+    if era in PREFIRING_ERAS:
         add_prefiring_shifts(configuration, era)
