@@ -1361,10 +1361,12 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
     use_run2_v15 = _use_run2_v15_inputs(profile, era)
 
     # The AK4 JEC file of the Run-2 eras is the NanoAODv15 AK4-PUPPI payload
-    # for all profiles; it ships exactly one JES tag (Summer20UL18NanoV15_V1)
-    # and one JER tag (Summer19UL18_JRV3), the legacy v9 CHS tags do not exist
-    # in it. PUPPI jets get no pileup-jet-ID cut (max-pt threshold 0), legacy
-    # v9 CHS jets apply it below 50 GeV.
+    # for all profiles; each era's file ships exactly one JES tag
+    # (Summer20UL1xNanoV15_V1, 2016preVFP Summer20UL16APVNanoV15_V1) and one
+    # JER tag (2016 Summer20UL16(APV)_JRV5, 2017 Summer19UL17_JRV4, 2018
+    # Summer19UL18_JRV3), the legacy v9 CHS tags do not exist in it. PUPPI
+    # jets get no pileup-jet-ID cut (max-pt threshold 0), legacy v9 CHS jets
+    # apply it below 50 GeV.
     run2_puid_max_pt = 0.0 if use_run2_v15 else 50.0
 
     # JetID recommendations: https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVUL#Preliminary_Recommendations_for
@@ -1418,10 +1420,10 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
 
     # Common JES tags
     common_jes_tags = {
-        "2016preVFP": "Summer19UL16APV_V7",
-        "2016postVFP": "Summer19UL16_V7",
-        "2017": "Summer19UL17_V5",
-        "2018": "Summer20UL18NanoV15_V1",  # v15 AK4-PUPPI payload (see above)
+        "2016preVFP": "Summer20UL16APVNanoV15_V1",  # v15 AK4-PUPPI payloads
+        "2016postVFP": "Summer20UL16NanoV15_V1",
+        "2017": "Summer20UL17NanoV15_V1",
+        "2018": "Summer20UL18NanoV15_V1",
         "2022preEE": "Summer22_22Sep2023_V4",
         "2022postEE": "Summer22EE_22Sep2023_V4",
         "2023preBPix": "Summer23Prompt23_V4",
@@ -1456,10 +1458,10 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
             ),
             "ak4jet_jer_tag": EraModifier(
                 {
-                    "2016preVFP": "Summer20UL16APV_JRV3",
-                    "2016postVFP": "Summer20UL16_JRV3",
-                    "2017": "Summer19UL17_JRV2",
-                    "2018": "Summer19UL18_JRV3",  # v15 AK4-PUPPI payload
+                    "2016preVFP": "Summer20UL16APV_JRV5",  # v15 AK4-PUPPI payloads
+                    "2016postVFP": "Summer20UL16_JRV5",
+                    "2017": "Summer19UL17_JRV4",
+                    "2018": "Summer19UL18_JRV3",
                     "2022preEE": "Summer22_22Sep2023_JRV2",
                     "2022postEE": "Summer22EE_22Sep2023_JRV2",
                     "2023preBPix": "Summer23Prompt23_RunCv123_JRV2",

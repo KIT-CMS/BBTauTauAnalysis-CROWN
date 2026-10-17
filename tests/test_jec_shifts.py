@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from analysis_configurations.bbtautau.constants import ERAS
+from analysis_configurations.bbtautau.constants import ERAS, ERAS_RUN2
 from analysis_configurations.bbtautau.tests.helpers import build, find_producer
 
 # The MC JEC chains every jet shift reruns: standard, regressed and Type-1 MET jets
@@ -86,20 +86,33 @@ def test_jer_shift_is_quoted_by_the_producer_call(config):
         ), name
 
 
-@pytest.mark.parametrize("era", ERAS)
-def test_jes_sources_exist_in_the_era_payload(era):
+# Every entry point over the eras it supports; nmssm_config accepts all of them.
+JEC_CASES = [("nmssm_config", era) for era in ERAS] + [("sm_config", era) for era in ERAS_RUN2]
+
+
+def jec_payload(nominal):
     correctionlib = pytest.importorskip("correctionlib")
-    parameters = build(
-        "nmssm_config", "ttbar", era=era, shifts=("CMS_scale_j",)
-    ).config_parameters["global"]
-    nominal = parameters["nominal"]
     payload = Path(nominal["ak4jet_jec_file"])
     if not payload.is_file():
         pytest.skip("JME payloads require CVMFS")
-    names = set(correctionlib.CorrectionSet.from_file(str(payload)).keys())
+    return correctionlib.CorrectionSet.from_file(str(payload))
+
+
+@pytest.mark.parametrize("module,era", JEC_CASES)
+def test_jes_sources_exist_in_the_era_payload(module, era):
+    parameters = build(
+        module, "ttbar", era=era, shifts=("CMS_scale_j",)
+    ).config_parameters["global"]
+    nominal = parameters["nominal"]
+    corrections = jec_payload(nominal)
+    names = set(corrections.keys())
     tag, algo = nominal["ak4jet_jes_tag_mc"], nominal["ak4jet_jec_algo"]
-    if not any(name.startswith(f"{tag}_MC_") for name in names):
-        pytest.xfail(f"configured JES tag {tag} is not in {payload}")
+    assert nominal["ak4jet_jes_tag_data"] == tag
+    # the levels the JEC producers evaluate, in MC and in Run-2 data (Run-3 data
+    # take run-dependent tags)
+    for level in ("L1FastJet", "L2Relative", "L3Absolute", "L2L3Residual"):
+        for kind in ("MC", "DATA") if era in ERAS_RUN2 else ("MC",):
+            assert f"{tag}_{kind}_{level}_{algo}" in names, (kind, level)
     sources = {
         values["ak4jet_jes_source"]
         for shift, values in parameters.items()
@@ -108,3 +121,16 @@ def test_jes_sources_exist_in_the_era_payload(era):
     assert len(sources) == 11, sorted(sources)
     missing = {s for s in sources if f"{tag}_MC_{s}_{algo}" not in names}
     assert not missing, sorted(missing)
+
+
+@pytest.mark.parametrize(
+    "module,era", [(module, era) for module, era in JEC_CASES if era in ERAS_RUN2]
+)
+def test_jer_tag_exists_in_the_era_payload(module, era):
+    """The JER smearing reads the resolution, the scale factor and its uncertainty.
+    Run 2 only: the 2023 JER tags (JRV2) are not in the pinned 2023 payloads (JRV3)."""
+    nominal = build(module, "ttbar", era=era).config_parameters["global"]["nominal"]
+    names = set(jec_payload(nominal).keys())
+    tag, algo = nominal["ak4jet_jer_tag"], nominal["ak4jet_jec_algo"]
+    for kind in ("PtResolution", "ScaleFactor", "SFUncertainty"):
+        assert f"{tag}_MC_{kind}_{algo}" in names, kind
