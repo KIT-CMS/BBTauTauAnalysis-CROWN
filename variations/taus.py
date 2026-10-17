@@ -2,11 +2,6 @@ import re
 
 from code_generation.configuration import Configuration
 from code_generation.producer import Producer, ProducerGroup
-from ..producers import pairselection as pairselection
-from ..producers import muons as muons
-from ..producers import electrons as electrons
-from ..producers import embedding as embedding
-
 from ..constants import ERAS_RUN2
 
 from ._util import add_systematic_shift, KeyValueShift
@@ -226,6 +221,12 @@ def add_tau_es_shifts(
     $\\text{e} \\to \\tau{\\text{h}}$ and $\\mu \\to \\tau{\\text{h}}$ fakes,
     the correlation scheme from the corresponding tau ID (`VSe` and `VSmu`) is
     adopted.
+
+    A shifted tau pT can change the selected pair, and events can enter the
+    selection under a shift only. So every producer behind the pair selection
+    is recomputed, the light lepton leg of et and mt included; ignoring its
+    producers left these events with a default lepton leg (pt_1 = -10, no
+    trigger flags or weights).
     """
 
     # Specify properties of the shifts
@@ -264,20 +265,12 @@ def add_tau_es_shifts(
         ],
     ]
 
-    # Add up and down variation for each shift 
+    # Add up and down variation for each shift
     for shift in shifts:
         add_systematic_shift(
             configuration,
             shift,
             producer,
-            shift_kwargs={
-                # TODO understand why these producers need to be ignored
-                "ignore_producers": {
-                    "et": [pairselection.LVEl1, electrons.VetoElectrons],
-                    "mt": [pairselection.LVMu1, muons.VetoMuons],
-                    "tt": [],
-                },
-            },
             add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
         )
 
@@ -342,28 +335,13 @@ def add_embedding_tau_es_shifts(
         for dm in [0, 1, 10, 11]
     ]
 
-    # Add up and down variation for each shift. Next to the producers ignored
-    # by the MC shifts, the embedding isolation SFs of the light lepton are
-    # ignored, which read its iso_1.
+    # Add up and down variation for each shift. As for MC, every producer behind
+    # the pair selection is recomputed, the light lepton leg and its embedding
+    # SFs included.
     for shift in shifts:
         add_systematic_shift(
             configuration,
             shift,
             producer,
-            shift_kwargs={
-                "ignore_producers": {
-                    "et": [
-                        pairselection.LVEl1,
-                        electrons.VetoElectrons,
-                        embedding.TauEmbeddingElectronIsoBinnedSF_1,
-                    ],
-                    "mt": [
-                        pairselection.LVMu1,
-                        muons.VetoMuons,
-                        embedding.TauEmbeddingMuonIsoBinnedSF_1,
-                    ],
-                    "tt": [],
-                },
-            },
             add_kwargs={"samples": ["embedding"]},
         )
