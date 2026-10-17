@@ -24,6 +24,7 @@ from analysis_configurations.bbtautau import (
     nmssm_fastmtt,
     nmssm_kinfit_resolved,
     sm_fake_factors,
+    sm_fake_factors_w,
     sm_fastmtt,
     sm_kinfit_resolved,
 )
@@ -51,6 +52,7 @@ ENTRY_MODULES = (
     nmssm_kinfit_resolved,
     fake_factors_friend_config,
     sm_fake_factors,
+    sm_fake_factors_w,
 )
 
 FASTMTT_LEAVES = {"m_fastmtt", "pt_fastmtt", "eta_fastmtt", "phi_fastmtt"}
@@ -80,6 +82,7 @@ def test_friend_entry_points_expose_friendtreeconfiguration(module):
         ("sm_fastmtt", sm_fastmtt, "2024"),
         ("sm_kinfit_resolved", sm_kinfit_resolved, "2024"),
         ("sm_fake_factors", sm_fake_factors, "2024"),
+        ("sm_fake_factors_w", sm_fake_factors_w, "2024"),
         ("fake_factors_friend_config", fake_factors_friend_config, "2018"),
     ],
 )
@@ -371,3 +374,77 @@ def test_two_process_friend_sums_qcd_and_ttbar(scope):
             assert '{vec_open}"QCD", "ttbar"{vec_close}' in producer.call
             assert '{vec_open}"QCD", "QCD", "ttbar"{vec_close}' in producer.call
             assert "{vec_open}0, 1, 1{vec_close}" in producer.call
+
+
+# --- the two fake-factor friends of P5 side by side (v7 spec E18, C15) ----------
+
+_GENERATE_FRIEND = """
+import json, logging, sys
+from analysis_configurations.bbtautau import {module}
+from analysis_configurations.bbtautau.constants import LEGACY_AVAILABLE_SAMPLES, SCOPES
+from code_generation.code_generation import CodeGenerator
+payload, scope, quantities_map, directory = json.loads(sys.argv[1])
+{module}.SM_PAYLOAD_DIRS["2018"] = payload
+logging.disable(logging.CRITICAL)
+config = {module}.build_config("2018", "ttbar", [scope], {{"none"}}, LEGACY_AVAILABLE_SAMPLES,
+                               ["2018"], SCOPES, quantities_map)
+generator = CodeGenerator("code_generation/analysis_template_friends.cxx",
+                          "code_generation/subset_template.cxx", config, "bbtautau",
+                          "{module}", "{module}_ttbar_2018_" + scope, directory)
+generator.generate_code()
+"""
+
+
+def generate_friend(module, payload, scope, directory):
+    """Generate the C++ code of a fake-factor friend entry point with ``payload`` in
+    a subprocess (code generation mutates module-level producers)."""
+    import subprocess
+    import sys
+
+    name = module.__name__.rsplit(".", 1)[-1]
+    arguments = json.dumps([str(payload), scope, MAP_FF_2018, str(directory)])
+    return subprocess.run(
+        [sys.executable, "-c", _GENERATE_FRIEND.format(module=name), arguments],
+        cwd=Path(__file__).resolve().parents[3],
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_fake_factor_entry_points_share_the_payload_eras():
+    """ff_v7 and ff_v7_w are built from one checkout, with the same era mapping."""
+    assert sm_fake_factors_w.PAYLOAD_ERAS is sm_fake_factors.PAYLOAD_ERAS
+    assert sm_fake_factors.PROCESSES == ("QCD", "ttbar")
+    assert sm_fake_factors_w.PROCESSES == ("QCD", "Wjets", "ttbar")
+    assert set(sm_fake_factors_w.SM_PAYLOAD_DIRS) <= set(ERAS_RUN2)
+    assert sm_fake_factors_w.AVAILABLE_ERAS == list(sm_fake_factors_w.SM_PAYLOAD_DIRS)
+    analysis = Path(sm_fake_factors_w.__file__).parent
+    for era, directory in sm_fake_factors_w.SM_PAYLOAD_DIRS.items():
+        assert directory == sm_fake_factors_w.PAYLOADS[sm_fake_factors_w.PAYLOAD_ERAS[era]]
+        assert (analysis / directory).is_dir(), era
+        assert directory not in sm_fake_factors.PAYLOADS.values(), era
+
+
+@pytest.mark.parametrize("scope", ["et", "mt"])
+def test_both_fake_factor_entry_points_generate(wjets_payload, scope, tmp_path):
+    """sm_fake_factors generates with the two-process payload, sm_fake_factors_w with
+    the three-process one, and each rejects the payload of the other variant."""
+    two = Path(sm_fake_factors.__file__).parent / sm_fake_factors.SM_PAYLOAD_DIRS["2018"]
+    cases = [
+        (sm_fake_factors, two, True),
+        (sm_fake_factors_w, wjets_payload, True),
+        (sm_fake_factors, wjets_payload, False),
+        (sm_fake_factors_w, two, False),
+    ]
+    for index, (module, payload, accepted) in enumerate(cases):
+        directory = tmp_path / str(index)
+        directory.mkdir()
+        result = generate_friend(module, payload, scope, directory)
+        if accepted:
+            assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
+            sources = "\n".join(p.read_text() for p in directory.rglob("*.cxx"))
+            assert "FakeFactor" in sources
+            assert ('"Wjets"' in sources) == (module is sm_fake_factors_w)
+        else:
+            assert result.returncode != 0
+            assert "this friend expects" in result.stderr, result.stderr[-2000:]
