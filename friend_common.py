@@ -1,7 +1,7 @@
 """Shared bodies of the friend-tree configurations (FastMTT, kinematic fit, fake factors)."""
 from __future__ import annotations
 import os
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from code_generation.friend_trees import FriendTreeConfiguration
 from code_generation.systematics import SystematicShift
@@ -50,12 +50,16 @@ def build_fake_factor_friend(
     available_eras: List[str],
     available_scopes: List[str],
     quantities_map: Union[str, None] = None,
+    processes: Union[Tuple[str, ...], None] = None,
 ):
     """Fake-factor friend whose inputs and shifts are read from the payloads.
 
     ``payload_dir`` is relative to the analysis directory, where the payloads
     are read now and from where they are installed next to the executable.
     A friend has a single scope; only that scope's two payload files are read.
+    With ``processes``, every leg of the payload must sum exactly these processes
+    (in ``ff_payloads.PROCESS_ORDER``), so that the friend of one variant cannot
+    be built from the payload of the other.
     """
     configuration = FriendTreeConfiguration(
         era,
@@ -69,6 +73,12 @@ def build_fake_factor_friend(
     )
     (scope,) = scopes
     legs = ff_payloads.read_legs(os.path.join(ANALYSIS_DIR, payload_dir), scope)
+    for leg in legs:
+        if processes is not None and tuple(leg.processes) != tuple(processes):
+            raise ValueError(
+                f"Fake-factor payload {payload_dir} sums {list(leg.processes)} in the "
+                f"{leg.name} leg of {scope}, this friend expects {list(processes)}."
+            )
     files = ff_payloads.payload_files(payload_dir, scope)
     configuration.add_config_parameters(
         [scope],
