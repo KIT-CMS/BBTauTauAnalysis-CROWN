@@ -302,3 +302,46 @@ def test_egm_payload_bins_change_at_the_barrel_edge(era):
             assert cset.evaluate(year, "sf", wp, below, 40.0) != cset.evaluate(
                 year, "sf", wp, above, 40.0
             ), (wp, below)
+
+
+# --- E13/C1: checked MET covariance of the Run-2 v15 inputs ----------------------
+
+MET_COVARIANCE_INPUTS = [
+    "PuppiMET_covXX",
+    "PuppiMET_covXY",
+    "PuppiMET_covYY",
+    "PuppiMET_sumEt",
+    "PFMET_covXX",
+    "PFMET_covXY",
+    "PFMET_covYY",
+    "PFMET_sumEt",
+]
+
+
+@pytest.mark.parametrize("sample,era", sample_era_cases(["ttbar", "data", "embedding"]))
+def test_met_covariance_is_checked_with_the_pf_fallback(sample, era):
+    """The PuppiMET covariance of every Run-2 v15 era goes through the check with
+    the PF MET covariance as fallback (2016: ~1 % broken matrices), and every scope
+    writes metcov_source next to metcov00..11 (the FastMTT friend inputs)."""
+    config = build("sm_config", sample, era=era, scopes=scopes_of(sample))
+    producer = find_producer(config, "global", "MetCov")
+    assert "xyh::met_covariance::Checked" in producer.call
+    assert [q.name for q in producer.input["global"]] == MET_COVARIANCE_INPUTS
+    for scope in scopes_of(sample):
+        outputs = output_names(config, scope)
+        assert {"metcov00", "metcov01", "metcov10", "metcov11", "metcov_source"} <= outputs
+
+
+def test_tau_id_measurement_checks_the_met_covariance():
+    config = build("sm_tau_id_measurement_config", "dyjets", era="2016preVFP", scopes=("mt", "mm"))
+    assert "xyh::met_covariance::Checked" in find_producer(config, "global", "MetCov").call
+    assert "metcov_source" in output_names(config, "mt")
+
+
+def test_nmssm_keeps_the_unchecked_met_covariance():
+    for era, branch in (("2018", "MET_covXX"), ("2024", "PuppiMET_covXX")):
+        config = build("nmssm_config", "ttbar", era=era)
+        producer = find_producer(config, "global", "MetCov")
+        names = {q.name for member in producer.producers["global"] for q in member.input["global"]}
+        assert branch in names and "PFMET_sumEt" not in names, era
+        assert "metcov_source" not in output_names(config, "mt"), era

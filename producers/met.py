@@ -100,6 +100,30 @@ MetCovPuppi = met_cov_producers(
     },
     scopes=GLOBAL_SCOPES,
 )
+# PuppiMET covariance of the Run-2 NanoAOD-v15 inputs with a validity check: the
+# 2016 files carry a broken PuppiMET covariance in about 1 % of the events (NaN,
+# non-positive determinants, values up to 1e14 GeV^2), which turns the FastMTT mass
+# into NaN or noise. A matrix that is not finite, not positive definite or above
+# the physical bound sumEt^2 is replaced by the PF MET covariance (the one the
+# Run-2 v9/v12 configurations used for all events), or, should that fail too, by
+# a diagonal matrix at the bound. metcov_source records the choice (0 PuppiMET,
+# 1 PF MET, 2 diagonal); 2017 and 2018 keep the PuppiMET matrix.
+MetCovPuppiChecked = Producer(
+    name="MetCov",
+    call="xyh::met_covariance::Checked({df}, {output_vec}, {input})",
+    input=[
+        nanoAOD.PuppiMET_covXX,
+        nanoAOD.PuppiMET_covXY,
+        nanoAOD.PuppiMET_covYY,
+        nanoAOD.PuppiMET_sumEt,
+        nanoAOD.PFMET_covXX,
+        nanoAOD.PFMET_covXY,
+        nanoAOD.PFMET_covYY,
+        nanoAOD.PFMET_sumEt,
+    ],
+    output=[q.metcov00, q.metcov01, q.metcov10, q.metcov11, q.metcov_source],
+    scopes=GLOBAL_SCOPES,
+)
 MetCov = {
     tuple(ERAS_RUN2) + ("2022preEE", "2022postEE", "2023preBPix", "2023postBPix"): met_cov_producers(
         name="MetCov",
