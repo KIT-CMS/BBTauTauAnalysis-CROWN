@@ -24,7 +24,11 @@ from .variations.bjet_tagging import (
     add_bjet_tagging_shape_shifts,
 )
 from .variations.electrons import add_electron_es_shifts, add_electron_id_shifts
-from .variations.pileup_prefiring import add_pileup_shifts, add_prefiring_shifts
+from .variations.pileup_prefiring import (
+    COMMON_PREFIRING_ERAS,
+    add_pileup_shifts,
+    add_prefiring_shifts,
+)
 from .variations.met import (
     add_unclustered_energy_shifts,
     add_recoil_calibration_shifts,
@@ -42,6 +46,7 @@ from .variations.triggers import (
     add_double_tautau_trigger_shifts,
     add_single_electron_trigger_extrapolation_shifts,
     add_single_electron_trigger_shifts,
+    add_single_muon_trigger_extrapolation_shifts,
     add_single_muon_trigger_shifts,
 )
 from . import embedding_run2_v15
@@ -2346,12 +2351,12 @@ def build_config(
     # tautau+bb quantities). NMSSM and the SM main profile never set the flag.
     strip_analysis_bjets = profile.enable_probe_jet_collection
 
-    # Single-electron trigger SF for the et scope: the EGM Electron-HLT-SF
-    # correction exists only in the Run-3 payloads, so 2018 MC evaluates
-    # TauAnalysis' Trg32_Iso_pt_eta_bins from the Tau Embedding group's payload.
+    # Single-electron trigger SF: the EGM Electron-HLT-SF correction exists only in
+    # the Run-3 payloads, so every Run-2 era evaluates the SF of the Tau Embedding
+    # group (KIT) of its triggers (tau_triggersetup.KIT_SINGLE_ELECTRON_TRIGGER_SFS).
     single_ele_trigger_sf = (
         scalefactors.ETGenerateSingleElectronTriggerSF_MC
-        if era == "2018"
+        if era in ERAS_RUN2
         else scalefactors.SingleEleTriggerSF
     )
 
@@ -2365,7 +2370,19 @@ def build_config(
     # reconstruction weight is keyed by ele_sf_year_id and selects the
     # payload's pt category per electron for every era.
     sm_light_controls = use_run2_v15_inputs
-    ee_trigger_sf = single_ele_trigger_sf if sm_light_controls else scalefactors.SingleEleTriggerSF
+    ee_trigger_sf = single_ele_trigger_sf
+    # em: the electron trigger SF (none in the light control channels)
+    em_ele_trigger_sf = None if sm_light_controls else single_ele_trigger_sf
+
+    # The single-lepton triggers of the KIT trigger SFs (v7 spec E2-E6, K8): the
+    # analysis triggers of the era matched within Delta R 0.1, and the KIT muon
+    # trigger SF of the era in MC (E5) in place of the POG one.
+    kit_single_lepton_triggers = profile.kit_single_lepton_triggers and era in ERAS_RUN2
+    single_mu_trigger_sf = (
+        scalefactors.KitSingleMuonTriggerSF
+        if kit_single_lepton_triggers
+        else scalefactors.SingleMuTriggerSF
+    )
 
     def v15_or(v15_value, era_map):
         return v15_value if use_run2_v15_inputs else get_for_era(era_map, era)
@@ -2585,24 +2602,6 @@ def build_config(
     #
 
 
-    # Run-2 2018 single-electron trigger scale factor measured with the same
-    # method and payload as TauAnalysis. Ele115-only events have no dedicated
-    # correction in this payload; the configured weight describes Ele32. The
-    # payload also holds the embedding SF (type "emb", embedding_run2_v15).
-    configuration.add_config_parameters(
-        ET_SCOPES + (EE_SCOPES if sm_light_controls else []),
-        {
-            "electron_trigger_sf_type": "mc",
-            "singlelectron_trigger_sf_mc": [
-                {
-                    "flagname": "trg_wgt_single_ele32",
-                    "mc_trigger_sf": "Trg32_Iso_pt_eta_bins",
-                    "mc_electron_trg_extrapolation": 1.0,  # for nominal case
-                },
-            ]
-        },
-    )
-
     # Trigger scale factors for electron triggers
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
@@ -2665,7 +2664,7 @@ def build_config(
     # Correction of this issue is only relevant for 2016 and 2017 data/MC
     prefire_weight_producers = get_for_era(
         {
-            ("2016preVFP", "2016postVFP", "2017"): [event.PrefireWeight],
+            COMMON_PREFIRING_ERAS: [event.PrefireWeight],
         },
         era,
         default=[],
@@ -2975,7 +2974,6 @@ def build_config(
             genparticles.ETGenDiTauPairQuantities,
             scalefactors.EleID_SF,
             triggers.SingleEleTriggerFlags,
-            triggers.DoubleEleTauTriggerFlags,
             single_ele_trigger_sf,
             # scalefactors.DoubleEleTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
             # TODO rework trigger setup before enabling this
@@ -3002,9 +3000,8 @@ def build_config(
             pairquantities.MTDiTauPairQuantities,
             genparticles.MTGenDiTauPairQuantities,
             triggers.SingleMuTriggerFlags,
-            triggers.DoubleMuTauTriggerFlags,
             scalefactors.MuonIDIso_SF,
-            scalefactors.SingleMuTriggerSF,
+            single_mu_trigger_sf,
             # scalefactors.DoubleMuTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
             # TODO rework trigger setup before enabling this
             # triggers.GenerateSingleTrailingTauTriggerFlags,
@@ -3074,7 +3071,7 @@ def build_config(
             genparticles.MuMuGenPairQuantities,
             scalefactors.MuonIDIso_SF,
             triggers.SingleMuTriggerFlags,
-            scalefactors.SingleMuTriggerSF,
+            single_mu_trigger_sf,
         ],
     )
 
@@ -3099,9 +3096,15 @@ def build_config(
             scalefactors.EleID_SF,
             scalefactors.MuonIDIso_SF,
             triggers.SingleMuTriggerFlags,
-            scalefactors.SingleMuTriggerSF,
-        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, scalefactors.SingleEleTriggerSF]),
+            single_mu_trigger_sf,
+        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, em_ele_trigger_sf]),
     )
+
+    # The e-tau and mu-tau cross triggers (not in the SM, v7 spec E8); their flags
+    # are computed but not written
+    if profile.lepton_tau_cross_triggers:
+        configuration.add_producers(ET_SCOPES, [triggers.DoubleEleTauTriggerFlags])
+        configuration.add_producers(MT_SCOPES, [triggers.DoubleMuTauTriggerFlags])
 
     # Light-lepton isolation kept in the tau channels; the light control
     # channels keep the 0.4 default of the object selection.
@@ -3228,7 +3231,7 @@ def build_config(
     if not sm_light_controls:
         configuration.add_modification_rule(
             EM_SCOPES,
-            RemoveProducer(producers=[scalefactors.SingleEleTriggerSF], samples=["data", "embedding", "embedding_mc"]),
+            RemoveProducer(producers=[em_ele_trigger_sf], samples=["data", "embedding", "embedding_mc"]),
         )
     # TODO fix for Run 2, SF seem to not be available
     # configuration.add_modification_rule(
@@ -3247,7 +3250,7 @@ def build_config(
         MUON_SCOPES,
         RemoveProducer(
             producers=[
-                scalefactors.SingleMuTriggerSF,
+                single_mu_trigger_sf,
             ],
             samples=["data", "embedding", "embedding_mc"],
         )
@@ -3869,7 +3872,7 @@ def build_config(
             pairquantities.VsEleTauIDFlag_2.output_group,
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.SingleMuTriggerFlags.output_group,
-            scalefactors.SingleMuTriggerSF.output_group,
+            single_mu_trigger_sf.output_group,
             # triggers.DoubleMuTauTriggerFlags.output_group,  # TODO fix for Run 2, SF seem to not be available
             # [
             #     p
@@ -3962,7 +3965,7 @@ def build_config(
             q.electron_veto_flag,
             q.muon_veto_flag,
         ]
-        + scalefactors.SingleMuTriggerSF.get_outputs("mm"),
+        + single_mu_trigger_sf.get_outputs("mm"),
     )
 
     # Outputs for the ee scope
@@ -3986,8 +3989,8 @@ def build_config(
             q.electron_veto_flag,
             q.muon_veto_flag,
             q.dilepton_veto,
-        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags.output_group] + scalefactors.SingleEleTriggerSF.get_outputs("em"))
-        + scalefactors.SingleMuTriggerSF.get_outputs("em"),
+        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags.output_group] + em_ele_trigger_sf.get_outputs("em"))
+        + single_mu_trigger_sf.get_outputs("em"),
     )
 
     # TODO re-include
@@ -4071,7 +4074,7 @@ def build_config(
     #region
 
     # Add configuration of trigger producers
-    add_diTauTriggerSetup(configuration)
+    add_diTauTriggerSetup(configuration, kit_single_lepton_triggers)
 
     #endregion
 
@@ -4272,7 +4275,7 @@ def build_config(
     add_pileup_shifts(configuration, era, event.PUweights)
 
     # Add shifts for prefiring (in 2016 and 2017)
-    if era in ["2016preVFP", "2016postVFP", "2017"]:
+    if era in COMMON_PREFIRING_ERAS:
         add_prefiring_shifts(configuration, era)
 
     #endregion
@@ -4288,7 +4291,7 @@ def build_config(
     single_ele_trigger_sfs = {
         "et": single_ele_trigger_sf,
         "ee": ee_trigger_sf,
-        "em": None if sm_light_controls else scalefactors.SingleEleTriggerSF,
+        "em": em_ele_trigger_sf,
     }
     for scope, producer in single_ele_trigger_sfs.items():
         if producer is scalefactors.ETGenerateSingleElectronTriggerSF_MC:
@@ -4306,16 +4309,23 @@ def build_config(
                 scope,
             )
 
-    # Add shifts for single muon trigger SFs to scopes with at least one muon
-    # (the tau-ID measurement replaces the POG SF, see tau_id_measurement)
+    # Add shifts for single muon trigger SFs to scopes with at least one muon: the
+    # KIT SFs are scaled by 1.02 / 0.98 (CMS_eff_m_trigger_<era>, the TauAnalysis
+    # convention, v7 spec C6). The tau-ID measurement adds its own after setting
+    # its trigger SFs, see tau_id_measurement.
     if not profile.tau_id_measurement:
         for scope in MUON_SCOPES:
-            add_single_muon_trigger_shifts(
-                configuration,
-                era,
-                [scalefactors.SingleMuTriggerSF],
-                scope,
-            )
+            if kit_single_lepton_triggers:
+                add_single_muon_trigger_extrapolation_shifts(
+                    configuration, era, [single_mu_trigger_sf], scope
+                )
+            else:
+                add_single_muon_trigger_shifts(
+                    configuration,
+                    era,
+                    [single_mu_trigger_sf],
+                    scope,
+                )
 
     # Add shifts for double tau trigger SFs in tt scope
     add_double_tautau_trigger_shifts(

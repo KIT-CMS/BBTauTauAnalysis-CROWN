@@ -856,7 +856,7 @@ ETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
         """,
     input=[q.pt_1, q.eta_1],
     output="flagname",
-    scopes=["et", "ee"],
+    scopes=ELECTRON_SCOPES,
     vec_config="singlelectron_trigger_sf_mc",
 )
 BoostedETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
@@ -1013,9 +1013,12 @@ TauEmbeddingMuonIDIsoSF_MC = ProducerGroup(
     },
 )
 
-# single-muon trigger SFs of the first muon, one per configured trigger
-MTGenerateSingleMuonTriggerSF_MC = ExtendedVectorProducer(
-    name="MTGenerateSingleMuonTriggerSF_MC",
+# KIT (Tau Embedding group) single-muon trigger SFs of MC, one per configured
+# trigger (singlemuon_trigger_sf_mc), of the muon of mt and em and the first muon of
+# mm, evaluated at every pT and iso (the flags select downstream); the payload has
+# no uncertainties, the shift scales the SF by 1.02 / 0.98
+KitSingleMuonTriggerSF = ExtendedVectorProducer(
+    name="KitSingleMuonTriggerSF",
     call="""embedding::muon::Scalefactor(
         {df}, 
         correctionManager, 
@@ -1026,9 +1029,13 @@ MTGenerateSingleMuonTriggerSF_MC = ExtendedVectorProducer(
         "mc", 
         {mc_muon_trg_extrapolation})
         """,
-    input=[q.pt_1, q.eta_1],
+    input={
+        "mt": [q.pt_1, q.eta_1],
+        "mm": [q.pt_1, q.eta_1],
+        "em": [q.pt_2, q.eta_2],
+    },
     output="flagname",
-    scopes=["mt", "mm"],
+    scopes=MUON_SCOPES,
     vec_config="singlemuon_trigger_sf_mc",
 )
 

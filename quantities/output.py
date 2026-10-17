@@ -667,6 +667,11 @@ trg_wgt_double_tau_1 = Quantity("trg_wgt_double_tau_1")
 trg_wgt_double_tau_2 = Quantity("trg_wgt_double_tau_2")
 trg_wgt_fatjet = Quantity("trg_wgt_fatjet")
 id_wgt_bjet = Quantity("id_wgt_bjet")
+# the trigger object matched to the tau leg of the mu-tau monitoring paths (tau-ID
+# measurement, tt trigger efficiency): its pT, L1 pT and L1 isolation, -1 without match
+trgobj_pt_2 = Quantity("trgobj_pt_2")
+trgobj_l1pt_2 = Quantity("trgobj_l1pt_2")
+trgobj_l1iso_2 = Quantity("trgobj_l1iso_2")
 
 # ML variables
 transformed_njets = Quantity("transformed_njets")

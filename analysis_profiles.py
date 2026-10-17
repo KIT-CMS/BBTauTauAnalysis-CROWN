@@ -48,6 +48,19 @@ class AnalysisProfile:
     # pre-cuts, medium-ID muons, and the POG SFs of these IDs. Otherwise the IDs
     # of add_electron_config and add_muon_config.
     kit_sf_lepton_ids: bool = False
+    # The single-lepton triggers of the KIT trigger SFs (Tau Embedding group):
+    # only the isolated analysis triggers of the era (tau_triggersetup), matched to
+    # their trigger object within Delta R 0.1 as in the KIT tag and probe, and in
+    # Run 2 the KIT muon trigger SF of the era in MC in place of the POG one.
+    # Otherwise the high-pT single-lepton triggers as well, matched within 0.4,
+    # with the POG muon trigger SF.
+    kit_single_lepton_triggers: bool = False
+    # The e-tau and mu-tau cross triggers (flags of et and mt).
+    lepton_tau_cross_triggers: bool = True
+    # The di-tau trigger of the tt embedding (embedding_run2_v15): "eff_data", the
+    # weight eps_data(tau1) * eps_data(tau2) without trigger requirement (v7 spec
+    # E33, variant A); the filter-bit flags stay as diagnostic columns.
+    tt_embedding_trigger: str = "eff_data"
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -79,6 +92,8 @@ SM_PROFILE = AnalysisProfile(
     tau_channel_lepton_max_iso=0.5,
     embedding_scopes=("et", "mt", "tt"),
     kit_sf_lepton_ids=True,
+    kit_single_lepton_triggers=True,
+    lepton_tau_cross_triggers=False,
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the
