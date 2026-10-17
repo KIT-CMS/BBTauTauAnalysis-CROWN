@@ -237,6 +237,30 @@ KIT_SINGLE_ELECTRON_TRIGGER_SFS = {
 }
 
 
+# Defective high-pT bins of the KIT muon trigger SFs of MC: (era, correction) ->
+# (max_pt, max_abs_eta), evaluated at max_pt above it for |eta| < max_abs_eta
+# (scalefactors.KitSingleMuonTriggerSF). muon_2016preVFPUL Trg_pt_eta_bins, type mc,
+# holds 2.756 for pT >= 200 GeV and |eta| < 0.9, which no efficiency allows (SF x
+# eps_MC > 1), against 0.933 at 100-200 GeV, 0.885 for embedding and 0.926 in
+# 2016postVFP; the other |eta| bins of that row (0.81-0.88) follow the embedding SF
+# and stay. To be confirmed by the user (only precedented SFs): the precedents
+# evaluate the payload as it is.
+KIT_MUON_TRIGGER_SF_MC_MAX_PT = {("2016preVFP", "Trg_pt_eta_bins"): (199.9, 0.9)}
+# no cap: the payloads end at 1000 GeV, and no |eta| is below 0
+KIT_MUON_TRIGGER_SF_NO_MAX_PT = (1000.0, 0.0)
+
+
+def kit_muon_trigger_sf_max_pt(era: str, correction: str) -> dict:
+    """The pT cap entries of the KIT muon trigger SF `correction` of MC in `era`."""
+    max_pt, max_abs_eta = KIT_MUON_TRIGGER_SF_MC_MAX_PT.get(
+        (era, correction), KIT_MUON_TRIGGER_SF_NO_MAX_PT
+    )
+    return {
+        "mc_trigger_sf_max_pt": max_pt,
+        "mc_trigger_sf_max_pt_max_abs_eta": max_abs_eta,
+    }
+
+
 def single_lepton_triggers(table: dict, era: str, kit: bool) -> list[dict]:
     """
     The single-lepton trigger flags of `era` from `table` (SINGLE_ELECTRON_TRIGGERS
@@ -326,12 +350,15 @@ def _add_kit_trigger_sfs(configuration: Configuration):
         {
             "singlemuon_trigger_sf_mc": EraModifier(
                 {
-                    era: kit_trigger_sf_entries(
-                        KIT_SINGLE_MUON_TRIGGER_SFS,
-                        era,
-                        "mc_trigger_sf",
-                        "mc_muon_trg_extrapolation",
-                    )
+                    era: [
+                        {**entry, **kit_muon_trigger_sf_max_pt(era, entry["mc_trigger_sf"])}
+                        for entry in kit_trigger_sf_entries(
+                            KIT_SINGLE_MUON_TRIGGER_SFS,
+                            era,
+                            "mc_trigger_sf",
+                            "mc_muon_trg_extrapolation",
+                        )
+                    ]
                     for era in ERAS_RUN2 + ERAS_RUN3
                 }
             ),

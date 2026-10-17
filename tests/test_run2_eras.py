@@ -192,3 +192,97 @@ def test_tau_pog_placeholders_are_2018_copies(name):
     reference = tau_node(files["2018"], name)
     copies = {era for era in ERAS_RUN2 if tau_node(files[era], name) == reference} - {"2018"}
     assert copies == set(TAU_PLACEHOLDERS[name])
+
+
+# --- KIT trigger SF values in the phase space of their flags (E5, E6, C6) --------
+
+# leptons below flag min_pt + TURN_ON (GeV) are on the trigger turn-on, where data
+# and simulation (or embedding) differ most: only 0 < SF <= SF_RANGE[1] there
+TURN_ON = 3.0
+SF_RANGE = (0.5, 1.5)
+# (era, lepton, type) whose payload values leave the range inside the flagged phase
+# space, reported and not changed: the 2017 Ele32 SF of embedding is 1.8-3.2 at
+# 34-36 GeV for 1.57 < |eta| < 2.1 (turn-on) and 0.47-0.48 at 42-50 GeV above
+# |eta| 2.1 (ee; et cuts at 2.1)
+KIT_TRIGGER_SF_OUTLIERS = {("2017", "electron", "emb")}
+
+
+def _edges(node, name, found):
+    if isinstance(node, dict):
+        if node.get("nodetype") == "binning" and node.get("input") == name:
+            found.update(node["edges"])
+        for value in node.values():
+            _edges(value, name, found)
+    elif isinstance(node, list):
+        for value in node:
+            _edges(value, name, found)
+
+
+def kit_trigger_sf_cases():
+    for era in ERAS_RUN2:
+        for lepton in ("muon", "electron"):
+            for sf_type in ("mc", "emb"):
+                marks = []
+                if (era, lepton, sf_type) in KIT_TRIGGER_SF_OUTLIERS:
+                    marks = [pytest.mark.xfail(strict=True, reason="payload outlier, reported")]
+                yield pytest.param(era, lepton, sf_type, marks=marks, id=f"{era}-{lepton}-{sf_type}")
+
+
+@pytest.mark.parametrize("era,lepton,sf_type", kit_trigger_sf_cases())
+def test_kit_trigger_sfs_are_plausible_where_their_flags_fire(era, lepton, sf_type):
+    """Every KIT trigger SF of the SM configuration and of the tau-ID measurement,
+    evaluated as the producers do (MC with its pT cap), at the bin centres of the
+    payload above the flag's pT threshold and below its |eta| limit, lies in
+    [0.5, 1.5] (on the turn-on in (0, 1.5]). 2016preVFP MC muons held 2.756 above
+    200 GeV in the barrel before the cap."""
+    correctionlib = pytest.importorskip("correctionlib")
+    scope, flags_key, entries_key, file_key = {
+        "muon": ("mt", "mu_trigger", "singlemuon_trigger_sf_mc", "mc_muon_sf_file"),
+        "electron": ("et", "ele_trigger", "singlelectron_trigger_sf_mc", "mc_electron_sf_file"),
+    }[lepton]
+    configs = [build("sm_config", "ttbar", era=era, scopes=(scope,))]
+    if lepton == "muon":
+        configs.append(build("sm_tau_id_measurement_config", "dyjets", era=era, scopes=("mt", "mm")))
+    outliers = []
+    for config in configs:
+        params = config.config_parameters[scope]["nominal"]
+        path = CROWN / params[file_key]
+        payload = corrections(path)
+        evaluators = correctionlib.CorrectionSet.from_file(str(path))
+        flags = {flag["flagname"]: flag for flag in params[flags_key]}
+        assert params[entries_key], (era, lepton)
+        for entry in params[entries_key]:
+            name = entry["mc_trigger_sf"]
+            flag = entry["flagname"].replace("trg_wgt_", "trg_")
+            # the SF of an OR (2018 tau-ID measurement) covers its flags
+            fired = [flags[flag]] if flag in flags else list(flags.values())
+            min_pt = min(f["min_pt"] for f in fired)
+            max_abs_eta = max(f.get("max_abs_eta", 2.5) for f in fired)
+            max_pt, cap_abs_eta = (
+                (entry["mc_trigger_sf_max_pt"], entry["mc_trigger_sf_max_pt_max_abs_eta"])
+                if sf_type == "mc" and lepton == "muon"
+                else (1000.0, 0.0)
+            )
+            eta_input = payload[name]["inputs"][1]["name"]
+            pt_edges, eta_edges = set(), set()
+            _edges(payload[name]["data"], "pt", pt_edges)
+            _edges(payload[name]["data"], eta_input, eta_edges)
+            pt_edges, eta_edges = sorted(pt_edges), sorted(eta_edges)
+            pt_points = [
+                max(low, min_pt) + 0.01
+                for low, high in zip(pt_edges, pt_edges[1:] + [2 * pt_edges[-1]])
+                if high > min_pt
+            ]
+            eta_points = [
+                0.5 * (low + high)
+                for low, high in zip(eta_edges, eta_edges[1:])
+                if low < max_abs_eta and high > -max_abs_eta
+            ]
+            for pt in pt_points:
+                for eta in eta_points:
+                    at = pt if not (abs(eta) < cap_abs_eta and pt > max_pt) else max_pt
+                    value = evaluators[name].evaluate(at, eta, sf_type)
+                    low = SF_RANGE[0] if pt >= min_pt + TURN_ON else 0.0
+                    if not (low < value <= SF_RANGE[1] if low == 0.0 else low <= value <= SF_RANGE[1]):
+                        outliers.append((name, round(pt, 2), round(eta, 3), round(value, 3)))
+    assert not outliers, outliers

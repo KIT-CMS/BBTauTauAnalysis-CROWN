@@ -1074,10 +1074,13 @@ TauEmbeddingMuonIDIsoSF_MC = ProducerGroup(
 # KIT (Tau Embedding group) single-muon trigger SFs of MC, one per configured
 # trigger (singlemuon_trigger_sf_mc), of the muon of mt and em and the first muon of
 # mm, evaluated at every pT and iso (the flags select downstream); the payload has
-# no uncertainties, the shift scales the SF by 1.02 / 0.98
+# no uncertainties, the shift scales the SF by 1.02 / 0.98. A muon above
+# mc_trigger_sf_max_pt with |eta| below mc_trigger_sf_max_pt_max_abs_eta is
+# evaluated at mc_trigger_sf_max_pt, which keeps a defective payload bin out
+# (tau_triggersetup.KIT_MUON_TRIGGER_SF_MC_MAX_PT).
 KitSingleMuonTriggerSF = ExtendedVectorProducer(
     name="KitSingleMuonTriggerSF",
-    call="""embedding::muon::Scalefactor(
+    call="""xyh::scalefactor::kit_muon_trigger(
         {df}, 
         correctionManager, 
         {output}, 
@@ -1085,7 +1088,9 @@ KitSingleMuonTriggerSF = ExtendedVectorProducer(
         "{mc_muon_sf_file}", 
         "{mc_trigger_sf}", 
         "mc", 
-        {mc_muon_trg_extrapolation})
+        {mc_muon_trg_extrapolation},
+        {mc_trigger_sf_max_pt},
+        {mc_trigger_sf_max_pt_max_abs_eta})
         """,
     input={
         "mt": [q.pt_1, q.eta_1],
