@@ -1323,9 +1323,12 @@ BJetWPUParT_SF = Producer(
 # consumer xyh::scalefactor::btagging_strict::multi_wp_event_weight throws
 # (with the offending jet kinematics) instead of silently substituting 1.0 for
 # a degenerate jet contribution, and it dispatches per correction (comb for
-# b/c, light for light) with independent variation keys. The producer emits the
-# nominal event weight plus one weight-only column per discovered systematic
-# variation (visible on the nominal tree, i.e. with -DSHIFTS=none).
+# b/c, light for light) with independent variation keys. It evaluates the
+# working points of the profile (btag_sf_working_points, v7: [T, M]) and sets
+# an intermediate factor with a negative numerator to 1 (BTV, v7 spec K1),
+# counted per event in a column of its own. The producer emits the nominal
+# event weight plus the eight weight-only columns of the fixed-WP nuisances
+# (v7 spec C14), visible on the nominal tree (with -DSHIFTS=none).
 ##############################################################################
 
 # Kinematic b-jet acceptance (pt > 20, |eta| < 2.4, jet ID) BEFORE the b-tag WP
@@ -1340,82 +1343,62 @@ StrictUParTBtagMask = Producer(
     scopes=SCOPES,
 )
 
-def _parse_upart_variation_components(keys):
-    """Return the set of systematic *components* in a set of variation keys.
-
-    A component is the suffix shared by an ``up``/``down`` pair: the plain
-    up/down pair maps to ``""``; ``up_hf``/``down_hf`` map to ``"hf"``;
-    ``central`` is ignored.
-    """
-    components = set()
-    for key in keys:
-        if key == "central":
-            continue
-        if key in ("up", "down"):
-            components.add("")
-        elif key.startswith("up_"):
-            components.add(key[len("up_"):])
-        elif key.startswith("down_"):
-            components.add(key[len("down_"):])
-    return components
+# The fixed-WP nuisances (v7 spec C14, E14): b/c and light jets, each correlated
+# between the eras and uncorrelated; one flavour varied, the other at central.
+UPART_FLAVOUR_CORRECTIONS = {"bc": "UParTAK4_comb", "light": "UParTAK4_light"}
+UPART_CORRELATIONS = ("correlated", "uncorrelated")
 
 
 def upart_variation_dispatch(variations):
-    """Build the per-correction variation dispatch for the weight columns.
+    """The per-correction variation dispatch of the weight columns.
 
     ``variations`` is the mapping returned by
     ``btag_payloads.discover_upart_variations`` (correction name -> set of
-    systematic keys). For every component in the UNION of the comb and light
-    components, and each direction (up/down), one weight column is emitted whose
-    per-flavor variation keys follow the spec rule:
-
-      * component in comb only  -> comb uses the key, light stays ``central``;
-      * component in light only -> light uses the key, comb stays ``central``;
-      * component in both        -> each flavor uses its own key.
+    systematic keys). For each flavour group (bc: ``UParTAK4_comb``, light:
+    ``UParTAK4_light``), correlation (correlated, uncorrelated) and direction
+    (up, down), one weight column ``btag_weight_upart_<direction>_<flavour>_
+    <correlation>`` varies that flavour group by the payload key
+    ``<direction>_<correlation>`` and keeps the other at ``central``.
 
     Returns an ordered list of dicts ``{"suffix", "variation_comb",
-    "variation_light"}`` (plain component first, then components sorted by name;
-    up before down), so the emitted column set is deterministic.
+    "variation_light"}``; a key missing in its correction raises ``KeyError``.
     """
-    comb_components = _parse_upart_variation_components(
-        variations["UParTAK4_comb"]
-    )
-    light_components = _parse_upart_variation_components(
-        variations["UParTAK4_light"]
-    )
-    union = comb_components | light_components
-    ordered = ([""] if "" in union else []) + sorted(c for c in union if c)
     dispatch = []
-    for component in ordered:
-        for direction in ("up", "down"):
-            key = direction if component == "" else f"{direction}_{component}"
-            dispatch.append(
-                {
-                    "suffix": key,
-                    "variation_comb": (
-                        key if component in comb_components else "central"
-                    ),
-                    "variation_light": (
-                        key if component in light_components else "central"
-                    ),
-                }
-            )
+    for flavour, correction in UPART_FLAVOUR_CORRECTIONS.items():
+        for correlation in UPART_CORRELATIONS:
+            for direction in ("up", "down"):
+                key = f"{direction}_{correlation}"
+                if key not in variations[correction]:
+                    raise KeyError(
+                        f"systematic '{key}' is not in {correction}; it has "
+                        f"{sorted(variations[correction])}"
+                    )
+                dispatch.append(
+                    {
+                        "suffix": f"{direction}_{flavour}_{correlation}",
+                        "variation_comb": key if flavour == "bc" else "central",
+                        "variation_light": key if flavour == "light" else "central",
+                    }
+                )
     return dispatch
 
 
-def _strict_upart_weight_producer(name, output_quantity, variation_comb, variation_light):
+def _strict_upart_weight_producer(
+    name, output_quantity, count_quantity, variation_comb, variation_light
+):
     """One multi_wp_event_weight Producer for a fixed (comb, light) variation.
 
     The two variation keys are known at config time and baked into the call;
-    the payload files, the efficiency sample_type and the lowest calibrated
-    b/c-jet pT remain config parameters resolved per scope. The WP thresholds
-    are read from the SF payload by the C++ consumer.
+    the payload files, the efficiency sample_type, the lowest calibrated b/c-jet
+    pT and the working points remain config parameters resolved per scope. The
+    WP thresholds are read from the SF payload by the C++ consumer.
     """
     call = (
         "xyh::scalefactor::btagging_strict::multi_wp_event_weight("
         "{df}, correctionManager, {output}, {input}, "
         '"{bjet_sf_file}", "{bjet_eff_file}", "{bjet_eff_sample_type}", '
         "{bjet_sf_bc_min_pt}, "
+        "{vec_open}{bjet_sf_working_points}{vec_close}, "
         '"' + variation_comb + '", "' + variation_light + '")'
     )
     return Producer(
@@ -1428,7 +1411,7 @@ def _strict_upart_weight_producer(name, output_quantity, variation_comb, variati
             nanoAOD.Jet_btagUParTAK4B,
             q.base_bjets_with_veto_mask,
         ],
-        output=[output_quantity],
+        output=[output_quantity, count_quantity],
         scopes=SCOPES,
     )
 
@@ -1436,32 +1419,34 @@ def _strict_upart_weight_producer(name, output_quantity, variation_comb, variati
 def build_strict_upart_btag_weight(variations):
     """Assemble the ``StrictUParTBtagWeight`` ProducerGroup for the SM path.
 
-    Emits the nominal weight ``btag_weight_upart``, one weight-only column per
-    discovered variation pair (``btag_weight_upart_<variation>``) and (as the
-    first subproducer) the acceptance mask.
+    Emits the nominal weight ``btag_weight_upart``, the eight variation columns
+    ``btag_weight_upart_<direction>_<flavour>_<correlation>`` and, per weight,
+    the count of factors set to 1 (``btag_unity_jets_upart[_<suffix>]``), plus
+    (as the first subproducer) the acceptance mask.
 
     Returns ``(producer_group, output_quantities)`` where ``output_quantities``
     is the list of columns to hand to ``add_outputs``.
     """
-    dispatch = upart_variation_dispatch(variations)
+    entries = [{"suffix": None, "variation_comb": "central", "variation_light": "central"}]
+    entries += upart_variation_dispatch(variations)
 
     subproducers = [StrictUParTBtagMask]
-    output_quantities = [q.btag_weight_upart]
-
-    subproducers.append(
-        _strict_upart_weight_producer(
-            "StrictUParTBtagWeightNominal", q.btag_weight_upart, "central", "central"
-        )
-    )
-    for entry in dispatch:
-        column = Quantity(f"btag_weight_upart_{entry['suffix']}")
-        output_quantities.append(column)
+    output_quantities = []
+    for entry in entries:
+        if entry["suffix"] is None:
+            name, weight, count = (
+                "StrictUParTBtagWeightNominal",
+                q.btag_weight_upart,
+                q.btag_unity_jets_upart,
+            )
+        else:
+            name = f"StrictUParTBtagWeight_{entry['suffix']}"
+            weight = Quantity(f"btag_weight_upart_{entry['suffix']}")
+            count = Quantity(f"btag_unity_jets_upart_{entry['suffix']}")
+        output_quantities += [weight, count]
         subproducers.append(
             _strict_upart_weight_producer(
-                f"StrictUParTBtagWeight_{entry['suffix']}",
-                column,
-                entry["variation_comb"],
-                entry["variation_light"],
+                name, weight, count, entry["variation_comb"], entry["variation_light"]
             )
         )
 

@@ -67,3 +67,30 @@ def test_btag_flag_parameters_are_consistent(module, era):
     assert wps[params["bjet_btag_wp_name"]] == pytest.approx(
         params["bjet_min_score"], abs=1e-6
     )
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_strict_weight_working_points_of_the_era(era):
+    """C14: the strict b-tag event weight evaluates the working points [T, M] of the
+    profile, both in the era's UParTAK4 payload with T tighter than M; the b-jet flag
+    thresholds the loosest of them, M."""
+    params = build("sm_config", "ttbar", era=era).config_parameters["mt"]["nominal"]
+    assert params["bjet_sf_working_points"] == '"T", "M"'
+    wps = btag_payloads.load_upart_wps(params["bjet_sf_file"])
+    assert wps["T"] > wps["M"] == pytest.approx(params["bjet_min_score"], abs=1e-6)
+
+
+@pytest.mark.parametrize(
+    "working_points,match",
+    [
+        ((), "invalid"),
+        (("T", "T"), "invalid"),
+        (("T", "Q"), "not in UParTAK4_wp_values"),
+        (("M", "T"), "not ordered tightest first"),
+    ],
+)
+def test_working_point_check(working_points, match):
+    wps = btag_payloads.load_upart_wps(btag_payloads.btv_upart_payload("2018"))
+    assert btag_payloads.check_working_points(wps, ("T", "M")) == ("T", "M")
+    with pytest.raises(ValueError, match=match):
+        btag_payloads.check_working_points(wps, working_points)

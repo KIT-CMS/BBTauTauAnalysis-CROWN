@@ -662,11 +662,12 @@ emb_iso_wgt_mu_boosted_1 = Quantity("emb_iso_wgt_mu_boosted_1")
 btag_weight = Quantity("btag_weight")
 btag_weight_boosted = Quantity("btag_weight_boosted")
 # Strict UParTAK4 multi-WP b-tag event weight (UParT b-tag path). The nominal
-# column plus the pt-flow clamp diagnostic; the per-variation weight columns
-# (btag_weight_upart_<variation>) are created at config time from the payload's
-# discovered systematic variations by
+# column and the number of its intermediate factors set to 1 (K1); the eight
+# variation columns btag_weight_upart_<direction>_<flavour>_<correlation> and
+# their counts btag_unity_jets_upart_<...> are created at config time by
 # producers.scalefactors.build_strict_upart_btag_weight.
 btag_weight_upart = Quantity("btag_weight_upart")
+btag_unity_jets_upart = Quantity("btag_unity_jets_upart")
 # ditau trigger weights
 trg_wgt_double_tau_1 = Quantity("trg_wgt_double_tau_1")
 trg_wgt_double_tau_2 = Quantity("trg_wgt_double_tau_2")

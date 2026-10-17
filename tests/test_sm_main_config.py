@@ -19,6 +19,7 @@ from analysis_configurations.bbtautau import (
     generate,
     sm_btag_efficiency_config,
 )
+from analysis_configurations.bbtautau.producers import scalefactors
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     FakeArgs,
@@ -146,18 +147,51 @@ def test_v15_data_electrons_get_the_egm_scale(era):
     assert [i.name for i in scale.inputs] == ["syst", "run", "ScEta", "r9", "pt", "seedGain"]
 
 
-def test_upart_weight_variation_columns_match_discovery():
+# the fixed-WP b-tag nuisances (v7 spec C14): flavour group x correlation x direction
+BTAG_COMPONENTS = [
+    f"{direction}_{flavour}_{correlation}"
+    for flavour in ("bc", "light")
+    for correlation in ("correlated", "uncorrelated")
+    for direction in ("up", "down")
+]
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_upart_weight_columns_are_the_fixed_wp_nuisances(era):
+    """C14: the nominal weight and the eight variations of the fixed-WP nuisances
+    (b/c and light, correlated and uncorrelated, up and down; the other flavour
+    group central), each with the count of its factors set to 1 (K1); 18 columns
+    instead of the 83 breakdown columns."""
+    expected = {"btag_weight_upart", "btag_unity_jets_upart"}
+    expected |= {f"btag_weight_upart_{c}" for c in BTAG_COMPONENTS}
+    expected |= {f"btag_unity_jets_upart_{c}" for c in BTAG_COMPONENTS}
+    config = build("sm_config", "ttbar", era=era, scopes=ALL_SCOPES)
+    for scope in ALL_SCOPES:
+        assert {
+            o for o in output_names(config, scope) if o.startswith(("btag_weight_upart", "btag_unity"))
+        } == expected, scope
+    group = find_producer(config, "mt", "StrictUParTBtagWeight")
+    calls = {p.name: p.call for p in group.producers["mt"]}
+    assert '"central", "central")' in calls["StrictUParTBtagWeightNominal"]
+    for component in BTAG_COMPONENTS:
+        direction, flavour, correlation = component.split("_")
+        key = f'"{direction}_{correlation}"'
+        varied = f'{key}, "central")' if flavour == "bc" else f'"central", {key})'
+        assert calls[f"StrictUParTBtagWeight_{component}"].endswith(varied), component
+    for call in calls.values():
+        if "multi_wp_event_weight" in call:
+            assert "{vec_open}{bjet_sf_working_points}{vec_close}" in call
+
+
+def test_upart_dispatch_requires_the_payload_keys():
     variations = btag_payloads.discover_upart_variations(
         btag_payloads.btv_upart_payload("2018")
     )
-    keys = (variations["UParTAK4_comb"] | variations["UParTAK4_light"]) - {"central"}
-    expected = {"btag_weight_upart"} | {f"btag_weight_upart_{k}" for k in keys}
-    assert len(expected) == 83
-    config = build("sm_config", "ttbar", scopes=ALL_SCOPES)
-    for scope in ALL_SCOPES:
-        assert {
-            o for o in output_names(config, scope) if o.startswith("btag_weight_upart")
-        } == expected, scope
+    dispatch = scalefactors.upart_variation_dispatch(variations)
+    assert [d["suffix"] for d in dispatch] == BTAG_COMPONENTS
+    broken = dict(variations, UParTAK4_light=variations["UParTAK4_light"] - {"up_uncorrelated"})
+    with pytest.raises(KeyError, match="up_uncorrelated.*UParTAK4_light"):
+        scalefactors.upart_variation_dispatch(broken)
 
 
 def test_sm_dyw_recoil_wiring():

@@ -14,6 +14,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 // namespace xyh
@@ -40,11 +41,12 @@ std::string jet_kinematics(float pt, float eta, int flavor, float score) {
 ROOT::RDF::RNode multi_wp_event_weight(
     ROOT::RDF::RNode df,
     correctionManager::CorrectionManager &correction_manager,
-    const std::string &output, const std::string &jet_pt,
-    const std::string &jet_eta, const std::string &jet_flavor,
-    const std::string &jet_score, const std::string &jet_mask,
-    const std::string &sf_file, const std::string &eff_file,
-    const std::string &eff_sample_type, const float &bc_min_pt,
+    const std::string &output, const std::string &unity_count_output,
+    const std::string &jet_pt, const std::string &jet_eta,
+    const std::string &jet_flavor, const std::string &jet_score,
+    const std::string &jet_mask, const std::string &sf_file,
+    const std::string &eff_file, const std::string &eff_sample_type,
+    const float &bc_min_pt, const std::vector<std::string> &working_points,
     const std::string &variation_comb, const std::string &variation_light) {
 
     const std::string logger_name =
@@ -55,6 +57,21 @@ ROOT::RDF::RNode multi_wp_event_weight(
                 "light variation {}, eff sample_type {}",
                 variation_comb, variation_light, eff_sample_type);
 
+    // The working points, tightest first: at least one, none twice.
+    if (working_points.empty()) {
+        throw std::runtime_error(logger_name +
+                                 ": the list of working points is empty");
+    }
+    for (std::size_t w = 0; w < working_points.size(); ++w) {
+        for (std::size_t v = w + 1; v < working_points.size(); ++v) {
+            if (working_points.at(w) == working_points.at(v)) {
+                throw std::runtime_error(logger_name + ": working point " +
+                                         working_points.at(w) +
+                                         " is listed twice");
+            }
+        }
+    }
+
     // Load the SF and efficiency evaluators once (shared through the manager).
     auto comb_evaluator =
         correction_manager.loadCorrection(sf_file, kCombCorrection);
@@ -64,13 +81,13 @@ ROOT::RDF::RNode multi_wp_event_weight(
         correction_manager.loadCorrection(eff_file, kEfficiencyCorrection);
 
     // Read the WP score thresholds out of the SF payload itself (as the core
-    // physicsobject::jet::scalefactor::BtaggingMultipleWP does), in the fixed
+    // physicsobject::jet::scalefactor::BtaggingMultipleWP does), in the
     // tightest->loosest WP order the per-jet loop below relies on.
     auto wp_evaluator =
         correction_manager.loadCorrection(sf_file, kWpValuesCorrection);
     std::vector<float> thresholds;
-    thresholds.reserve(kWorkingPointsTightToLoose.size());
-    for (const auto &wp : kWorkingPointsTightToLoose) {
+    thresholds.reserve(working_points.size());
+    for (const auto &wp : working_points) {
         float cut;
         try {
             cut = static_cast<float>(wp_evaluator->evaluate({wp}));
@@ -100,15 +117,19 @@ ROOT::RDF::RNode multi_wp_event_weight(
             df, jet_flavor + "_upart_strict_v12",
             "ROOT::VecOps::RVec<UChar_t>", jet_flavor);
 
+    // The per-event result: the weight and the number of jets whose
+    // intermediate factor is set to 1 for a negative numerator (K1).
     auto event_weight =
         [comb_evaluator, light_evaluator, eff_evaluator, thresholds,
-         bc_min_pt, variation_comb, variation_light, eff_sample_type,
+         working_points, bc_min_pt, variation_comb, variation_light,
+         eff_sample_type,
          logger_name](const ROOT::RVec<float> &pts,
                       const ROOT::RVec<float> &etas,
                       const ROOT::RVec<UChar_t> &flavors_uc,
                       const ROOT::RVec<float> &scores,
                       const ROOT::RVec<int> &mask) {
             double weight = 1.0;
+            int unity_count = 0;
             auto flavors = static_cast<ROOT::RVec<int>>(flavors_uc);
 
             for (std::size_t i = 0; i < pts.size(); ++i) {
@@ -214,21 +235,20 @@ ROOT::RDF::RNode multi_wp_event_weight(
 
                 double num = 0.0;
                 double denom = 0.0;
+                bool unity = false;
                 if (passed == 0) {
                     // Passes the tightest WP: jet_w = SF(tightest). The
                     // efficiency cancels but is validated so a broken payload
                     // is still caught.
-                    const std::string &wp = kWorkingPointsTightToLoose.at(0);
+                    const std::string &wp = working_points.at(0);
                     const double eff = eval_eff(wp);
                     const double sf = eval_sf(wp);
                     num = sf * eff;
                     denom = eff;
                 } else if (passed < thresholds.size()) {
                     // Passes `low` but not the next tighter WP `high`.
-                    const std::string &low =
-                        kWorkingPointsTightToLoose.at(passed);
-                    const std::string &high =
-                        kWorkingPointsTightToLoose.at(passed - 1);
+                    const std::string &low = working_points.at(passed);
+                    const std::string &high = working_points.at(passed - 1);
                     const double eff_low = eval_eff(low);
                     const double eff_high = eval_eff(high);
                     denom = eff_low - eff_high;
@@ -243,10 +263,18 @@ ROOT::RDF::RNode multi_wp_event_weight(
                     const double sf_low = eval_sf(low);
                     const double sf_high = eval_sf(high);
                     num = sf_low * eff_low - sf_high * eff_high;
+                    // BTV fixedWP: a negative numerator of an intermediate
+                    // factor sets the factor to unity (v7 spec K1)
+                    if (num < 0.0) {
+                        unity = true;
+                        Logger::get(logger_name)
+                            ->debug("negative numerator {} between WPs {} and "
+                                    "{}, factor set to 1 for {}",
+                                    num, low, high, kin);
+                    }
                 } else {
                     // Fails even the loosest WP.
-                    const std::string &loosest =
-                        kWorkingPointsTightToLoose.back();
+                    const std::string &loosest = working_points.back();
                     const double eff = eval_eff(loosest);
                     denom = 1.0 - eff;
                     if (denom <= 0.0) {
@@ -260,6 +288,10 @@ ROOT::RDF::RNode multi_wp_event_weight(
                     num = 1.0 - sf * eff;
                 }
 
+                if (unity) {
+                    ++unity_count;
+                    continue;
+                }
                 const double jet_w = num / denom;
                 if (!std::isfinite(jet_w) || jet_w <= 0.0) {
                     throw std::runtime_error(
@@ -271,12 +303,22 @@ ROOT::RDF::RNode multi_wp_event_weight(
                 weight *= jet_w;
             }
 
-            Logger::get(logger_name)->debug("event b-tag weight {}", weight);
-            return weight;
+            Logger::get(logger_name)
+                ->debug("event b-tag weight {}, {} factor(s) set to 1", weight,
+                        unity_count);
+            return std::pair<double, int>(weight, unity_count);
         };
 
-    return df1.Define(output, event_weight,
-                      {jet_pt, jet_eta, flavor_column, jet_score, jet_mask});
+    const std::string result = output + "_strict_result";
+    return df1
+        .Define(result, event_weight,
+                {jet_pt, jet_eta, flavor_column, jet_score, jet_mask})
+        .Define(output,
+                [](const std::pair<double, int> &r) { return r.first; },
+                {result})
+        .Define(unity_count_output,
+                [](const std::pair<double, int> &r) { return r.second; },
+                {result});
 }
 
 } // end namespace btagging_strict

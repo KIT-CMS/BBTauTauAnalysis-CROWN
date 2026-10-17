@@ -22,6 +22,12 @@
 //   (j) b-jet below the calibrated pT range (30 GeV) -> SF of the first bin,
 //       twice the deviation for a variation;
 //   (k) ... with the efficiency at the jet pT.
+// Cases (a)-(k) run with all five WPs {XXT, XT, T, M, L}; the v7 working
+// points [T, M] (spec C14) and the K1 rule:
+//   (l) [T, M]: a jet between M and T, above T, below M;
+//   (m) K1: a negative numerator SF(M)eff(M) - SF(T)eff(T) sets the factor to
+//       1 and is counted, also next to a jet with an ordinary factor;
+//   (n) an empty, repeated, unknown or wrongly ordered WP list throws.
 //
 // The WP score thresholds are not passed in: the consumer reads them from the
 // SF payload's UParTAK4_wp_values correction, which the fixture generator
@@ -86,15 +92,26 @@ ROOT::RVec<T> mkvec(const std::vector<T> &values) {
     return out;
 }
 
+// All five fixture WPs, and the v7 working points, tightest first.
+const std::vector<std::string> kAllWps = {"XXT", "XT", "T", "M", "L"};
+const std::vector<std::string> kTM = {"T", "M"};
+
+struct Result {
+    double weight;
+    int unity_count;
+};
+
 // Run the strict consumer on a single (possibly multi-jet) event and return
-// the event weight. May throw (the strict consumer rejects degenerate input).
-double run_weight(correctionManager::CorrectionManager &mgr,
+// the event weight and the count of factors set to 1. May throw (the strict
+// consumer rejects degenerate input).
+Result run_result(correctionManager::CorrectionManager &mgr,
                   const std::vector<float> &pt, const std::vector<float> &eta,
                   const std::vector<int> &flavor,
                   const std::vector<float> &score, const std::vector<int> &mask,
                   const std::string &eff_sample_type,
                   const std::string &variation_comb,
-                  const std::string &variation_light) {
+                  const std::string &variation_light,
+                  const std::vector<std::string> &working_points = kAllWps) {
     ROOT::RDataFrame df(1);
     auto defined =
         df.Define("Jet_pt", [pt]() { return mkvec(pt); })
@@ -104,10 +121,26 @@ double run_weight(correctionManager::CorrectionManager &mgr,
             .Define("Jet_mask", [mask]() { return mkvec(mask); });
     ROOT::RDF::RNode node = defined;
     auto out = xyh::scalefactor::btagging_strict::multi_wp_event_weight(
-        node, mgr, "btag_weight_upart", "Jet_pt", "Jet_eta", "Jet_flavor",
-        "Jet_score", "Jet_mask", BTAG_FIXTURE_SF, BTAG_FIXTURE_EFF,
-        eff_sample_type, kBcMinPt, variation_comb, variation_light);
-    return out.Take<double>("btag_weight_upart").GetValue().at(0);
+        node, mgr, "btag_weight_upart", "btag_unity_jets_upart", "Jet_pt",
+        "Jet_eta", "Jet_flavor", "Jet_score", "Jet_mask", BTAG_FIXTURE_SF,
+        BTAG_FIXTURE_EFF, eff_sample_type, kBcMinPt, working_points,
+        variation_comb, variation_light);
+    auto weight = out.Take<double>("btag_weight_upart");
+    auto count = out.Take<int>("btag_unity_jets_upart");
+    return {weight.GetValue().at(0), count.GetValue().at(0)};
+}
+
+double run_weight(correctionManager::CorrectionManager &mgr,
+                  const std::vector<float> &pt, const std::vector<float> &eta,
+                  const std::vector<int> &flavor,
+                  const std::vector<float> &score, const std::vector<int> &mask,
+                  const std::string &eff_sample_type,
+                  const std::string &variation_comb,
+                  const std::string &variation_light,
+                  const std::vector<std::string> &working_points = kAllWps) {
+    return run_result(mgr, pt, eta, flavor, score, mask, eff_sample_type,
+                      variation_comb, variation_light, working_points)
+        .weight;
 }
 
 bool throws(const std::function<void()> &fn) {
@@ -303,6 +336,88 @@ int main() {
                               "central", "central");
         check(approx_equal(w, 0.608 / 0.60),
               "(k) b-jet below 30 GeV keeps the efficiency at its pT");
+    }
+
+    // ------------------------------------------------------------------
+    // (l) The v7 working points [T, M]. A b-jet (flavor 5, valid regime, pt
+    // 50) with score 0.4 lies between M and T as with five WPs:
+    //   (0.95*0.60 - 0.90*0.40) / (0.60 - 0.40) = 1.05;
+    // score 0.6 passes T, the tightest WP of the list (with five WPs it would
+    // be the T/XT bin): SF(T) = 0.90;
+    // score 0.2 fails M, the loosest WP of the list (five WPs: the L/M bin):
+    //   (1 - 0.95*0.60) / (1 - 0.60) = 0.43 / 0.40 = 1.075.
+    // None of them counts a factor set to 1.
+    // ------------------------------------------------------------------
+    {
+        const auto between = run_result(mgr, {50.0f}, {1.0f}, {5}, {0.4f}, {1},
+                                        "valid", "central", "central", kTM);
+        const auto tight = run_result(mgr, {50.0f}, {1.0f}, {5}, {0.6f}, {1},
+                                      "valid", "central", "central", kTM);
+        const auto untagged = run_result(mgr, {50.0f}, {1.0f}, {5}, {0.2f},
+                                         {1}, "valid", "central", "central",
+                                         kTM);
+        check(approx_equal(between.weight, 1.05) && between.unity_count == 0,
+              "(l) [T,M]: between M and T == 1.05");
+        check(approx_equal(tight.weight, 0.90) && tight.unity_count == 0,
+              "(l) [T,M]: above T == SF(T) 0.90");
+        check(approx_equal(untagged.weight, 0.43 / 0.40) &&
+                  untagged.unity_count == 0,
+              "(l) [T,M]: below M == (1-SF(M)eff(M))/(1-eff(M)) 1.075");
+    }
+
+    // ------------------------------------------------------------------
+    // (m) K1: up_k1 raises SF(T) of b/c jets to 1.50, so the M/T numerator of
+    // a b-jet with score 0.4 is 0.95*0.60 - 1.50*0.40 = -0.03 < 0: the factor
+    // is 1 and counted. A light jet (score 0.15, fails M) next to it keeps its
+    // factor (1 - 0.96*0.05) / (1 - 0.05); two such b-jets count 2; a b-jet
+    // above T takes SF(T) = 1.50 and counts nothing.
+    // ------------------------------------------------------------------
+    {
+        const auto single = run_result(mgr, {50.0f}, {1.0f}, {5}, {0.4f}, {1},
+                                       "valid", "up_k1", "central", kTM);
+        check(approx_equal(single.weight, 1.0) && single.unity_count == 1,
+              "(m) K1: negative numerator gives factor 1, counted once");
+        const auto mixed = run_result(mgr, {50.0f, 60.0f}, {1.0f, 1.2f}, {5, 0},
+                                      {0.4f, 0.15f}, {1, 1}, "valid", "up_k1",
+                                      "central", kTM);
+        check(approx_equal(mixed.weight, (1.0 - 0.96 * 0.05) / (1.0 - 0.05)) &&
+                  mixed.unity_count == 1,
+              "(m) K1: the other jets keep their factors");
+        const auto two = run_result(mgr, {50.0f, 70.0f}, {1.0f, -0.5f}, {5, 5},
+                                    {0.4f, 0.45f}, {1, 1}, "valid", "up_k1",
+                                    "central", kTM);
+        check(approx_equal(two.weight, 1.0) && two.unity_count == 2,
+              "(m) K1: two negative numerators count 2");
+        const auto tight = run_result(mgr, {50.0f}, {1.0f}, {5}, {0.6f}, {1},
+                                      "valid", "up_k1", "central", kTM);
+        check(approx_equal(tight.weight, 1.50) && tight.unity_count == 0,
+              "(m) K1: a jet above T is not affected");
+        const auto central = run_result(mgr, {50.0f}, {1.0f}, {5}, {0.4f}, {1},
+                                        "valid", "central", "central", kTM);
+        check(central.unity_count == 0,
+              "(m) K1: central SFs count no factor set to 1");
+        const auto masked = run_result(mgr, {50.0f}, {1.0f}, {5}, {0.4f}, {0},
+                                       "valid", "up_k1", "central", kTM);
+        check(approx_equal(masked.weight, 1.0) && masked.unity_count == 0,
+              "(m) K1: a masked jet is not counted");
+    }
+
+    // ------------------------------------------------------------------
+    // (n) The working-point list must be non-empty, without repetitions, of
+    // payload WPs, tightest first (strictly decreasing thresholds).
+    // ------------------------------------------------------------------
+    for (const auto &wps : std::vector<std::vector<std::string>>{
+             {}, {"T", "T"}, {"T", "Q"}, {"M", "T"}}) {
+        std::string name = "(n) WP list {";
+        for (const auto &wp : wps) {
+            name += wp + " ";
+        }
+        name += "} throws";
+        check(throws([&]() {
+                  run_weight(mgr, {50.0f}, {1.0f}, {5}, {0.4f}, {1}, "valid",
+                             "central", "central", wps);
+              }),
+              name);
     }
 
     if (g_failures > 0) {

@@ -59,7 +59,7 @@ from code_generation.rules import AppendProducer, RemoveProducer, ReplaceProduce
 from code_generation.systematics import SystematicShift, SystematicShiftByQuantity
 
 from .constants import ERAS_RUN2, ERAS_RUN3, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
-from .helpers import get_for_era
+from .helpers import cpp_list, get_for_era
 
 
 
@@ -2080,6 +2080,14 @@ def add_bjet_config(configuration: Configuration, era: str, sample_types: list[s
                 ),
                 "bjet_sf_bc_min_pt": btag_payloads.load_upart_comb_min_pt(
                     upart_payload
+                ),
+                # the working points of the event weight, tightest first (v7
+                # spec E14, C14: [T, M]); checked against the payload here, as
+                # the C++ consumer does at run time
+                "bjet_sf_working_points": cpp_list(
+                    btag_payloads.check_working_points(
+                        upart_wps, profile.btag_sf_working_points
+                    )
                 ),
             },
         )
