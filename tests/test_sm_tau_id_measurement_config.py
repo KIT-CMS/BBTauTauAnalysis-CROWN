@@ -221,13 +221,20 @@ def test_trigger_tables_match_the_module():
 ])
 @pytest.mark.parametrize("scope", SCOPES)
 def test_trigger_sfs_are_the_kit_sfs_of_the_first_muon(sample, producer, sf_type, scope, era):
+    """MC evaluates with the pT cap of a defective payload bin (2016preVFP: 199.9 GeV
+    below |eta| 0.9, none elsewhere), embedding with the core function."""
     sfs = calls(sample, scope, producer, era)
     for column, correction in ERA_TRIGGER_SFS[era].items():
+        cap = ""
+        if sf_type == "mc":
+            capped = (era, correction) == ("2016preVFP", "Trg_pt_eta_bins")
+            cap = ", 199.9, 0.9" if capped else ", 1000.0, 0.0"
         assert (
             f'"{column}", "pt_1", "eta_1", "data/embedding/muon_{era}UL.json.gz", '
-            f'"{correction}", "{sf_type}", 1.0)'
+            f'"{correction}", "{sf_type}", 1.0{cap})'
         ) in sfs
-    assert sfs.count("Scalefactor(") == len(ERA_TRIGGER_SFS[era])
+    function = "kit_muon_trigger(" if sf_type == "mc" else "Scalefactor("
+    assert sfs.count(function) == len(ERA_TRIGGER_SFS[era])
     assert "SingleMuTriggerSF" not in producer_names(measurement(sample, era=era), scope)
     payload = CROWN / f"data/embedding/muon_{era}UL.json.gz"
     corrections = {c["name"] for c in json.load(gzip.open(payload))["corrections"]}

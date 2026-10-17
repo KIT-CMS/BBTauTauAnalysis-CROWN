@@ -269,13 +269,17 @@ def test_no_pog_electron_trigger_sf_in_run2(module, era):
 @pytest.mark.parametrize("era", ERAS_RUN2)
 def test_kit_muon_trigger_sf_reads_the_muon_of_each_scope(era):
     """C6: KitSingleMuonTriggerSF evaluates the muon of mt and mm (leg 1) and em (leg
-    2), type mc, from the KIT file of the era; data has no trigger SF."""
+    2), type mc, from the KIT file of the era, with the pT cap of the defective
+    2016preVFP bin (199.9 GeV below |eta| 0.9) and none elsewhere; data has no
+    trigger SF."""
+    cap = "199.9, 0.9" if era == "2016preVFP" else "1000.0, 0.0"
     generated = generate_code("sm_config", "dyjets", era=era, scopes=("mt", "em", "mm"))
     for scope, leg in (("mt", 1), ("mm", 1), ("em", 2)):
         (path,) = generated.directory.rglob(f"src/{scope}/KitSingleMuonTriggerSF.cxx")
         call = " ".join(path.read_text().split())
+        assert "xyh::scalefactor::kit_muon_trigger(" in call, scope
         assert f'"pt_{leg}", "eta_{leg}", "data/embedding/muon_{era}UL.json.gz"' in call, scope
-        assert '"mc", 1.0)' in call
+        assert f'"mc", 1.0, {cap})' in call, scope
     data = generate_code("sm_config", "data", era=era, scopes=("mt", "em", "mm")).outputs
     assert not {o for scope in ("mt", "em", "mm") for o in data[scope] if o.startswith("trg_wgt")}
 

@@ -141,6 +141,26 @@ def test_embedding_iso_binned_sf_follows_the_iso_bin_and_eta_convention(tmp_path
     subprocess.run([str(binary), *map(str, EMBEDDING_PAYLOADS)], check=True)
 
 
+def test_kit_muon_trigger_sf_with_the_pt_cap(tmp_path):
+    """E5/C6: the KIT single-muon trigger SF of MC is the payload value at the muon
+    pT, except above the cap of a defective bin (2016preVFP: 199.9 GeV below
+    |eta| 0.9, where the payload holds 2.756), times the extrapolation factor."""
+    payload = CROWN / "data/embedding/muon_2016preVFPUL.json.gz"
+    if not payload.is_file():
+        pytest.skip("The CROWN data/embedding payloads are required")
+    binary = compile_fixture(
+        tmp_path,
+        "kit_muon_trigger_sf",
+        [
+            CPP / "test_kit_muon_trigger_sf.cxx",
+            ADDONS / "src/kit_trigger_sf.cxx",
+            CORRECTION_MANAGER,
+        ],
+        correctionlib=True,
+    )
+    subprocess.run([str(binary), str(payload)], check=True)
+
+
 def test_strict_upart_btag_weight_consumer(tmp_path):
     """Synthetic SF/efficiency payloads (gitignored, regenerated here) drive the
     strict multi-WP consumer through its throw and weight cases."""

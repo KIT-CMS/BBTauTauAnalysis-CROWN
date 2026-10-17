@@ -42,6 +42,7 @@ from .tau_triggersetup import (
     TAU_LEG_EMBEDDING_FILTERS,
     TAU_LEG_MONITOR_TRIGGERS,
     TAU_LEG_TRIGGER_OBJECT_BITS,
+    kit_muon_trigger_sf_max_pt,
     single_lepton_triggers,
     tau_leg_flags,
 )
@@ -119,7 +120,12 @@ def _add_muon_triggers(configuration: Configuration, era: str):
         {
             "mu_trigger": TM_SINGLE_MUON_TRIGGERS[era],
             "singlemuon_trigger_sf_mc": [
-                {"flagname": flag, "mc_trigger_sf": sf, "mc_muon_trg_extrapolation": 1.0}
+                {
+                    "flagname": flag,
+                    "mc_trigger_sf": sf,
+                    "mc_muon_trg_extrapolation": 1.0,
+                    **kit_muon_trigger_sf_max_pt(era, sf),
+                }
                 for flag, sf in sfs.items()
             ],
             # in place of the analysis SFs of embedding_run2_v15
