@@ -3,12 +3,13 @@ from code_generation.configuration import Configuration  # noqa: F401  (build-ty
 
 from .analysis_profiles import SM_BTAG_EFFICIENCY_PROFILE
 from . import common_config
+from .constants import ERAS_RUN2
 
-AVAILABLE_ERAS = ["2018"]
+AVAILABLE_ERAS = list(ERAS_RUN2)
 AVAILABLE_SAMPLES = [
     "hh2b2tau", "dyjets", "wjets", "ttbar", "singletop", "diboson",
     "electroweak_boson", "ggh_htautau", "vbf_htautau", "vbf_hbb", "rem_hbb",
-    "rem_higgs", "rem_ttbar",
+    "rem_higgs", "rem_htautau", "rem_ttbar",
 ]
 
 def build_config(era, sample, scopes, shifts, available_sample_types,

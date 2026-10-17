@@ -1,10 +1,19 @@
-"""SM HH fake-factor friend-tree entry point (2018)."""
+"""SM HH fake-factor friend-tree entry point (the Run-2 eras with a measured payload)."""
 from code_generation.friend_trees import FriendTreeConfiguration  # noqa: F401  (dispatcher check)
 
+from .constants import ERAS_RUN2
 from .friend_common import build_fake_factor_friend
 
-# Payload directory per era, relative to the analysis directory.
-SM_PAYLOAD_DIRS = {"2018": "payloads/fake_factors/sm/fake-factors-2026-10-09/2018"}
+# The payload era of each era: 2016preVFP and 2016postVFP share one payload,
+# measured on both halves together.
+PAYLOAD_ERAS = {"2016preVFP": "2016", "2016postVFP": "2016", "2017": "2017", "2018": "2018"}
+# The measured payload of each payload era, relative to the analysis directory;
+# 2016 and 2017 follow from the v7 fake-factor measurement.
+PAYLOADS = {"2018": "payloads/fake_factors/sm/fake-factors-2026-10-09/2018"}
+# Payload directory per era
+SM_PAYLOAD_DIRS = {
+    era: PAYLOADS[PAYLOAD_ERAS[era]] for era in ERAS_RUN2 if PAYLOAD_ERAS[era] in PAYLOADS
+}
 AVAILABLE_ERAS = list(SM_PAYLOAD_DIRS)
 
 
