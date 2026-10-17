@@ -220,9 +220,13 @@ def _create_tau_id_vsjet_sf_producer(
     vec_config: str,
 ):
 
-    # define names of common parameters
+    # define names of common parameters. tau_ides_sf_vsmu_wp is a C++ string
+    # literal, not a bare value: CROWN drops empty configuration parameters, and
+    # the empty WP ('""') is what selects the evaluation without wp_VSmu in the
+    # core's experimental::Id_vsJet (core 14f82c1 and later)
     vsjet_wp = "vsjet_wp"
     tau_ides_sf_vsele_wp = "tau_ides_sf_vsele_wp"
+    tau_ides_sf_vsmu_wp = "tau_ides_sf_vsmu_wp"
     tau_id_sf_vsjet_sf_dependence = "tau_id_sf_vsjet_sf_dependence"
 
     call_fn = ""
@@ -238,6 +242,7 @@ def _create_tau_id_vsjet_sf_producer(
     parameters.extend([
         f"\"{{{vsjet_wp}}}\"", 
         f"\"{{{tau_ides_sf_vsele_wp}}}\"", 
+        f"{{{tau_ides_sf_vsmu_wp}}}",
         f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"",
         "\"{tau_id_sf_vsjet_variation}\""
     ])
