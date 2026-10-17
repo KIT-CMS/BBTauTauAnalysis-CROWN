@@ -406,7 +406,13 @@ def test_fake_factor_sum_over_the_payload_processes(tmp_path):
     mt, tt; NMSSM 2023postBPix, 2025 mt) it reproduces the friend before C15 bit
     for bit, raw and corrected, nominal and with every syst key the friend
     shifts; on a QCD + W + ttbar payload (derived from SM 2018 et and mt) it
-    gives the three-process sum, with a W term."""
+    gives the three-process sum, with a W term.
+
+    The friend is built in the CROWN container with ROOT's -march=nocona, which
+    has no fused multiply-add, so every product is rounded before it is summed.
+    The fixture is built with -ffp-contract=off to keep that arithmetic: GCC fuses
+    a * b + c in C++ wherever the target has an FMA (LCG_110's GCC 16 defaults to
+    x86-64-v3), and the fused reference differs from the friend in the last bit."""
     sys.path.insert(0, str(FIXTURES))
     try:
         import make_wjets_fake_factor_payload as wjets
@@ -424,7 +430,7 @@ def test_fake_factor_sum_over_the_payload_processes(tmp_path):
         tmp_path,
         "fake_factor_sum",
         [CPP / "test_fake_factor_sum.cxx", ADDONS / "src/fakefactors.cxx", CORRECTION_MANAGER],
-        defines=["-O2"],
+        defines=["-O2", "-ffp-contract=off"],
         correctionlib=True,
     )
     result = subprocess.run([str(binary), str(plan)], capture_output=True, text=True)

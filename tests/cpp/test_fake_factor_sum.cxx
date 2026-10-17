@@ -14,6 +14,10 @@
 //     bit for bit;
 //   - every leg must give sum_p f_p * max(FF_p * prod C, 0), evaluated here in
 //     double precision, within 1e-5, and every process must contribute.
+//
+// Build it with -ffp-contract=off: the friend is built with ROOT's
+// -march=nocona, which has no fused multiply-add, and a reference fused by the
+// compiler differs from the friend in the last bit.
 
 #include "fakefactors.hxx"
 #include "reference/fakefactors_two_process.hxx"

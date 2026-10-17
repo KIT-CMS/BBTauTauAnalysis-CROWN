@@ -69,7 +69,8 @@ the raw fake factor is the same sum without the corrections. It computes in floa
 function before, so a QCD + ttbar payload gives the former friend bit for bit
 (`tests/test_cpp_runtime.py::test_fake_factor_sum_over_the_payload_processes` compares it with a frozen
 copy, `tests/cpp/reference/fakefactors_two_process.hxx`, on the SM 2018 and two NMSSM payloads, nominal
-and with every shift; a W payload derived from the SM one, `tests/fixtures/make_wjets_fake_factor_payload.py`,
+and with every shift, built with `-ffp-contract=off` because the friend is built with ROOT's
+`-march=nocona`, which has no fused multiply-add; a W payload derived from the SM one, `tests/fixtures/make_wjets_fake_factor_payload.py`,
 checks the three-process sum).
 
 | Scope | Legs (correction suffix) | Outputs |
