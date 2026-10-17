@@ -1,7 +1,7 @@
 from code_generation.producer import Producer, ProducerGroup, ExtendedVectorProducer
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
-from . import scalefactors, triggers
+from . import triggers
 
 EmbeddingGenWeight = Producer(
     name="EmbeddingGenWeight",
@@ -469,16 +469,55 @@ ETGenerateSingleElectronTriggerSF = ExtendedVectorProducer(
     vec_config="singlelectron_trigger_sf",
 )
 
-# Di-tau trigger flags matched to the embedding filter bit, followed by the MC
-# trigger SF that reads them. The SF takes the flag names as parameters, so only
-# the group orders it after the flags.
-TauTauTriggerFlagsAndSFEmbedding = ProducerGroup(
-    name="TauTauTriggerFlagsAndSFEmbedding",
+# Di-tau trigger of the tt embedding without trigger requirement (v7 spec E33,
+# variant A): the data efficiency of the di-tau leg of each tau, in the isolation
+# classes Medium (signal region) and AntiMedium (VVVLoose and not Medium, the
+# application region of the fake factors), from the vec configurations
+# tt_embedding_trigger_eff_leg1/2 (embedding_run2_v15). The tau-trigger overload
+# without flag returns 1 where the payload throws (pT below its range), which the
+# tt selection (pT > 40 GeV) never reaches.
+_TT_EMBEDDING_TRIGGER_EFF_CALL = """physicsobject::tau::scalefactor::Trigger(
+        {df},
+        correctionManager,
+        {output},
+        {input},
+        "{tt_embedding_trigger_eff_file}",
+        "{tt_embedding_trigger_eff_name}",
+        "ditau",
+        "{tt_embedding_trigger_eff_wp}",
+        "eff_data",
+        "{tt_embedding_trigger_eff_syst}")
+        """
+TauTauTriggerEffDataEmbedding_1 = ExtendedVectorProducer(
+    name="TauTauTriggerEffDataEmbedding_1",
+    call=_TT_EMBEDDING_TRIGGER_EFF_CALL,
+    input=[q.pt_1, q.tau_decaymode_1],
+    output="flagname",
+    scopes=["tt"],
+    vec_config="tt_embedding_trigger_eff_leg1",
+)
+TauTauTriggerEffDataEmbedding_2 = ExtendedVectorProducer(
+    name="TauTauTriggerEffDataEmbedding_2",
+    call=_TT_EMBEDDING_TRIGGER_EFF_CALL,
+    input=[q.pt_2, q.tau_decaymode_2],
+    output="flagname",
+    scopes=["tt"],
+    vec_config="tt_embedding_trigger_eff_leg2",
+)
+# the tt trigger columns of the embedding: the di-tau flags matched to the filter
+# bits of the embedding (diagnostics, triggers.TauTauTriggerFlagsEmbedding) and
+# the data efficiencies of both legs
+TauTauTriggerFlagsAndEffDataEmbedding = ProducerGroup(
+    name="TauTauTriggerFlagsAndEffDataEmbedding",
     call=None,
     input=None,
     output=None,
     scopes=["tt"],
-    subproducers=[triggers.TauTauTriggerFlagsEmbedding, scalefactors.TauTauTriggerSF],
+    subproducers=[
+        triggers.TauTauTriggerFlagsEmbedding,
+        TauTauTriggerEffDataEmbedding_1,
+        TauTauTriggerEffDataEmbedding_2,
+    ],
 )
 
 # Di-tau trigger SFs
