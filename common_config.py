@@ -99,23 +99,23 @@ def add_noise_filters_config(configuration: Configuration):
             "met_filters": EraModifier(
                 {
                     "2016preVFP": [
-                        "Flag_goodVertices"
-                        "Flag_globalSuperTightHalo2016Filter"
-                        "Flag_HBHENoiseFilter"
-                        "Flag_HBHENoiseIsoFilter"
-                        "Flag_EcalDeadCellTriggerPrimitiveFilter"
-                        "Flag_BadPFMuonFilter"
-                        "Flag_BadPFMuonDzFilter"
+                        "Flag_goodVertices",
+                        "Flag_globalSuperTightHalo2016Filter",
+                        "Flag_HBHENoiseFilter",
+                        "Flag_HBHENoiseIsoFilter",
+                        "Flag_EcalDeadCellTriggerPrimitiveFilter",
+                        "Flag_BadPFMuonFilter",
+                        "Flag_BadPFMuonDzFilter",
                         "Flag_eeBadScFilter",
                     ],
                     "2016postVFP": [
-                        "Flag_goodVertices"
-                        "Flag_globalSuperTightHalo2016Filter"
-                        "Flag_HBHENoiseFilter"
-                        "Flag_HBHENoiseIsoFilter"
-                        "Flag_EcalDeadCellTriggerPrimitiveFilter"
-                        "Flag_BadPFMuonFilter"
-                        "Flag_BadPFMuonDzFilter"
+                        "Flag_goodVertices",
+                        "Flag_globalSuperTightHalo2016Filter",
+                        "Flag_HBHENoiseFilter",
+                        "Flag_HBHENoiseIsoFilter",
+                        "Flag_EcalDeadCellTriggerPrimitiveFilter",
+                        "Flag_BadPFMuonFilter",
+                        "Flag_BadPFMuonDzFilter",
                         "Flag_eeBadScFilter",
                     ],
                     "2017": [
