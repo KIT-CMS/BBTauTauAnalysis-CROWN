@@ -56,9 +56,18 @@ Each friend reads the two payload files of its scope, `fake_factors_<ch>.json.gz
 `FF_corrections_<ch>.json.gz` (TauFakeFactors layout; `FF_corrections_<ch>_default.json.gz` where the
 corrections file carries the name of its corrections configuration), at configuration time with `ff_payloads.py`
 (standard library only), and takes the correction inputs and the shifts from them, so a new payload
-needs no code change. The C++ (`cpp_addons/src/fakefactors.cxx`) evaluates the QCD + ttbar model per
-leg: `frac_QCD * max(FF_QCD * DR->SR_QCD * closure_QCD, 0) + frac_ttbar * max(FF_ttbar * closure_ttbar, 0)`,
-the raw fake factor without the corrections.
+needs no code change. The processes of a leg are the process categories of its fractions, QCD +
+ttbar or QCD + W + ttbar (v7 spec E18, C15; `ff_payloads.FRACTION_PROCESS_SETS`), so both fake-factor
+models of v7 run on the same code. The C++ (`fakefactors::xyh::FakeFactor` in
+`cpp_addons/src/fakefactors.cxx`) sums over them in the order QCD, W, ttbar:
+`sum_p frac_p * max(FF_p * corrections_p, 0)`, with the DR->SR correction and the closure of QCD, the
+DR->SR correction (where the measurement provides it) and the closure of W, and the closure of ttbar;
+the raw fake factor is the same sum without the corrections. It computes in float as the two-process
+function before, so a QCD + ttbar payload gives the former friend bit for bit
+(`tests/test_cpp_runtime.py::test_fake_factor_sum_over_the_payload_processes` compares it with a frozen
+copy, `tests/cpp/reference/fakefactors_two_process.hxx`, on the SM 2018 and two NMSSM payloads, nominal
+and with every shift; a W payload derived from the SM one, `tests/fixtures/make_wjets_fake_factor_payload.py`,
+checks the three-process sum).
 
 | Scope | Legs (correction suffix) | Outputs |
 |---|---|---|
@@ -67,8 +76,9 @@ the raw fake factor without the corrections.
 
 The payload conventions are checked when the configuration is built (a `ValueError` names the file and
 the correction): every correction has a `syst` category with a default (the nominal) at the top, the
-inputs are `[process] + real ... + syst` (`process` only in the fractions, whose processes are exactly
-QCD and ttbar), every input is a quantity of `quantities/output.py` (`njets`/`nbtag` are aliases of
+inputs are `[process] + real ... + syst` (`process` only in the fractions, whose process categories
+are the same everywhere and QCD + ttbar or QCD + Wjets + ttbar), every process has its
+`{p}{s}_fake_factors` and `{p}{s}_compound_correction` (and QCD its `QCD{s}_DR_SR_correction`), every input is a quantity of `quantities/output.py` (`njets`/`nbtag` are aliases of
 `n_jets`/`n_bjets`), every syst key is `nominal`, `<correction>nominal` or ends in Up/Down/_up/_down
 with its partner, and the global non-closure keys are in every member of a compound closure.
 
@@ -77,7 +87,8 @@ smoothing band as `SystBandAsym`) and the per-variable non-closure keys (only th
 are kept). The shift name is the payload key with `_up`/`_down` written `Up`/`Down`, e.g.
 `process_fractionsfrac_QCDUp` sets `ff_fraction_variation` to `process_fractionsfrac_QCD_up`; fake-factor
 and fraction shifts act on both outputs of the leg, DR->SR and closure shifts only on the corrected
-one. That is 17 pairs per leg for the SM 2018 payload and 14 for the NMSSM ones. The NMSSM shift names
+one. That is 17 pairs per leg for the SM 2018 payload and 14 for the NMSSM ones; W adds its fake
+factor, DR->SR and closure keys (`Wjets...`) and the `frac_Wjets` fraction keys. The NMSSM shift names
 therefore follow the payload keys (2025: `QCDStatShift...`, `process_fractionsfrac_QCD...`; 2022-2024:
 `fracTTbarUnc`), which the hardwired lists before got wrong, evaluating those shifts as nominal.
 Friends keep `--shifts all|none`.
@@ -152,8 +163,17 @@ the legacy Run-2 path NMSSM keeps using:
   `EGM/Run2-<era>-UL-NanoAODv15` payload; embedding keeps its own electron energy scale.
 - **MET covariance** -- v15 drops `MET_covXX/XY/YY`, so the covariance comes from `PuppiMET` through
   `met.met_global(overrides)`.
-- **MET** -- the nominal MET of MC is the NanoAOD PuppiMET, as in data and embedding
-  (`propagate_jets_to_met` false; the re-applied JEC/JER changed only the MC MET). The Run-2 recoil
+- **MET** -- the re-calibrated jets are propagated to the PuppiMET in data, MC and embedding alike
+  (`propagate_jets_to_met` true for every sample type; v7 spec E28, C19), so that the JEC (and in MC
+  the JER smearing) act on the MET as on the jets; CROWN shifts the jets of data and MC equally (v6:
+  -4/-2/-1 %). The embedded events get the data calibration of the jets of the recorded event
+  (`JetEnergyCorrectionData`, same JES tag), which is the condition for propagating there. The
+  propagation is the CROWN difference method (`physicsobject::PropagateToMET`): the change of every
+  jet with re-calibrated p<sub>T</sub> > 15 GeV (`t1jet_min_pt`; the Run-2 producer applies no
+  &#124;&eta;&#124; or EM-fraction cut) is subtracted from the MET. The low-p<sub>T</sub> jets of
+  `CorrT1METJet` are not in it, which matters only for jets that cross 15 GeV with the new JEC (JME
+  recommends recomputing type-1 MET from all jets; the difference method is the CROWN standard and the
+  KIT precedent, TauAnalysis-CROWN `propagateJets`). The Run-2 recoil
   correction of DY and W counts the jets of the HTT recipe (p<sub>T</sub> > 30 GeV, |&eta;| < 4.7,
   jet ID, &Delta;R > 0.5 to both pair objects, `met.MetScopesWithRecoilJets`; +1 for W) instead of
   all NanoAOD jets, and reads the legacy PuppiMET files of CROWN,
@@ -169,11 +189,21 @@ the legacy Run-2 path NMSSM keeps using:
   (`SM_PROFILE.btag_payload_dir = "payloads/btagging_efficiencies/upart/{era}"`; 2018 so far, the other
   eras follow from their efficiency production). The
   multi-working-point event weight comes from the strict consumer
-  `xyh::scalefactor::btagging_strict::multi_wp_event_weight` (`cpp_addons/*/btag_sf_strict.*`), which
-  takes the five WP thresholds from the SF payload's own `UParTAK4_wp_values` correction and throws
-  instead of clamping -- on thresholds that are not strictly decreasing, an efficiency that is
-  non-finite / &le; 0 / > 1, a non-monotonic efficiency pair, |&eta;| outside [0, 2.4), an unknown
-  jet flavour, or any correctionlib failure. The `UParTAK4_comb` SFs of b/c jets are calibrated from
+  `xyh::scalefactor::btagging_strict::multi_wp_event_weight` (`cpp_addons/*/btag_sf_strict.*`) with
+  the working points of the profile, `btag_sf_working_points = ("T", "M")` (v7 spec E14, C14; parameter
+  `bjet_sf_working_points`, checked against the payload by `btag_payloads.check_working_points`). It
+  takes their thresholds from the SF payload's own `UParTAK4_wp_values` correction and throws instead
+  of clamping -- on thresholds that are not strictly decreasing, an efficiency that is non-finite /
+  &le; 0 / > 1, a non-monotonic efficiency pair, |&eta;| outside [0, 2.4), an unknown jet flavour, or
+  any correctionlib failure. The one exception is the BTV rule for a negative numerator of an
+  intermediate factor, SF(M)&epsilon;(M) - SF(T)&epsilon;(T) < 0 ("set these intermediate factors to
+  unity", K1): the factor is 1 and the event's count of such jets is written next to the weight
+  (`btag_unity_jets_upart[_<variation>]`). The weight columns are the nominal `btag_weight_upart` and the
+  eight variations of the fixed-WP nuisances,
+  `btag_weight_upart_{up,down}_{bc,light}_{correlated,uncorrelated}`: b/c jets (`UParTAK4_comb`) or light
+  jets (`UParTAK4_light`) varied by the payload key `<direction>_<correlation>`, the other group central.
+  With [T, M] the L/XT/XXT anomalies of the payload (SF(L) 1.058, SF(XT) > SF(T), SF&middot;&epsilon; > 1) do not
+  enter; they matter again for a later return to more working points. The `UParTAK4_comb` SFs of b/c jets are calibrated from
   30 GeV (`load_upart_comb_min_pt`, parameter `bjet_sf_bc_min_pt`), and the payload's p<sub>T</sub>
   flow would give the jets below the SF of the highest bin; following the BTV convention, they take
   the SF at 30 GeV with twice its deviation for the variations, and the efficiency at their own
@@ -185,6 +215,30 @@ the legacy Run-2 path NMSSM keeps using:
 - **Diagnostic columns** -- `npv_good` (`PV_npvsGood`) and `rho` (`Rho_fixedGridRhoFastjetAll`) in
   every sample, and in MC the hadron flavour of the two leading jets (`jet_hadronFlavour_1/2`) and
   of the b-pair jets (`bpair_hadronFlavour_1/2`), in all six scopes.
+- **Prefiring** (profile field `prefiring_weight_columns`; v7 spec E11, C11) -- MC of every era carries
+  `prefiring_wgt` (NanoAOD `L1PreFiringWeight_Nom`; 2018: the muon prefiring, about 0.5 %) and the
+  plain columns `L1PreFiringWeight_Up`, `L1PreFiringWeight_Dn`, from which the nominal-only datacards
+  take `CMS_prefiring` as lnN (E34); data and embedding carry none. The SM productions have no
+  prefiring shifts; the tau-ID measurement adds `CMS_ecal_prefiring_<year>` for 2016-2018. NMSSM keeps
+  the weight on every sample of 2016 and 2017 with its shifts.
+- **HEM 15/16** (profile field `hem_veto_flag`; v7 spec E29, C20) -- in 2018 only (the era is the
+  guard, the failure exists there only), `event.HemVetoFlag` (`xyh::vetoes::hem_veto`,
+  `cpp_addons/*/hem_veto.*`) writes `hem_veto`, true if a loose jet (re-calibrated p<sub>T</sub> >
+  15 GeV, TightLeptonVeto ID, before the lepton cleaning) lies in -3.0 < &eta; < -1.3,
+  -1.57 < &phi; < -0.87 and the event belongs to the affected period: data and embedding from run
+  319077 on, MC with the probability 0.647719, the luminosity fraction of these runs (38.75 of
+  59.82 fb<sup>-1</sup> of the Legacy 2018 golden JSON, recorded luminosity per lumisection from the UL
+  pileup JSON; `common_config.HEM_AFFECTED_LUMI_FRACTION_2018`), decided per event from run,
+  luminosity block and event number (a hash, so that equal event numbers of different generator jobs
+  fall independently). ShapeSmith vetoes the flagged events (JME recipe for UL); the `CMS_HEM_2018` jet
+  energy scale shift is gone. Under the jet shifts of the tau-ID measurement the flag follows the
+  shifted jets. NMSSM keeps the HEM shift and has no flag.
+- **Electron SFs** (profile field `electron_sf_supercluster_eta`; v7 spec K7, C22) -- the EGM
+  reconstruction and ID SFs are binned in the supercluster &eta;, so `EleID_SF_ScEta` evaluates them at
+  `sc_eta_1/2` = `Electron_eta + Electron_deltaEtaSC` of the pair electrons
+  (`xyh::electron::supercluster_eta`; columns in et, em, ee, `sc_eta_2` in ee) instead of `eta_1/2`;
+  this changes electrons near the edges 1.444 and 1.566 only. The KIT electron SFs keep the electron
+  &eta;.
 
 - **Triggers** (`tau_triggersetup.py`, profile field `kit_single_lepton_triggers`) -- the
   single-lepton flags are the analysis triggers the KIT (Tau Embedding group) trigger SFs describe,
@@ -251,7 +305,8 @@ them for NMSSM and SM alike. The SM specifics use the same helpers:
   `kit_single_lepton_triggers`) have the shifts `CMS_eff_e_trigger_<era>` and `CMS_eff_m_trigger_<era>`,
   which scale them by 1.02 / 0.98 (`add_single_{electron,muon}_trigger_extrapolation_shifts`);
 - the strict UParTAK4 b-tag weight writes its variations as weight columns, so the SM has no b-tag
-  shifts;
+  shifts; likewise the prefiring weight its Up/Dn columns (no prefiring shifts in the SM productions,
+  the tau-ID measurement has them), and the 2018 HEM flag replaces the `CMS_HEM_2018` shift;
 - the embedding and the tau-ID measurement add their own shifts (sections below).
 
 `tests/test_shift_parameters.py` checks that every shifted parameter is read by a producer of its
@@ -349,9 +404,9 @@ corrections and the trigger below and drops the MC vsJet and POG muon SF shifts
 `TM_SINGLE_MUON_TRIGGERS` and `TM_KIT_TRIGGER_SFS`: 2016 and 2017 take the analysis triggers and their
 KIT SFs (the IsoMu22 family with `Trg_pt_eta_bins`, IsoMu27 with `Trg_IsoMu27_pt_eta_bins`), 2018 the
 triggers of the precedent below. All are matched within &Delta;R < 0.1. MC carries the L1 prefiring
-weight `prefiring_wgt` in every era (2018: the muon prefiring) with the shift
+weight `prefiring_wgt` with its Up/Dn columns in every era (2018: the muon prefiring) and the shift
 `CMS_ecal_prefiring_<year>`; the measurement production keeps its MC shifts, the exception of v7 spec
-E34.
+E34. In 2018 every sample writes the HEM flag `hem_veto`, which replaces the HEM shift.
 
 In mt the measurement also writes the columns of the efficiency measurement of the tau leg of the
 di-tau trigger for the tt embedding (v7 spec E33, `docs/v7_tt_emb_trigger_2026-10-16.md` 12.4), in data,
@@ -386,7 +441,7 @@ everything not listed is the `sm_config` one.
 | Muon trigger SF, MC, 2018 | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` of the first muon, type `mc`, evaluated at every p<sub>T</sub> (`_mu27` is meaningful above 28 GeV only, as the predecessor's weight uses it) | KIT `data/embedding/muon_2018UL.json.gz`: `Trg_IsoMu24`, `Trg_IsoMu27`, `Trg_IsoMu27_or_IsoMu24_pt_eta_bins` | `MTGenerateSingleMuonTriggerSF_MC` | KIT `Trg_IsoMu24_pt_eta_bins` |
 | Muon trigger SF, embedding | the same three, type `emb` | same payload | `MTGenerateSingleMuonTriggerSF` (mt, mm) | `Trg_IsoMu24` only (mt) |
 | Trigger and SFs, 2016 and 2017 | the analysis triggers and KIT SFs of `sm_config` (Run-2 v15 section) | KIT `muon_<era>UL` | &ndash; | same |
-| Prefiring weight, MC | `prefiring_wgt` in every era | NanoAOD `L1PreFiringWeight_Nom` | &ndash; | 2016 and 2017 producer only |
+| Prefiring weight, MC | `prefiring_wgt` in every era | NanoAOD `L1PreFiringWeight_Nom` | &ndash; | same, with the Up/Dn columns and without shifts |
 | Muon ID/iso SF, MC | `ID_pt_eta_bins`, `Iso_pt_eta_bins`, type `mc`, first muon (mt), both (mm) | KIT `muon_2018UL` | `PrivateMuonIDSF/IsoSF_{1,2}_MC` | POG `NUM_MediumID_DEN_TrackerMuons`, `NUM_TightRelIso_DEN_MediumID` |
 | Muon ID/iso SF, embedding | mt: ID + iso-binned (Part A), mm: `ID`, `Iso_pt_eta_bins` of both muons, type `emb` | KIT `muon_2018UL` | `TauEmbeddingMuonIDSF/IsoSF_{1,2}` (mt: `Iso` only, equal below iso 0.15) | &ndash; |
 | Embedding selection SF, generator pair | `embeddingselection_2018UL` in mt and mm; `EmbeddingGenPair` Z&rarr;&tau;&tau; (mt), Z&rarr;&mu;&mu; 23/13/13 (mm) | KIT | `TauEmbeddingSelectionSF`, `EmbeddingGenPair` | mt as Part A |
@@ -414,7 +469,8 @@ that every listed shift exists in mt and, for the families mm carries, in mm.
 
 | Datacard family | CROWN shifts (`Up`/`Down`) or weight | Affected columns |
 |---|---|---|
-| `CMS_scale_j_<source>` (28 sources), `CMS_scale_j_HEMIssue_Run2018` | the reduced set of the regrouped sources, `CMS_scale_j_{Absolute,BBEC1,EC2,HF}{,_2018}`, `CMS_scale_j_FlavorQCD`, `CMS_scale_j_RelativeBal`, `CMS_scale_j_RelativeSample_2018`, and `CMS_HEM_2018`; the individual sources are not produced | jets, b-tag weights, `n_jets`, `n_bjets`, `met`, `metphi`, `mt_1`, `pt_tautau`, `mt_tot`, ... |
+| `CMS_scale_j_<source>` (28 sources) | the reduced set of the regrouped sources, `CMS_scale_j_{Absolute,BBEC1,EC2,HF}{,_2018}`, `CMS_scale_j_FlavorQCD`, `CMS_scale_j_RelativeBal`, `CMS_scale_j_RelativeSample_2018`; the individual sources are not produced | jets, b-tag weights, `n_jets`, `n_bjets`, `met`, `metphi`, `mt_1`, `pt_tautau`, `mt_tot`, ... |
+| `CMS_scale_j_HEMIssue_Run2018` | none: the HEM flag `hem_veto` vetoes the affected events (v7 spec E29) | `hem_veto` |
 | `CMS_PileUp` | `CMS_pileup_2018` | `puweight` |
 | `CMS_scale_met_unclustered_energy_Run2018` | `CMS_scale_met_unclustered_energy_2018` | `met`, `metphi`, `mt_1`, `pt_tautau`, `mt_tot`, ... |
 | `CMS_res_met_Run2018`, `CMS_scale_met_Run2018` | `CMS_res_met_RecoilCalibration_2018`, `CMS_scale_met_RecoilCalibration_2018` (`dyjets`, `wjets`) | as above |
@@ -423,7 +479,7 @@ that every listed shift exists in mt and, for the families mm carries, in mm.
 | `CMS_fake_m_WH{1..5}_Run2018` | `CMS_fake_t_DeepTau2018v2p5_VSmu_wheel{1..5}_2018` | `id_wgt_tau_vsMu_Tight_2` |
 | `CMS_scale_fake_m_Run2018` | `CMS_scale_t_DeepTau2018v2p5_genMuon_wheel{1..5}_2018`, decorrelated in the muon wheels | tau four-vector and pair columns, as the genuine-tau shifts |
 | `CMS_eff_m_trigger_Run2018` | `CMS_eff_m_trigger_2018`: KIT MC trigger SFs &times; 1.02 / 0.98, mt | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` |
-| (new, E11) | `CMS_ecal_prefiring_<year>`: `L1PreFiringWeight_Up/Dn` in place of `_Nom` | `prefiring_wgt` |
+| (new, E11) | `CMS_ecal_prefiring_<year>`: `L1PreFiringWeight_Up/Dn` in place of `_Nom`, 2016-2018 | `prefiring_wgt` |
 | no predecessor family | `CMS_res_j_2018`, `CMS_scale_e_2018`, `CMS_res_e_2018`, `QCDscale_{ren,fac}`, `CMS_fake_t_DeepTau2018v2p5_VSe_DM<dm>_{barrel,endcap}_2018`, `CMS_scale_t_DeepTau2018v2p5_DM<dm>_genElectron_{barrel,endcap}_2018` | |
 | `CMS_htt_ttbarShape` | weight: `topPtReweightWeight` squared (up), removed (down) | `topPtReweightWeight` (nominal) |
 | `CMS_fake_j_Run2018` | weight: `max(1-0.002 pt_2, 0.6)` (up), `min(1+0.002 pt_2, 1.4)` (down) | `pt_2` (nominal) |
@@ -440,14 +496,17 @@ mounted.
 python -m pytest analysis_configurations/bbtautau/tests
 ```
 
-The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer, SM HH kinematic fit, electron
-reconstruction weight, embedding iso-binned SF, FastMTT decay types, JER smearing, matched trigger
-object) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
+The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer with all five and with the [T, M]
+working points and the K1 rule, SM HH kinematic fit, electron reconstruction weight, electron SFs at
+the supercluster eta, embedding iso-binned SF, FastMTT decay types, JER smearing, matched trigger
+object, HEM flag, fake factor summed over the payload processes) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
 `root-config`, `g++`, correctionlib and spdlog headers. `tests/test_run2_eras.py` checks the per-era
 inputs (MET filters, jet ID, KIT lepton and trigger SF names, b-tag efficiency and embedding tau
 payloads, TAU POG placeholders), `tests/test_triggers.py` the trigger flags and SFs per era against
 the HLT branches and filter-bit doc strings of the eras' v15 files (`tests/fixtures/*_hlt.txt`,
-`nanoaod_v15_trigobj_filterbits.json`, written by `tests/fixtures/make_hlt_fixtures.py`). Cases of an
+`nanoaod_v15_trigobj_filterbits.json`, written by `tests/fixtures/make_hlt_fixtures.py`),
+`tests/test_v7_corrections.py` the prefiring columns, the MET propagation, the HEM flag and the electron
+SFs at the supercluster eta per era. Cases of an
 era that need a payload not measured yet are strict xfails listed in `tests.helpers.PENDING`: they
 turn into failures once the payload exists, and the entry goes. `tests.helpers.generate_code` emits the C++ code of a configuration in a
 subprocess, once per session; the embedding tests use it with a committed branch list of one v15
