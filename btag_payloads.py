@@ -62,6 +62,32 @@ def load_upart_wps(path: str) -> Dict[str, float]:
     }
 
 
+def check_working_points(wps: Dict[str, float], working_points) -> tuple:
+    """Return ``working_points`` (tightest first) after checking them against the
+    payload's ``UParTAK4_wp_values`` thresholds ``wps``.
+
+    Raises ``ValueError`` for an empty or repeated list, a name the payload does
+    not have, or thresholds that do not decrease strictly in the given order --
+    the conditions under which the strict consumer throws at run time.
+    """
+    working_points = tuple(working_points)
+    if not working_points or len(set(working_points)) != len(working_points):
+        raise ValueError(f"invalid b-tag working points {working_points}")
+    missing = [wp for wp in working_points if wp not in wps]
+    if missing:
+        raise ValueError(
+            f"b-tag working points {missing} are not in {WP_VALUES_CORRECTION} "
+            f"({sorted(wps)})"
+        )
+    thresholds = [wps[wp] for wp in working_points]
+    if any(tight <= loose for tight, loose in zip(thresholds, thresholds[1:])):
+        raise ValueError(
+            f"b-tag working points {working_points} are not ordered tightest "
+            f"first: thresholds {thresholds}"
+        )
+    return working_points
+
+
 def _pt_binnings(node):
     """Yield every ``pt`` binning node below ``node``."""
     if isinstance(node, dict):

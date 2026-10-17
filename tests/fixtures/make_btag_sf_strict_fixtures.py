@@ -37,7 +37,9 @@ Documented values (see the C++ test for the hand-computed weights):
 
   UParTAK4_comb SF(flavor 5): base = {L:0.98, M:0.95, T:0.90, XT:0.85, XXT:0.80}
   UParTAK4_comb SF(flavor 4): base = {L:0.90, M:0.88, T:0.85, XT:0.82, XXT:0.80}
-    systematic delta: central 0, up +0.10, down -0.10, up_hf +0.10, down_hf -0.10
+    systematic delta: central 0, up +0.10, down -0.10, up_hf +0.10, down_hf -0.10,
+    up_k1 +0.60 at T only (SF(T)*eff(T) > SF(M)*eff(M): the negative numerator
+    of the M/T factor, v7 spec K1)
     pt bins [30, 100) and [100, 1000) GeV: base + delta and base + delta + 0.05;
     flow (also below 30 GeV): the last bin
   UParTAK4_light SF(flavor 0): base = {L:0.98, M:0.96, T:0.94, XT:0.92, XXT:0.90}
@@ -68,6 +70,7 @@ COMB_DELTA = {
     "down": -0.10,
     "up_hf": 0.10,
     "down_hf": -0.10,
+    "up_k1": {"T": 0.60},  # per WP, 0 for the others
 }
 LIGHT_BASE = {0: {"L": 0.98, "M": 0.96, "T": 0.94, "XT": 0.92, "XXT": 0.90}}
 LIGHT_DELTA = {
@@ -139,6 +142,8 @@ def abseta_binning(value, flavor, edge=2.4):
 
 
 def flavor_category(base, systematic, wp, flavors):
+    if isinstance(systematic, dict):  # a delta per working point
+        systematic = systematic.get(wp, 0.0)
     return {
         "nodetype": "category",
         "input": "flavor",

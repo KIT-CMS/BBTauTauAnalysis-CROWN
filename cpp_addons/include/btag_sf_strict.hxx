@@ -42,22 +42,26 @@ namespace btagging_strict {
 // Per-jet method (jet selected by `jet_mask`; jets are expected to already be
 // inside the b-tag acceptance, |eta| < 2.4 and pt > 20, cleaned of lepton
 // overlaps -- the consumer enforces the eta support explicitly):
-//   * Find the tightest working point the jet passes among the five fixed
-//     UParTAK4 WPs, ordered tightest -> loosest {XXT, XT, T, M, L}, using the
-//     score thresholds read from the SF payload's `UParTAK4_wp_values`
-//     correction (the same way the core BtaggingMultipleWP does), so the
-//     thresholds can never drift from the payload they belong to.
+//   * Find the tightest working point the jet passes among the configured
+//     UParTAK4 WPs `working_points`, ordered tightest -> loosest (v7: {T, M},
+//     spec E14/C14), using the score thresholds read from the SF payload's
+//     `UParTAK4_wp_values` correction (the same way the core
+//     BtaggingMultipleWP does), so the thresholds can never drift from the
+//     payload they belong to.
 //   * Let eff(WP) be the MC tagging efficiency and SF(WP) the data/MC scale
 //     factor for the jet flavor at that WP.
 //   * The jet's tag category and its per-jet contribution jet_w = P_data/P_MC:
-//       - passes the tightest WP (XXT): P_MC = eff(XXT),
-//         P_data = SF(XXT)*eff(XXT)         => jet_w = SF(XXT).
+//       - passes the tightest WP: P_MC = eff(tightest),
+//         P_data = SF(tightest)*eff(tightest)  => jet_w = SF(tightest).
 //       - passes WP `low` but not the next tighter WP `high`:
 //         P_MC   = eff(low) - eff(high),
 //         P_data = SF(low)*eff(low) - SF(high)*eff(high)
-//                                            => jet_w = P_data / P_MC.
-//       - fails even the loosest WP (L): P_MC = 1 - eff(L),
-//         P_data = 1 - SF(L)*eff(L)         => jet_w = P_data / P_MC.
+//                                            => jet_w = P_data / P_MC;
+//         if P_data < 0, jet_w = 1 (BTV fixedWP recommendation, "set these
+//         intermediate factors to unity"; v7 spec K1), and the jet is counted
+//         in the `unity_count_output` column.
+//       - fails even the loosest WP: P_MC = 1 - eff(loosest),
+//         P_data = 1 - SF(loosest)*eff(loosest)  => jet_w = P_data / P_MC.
 //   * The event weight is the product of jet_w over all selected jets, i.e.
 //         weight = P_data(event) / P_MC(event)
 //                = prod_j P_data(j) / prod_j P_MC(j).
@@ -74,32 +78,27 @@ namespace btagging_strict {
 // the payload's pT flow would return the highest bin. Their efficiencies stay
 // at the jet pT.
 //
-// STRICT throw conditions (all but the first carry the offending jet's
+// STRICT throw conditions (all but the first two carry the offending jet's
 // pt / eta / flavor / score in the std::runtime_error message):
+//   * an empty or repeated working-point list (checked at Define time);
 //   * `UParTAK4_wp_values` thresholds that are non-finite or not strictly
-//     decreasing over the five WP names (checked once, at Define time);
+//     decreasing over the configured WP names, or a WP name the payload does
+//     not have (checked once, at Define time);
 //   * jet |eta| outside [0, 2.4) (the abseta support of the pinned payload,
 //     whose abseta binning uses flow=error at 2.4);
 //   * an efficiency that is non-finite, <= 0, or > 1;
 //   * a non-monotonic efficiency pair (looser WP must have STRICTLY larger
 //     efficiency than the tighter WP, i.e. the P_MC bin probability > 0);
 //   * a jet flavor that is not one of {0, 4, 5};
-//   * a jet contribution that is non-finite or <= 0;
+//   * a jet contribution that is non-finite or <= 0 (except the negative
+//     intermediate numerator above, which gives 1);
 //   * any correctionlib evaluation failure (e.g. an unknown variation key for
 //     the correction the jet is dispatched to) -- rethrown with kinematics.
 //
-// The UParTAK4 SF correction names, the efficiency correction name, and the
-// five WP names are pinned constants of this consumer (the interface only
-// carries the payload FILES, the efficiency sample-type category value, and
-// the two per-flavor variation keys).
-// clang-format on
-
-// Fixed UParTAK4 working-point names, ordered tightest -> loosest. The score
-// thresholds are looked up per name in the SF payload's `UParTAK4_wp_values`
-// correction, and must come out strictly decreasing in this order.
-// clang-format off
-static const std::vector<std::string> kWorkingPointsTightToLoose = {
-    "XXT", "XT", "T", "M", "L"};
+// The UParTAK4 SF correction names and the efficiency correction name are
+// pinned constants of this consumer (the interface carries the payload FILES,
+// the efficiency sample-type category value, the working points and the two
+// per-flavor variation keys).
 // clang-format on
 
 // Correction-set names inside the pinned UParTAK4 SF payload.
@@ -122,6 +121,8 @@ static const char *kEfficiencyCorrection = "btag_efficiency";
  * @param correction_manager correction manager that loads (once) the SF and
  *     efficiency payloads
  * @param output name of the output event-weight column
+ * @param unity_count_output name of the output column counting the jets whose
+ *     intermediate factor is set to 1 for a negative numerator (K1)
  * @param jet_pt name of the per-jet transverse-momentum column
  * @param jet_eta name of the per-jet pseudorapidity column
  * @param jet_flavor name of the per-jet hadron-flavor column (0 / 4 / 5)
@@ -134,19 +135,22 @@ static const char *kEfficiencyCorrection = "btag_efficiency";
  * @param eff_sample_type value of the efficiency payload's `sample_type`
  *     category for this sample
  * @param bc_min_pt lowest calibrated pT of the b/c-jet SFs
+ * @param working_points UParTAK4 working-point names, tightest first; their
+ *     score thresholds are read from the SF payload and must decrease strictly
  * @param variation_comb systematic key evaluated for b/c jets on UParTAK4_comb
  * @param variation_light systematic key evaluated for light jets on
  *     UParTAK4_light
- * @return a new dataframe carrying the event-weight column
+ * @return a new dataframe carrying the event-weight and the count columns
  */
 ROOT::RDF::RNode multi_wp_event_weight(
     ROOT::RDF::RNode df,
     correctionManager::CorrectionManager &correction_manager,
-    const std::string &output, const std::string &jet_pt,
-    const std::string &jet_eta, const std::string &jet_flavor,
-    const std::string &jet_score, const std::string &jet_mask,
-    const std::string &sf_file, const std::string &eff_file,
-    const std::string &eff_sample_type, const float &bc_min_pt,
+    const std::string &output, const std::string &unity_count_output,
+    const std::string &jet_pt, const std::string &jet_eta,
+    const std::string &jet_flavor, const std::string &jet_score,
+    const std::string &jet_mask, const std::string &sf_file,
+    const std::string &eff_file, const std::string &eff_sample_type,
+    const float &bc_min_pt, const std::vector<std::string> &working_points,
     const std::string &variation_comb, const std::string &variation_light);
 
 } // end namespace btagging_strict
