@@ -977,6 +977,13 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
         HAD_TAU_SCOPES,
         {
             "tau_ides_sf_vsjet_wp": "Medium",
+            # vsMu WP of the vsJet SF, as a C++ string literal (CROWN drops empty
+            # parameters). The DeepTau2018v2p5VSjet corrections of every pinned TAU
+            # payload and of the embedding payloads take pt, dm, genmatch, wp,
+            # wp_VSe, syst, flag; the empty WP selects that 7-input evaluation in
+            # the core's experimental::Id_vsJet. Set a WP ('"Tight"') only for a
+            # payload with a wp_VSmu input (tests/test_run2_v15_configuration.py).
+            "tau_ides_sf_vsmu_wp": '""',
         }
     )
     configuration.add_config_parameters(
