@@ -2,17 +2,19 @@
 
 Its choices follow jvoss's measurement production SFs_EMB_Run2_04_08_26 (README
 section "Tau-ID measurement"). Pinned here, because each fails silently otherwise:
-the trigger and its SFs, the MC muon and tau corrections, the uncorrected embedding
-taus with their lowered pT threshold, the mu -> mu embedding in mm, and MC shifts
-that change what the predecessor's shape systematics need.
+the trigger and its SFs per era, the MC muon and tau corrections, the prefiring
+weight, the uncorrected embedding taus with their lowered pT threshold, the mu -> mu
+embedding in mm, the columns of the tau-leg trigger measurement, and MC shifts that
+change what the predecessor's shape systematics need.
 """
 
+import gzip
 import json
 from pathlib import Path
 
 import pytest
 
-from analysis_configurations.bbtautau import sm_tau_id_measurement_config
+from analysis_configurations.bbtautau import sm_tau_id_measurement_config, tau_id_measurement
 from analysis_configurations.bbtautau.constants import ERAS_RUN2
 from analysis_configurations.bbtautau.tests.helpers import (
     V15_EMBEDDING_BRANCHES,
@@ -27,11 +29,84 @@ from analysis_configurations.bbtautau.tests.helpers import (
 MODULE = "sm_tau_id_measurement_config"
 SCOPES = ("mt", "mm")
 SAMPLES = ("data", "dyjets", "embedding")
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+CROWN = Path(__file__).resolve().parents[3]
 TRIGGER_SFS = {
     "trg_wgt_single_mu24": "Trg_IsoMu24_pt_eta_bins",
     "trg_wgt_single_mu27": "Trg_IsoMu27_pt_eta_bins",
     "trg_wgt_single_mu24ormu27": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
 }
+# the single-muon triggers per era (v7 spec C13): flag -> (HLT path, min pT, max
+# |eta|, filter bit); 2016 the IsoMu22 family with the bit of each path, 2017
+# IsoMu27, 2018 as the measurement production; all matched within Delta R 0.1 (K8)
+ERA_TRIGGERS = {
+    **{
+        era: {
+            "trg_single_mu22": ("HLT_IsoMu22", 24.0, 2.4, 1),
+            "trg_single_mu22_tk": ("HLT_IsoTkMu22", 24.0, 2.4, 3),
+            "trg_single_mu22_eta2p1": ("HLT_IsoMu22_eta2p1", 24.0, 2.1, 1),
+            "trg_single_mu22_eta2p1_tk": ("HLT_IsoTkMu22_eta2p1", 24.0, 2.1, 3),
+        }
+        for era in ("2016preVFP", "2016postVFP")
+    },
+    "2017": {"trg_single_mu27": ("HLT_IsoMu27", 29.0, 2.4, 1)},
+    "2018": {
+        "trg_single_mu24": ("HLT_IsoMu24", 25.0, 2.5, 3),
+        "trg_single_mu27": ("HLT_IsoMu27", 28.0, 2.5, 3),
+    },
+}
+ERA_TRIGGER_SFS = {
+    "2016preVFP": {"trg_wgt_single_mu22": "Trg_pt_eta_bins"},
+    "2016postVFP": {"trg_wgt_single_mu22": "Trg_pt_eta_bins"},
+    "2017": {"trg_wgt_single_mu27": "Trg_IsoMu27_pt_eta_bins"},
+    "2018": TRIGGER_SFS,
+}
+# the tau-leg trigger columns of mt (v7_tt_emb_trigger 12.4): flag -> (HLT path or
+# None, filter bits); every flag with min pT 20, |eta| < 2.5, ID 15, Delta R 0.4
+EMBEDDING_FILTERS = {
+    "2016": {"trg_emb_ditau_l2_2": (None, (12,)), "trg_emb_ditau_final_2": (None, (1, 8))},
+    "2017": {"trg_emb_ditau_l2_2": (None, (23,)), "trg_emb_ditau_final_2": (None, (6,))},
+}
+MONITOR_2017 = {
+    "trg_mon_mu24tau35_tightiso_tightid_2": (
+        "HLT_IsoMu24_eta2p1_TightChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg_CrossL1", (2, 4, 9, 17)
+    ),
+    "trg_mon_mu24tau35_mediumiso_tightid_2": (
+        "HLT_IsoMu24_eta2p1_MediumChargedIsoPFTau35_Trk1_TightID_eta2p1_Reg_CrossL1", (1, 4, 9, 17)
+    ),
+    "trg_mon_mu24tau35_tightiso_2": (
+        "HLT_IsoMu24_eta2p1_TightChargedIsoPFTau35_Trk1_eta2p1_Reg_CrossL1", (2, 9, 17)
+    ),
+}
+TAU_LEG_FLAGS = {
+    **{
+        era: {
+            "trg_mon_mu19tau32_mediso_2": (
+                "HLT_IsoMu19_eta2p1_MediumIsoPFTau32_Trk1_eta2p1_Reg", (1, 5, 7)
+            ),
+            "trg_mon_mu19tau32_medcombiso_2": (
+                "HLT_IsoMu19_eta2p1_MediumCombinedIsoPFTau32_Trk1_eta2p1_Reg", (1, 5, 7)
+            ),
+            **EMBEDDING_FILTERS["2016"],
+        }
+        for era in ("2016preVFP", "2016postVFP")
+    },
+    "2017": {**MONITOR_2017, **EMBEDDING_FILTERS["2017"]},
+    "2018": {
+        **MONITOR_2017,
+        "trg_mon_mu24tau35_mediumiso_hps_2": (
+            "HLT_IsoMu24_eta2p1_MediumChargedIsoPFTauHPS35_Trk1_eta2p1_Reg_CrossL1", (1, 5, 9, 17)
+        ),
+        **EMBEDDING_FILTERS["2017"],
+    },
+}
+TRIGGER_OBJECT_BITS = {
+    "2016preVFP": (1, 5, 7),
+    "2016postVFP": (1, 5, 7),
+    "2017": (9, 17),
+    "2018": (9, 17),
+}
+TRIGGER_OBJECT_COLUMNS = {"trgobj_pt_2", "trgobj_l1pt_2", "trgobj_l1iso_2"}
 # the regrouped JES sources of the common shifts; the predecessor's 28 individual
 # sources are not produced
 REGROUPED_JES_SOURCES = [
@@ -73,8 +148,8 @@ MT_ONLY_FAMILIES = (
 )
 
 
-def measurement(sample, shifts=("none",), scopes=SCOPES):
-    return build(MODULE, sample, scopes=tuple(scopes), shifts=shifts)
+def measurement(sample, shifts=("none",), scopes=SCOPES, era="2018"):
+    return build(MODULE, sample, era=era, scopes=tuple(scopes), shifts=shifts)
 
 
 def parameters(config, scope):
@@ -85,18 +160,24 @@ def shift_names(config, scope):
     return {name.removeprefix("__") for name in config.shifts[scope]}
 
 
-def calls(sample, scope, producer):
+def calls(sample, scope, producer, era="2018"):
     """The generated calls of ``producer`` in ``scope``, whitespace collapsed."""
-    source = generate_code(MODULE, sample, scopes=SCOPES).directory
+    source = generate_code(MODULE, sample, era=era, scopes=SCOPES).directory
     (path,) = source.rglob(f"src/{scope}/{producer}.cxx")
     return " ".join(path.read_text().split())
 
 
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize("shifts", [("none",), ("all",)])
 @pytest.mark.parametrize("sample", SAMPLES)
-def test_builds_for_mt_and_mm(sample, shifts):
-    config = measurement(sample, shifts)
+def test_builds_for_mt_and_mm(sample, shifts, era):
+    config = measurement(sample, shifts, era=era)
     assert set(SCOPES) <= set(config.scopes)
+
+
+def test_other_eras_raise():
+    with pytest.raises(ValueError, match="era '2024'"):
+        tau_id_measurement.setup(None, "2024", "dyjets", ["mt"])
 
 
 @pytest.mark.parametrize("scopes", [["et"], ["mt", "tt"], ["em"]])
@@ -105,32 +186,153 @@ def test_other_scopes_raise(scopes):
         measurement("dyjets", scopes=scopes)
 
 
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize("sample", SAMPLES)
 @pytest.mark.parametrize("scope", SCOPES)
-def test_trigger_is_isomu24_or_isomu27(sample, scope):
-    """As in the measurement production: filter bit 3, |eta| < 2.5, 25/28 GeV."""
-    flags = calls(sample, scope, "SingleMuTriggerFlags")
-    for flag, path, min_pt in [("mu24", "IsoMu24", 25.0), ("mu27", "IsoMu27", 28.0)]:
+def test_single_muon_trigger_of_the_era(sample, scope, era):
+    """2016 the IsoMu22 family with the bit of each path, 2017 IsoMu27 (analysis
+    triggers), 2018 IsoMu24 || IsoMu27 as the measurement production (filter bit 3,
+    |eta| < 2.5, 25/28 GeV); all matched within Delta R 0.1."""
+    flags = calls(sample, scope, "SingleMuTriggerFlags", era)
+    for flag, (path, min_pt, max_eta, bit) in ERA_TRIGGERS[era].items():
         assert (
-            f'"trg_single_{flag}", "p4_1", "TrigObj_pt", "TrigObj_eta", "TrigObj_phi", '
-            f'"TrigObj_id", "TrigObj_filterBits", "HLT_{path}", {min_pt}, 2.5, 13, {{3}}, 0.4)'
+            f'"{flag}", "p4_1", "TrigObj_pt", "TrigObj_eta", "TrigObj_phi", '
+            f'"TrigObj_id", "TrigObj_filterBits", "{path}", {min_pt}, {max_eta}, 13, {{{bit}}}, 0.1)'
         ) in flags
-    assert flags.count("trigger::SingleObjectFlag(") == 2
+    assert flags.count("trigger::SingleObjectFlag(") == len(ERA_TRIGGERS[era])
 
 
+def test_trigger_tables_match_the_module():
+    assert {
+        era: {
+            t["flagname"]: (t["hlt_path"], t["min_pt"], t["max_abs_eta"], t["filter_bit"])
+            for t in triggers
+        }
+        for era, triggers in tau_id_measurement.TM_SINGLE_MUON_TRIGGERS.items()
+    } == ERA_TRIGGERS
+    assert tau_id_measurement.TM_KIT_TRIGGER_SFS == ERA_TRIGGER_SFS
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize("sample,producer,sf_type", [
-    ("dyjets", "MTGenerateSingleMuonTriggerSF_MC", "mc"),
+    ("dyjets", "KitSingleMuonTriggerSF", "mc"),
     ("embedding", "MTGenerateSingleMuonTriggerSF", "emb"),
 ])
 @pytest.mark.parametrize("scope", SCOPES)
-def test_trigger_sfs_are_the_kit_sfs_of_the_first_muon(sample, producer, sf_type, scope):
-    sfs = calls(sample, scope, producer)
-    for column, correction in TRIGGER_SFS.items():
+def test_trigger_sfs_are_the_kit_sfs_of_the_first_muon(sample, producer, sf_type, scope, era):
+    sfs = calls(sample, scope, producer, era)
+    for column, correction in ERA_TRIGGER_SFS[era].items():
         assert (
-            f'"{column}", "pt_1", "eta_1", "data/embedding/muon_2018UL.json.gz", '
+            f'"{column}", "pt_1", "eta_1", "data/embedding/muon_{era}UL.json.gz", '
             f'"{correction}", "{sf_type}", 1.0)'
         ) in sfs
-    assert "SingleMuTriggerSF" not in producer_names(measurement(sample), scope)
+    assert sfs.count("Scalefactor(") == len(ERA_TRIGGER_SFS[era])
+    assert "SingleMuTriggerSF" not in producer_names(measurement(sample, era=era), scope)
+    payload = CROWN / f"data/embedding/muon_{era}UL.json.gz"
+    corrections = {c["name"] for c in json.load(gzip.open(payload))["corrections"]}
+    assert set(ERA_TRIGGER_SFS[era].values()) <= corrections
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize("sample", ("dyjets", "ttbar", "data", "embedding"))
+def test_prefiring_weight_of_mc(sample, era):
+    """E11: the MC carries prefiring_wgt (L1PreFiringWeight_Nom) in every era, 2018
+    included (the muon part), with the shift CMS_ecal_prefiring_<year> (E34
+    exception of the measurement); data and embedding have none."""
+    outputs = generate_code(MODULE, sample, era=era, scopes=SCOPES).outputs
+    for scope in SCOPES:
+        assert ("prefiring_wgt" in outputs[scope]) == (sample not in ("data", "embedding")), scope
+    if sample in ("dyjets", "ttbar"):
+        config = measurement(sample, ("all",), era=era)
+        shifts = {name.removeprefix("__") for name in config.shifts["mt"]}
+        year = era[:4]
+        assert {f"CMS_ecal_prefiring_{year}Up", f"CMS_ecal_prefiring_{year}Down"} <= shifts
+        assert {f"CMS_eff_m_trigger_{era}Up", f"CMS_eff_m_trigger_{era}Down"} <= shifts
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_leg_trigger_flag_tables(era):
+    """12.4: the monitoring flags of the tau leg and the embedding di-tau filters per
+    era (HLT path, bits, min pT 20, |eta| < 2.5, ID 15, Delta R 0.4); bits are
+    integers below 30 (the core flags test 30 bits), no flag name twice."""
+    params = measurement("dyjets", era=era).config_parameters["mt"]["nominal"]
+    entries = params["tau_leg_monitor_trigger"] + params["tau_leg_embedding_filter"]
+    names = [e["flagname"] for e in entries]
+    assert len(names) == len(set(names))
+    table = {}
+    for entry in entries:
+        bits = tuple(int(bit) for bit in str(entry["filter_bit"]).split(","))
+        assert all(0 <= bit < 30 for bit in bits)
+        assert (entry["min_pt"], entry["max_abs_eta"], entry["particle_id"], entry["match_max_delta_r"]) == (
+            20.0, 2.5, 15, 0.4
+        )
+        table[entry["flagname"]] = (entry.get("hlt_path"), bits)
+    assert table == TAU_LEG_FLAGS[era]
+    assert params["tau_leg_trigobj_filter_bits"] == ", ".join(map(str, TRIGGER_OBJECT_BITS[era]))
+    assert (params["tau_leg_trigobj_particle_id"], params["tau_leg_trigobj_max_delta_r"]) == (15, 0.4)
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_leg_hlt_paths_exist_in_the_era(era):
+    """Every monitoring path is a branch of the era's v15 files (data, MC or
+    embedding; the fixtures hold the HLT branches of the first file of every listed
+    nick, tests/fixtures/make_hlt_fixtures.py), and MC has each 2016/2017 path and
+    the 2018 HPS one (the 2018 MC and embedding have no non-HPS path)."""
+    branches = {
+        kind: set((FIXTURES / f"nanoaod_v15_{era}_{kind}_hlt.txt").read_text().split())
+        for kind in ("data", "mc", "embedding")
+    }
+    for flag, (path, _) in TAU_LEG_FLAGS[era].items():
+        if path is None:
+            continue
+        assert any(path in paths for paths in branches.values()), path
+        if era != "2018" or "HPS" in path:
+            assert path in branches["mc"], path
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_leg_bits_mean_what_the_columns_claim(era):
+    """The bit numbers against the TrigObj_filterBits doc string of the era's files:
+    2016 Medium(Comb)Iso, OverlapFilter IsoMu, L1-HLT matched, Dz and embedding
+    di-tau bit 12; 2017/2018 the iso and ID bits, mu-tau, regional paths, charged
+    iso di-tau and embedding di-tau bit 23."""
+    meaning = json.loads((FIXTURES / "nanoaod_v15_trigobj_filterbits.json").read_text())[era]
+    tau = {int(bit): text for bit, text in meaning["embedding"]["Tau"].items()}
+    names = {
+        "2016": {1: "Medium(Comb)Iso", 5: "OverlapFilter IsoMu", 7: "L1-HLT matched", 8: "Dz", 12: "di-tau"},
+        "2017": {
+            1: "MediumChargedIso", 2: "TightChargedIso", 4: "TightID OOSC photons", 5: "HPS",
+            6: "charged iso di-tau", 9: "mu-tau", 17: "regional paths", 23: "di-tau",
+        },
+    }["2016" if era.startswith("2016") else "2017"]
+    used = {bit for _, bits in TAU_LEG_FLAGS[era].values() for bit in bits} | set(TRIGGER_OBJECT_BITS[era])
+    for bit in used:
+        assert tau[bit].startswith(names[bit]), (bit, tau[bit])
+    # the embedding bit exists in embedding files only
+    data_tau = {int(bit) for bit in meaning["data"]["Tau"]}
+    assert (12 if era.startswith("2016") else 23) not in data_tau
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize("sample", SAMPLES)
+def test_tau_leg_columns_are_written_in_mt(sample, era):
+    outputs = generate_code(MODULE, sample, era=era, scopes=SCOPES).outputs
+    assert set(TAU_LEG_FLAGS[era]) | TRIGGER_OBJECT_COLUMNS <= outputs["mt"]
+    assert not (set(TAU_LEG_FLAGS[era]) | TRIGGER_OBJECT_COLUMNS) & outputs["mm"]
+    objects = calls(sample, "mt", "MTTauLegTriggerObject", era)
+    bits = ", ".join(map(str, TRIGGER_OBJECT_BITS[era]))
+    for column, quantity, value_type in [
+        ("trgobj_pt_2", "TrigObj_pt", "Float_t"),
+        ("trgobj_l1pt_2", "TrigObj_l1pt", "Float_t"),
+        ("trgobj_l1iso_2", "TrigObj_l1iso", "Int_t"),
+    ]:
+        assert (
+            f'trigger::MatchedObjectQuantity<{value_type}>(df'
+        ) in objects
+        assert (
+            f'"{column}", "p4_2", "TrigObj_eta", "TrigObj_phi", "TrigObj_id", '
+            f'"TrigObj_filterBits", "{quantity}", 15, {{{bits}}}, 0.4)'
+        ) in objects
 
 
 @pytest.mark.parametrize("scope,legs", [("mt", (1,)), ("mm", (1, 2))])
@@ -251,7 +453,7 @@ def test_no_mc_shift_leaves_its_columns_nominal():
         "CMS_fake_t_DeepTau2018v2p5_VSe": "TauIDVsEleSF2",
         "CMS_fake_t_DeepTau2018v2p5_VSmu": "TauIDVsMuSF2",
         "CMS_scale_t_": "TauPtCorrectionMC",
-        "CMS_eff_m_trigger": "MTGenerateSingleMuonTriggerSF_MC",
+        "CMS_eff_m_trigger": "KitSingleMuonTriggerSF",
         "CMS_scale_met_RecoilCalibration": "RecoilCorrectionMet",
         "CMS_res_met_RecoilCalibration": "RecoilCorrectionMet",
     }

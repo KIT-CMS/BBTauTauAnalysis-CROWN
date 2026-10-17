@@ -5,7 +5,6 @@ import pytest
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     build,
-    era_cases,
     find_producer,
     generate_code,
     output_names,
@@ -79,7 +78,7 @@ def test_main_control_output_contract(sample, era):
         assert not {n for n in producers if n.startswith("ControlZ")}
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C7"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 def test_ee_takes_the_kit_electron_trigger_sf(era):
     """The POG Electron-HLT-SF does not exist for Run-2 UL; ee evaluates the trigger
     SF of the Tau Embedding group, as et."""
@@ -107,7 +106,7 @@ def test_electron_reco_weight_is_the_era_keyed_addon_call():
         assert [q.name for q in reco.get_outputs("ee")] == [f"reco_wgt_ele_{leg}"]
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C8"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize(
     "module,sample",
     [
@@ -132,7 +131,7 @@ def test_actual_cpp_generation_in_every_scope(module, sample, era):
             assert expected <= outputs, (scope, expected - outputs)
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C6", "C7"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 def test_control_trigger_sf_columns(era):
     """The trigger SF columns of the era's single-lepton triggers in ee, em and mm."""
     generated = generate_code("sm_config", "dyjets", era=era, scopes=CONTROLS)

@@ -86,7 +86,7 @@ def kit_trigger_sfs(era, scope, vec_config, file_parameter):
     return [(e["flagname"], e["mc_trigger_sf"]) for e in entries], params[file_parameter]
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C7"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 def test_kit_electron_trigger_sf_names_exist(era):
     """et and ee evaluate the KIT single-electron trigger SFs of the era: 2016
     Ele25 (Trg25_Iso), 2017 Ele32 and Ele35 (Trg32_Iso, Trg35_Iso), 2018 Ele32."""
@@ -109,7 +109,7 @@ def test_kit_electron_trigger_sf_names_exist(era):
         assert set(expected.values()) <= set(corrections(CROWN / path)), scope
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C6", "C6_kit"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 def test_kit_muon_trigger_sf_names_exist(era):
     """mt, mm and em evaluate the KIT single-muon trigger SF of the era (E5): 2016
     the IsoMu22 family (Trg_pt_eta_bins), 2017 IsoMu27, 2018 IsoMu24."""
@@ -148,7 +148,7 @@ def test_btag_efficiency_payload_of_the_era(era, scope):
     assert {item["key"] for item in working_points["content"]} == {"T", "M"}
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C12", "tau_embedding_payloads"))
+@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "tau_embedding_payloads"))
 def test_embedding_tau_payload_of_the_era(era):
     params = nominal(era, "mt", "embedding")
     path = params["tau_vsjet_es_sf_file"]
