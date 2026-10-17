@@ -491,6 +491,30 @@ def test_only_the_mc_tau_energy_scale_shifts_match_cms_scale_t():
     assert all(set(change) == {"tau_es_variation"} for change in matching.values())
 
 
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_energy_scale_shifted_output_has_the_muon_leg(era):
+    """Events entering the selection under a tau energy scale shift only need their
+    muon leg in the shifted columns; with LVMu1 and VetoMuons ignored by the shifts
+    they kept the default nominal leg and were lost downstream."""
+    generated = generate_code(MODULE, "dyjets", era=era, scopes=SCOPES, shifts=("CMS_scale_t",))
+    config = measurement("dyjets", ("CMS_scale_t",), era=era)
+    shifts = {name.removeprefix("__") for name in config.shifts["mt"]}
+    assert len(shifts) == 2 * (4 * 3 + 4 * 2 + 5)
+    columns = {
+        "pt_1", "eta_1", "phi_1", "mass_1", "q_1", "iso_1", "gen_match_1",
+        "id_wgt_mu_1", "iso_wgt_mu_1", "extramuon_veto", "m_vis", "mt_1",
+        *ERA_TRIGGERS[era], *ERA_TRIGGER_SFS[era],
+    }
+    assert columns <= generated.outputs["mt"]
+    missing = {
+        f"{column}__{shift}"
+        for column in columns
+        for shift in shifts
+    } - generated.outputs["mt"]
+    assert not missing, sorted(missing)[:20]
+
+
 # nicks of the measurement lists per era: data, MC, embedding
 LIST_LENGTHS = {
     "2016preVFP": (5, 15, 10),

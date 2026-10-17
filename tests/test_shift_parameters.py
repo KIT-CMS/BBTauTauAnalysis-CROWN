@@ -9,6 +9,8 @@ nominal configuration in place changes the nominal columns of every build.
 import gzip
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -78,6 +80,56 @@ def test_every_shifted_parameter_is_read(module, sample, era, scopes):
                         and entry_key not in entries[key]
                     ]
     assert not unread, sorted(set(unread))
+
+
+# Builds one surface with its tau energy scale shifts in a fresh process, since the
+# shifts a build gives the module-level quantities leak into later builds, and lists
+# the outputs computed from the pair that lack one of the shifts.
+_UNSHIFTED_BEHIND_PAIR = """
+import json, sys
+from analysis_configurations.bbtautau.quantities import output as q
+from analysis_configurations.bbtautau.tests.helpers import build
+module, sample, era, scopes = json.loads(sys.argv[1])
+config = build(module, sample, era, tuple(scopes), ("CMS_scale_t",))
+unshifted, counts = [], {}
+for scope in scopes:
+    shifts = {
+        name for name, change in config.shifts.get(scope, {}).items()
+        if "tau_es_variation" in change
+    }
+    counts[scope] = len(shifts)
+    behind_pair, todo = set(), [q.dileptonpair]
+    while todo:
+        for child in todo.pop().children.get(scope, []):
+            if child not in behind_pair:
+                behind_pair.add(child)
+                todo.append(child)
+    unshifted += [
+        [scope, output.name] for output in config.outputs[scope]
+        if output in behind_pair and not shifts <= set(output.get_shifts(scope))
+    ]
+print(json.dumps([counts, unshifted]))
+"""
+
+
+@pytest.mark.parametrize("module,sample,era,scopes", SURFACES)
+def test_tau_energy_scale_shifts_recompute_every_column_behind_the_pair(
+    module, sample, era, scopes
+):
+    """A shifted tau pT changes the pair selection, and some events pass it under a
+    shift only. Every output computed from the pair, the light lepton leg of et and
+    mt included, must therefore have the shifted columns: an ignored producer left
+    those events with a default lepton leg (pt_1 = -10, no trigger flags or SFs)."""
+    result = subprocess.run(
+        [sys.executable, "-c", _UNSHIFTED_BEHIND_PAIR, json.dumps([module, sample, era, scopes])],
+        cwd=Path(__file__).resolve().parents[3],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
+    counts, unshifted = json.loads(result.stdout.strip().splitlines()[-1])
+    assert all(counts[scope] for scope in scopes if scope in ("et", "mt", "tt")), counts
+    assert not unshifted, sorted(map(tuple, unshifted))
 
 
 # the values that select the nominal correction, per payload convention
