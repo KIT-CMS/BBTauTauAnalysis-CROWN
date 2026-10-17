@@ -124,8 +124,9 @@ def test_prefiring_shifts_build():
     }
 
 
-def test_tau_vs_mu_shifts_vary_the_vs_mu_sf():
-    config = build("sm_config", "dyjets", scopes=("mt", "tt"), shifts=("VSmu",))
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_vs_mu_shifts_vary_the_vs_mu_sf(era):
+    config = build("sm_config", "dyjets", era=era, scopes=("mt", "tt"), shifts=("VSmu",))
     for scope in ("mt", "tt"):
         changes = config.shifts[scope].values()
         assert changes and all(set(change) == {"tau_id_sf_vsmu_variation"} for change in changes)

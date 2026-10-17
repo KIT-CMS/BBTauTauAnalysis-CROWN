@@ -15,6 +15,8 @@ import sys
 
 import pytest
 
+from analysis_configurations.bbtautau.constants import ERAS_RUN2
+
 ANALYSIS = Path(__file__).resolve().parents[1]
 CROWN = ANALYSIS.parents[1]
 CPP, ADDONS, FIXTURES = (
@@ -38,14 +40,12 @@ ELECTRON_RECO_PAYLOADS = {
     ),
     "2023PromptC": ("Run3-23CSep23-Summer23-NanoAODv12/2025-12-15", "Electron-ID-SF"),
 }
-# The Tau Embedding group's lepton payloads of the 2018 embedding SFs
-EMBEDDING_PAYLOADS = [
-    CROWN / f"data/embedding/{flavour}_2018UL.json.gz" for flavour in ("muon", "electron")
-]
-# The official AK4 PUPPI JERC payload of the SM 2018 production
-JER_PAYLOAD_2018 = Path(
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz"
-)
+RUN2_ERAS = tuple(ERAS_RUN2)
+# The Tau Embedding group's lepton payloads of the embedding SFs per era
+EMBEDDING_PAYLOADS = {
+    era: [CROWN / f"data/embedding/{flavour}_{era}UL.json.gz" for flavour in ("muon", "electron")]
+    for era in RUN2_ERAS
+}
 
 
 def toolchain():
@@ -122,14 +122,10 @@ def test_electron_reco_official_payload_pt_categories(electron_reco_binary, era)
     subprocess.run([str(electron_reco_binary), str(payload), cset, era], check=True)
 
 
-def test_embedding_iso_binned_sf_follows_the_iso_bin_and_eta_convention(tmp_path):
-    """The iso-binned embedding SF takes the correction of the lepton's iso bin and
-    evaluates muons with |eta| and electrons with signed eta, like the core
-    functions."""
-    if not all(payload.is_file() for payload in EMBEDDING_PAYLOADS):
-        pytest.skip("The CROWN data/embedding payloads are required")
-    binary = compile_fixture(
-        tmp_path,
+@pytest.fixture(scope="module")
+def embedding_iso_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("embedding_iso_binned"),
         "embedding_iso_binned",
         [
             CPP / "test_embedding_iso_binned.cxx",
@@ -138,7 +134,19 @@ def test_embedding_iso_binned_sf_follows_the_iso_bin_and_eta_convention(tmp_path
         ],
         correctionlib=True,
     )
-    subprocess.run([str(binary), *map(str, EMBEDDING_PAYLOADS)], check=True)
+
+
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_embedding_iso_binned_sf_follows_the_iso_bin_and_eta_convention(
+    embedding_iso_binary, era
+):
+    """The iso-binned embedding SF takes the correction of the lepton's iso bin and
+    evaluates muons with |eta| and electrons with signed eta, like the core
+    functions, in the payloads of every Run-2 era."""
+    payloads = EMBEDDING_PAYLOADS[era]
+    if not all(payload.is_file() for payload in payloads):
+        pytest.skip("The CROWN data/embedding payloads are required")
+    subprocess.run([str(embedding_iso_binary), *map(str, payloads)], check=True)
 
 
 def test_kit_muon_trigger_sf_with_the_pt_cap(tmp_path):
@@ -270,8 +278,6 @@ def test_fastmtt_producer_passes_leptonic_decay_types(tmp_path):
 
 @pytest.fixture(scope="module")
 def jer_smearing_binary(tmp_path_factory):
-    if not JER_PAYLOAD_2018.is_file():
-        pytest.skip("Pinned official JME payload requires CVMFS")
     return compile_fixture(
         tmp_path_factory.mktemp("jer_smearing"),
         "jer_smearing",
@@ -280,17 +286,30 @@ def jer_smearing_binary(tmp_path_factory):
     )
 
 
+def jec_settings(era):
+    """The JME payload, JER and JES tags the SM configuration of ``era`` evaluates."""
+    from analysis_configurations.bbtautau.tests.helpers import build
+
+    nominal = build("sm_config", "ttbar", era=era).config_parameters["global"]["nominal"]
+    return nominal["ak4jet_jec_file"], nominal["ak4jet_jer_tag"], nominal["ak4jet_jes_tag_mc"]
+
+
 # reapply_jes: 1 is the production setting, 0 takes the input pt as JES-corrected
+@pytest.mark.parametrize("era", RUN2_ERAS)
 @pytest.mark.parametrize("reapply_jes", ["1", "0"])
 def test_jer_hybrid_smearing_matches_gen_jets_and_draws_per_jet(
-    jer_smearing_binary, reapply_jes
+    jer_smearing_binary, reapply_jes, era
 ):
     """The JEC chain scales gen-matched jets with the closest passing gen jet,
     draws one independent standard-normal number per unmatched jet, which
     neither the matching of other jets nor the JER variation changes, and the
-    HEM variation scales every tight-ID jet in the HEM region."""
+    HEM variation scales every tight-ID jet in the HEM region; with the pinned
+    JME payload and tags of every Run-2 era."""
+    payload, jer_tag, jes_tag = jec_settings(era)
+    if not Path(payload).is_file():
+        pytest.skip("Pinned official JME payload requires CVMFS")
     subprocess.run(
-        [str(jer_smearing_binary), str(JER_PAYLOAD_2018), reapply_jes], check=True
+        [str(jer_smearing_binary), payload, reapply_jes, jer_tag, jes_tag, era], check=True
     )
 
 

@@ -371,7 +371,7 @@ def test_mc_tau_corrections():
     )
     assert [p["vsjet_wp"] for p in params["vsjet_tau_id_sf"]] == ["Medium", "Tight"]
     assert [p["vsele_wp"] for p in params["vsele_tau_id_sf"]] == ["VVLoose", "Tight"]
-    outputs = generate_code(MODULE, "dyjets", scopes=SCOPES).outputs["mt"]
+    outputs = generate_code(MODULE, "dyjets", era="2018", scopes=SCOPES).outputs["mt"]
     assert {
         "id_wgt_tau_vsJet_Medium_2", "id_wgt_tau_vsJet_Tight_2",
         "id_wgt_tau_vsEle_VVLoose_2", "id_wgt_tau_vsEle_Tight_2",
@@ -390,7 +390,7 @@ def test_tag_and_probe_and_grid_columns(scope):
     if scope == "mt":
         needed |= {"tau_decaymode_2", "dilepton_veto"}
     for sample in SAMPLES:
-        outputs = generate_code(MODULE, sample, scopes=SCOPES).outputs[scope]
+        outputs = generate_code(MODULE, sample, era="2018", scopes=SCOPES).outputs[scope]
         assert needed | {"trg_single_mu24", "trg_single_mu27"} <= outputs
         if sample != "data":
             assert {"gen_match_1", "gen_match_2", *TRIGGER_SFS} <= outputs
@@ -403,7 +403,7 @@ def test_recoil_correction_of_dy_and_w(sample, applied):
 
 def test_no_btag_sf():
     """The measurement weights no b-tag SF, like the precedent."""
-    outputs = generate_code(MODULE, "dyjets", scopes=SCOPES).outputs
+    outputs = generate_code(MODULE, "dyjets", era="2018", scopes=SCOPES).outputs
     assert not {o for scope in SCOPES for o in outputs[scope] if o.startswith("btag_weight")}
 
 
@@ -435,7 +435,7 @@ def test_mm_embedding_is_the_mu_to_mu_embedding():
                 f'"{column}_wgt_mu_{leg}", "pt_{leg}", "eta_{leg}", '
                 f'"data/embedding/muon_2018UL.json.gz", "{correction}", "emb", 1.0)'
             ) in sfs
-    outputs = generate_code(MODULE, "embedding", scopes=SCOPES).outputs["mm"]
+    outputs = generate_code(MODULE, "embedding", era="2018", scopes=SCOPES).outputs["mm"]
     weights = {"emb_genweight", "emb_triggersel_wgt", "emb_idsel_wgt_1", "emb_idsel_wgt_2"}
     assert weights <= outputs
 

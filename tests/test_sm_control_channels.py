@@ -88,10 +88,11 @@ def test_ee_takes_the_kit_electron_trigger_sf(era):
     assert "ETGenerateSingleElectronTriggerSF_MC" in producer_names(config, "ee")
 
 
-def test_electron_reco_weight_is_the_era_keyed_addon_call():
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_electron_reco_weight_is_the_era_keyed_addon_call(era):
     """The reco weight picks the payload's pt category itself, so the call carries the
     era id instead of a fixed category name; it reads the supercluster eta (C22)."""
-    config = build("sm_config", "ttbar", scopes=CONTROLS)
+    config = build("sm_config", "ttbar", era=era, scopes=CONTROLS)
     for producer, leg in (("Ele_1_Reco_SF_ScEta", 1), ("Ele_2_Reco_SF_ScEta", 2)):
         reco = find_producer(config, "ee", producer)
         assert (
@@ -140,21 +141,22 @@ def test_control_trigger_sf_columns(era):
         assert written == expected, scope
 
 
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize(
     "scope,parameter,nmssm",
     [("et", "tight_electron_max_iso", 10000.0), ("mt", "tight_muon_max_iso", 0.4)],
 )
-def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter, nmssm):
+def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter, nmssm, era):
     """One SM production serves the nominal iso < 0.15 selection and the anti-isolated
-    sidebands up to 0.5; NMSSM keeps its object defaults (no electron isolation
+    sidebands up to 0.5; NMSSM (2018) keeps its object defaults (no electron isolation
     pre-cut, muons up to 0.4)."""
-    for module, expected in (
-        ("sm_config", 0.5),
-        ("sm_btag_efficiency_config", 0.5),
-        ("nmssm_config", nmssm),
+    for module, module_era, expected in (
+        ("sm_config", era, 0.5),
+        ("sm_btag_efficiency_config", era, 0.5),
+        ("nmssm_config", "2018", nmssm),
     ):
         assert (
-            build(module, "ttbar", scopes=(scope,)).config_parameters[scope]["nominal"][
+            build(module, "ttbar", era=module_era, scopes=(scope,)).config_parameters[scope]["nominal"][
                 parameter
             ]
             == expected
@@ -162,17 +164,22 @@ def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter, nm
 
 
 @pytest.mark.parametrize(
-    "module,electron_id,ele_sf,muon_id,muon_sfs",
+    "module,era,electron_id,ele_sf,muon_id,muon_sfs",
     [
-        (
-            "sm_config",
-            "Electron_mvaIso_WP90",
-            "wp90iso",
-            "Muon_mediumId",
-            ("NUM_MediumID_DEN_TrackerMuons", "NUM_TightRelIso_DEN_MediumID"),
-        ),
+        *[
+            (
+                "sm_config",
+                era,
+                "Electron_mvaIso_WP90",
+                "wp90iso",
+                "Muon_mediumId",
+                ("NUM_MediumID_DEN_TrackerMuons", "NUM_TightRelIso_DEN_MediumID"),
+            )
+            for era in ERAS_RUN2
+        ],
         (
             "nmssm_config",
+            "2018",
             "Electron_mvaIso_WP80",
             "wp80iso",
             "Muon_tightId",
@@ -180,10 +187,10 @@ def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter, nm
         ),
     ],
 )
-def test_lepton_ids_and_their_sfs(module, electron_id, ele_sf, muon_id, muon_sfs):
+def test_lepton_ids_and_their_sfs(module, era, electron_id, ele_sf, muon_id, muon_sfs):
     """SM keeps the lepton IDs the KIT (Tau Embedding group) lepton SFs are measured
     for, NMSSM those of the object defaults, each with the POG SFs of its IDs."""
-    config = build(module, "ttbar", scopes=("et", "mt"))
+    config = build(module, "ttbar", era=era, scopes=("et", "mt"))
     electron = config.config_parameters["et"]["nominal"]
     muon = config.config_parameters["mt"]["nominal"]
     assert (electron["tight_electron_id"], electron["ele_id_sf_name"]) == (electron_id, ele_sf)

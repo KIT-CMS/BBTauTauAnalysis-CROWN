@@ -157,7 +157,7 @@ def test_embedding_jets_get_the_data_calibration(module, era):
 
 @pytest.mark.parametrize("sample,propagate", [("ttbar", True), ("data", False)])
 def test_nmssm_propagates_in_simulation_only(sample, propagate):
-    params = build("nmssm_config", sample).config_parameters["global"]["nominal"]
+    params = build("nmssm_config", sample, era="2018").config_parameters["global"]["nominal"]
     assert params["propagate_jets_to_met"] is propagate
 
 
@@ -231,7 +231,7 @@ def test_hem_shift_replaced_by_the_flag():
     assert {"CMS_scale_j_Absolute_2018Up", "CMS_res_j_2018Down"} <= shift_names(sm)
     nmssm = build("nmssm_config", "ttbar", era="2018", shifts=("all",))
     assert {"CMS_HEM_2018Up", "CMS_HEM_2018Down"} <= shift_names(nmssm)
-    assert "HemVetoFlag" not in producer_names(build("nmssm_config", "ttbar"), "global")
+    assert "HemVetoFlag" not in producer_names(build("nmssm_config", "ttbar", era="2018"), "global")
 
 
 def test_hem_flag_in_the_tau_id_measurement():
@@ -282,7 +282,7 @@ def test_supercluster_eta_columns_without_the_pog_sfs(sample):
 
 
 def test_nmssm_keeps_the_electron_eta():
-    config = build("nmssm_config", "ttbar", scopes=("et",))
+    config = build("nmssm_config", "ttbar", era="2018", scopes=("et",))
     inputs = [q.name for q in find_producer(config, "et", "Ele_1_ID_SF").get_inputs("et")]
     assert inputs == ["pt_1", "eta_1", "phi_1"]
     assert not {o for o in output_names(config, "et") if o.startswith("sc_eta")}

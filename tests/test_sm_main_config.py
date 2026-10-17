@@ -27,6 +27,7 @@ from analysis_configurations.bbtautau.tests.helpers import (
     find_producer,
     generate_code,
     output_names,
+    pending,
     producer_names,
 )
 
@@ -44,20 +45,35 @@ DOUBLE_COUNTED = ("ttZJets_", "ttWJets_", "TTZToNuNu_", "ZH_HToBB_ZToBB_", "ggZH
 ZZ_TO_2NU2Q = ("ZZTo2Nu2Q_5f_", "ZZTo2Q2Nu_")
 
 
-# module, sample, bb mother pdgid, tautau mother pdgid, the only LHE producer that may
-# be scheduled. A lost SampleModifier key falls back to -1 and yields garbage truth
-# pairs, so the background default is pinned as well.
+def sm_era_cases(*rows, nmssm=()):
+    """``pytest.param`` rows of sm_config in every Run-2 era (embedding marked
+    ``pending`` where its tau payload is missing) and of nmssm_config in 2018. Each
+    row starts with module and sample; the era follows them."""
+    cases = []
+    for row in rows:
+        for era in ERAS_RUN2:
+            marks = pending(era, "tau_embedding_payloads") if row[1] == "embedding" else []
+            cases.append(pytest.param(row[0], row[1], era, *row[2:], marks=marks))
+    cases += [pytest.param(row[0], row[1], "2018", *row[2:]) for row in nmssm]
+    return cases
+
+
+# module, sample, era, bb mother pdgid, tautau mother pdgid, the only LHE producer that
+# may be scheduled. A lost SampleModifier key falls back to -1 and yields garbage
+# truth pairs, so the background default is pinned as well.
 @pytest.mark.parametrize(
-    "module,sample,bb,tautau,lhe",
-    [
+    "module,sample,era,bb,tautau,lhe",
+    sm_era_cases(
         ("sm_config", "hh2b2tau", 25, 25, "LHE_Scale_weight"),
-        ("nmssm_config", "nmssm_Ybb", 35, 25, "NMSSM_LHE_Scale_weight"),
-        ("nmssm_config", "nmssm_Ytautau", 25, 35, "NMSSM_LHE_Scale_weight"),
-        ("nmssm_config", "ttbar", -1, -1, "LHE_Scale_weight"),
-    ],
+        nmssm=[
+            ("nmssm_config", "nmssm_Ybb", 35, 25, "NMSSM_LHE_Scale_weight"),
+            ("nmssm_config", "nmssm_Ytautau", 25, 35, "NMSSM_LHE_Scale_weight"),
+            ("nmssm_config", "ttbar", -1, -1, "LHE_Scale_weight"),
+        ],
+    ),
 )
-def test_truth_mothers_and_lhe_dispatch(module, sample, bb, tautau, lhe):
-    config = build(module, sample)
+def test_truth_mothers_and_lhe_dispatch(module, sample, era, bb, tautau, lhe):
+    config = build(module, sample, era=era)
     params = config.config_parameters["mt"]["nominal"]
     assert (
         params["bb_truegen_mother_pdgid"],
@@ -194,27 +210,29 @@ def test_upart_dispatch_requires_the_payload_keys():
         scalefactors.upart_variation_dispatch(broken)
 
 
-def test_sm_dyw_recoil_wiring():
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_sm_dyw_recoil_wiring(era):
     """The merged dyjets/wjets names get the gen-boson four-vector and the intact
     recoil-correction group, with the correction on; everything else takes RenameMet."""
     for sample in ("dyjets", "wjets"):
-        config = build("sm_config", sample)
+        config = build("sm_config", sample, era=era)
         names = producer_names(config, "mt") | producer_names(config, "global")
         assert {
             "GenBosonQuantities",
             "MetScopes",
         } <= names and "RenameMet" not in names, sample
         assert config.config_parameters["mt"]["nominal"]["apply_recoil_correction"], sample
-    ttbar = build("sm_config", "ttbar", scopes=ALL_SCOPES)
+    ttbar = build("sm_config", "ttbar", era=era, scopes=ALL_SCOPES)
     names = producer_names(ttbar, "mt") | producer_names(ttbar, "global")
     assert "RenameMet" in names and not {"GenBosonQuantities", "MetScopes"} & names
 
 
-def test_sm_recoil_correction_counts_the_recipe_jets():
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_sm_recoil_correction_counts_the_recipe_jets(era):
     """The v15 recoil correction counts the jets of the HTT recipe (pT > 30 GeV,
     |eta| < 4.7, jet ID, DeltaR > 0.5 to both pair objects), not all NanoAOD jets;
     NMSSM keeps all jets."""
-    config = build("sm_config", "dyjets")
+    config = build("sm_config", "dyjets", era=era)
 
     def inputs(name):
         return [q.name for q in find_producer(config, "mt", name).get_inputs("mt")]
@@ -233,7 +251,7 @@ def test_sm_recoil_correction_counts_the_recipe_jets():
         params["global"]["nominal"]["recoil_jet_max_abs_eta"],
         params["mt"]["nominal"]["recoil_jet_veto_min_delta_r"],
     ) == (30.0, 4.7, 0.5)
-    nmssm = build("nmssm_config", "dyjets_amcatnlo")
+    nmssm = build("nmssm_config", "dyjets_amcatnlo", era="2018")
     recoil = find_producer(nmssm, "mt", "RecoilCorrectionMet")
     assert recoil.get_inputs("mt")[-1].name == "Jet_correctedPt"
 
@@ -259,49 +277,50 @@ def test_sm_recoil_file_has_the_labelled_z_pt_bins(era):
 
 
 @pytest.mark.parametrize(
-    "module,sample,propagate",
-    [
+    "module,sample,era,propagate",
+    sm_era_cases(
         ("sm_config", "ttbar", True),
         ("sm_config", "dyjets", True),
         ("sm_config", "data", True),
         ("sm_config", "embedding", True),
-        ("nmssm_config", "ttbar", True),
-        ("nmssm_config", "data", False),
-    ],
+        nmssm=[("nmssm_config", "ttbar", True), ("nmssm_config", "data", False)],
+    ),
 )
-def test_jet_propagation_to_the_met(module, sample, propagate):
+def test_jet_propagation_to_the_met(module, sample, era, propagate):
     """The v15 inputs propagate the re-applied JEC to the MET in data, MC and
     embedding alike (v7 spec E28, C19); NMSSM in MC only."""
-    params = build(module, sample).config_parameters["global"]["nominal"]
+    params = build(module, sample, era=era).config_parameters["global"]["nominal"]
     assert params["propagate_jets_to_met"] is propagate
 
 
 @pytest.mark.parametrize(
-    "module,sample,final_met",
-    [
+    "module,sample,era,final_met",
+    sm_era_cases(
         ("sm_config", "ttbar", "RenameMet"),
         ("sm_config", "data", "RenameMet"),
         ("sm_config", "embedding", "RenameMet"),
         ("sm_config", "dyjets", "RecoilCorrectionMet"),
-        ("nmssm_config", "ttbar", "RenameMet"),
-    ],
+        nmssm=[("nmssm_config", "ttbar", "RenameMet")],
+    ),
 )
-def test_met_keeps_the_lepton_propagation(module, sample, final_met):
+def test_met_keeps_the_lepton_propagation(module, sample, era, final_met):
     """The final MET starts from the lepton-corrected MET, also in samples whose
     recoil correction is replaced by a rename."""
     scopes = ("et", "mt", "tt")
-    config = build(module, sample, scopes=scopes)
+    config = build(module, sample, era=era, scopes=scopes)
     for scope in scopes:
         inputs = find_producer(config, scope, final_met).get_inputs(scope)
         assert inputs[0].name == "met_p4_leptoncorrected", scope
 
 
-@pytest.mark.parametrize("sample", ["ttbar", "data", "embedding"])
-def test_pileup_and_jet_flavour_columns(sample):
+@pytest.mark.parametrize(
+    "module,sample,era", sm_era_cases(("sm_config", "ttbar"), ("sm_config", "data"), ("sm_config", "embedding"))
+)
+def test_pileup_and_jet_flavour_columns(module, sample, era):
     """npv_good and rho in every sample kind, the jet hadron flavours in MC only,
     in every scope; NMSSM writes neither."""
     scopes = ("et", "mt", "tt") if sample == "embedding" else ALL_SCOPES
-    config = build("sm_config", sample, scopes=scopes)
+    config = build(module, sample, era=era, scopes=scopes)
     for scope in scopes:
         outputs = output_names(config, scope)
         assert PILEUP_COLUMNS <= outputs, scope
@@ -314,18 +333,20 @@ def test_pileup_and_jet_flavour_columns(sample):
         assert [q.name for q in bpair] == ["Jet_hadronFlavour", "dibjetpair"]
         jet = find_producer(config, "mt", "jet_hadronFlavour_1").get_inputs("mt")
         assert [q.name for q in jet] == ["Jet_hadronFlavour", "good_jet_collection"]
-    nmssm = output_names(build("nmssm_config", sample if sample != "embedding" else "ttbar"), "mt")
+    nmssm_sample = sample if sample != "embedding" else "ttbar"
+    nmssm = output_names(build("nmssm_config", nmssm_sample, era="2018"), "mt")
     assert not (PILEUP_COLUMNS | FLAVOUR_COLUMNS) & nmssm
 
 
+@pytest.mark.parametrize("era", ERAS_RUN2)
 @pytest.mark.parametrize("sample", ["dyjets", "wjets"])
-def test_sm_recoil_shifts_set_the_run2_flags(sample):
+def test_sm_recoil_shifts_set_the_run2_flags(sample, era):
     """The Run-2 recoil producer reads bool flags, not the Run-3 variation name."""
-    config = build("sm_config", sample, shifts=("all",))
+    config = build("sm_config", sample, era=era, shifts=("all",))
     read = find_producer(config, "mt", "RecoilCorrectionMet").parameters["mt"]
     for systematic, name in [("response", "scale"), ("resolution", "res")]:
         for direction in ("Up", "Down"):
-            change = config.shifts["mt"][f"__CMS_{name}_met_RecoilCalibration_2018{direction}"]
+            change = config.shifts["mt"][f"__CMS_{name}_met_RecoilCalibration_{era}{direction}"]
             assert change == {
                 f"apply_recoil_{systematic}_systematic": True,
                 f"recoil_systematic_shift_{direction.lower()}": True,
@@ -333,13 +354,22 @@ def test_sm_recoil_shifts_set_the_run2_flags(sample):
             assert set(change) <= read
 
 
-@pytest.mark.parametrize("module", ["sm_config", "nmssm_config"])
-def test_mt_generates_with_every_shift(module):
+# the single-muon trigger SF column of the SM configuration per era
+SM_MUON_TRIGGER_SF = {
+    "2016preVFP": "trg_wgt_single_mu22",
+    "2016postVFP": "trg_wgt_single_mu22",
+    "2017": "trg_wgt_single_mu27",
+    "2018": "trg_wgt_single_mu24",
+}
+
+
+@pytest.mark.parametrize("module,sample,era", sm_era_cases(("sm_config", "ttbar"), nmssm=[("nmssm_config", "ttbar")]))
+def test_mt_generates_with_every_shift(module, sample, era):
     """The single-muon trigger SF shifts carry the trigger flag the SF producer
     gates on; without it, code generation with shifts=all failed in mt."""
-    outputs = generate_code(module, "ttbar", shifts=("all",)).outputs["mt"]
+    outputs = generate_code(module, sample, era=era, shifts=("all",)).outputs["mt"]
     assert {
-        f"trg_wgt_single_mu24__CMS_eff_m_trigger_2018{variation}"
+        f"{SM_MUON_TRIGGER_SF[era]}__CMS_eff_m_trigger_{era}{variation}"
         for variation in ("Up", "Down")
     } <= outputs
 
@@ -375,7 +405,7 @@ def test_module_level_gates_fire_before_build_config(module, era, sample, messag
 
 def test_nmssm_2018_keeps_legacy_jet_and_btag_path():
     """Every SM-only v15 switch is profile-gated, so NMSSM 2018 is untouched."""
-    config = build("nmssm_config", "ttbar")
+    config = build("nmssm_config", "ttbar", era="2018")
     params = config.config_parameters["global"]["nominal"]
     assert (params["bjet_max_abs_eta"], params["bjet_score_column"]) == (
         2.5,

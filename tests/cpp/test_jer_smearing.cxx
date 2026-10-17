@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-// Usage: <binary> <jet_jerc payload of 2018-UL-NanoAODv15> <reapply_jes: 0|1>
+// Usage: <binary> <jet_jerc payload of the era's UL-NanoAODv15> <reapply_jes: 0|1>
+//                 <JER tag> <JES tag> <era>
 //
 // Drives physicsobject::jet::jec::PtCorrectionMC through RDataFrame with the
 // official JER payload, in the production mode (reapply_jes = 1) or on
@@ -38,14 +39,17 @@ void check(bool condition, const char *what) {
 } // namespace
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        std::printf("usage: %s <payload> <reapply_jes: 0|1>\n", argv[0]);
+    if (argc != 6) {
+        std::printf("usage: %s <payload> <reapply_jes: 0|1> <JER tag> <JES tag> "
+                    "<era>\n",
+                    argv[0]);
         return 2;
     }
     const std::string payload = argv[1];
     const bool reapply_jes = std::string(argv[2]) == "1";
-    const std::string jer_tag = "Summer19UL18_JRV3";
-    const std::string jes_tag = "Summer20UL18NanoV15_V1";
+    const std::string jer_tag = argv[3];
+    const std::string jes_tag = argv[4];
+    const std::string era = argv[5];
     const std::string algo = "AK4PFPuppi";
     const unsigned n = 20000;
     const float rho = 20.f;
@@ -92,7 +96,7 @@ int main(int argc, char **argv) {
             name + "_l2l3res", name, "pt", "eta", "phi", "area", "id",
             with_gen ? "gen_pt" : "no_gen", with_gen ? "gen_eta" : "no_gen",
             with_gen ? "gen_phi" : "no_gen", "rho", "seed", payload, algo,
-            jes_tag, jer_tag, "nominal", 0, jer_shift, reapply_jes, "2018");
+            jes_tag, jer_tag, "nominal", 0, jer_shift, reapply_jes, era);
     };
     df = correct(df, "nominal", true, "nom");
     df = correct(df, "unmatched", false, "nom");
