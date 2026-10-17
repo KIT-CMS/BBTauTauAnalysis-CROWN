@@ -23,7 +23,6 @@ from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     FakeArgs,
     build,
-    era_cases,
     find_producer,
     generate_code,
     output_names,
@@ -121,7 +120,7 @@ def test_upart_btag_and_v15_input_wiring(era):
     )
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C7"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 def test_et_trigger_sf_is_the_kit_one(era):
     """The EGM Electron-HLT-SF correction does not exist for Run-2 UL, so the et scope
     evaluates the trigger SF of the Tau Embedding group (KIT)."""

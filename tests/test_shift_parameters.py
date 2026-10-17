@@ -23,8 +23,8 @@ SURFACES = [
         for module, sample, scopes, items in [
             ("sm_config", "ttbar", tuple(SCOPES), ()),
             ("sm_config", "dyjets", tuple(SCOPES), ()),
-            ("sm_config", "embedding", ("et", "mt", "tt"), ("C12",)),
-            ("sm_tau_id_measurement_config", "dyjets", ("mt", "mm"), ("C13",)),
+            ("sm_config", "embedding", ("et", "mt", "tt"), ("tau_embedding_payloads",)),
+            ("sm_tau_id_measurement_config", "dyjets", ("mt", "mm"), ()),
         ]
     ],
     ("nmssm_config", "ttbar", "2024", tuple(SCOPES)),

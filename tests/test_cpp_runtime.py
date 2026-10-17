@@ -217,3 +217,15 @@ def test_jer_hybrid_smearing_matches_gen_jets_and_draws_per_jet(
     subprocess.run(
         [str(jer_smearing_binary), str(JER_PAYLOAD_2018), reapply_jes], check=True
     )
+
+
+def test_matched_trigger_object_quantity(tmp_path):
+    """trigger::MatchedObjectQuantity (trgobj_*_2 of the tau-ID measurement): the
+    nearest trigger object in Delta R with the ID and all filter bits wins, -1
+    without one, on the v15 types (UShort_t IDs, ULong64_t filter bits)."""
+    binary = compile_fixture(
+        tmp_path,
+        "trigger_matched_object",
+        [CPP / "test_trigger_matched_object.cxx"],
+    )
+    subprocess.run([str(binary)], check=True)
