@@ -39,17 +39,26 @@ def add_pileup_shifts(
         )
 
 
+# The eras whose MC build_config weights with the L1 prefiring weight
+# (event.PrefireWeight) and gives the prefiring shifts. The tau-ID measurement
+# adds the other Run-2 eras (2018: the muon prefiring, v7 spec E11).
+COMMON_PREFIRING_ERAS = ("2016preVFP", "2016postVFP", "2017")
+
+
 def add_prefiring_shifts(
     configuration: Configuration,
     era: str,
 ):
     """
-    Add L1 ECAL trigger prefiring shifts for the given era.
+    Add L1 trigger prefiring shifts for the given era: the NanoAOD weight
+    L1PreFiringWeight (ECAL and muon prefiring; in 2018 the muon part only)
+    varied by its Up/Dn columns, named CMS_ecal_prefiring_<year> after the
+    datacard name of the ECAL issue.
     """
 
-    # Raise exception if this function is called for an era that does not have
-    # the prefiring issue
-    if era not in ["2016preVFP", "2016postVFP", "2017"]:
+    # Raise exception if this function is called for an era without the
+    # prefiring weight
+    if era not in ["2016preVFP", "2016postVFP", "2017", "2018"]:
         raise ValueError(
             f"Prefiring shifts are not applicable for era '{era}'."
         )

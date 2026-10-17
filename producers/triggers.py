@@ -1,6 +1,6 @@
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
-from code_generation.producer import ExtendedVectorProducer
+from code_generation.producer import ExtendedVectorProducer, Producer, ProducerGroup
 
 from ..constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, EM_SCOPES, ELECTRON_SCOPES, MUON_SCOPES
 
@@ -130,6 +130,71 @@ TauTauTriggerFlagsEmbedding = ExtendedVectorProducer(
     output="flagname",
     scopes=TT_SCOPES,
     vec_config="tautau_trigger_embedding",
+)
+
+#
+# TAU LEG OF THE DI-TAU TRIGGER (tau-ID measurement, mt)
+#
+# The columns of the tau-leg efficiency measurement of the di-tau trigger
+# (tau_triggersetup.TAU_LEG_*): the tau h matched to the tau leg of the mu-tau
+# monitoring paths, to the di-tau filters of the embedding, and the matched trigger
+# object.
+
+# monitoring-path flags of the tau h: HLT path fired and the tau matched to a
+# trigger object with all bits of the leg
+MTTauLegMonitorTriggerFlags = ExtendedVectorProducer(
+    name="MTTauLegMonitorTriggerFlags",
+    call='trigger::SingleObjectFlag({df}, {output}, {input}, "{hlt_path}", {min_pt}, {max_abs_eta}, {particle_id}, {vec_open}{filter_bit}{vec_close}, {match_max_delta_r})',
+    input=[q.p4_2] + common_inputs,
+    output="flagname",
+    scopes=MT_SCOPES,
+    vec_config="tau_leg_monitor_trigger",
+)
+
+# filter flags of the tau h without HLT path (the embedding di-tau filters)
+MTTauLegEmbeddingFilterFlags = ExtendedVectorProducer(
+    name="MTTauLegEmbeddingFilterFlags",
+    call="trigger::SingleObjectFlag({df}, {output}, {input}, {min_pt}, {max_abs_eta}, {particle_id}, {vec_open}{filter_bit}{vec_close}, {match_max_delta_r})",
+    input=[q.p4_2] + common_inputs,
+    output="flagname",
+    scopes=MT_SCOPES,
+    vec_config="tau_leg_embedding_filter",
+)
+
+
+def _tau_leg_trigger_object(name, quantity, output, value_type):
+    return Producer(
+        name=name,
+        call=(
+            f"trigger::MatchedObjectQuantity<{value_type}>"
+            "({df}, {output}, {input}, {tau_leg_trigobj_particle_id}, "
+            "{vec_open}{tau_leg_trigobj_filter_bits}{vec_close}, {tau_leg_trigobj_max_delta_r})"
+        ),
+        input=[
+            q.p4_2,
+            nanoAOD.TrigObj_eta,
+            nanoAOD.TrigObj_phi,
+            nanoAOD.TrigObj_id,
+            nanoAOD.TrigObj_filterBits,
+            quantity,
+        ],
+        output=[output],
+        scopes=MT_SCOPES,
+    )
+
+
+# pT, L1 pT and L1 isolation of the nearest trigger object of the tau leg
+MTTauLegTriggerObject = ProducerGroup(
+    name="MTTauLegTriggerObject",
+    call=None,
+    input=None,
+    output=None,
+    scopes=MT_SCOPES,
+    subproducers=[
+        _tau_leg_trigger_object("MTTauLegTriggerObjectPt", nanoAOD.TrigObj_pt, q.trgobj_pt_2, "Float_t"),
+        _tau_leg_trigger_object("MTTauLegTriggerObjectL1Pt", nanoAOD.TrigObj_l1pt, q.trgobj_l1pt_2, "Float_t"),
+        _tau_leg_trigger_object("MTTauLegTriggerObjectL1Iso", nanoAOD.TrigObj_l1iso, q.trgobj_l1iso_2, "Int_t"),
+    ],
 )
 
 # double tau-tau + jet trigger flags, including trigger object matching
