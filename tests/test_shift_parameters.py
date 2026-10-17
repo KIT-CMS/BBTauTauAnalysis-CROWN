@@ -12,15 +12,21 @@ from pathlib import Path
 
 import pytest
 
-from analysis_configurations.bbtautau.constants import SCOPES
-from analysis_configurations.bbtautau.tests.helpers import build
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
+from analysis_configurations.bbtautau.tests.helpers import build, pending
 
-# The eras each analysis produces: SM 2018 on the Run-2 v15 inputs, NMSSM Run 3
+# The eras each analysis produces: SM on the Run-2 v15 inputs, NMSSM Run 3
 SURFACES = [
-    ("sm_config", "ttbar", "2018", tuple(SCOPES)),
-    ("sm_config", "dyjets", "2018", tuple(SCOPES)),
-    ("sm_config", "embedding", "2018", ("et", "mt", "tt")),
-    ("sm_tau_id_measurement_config", "dyjets", "2018", ("mt", "mm")),
+    *[
+        pytest.param(module, sample, era, scopes, marks=pending(era, *items), id=f"{module}-{sample}-{era}")
+        for era in ERAS_RUN2
+        for module, sample, scopes, items in [
+            ("sm_config", "ttbar", tuple(SCOPES), ()),
+            ("sm_config", "dyjets", tuple(SCOPES), ()),
+            ("sm_config", "embedding", ("et", "mt", "tt"), ("C12",)),
+            ("sm_tau_id_measurement_config", "dyjets", ("mt", "mm"), ("C13",)),
+        ]
+    ],
     ("nmssm_config", "ttbar", "2024", tuple(SCOPES)),
     ("nmssm_config", "dyjets_amcatnlo_ll", "2022postEE", tuple(SCOPES)),
 ]
@@ -125,7 +131,9 @@ def test_tau_vs_mu_shifts_vary_the_vs_mu_sf():
         assert changes and all(set(change) == {"tau_id_sf_vsmu_variation"} for change in changes)
 
 
-@pytest.mark.parametrize("module,era", [("sm_config", "2018"), ("nmssm_config", "2022postEE")])
+@pytest.mark.parametrize(
+    "module,era", [("sm_config", era) for era in ERAS_RUN2] + [("nmssm_config", "2022postEE")]
+)
 def test_tau_vs_jet_variations_exist_in_the_era_payload(module, era):
     """The Run-2/2022/2023 vsJet variations are evaluated as given by the payload."""
     config = build(module, "ttbar", era=era, scopes=("mt",), shifts=("VSjet",))

@@ -1,4 +1,4 @@
-"""SM 2018-UL NanoAOD-v15 config contracts, and the NMSSM path they must not disturb.
+"""SM Run-2 UL NanoAOD-v15 config contracts, and the NMSSM path they must not disturb.
 
 Each assertion pins a value that would otherwise regress silently into wrong physics
 or a broken grid job: the truth-gen mothers and LHE dispatch per sample, the pinned
@@ -19,10 +19,11 @@ from analysis_configurations.bbtautau import (
     generate,
     sm_btag_efficiency_config,
 )
-from analysis_configurations.bbtautau.constants import SCOPES
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
 from analysis_configurations.bbtautau.tests.helpers import (
     FakeArgs,
     build,
+    era_cases,
     find_producer,
     generate_code,
     output_names,
@@ -30,13 +31,17 @@ from analysis_configurations.bbtautau.tests.helpers import (
 )
 
 ALL_SCOPES = tuple(SCOPES)
+CROWN = Path(__file__).resolve().parents[3]
 LHE_PRODUCERS = {"LHE_Scale_weight", "NMSSM_LHE_Scale_weight"}
 PILEUP_COLUMNS = {"npv_good", "rho"}
 FLAVOUR_COLUMNS = {
     f"{jets}_hadronFlavour_{index}" for jets in ("jet", "bpair") for index in (1, 2)
 }
-# inclusive LO ttZ, ttZ -> nunu (in TTZToLLNuNu_M-10) and the twin of ZZTo2Q2Nu
-DOUBLE_COUNTED = ("ttZJets_", "TTZToNuNu_", "ZZTo2Nu2Q_5f_")
+# inclusive LO ttZ and ttW, ttZ -> nunu (in TTZToLLNuNu_M-10) and ZH(bb) with Z -> bb
+# (in the ZToQQ samples)
+DOUBLE_COUNTED = ("ttZJets_", "ttWJets_", "TTZToNuNu_", "ZH_HToBB_ZToBB_", "ggZH_HToBB_ZToBB_")
+# the two samples of ZZ -> 2nu2q; an era takes one of them
+ZZ_TO_2NU2Q = ("ZZTo2Nu2Q_5f_", "ZZTo2Q2Nu_")
 
 
 # module, sample, bb mother pdgid, tautau mother pdgid, the only LHE producer that may
@@ -71,10 +76,11 @@ def test_truth_mothers_and_lhe_dispatch(module, sample, bb, tautau, lhe):
     assert producer_names(config, "global") & LHE_PRODUCERS == {lhe}
 
 
-def test_upart_btag_and_v15_input_wiring():
-    config = build("sm_config", "ttbar", scopes=ALL_SCOPES)
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_upart_btag_and_v15_input_wiring(era):
+    config = build("sm_config", "ttbar", era=era, scopes=ALL_SCOPES)
     params = config.config_parameters["global"]["nominal"]
-    payload = btag_payloads.btv_upart_payload("2018")
+    payload = btag_payloads.btv_upart_payload(era)
     assert params["bjet_max_abs_eta"] == 2.4
     assert params["bjet_score_column"] == "Jet_btagUParTAK4B"
     assert params["bjet_min_score"] == btag_payloads.load_upart_wps(payload)["M"]
@@ -89,17 +95,18 @@ def test_upart_btag_and_v15_input_wiring():
     # b/c jets below the lowest calibrated pT of the comb SFs take the SF there
     assert sf["bjet_sf_bc_min_pt"] == btag_payloads.load_upart_comb_min_pt(payload) == 30.0
     assert "{bjet_sf_bc_min_pt}" in find_producer(config, "mt", "StrictUParTBtagWeightNominal").call
-    # the efficiency lookup keys on the sample's own name and reads the per-channel payload
+    # the efficiency lookup keys on the sample's own name and reads the per-channel
+    # payload of the era
     assert sf["bjet_eff_sample_type"] == "ttbar"
     assert (
-        build("sm_config", "hh2b2tau").config_parameters["mt"]["nominal"][
+        build("sm_config", "hh2b2tau", era=era).config_parameters["mt"]["nominal"][
             "bjet_eff_sample_type"
         ]
         == "hh2b2tau"
     )
     assert (
         sf["bjet_eff_file"]
-        == "payloads/btagging_efficiencies/upart/2018/btag_efficiency_mt.json.gz"
+        == f"payloads/btagging_efficiencies/upart/{era}/btag_efficiency_mt.json.gz"
     )
 
     # the correctionlib jet ID, not the v9 Jet_jetId rename; the Run-3-style electron
@@ -113,23 +120,27 @@ def test_upart_btag_and_v15_input_wiring():
         in find_producer(config, "global", "ElectronPtCorrectionMC").call
     )
 
-    # the Run-3 EGM Electron-HLT-SF correction does not exist for 2018 UL, so the et
-    # scope evaluates TauAnalysis' Trg32_Iso_pt_eta_bins instead
-    et = producer_names(config, "et")
+
+@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "C7"))
+def test_et_trigger_sf_is_the_kit_one(era):
+    """The EGM Electron-HLT-SF correction does not exist for Run-2 UL, so the et scope
+    evaluates the trigger SF of the Tau Embedding group (KIT)."""
+    et = producer_names(build("sm_config", "ttbar", era=era, scopes=("et",)), "et")
     assert (
         "ETGenerateSingleElectronTriggerSF_MC" in et and "SingleEleTriggerSF" not in et
     )
 
 
-def test_v15_data_electrons_get_the_egm_scale():
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_v15_data_electrons_get_the_egm_scale(era):
     """v15 electrons come without scale and smearing: data take the "Scale" of the
     pinned EGM payload through the Run-3 producer, as MC take its "SmearAndSyst"."""
-    config = build("sm_config", "data")
+    config = build("sm_config", "data", era=era)
     producer = find_producer(config, "global", "ElectronPtCorrectionData")
     assert "physicsobject::electron::PtCorrectionData" in producer.call
     params = config.config_parameters["global"]["nominal"]
     assert params["ele_es_sf_data_name"] == "Scale"
-    assert "/EGM/Run2-2018-UL-NanoAODv15/" in params["ele_es_file"]
+    assert f"/EGM/Run2-{era}-UL-NanoAODv15/" in params["ele_es_file"]
     correctionlib = pytest.importorskip("correctionlib")
     scale = correctionlib.CorrectionSet.from_file(params["ele_es_file"]).compound["Scale"]
     # the input order PtCorrectionData evaluates
@@ -194,15 +205,18 @@ def test_sm_recoil_correction_counts_the_recipe_jets():
     assert recoil.get_inputs("mt")[-1].name == "Jet_correctedPt"
 
 
-def test_sm_recoil_file_has_the_labelled_z_pt_bins():
-    """The legacy 2018 recoil file has the Z pT bin edges 0-5 instead of the
-    0/10/20/30/50/1000 GeV its labels name; the v15 path reads the fixed copy."""
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_sm_recoil_file_has_the_labelled_z_pt_bins(era):
+    """The recoil files of CROWN (one 2016 file for both halves) had the Z pT bin
+    edges 0-5 instead of the 0/10/20/30/50/1000 GeV their labels name; the CROWN
+    pin must contain the fix (27262f4)."""
     ROOT = pytest.importorskip("ROOT")
-    path = build("sm_config", "dyjets").config_parameters["mt"]["nominal"][
+    path = build("sm_config", "dyjets", era=era).config_parameters["mt"]["nominal"][
         "recoil_correction_file"
     ]
-    assert path.startswith("payloads/")
-    file = ROOT.TFile.Open(str(Path(__file__).resolve().parents[1] / path))
+    year = era[:4]
+    assert path == f"data/recoil_corrections/Type1_PuppiMET_{year}.root"
+    file = ROOT.TFile.Open(str(CROWN / path))
     axis = file.Get("ZPtBinsH").GetXaxis()
     edges = [axis.GetBinLowEdge(i) for i in range(1, axis.GetNbins() + 2)]
     labels = [axis.GetBinLabel(i) for i in range(1, axis.GetNbins() + 1)]
@@ -297,14 +311,23 @@ def test_mt_generates_with_every_shift(module):
     } <= outputs
 
 
+SM_MODULES = ("sm_config", "sm_btag_efficiency_config", "sm_tau_id_measurement_config")
+
+
+@pytest.mark.parametrize("module", SM_MODULES)
+def test_sm_modules_accept_every_run2_era(module):
+    entry = importlib.import_module(f"analysis_configurations.bbtautau.{module}")
+    assert entry.AVAILABLE_ERAS == ERAS_RUN2
+
+
 @pytest.mark.parametrize(
     "module,era,sample,message",
     [
-        ("sm_btag_efficiency_config", "2017", "ttbar", "does not support era '2017'"),
-        ("sm_btag_efficiency_config", "2018", "data", "does not accept sample 'data'"),
+        ("sm_btag_efficiency_config", "2024", "ttbar", "does not support era '2024'"),
+        ("sm_btag_efficiency_config", "2017", "data", "does not accept sample 'data'"),
         ("sm_config", "2022postEE", "ttbar", "does not support era '2022postEE'"),
-        ("sm_tau_id_measurement_config", "2017", "dyjets", "does not support era '2017'"),
-        ("sm_tau_id_measurement_config", "2018", "hh2b2tau", "does not accept sample 'hh2b2tau'"),
+        ("sm_tau_id_measurement_config", "2023preBPix", "dyjets", "does not support era '2023preBPix'"),
+        ("sm_tau_id_measurement_config", "2016preVFP", "hh2b2tau", "does not accept sample 'hh2b2tau'"),
     ],
 )
 def test_module_level_gates_fire_before_build_config(module, era, sample, message):
@@ -334,23 +357,66 @@ def test_nmssm_2018_keeps_legacy_jet_and_btag_path():
     }
 
 
-def test_sm_sample_lists_follow_their_rules():
-    """sample_list/README.md: each ``_mc`` list is its full list without the 12 data
-    nicks, every MC sample type is populated, and no list double counts ttZ or ZZ."""
-    analysis = Path(__file__).resolve().parents[1]
-    database = analysis.parents[2] / "sample_database/nanoAOD_v15/datasets.json"
+# nicks of the binned lists per era: all, data
+BINNED_LENGTHS = {"2016preVFP": (84, 15), "2016postVFP": (75, 9), "2017": (84, 15), "2018": (81, 12)}
+
+
+@pytest.fixture(scope="module")
+def datasets():
+    database = CROWN.parent / "sample_database/nanoAOD_v15/datasets.json"
     if not database.is_file():
         pytest.skip("KingMaker's sample_database is required")
-    datasets = json.loads(database.read_text())
-    for name, length in [("binned", 77), ("inclusive", 69)]:
-        nicks = (analysis / f"sample_list/sm_2018_{name}.txt").read_text().splitlines()
-        mc = [nick for nick in nicks if datasets[nick]["sample_type"] != "data"]
-        assert len(nicks) == length and len(nicks) - len(mc) == 12, name
-        assert (analysis / f"sample_list/sm_2018_{name}_mc.txt").read_text() == "".join(
-            f"{nick}\n" for nick in mc
-        )
-        assert {datasets[nick]["era"] for nick in nicks} == {"2018"}
-        assert {datasets[nick]["sample_type"] for nick in mc} == set(
-            sm_btag_efficiency_config.AVAILABLE_SAMPLES
-        )
-        assert not [nick for nick in nicks if nick.startswith(DOUBLE_COUNTED)], name
+    return json.loads(database.read_text())
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_sm_sample_lists_follow_their_rules(era, datasets):
+    """sample_list/README.md: the binned list of the era, sorted; its ``_mc`` list is the
+    full list without the data nicks; every MC sample type of the b-tag efficiency
+    profile is populated (2016postVFP has no VH -> tautau sample); data from SingleMuon,
+    SingleElectron (EGamma in 2018) and Tau; and no phase space counted twice."""
+    lists = Path(__file__).resolve().parents[1] / "sample_list"
+    full = (lists / f"sm_{era}_binned.txt").read_text()
+    nicks = full.splitlines()
+    assert full == "".join(f"{nick}\n" for nick in sorted(set(nicks)))
+    data = [nick for nick in nicks if datasets[nick]["sample_type"] == "data"]
+    mc = [nick for nick in nicks if nick not in data]
+    assert (len(nicks), len(data)) == BINNED_LENGTHS[era]
+    assert (lists / f"sm_{era}_binned_mc.txt").read_text() == "".join(f"{nick}\n" for nick in mc)
+    assert {datasets[nick]["era"] for nick in nicks} == {era}
+    expected = set(sm_btag_efficiency_config.AVAILABLE_SAMPLES)
+    if era == "2016postVFP":
+        expected -= {"rem_htautau"}
+    assert {datasets[nick]["sample_type"] for nick in mc} == expected
+    electron = "EGamma_" if era == "2018" else "SingleElectron_"
+    streams = ("SingleMuon_", electron, "Tau_")
+    assert all(nick.startswith(streams) for nick in data)
+    assert {stream for stream in streams for nick in data if nick.startswith(stream)} == set(streams)
+    assert not [nick for nick in nicks if nick.startswith(DOUBLE_COUNTED)]
+    assert len([nick for nick in nicks if nick.startswith(ZZ_TO_2NU2Q)]) == 1
+    # the PtZ bins and the inclusive M-50 sample (its npartons == 0 part)
+    dy = [nick for nick in mc if datasets[nick]["sample_type"] == "dyjets"]
+    assert len([nick for nick in dy if nick.startswith("DYJetsToLL_LHEFilterPtZ-")]) == 6
+    assert len([nick for nick in dy if nick.startswith("DYJetsToLL_M-50_")]) == 1
+    wjets = [nick for nick in mc if datasets[nick]["sample_type"] == "wjets"]
+    assert sorted(nick.split("_")[1] for nick in wjets) == ["0J", "1J", "2J"]
+    # the powheg signal and its node_SM cross-check
+    hh = [nick for nick in mc if datasets[nick]["sample_type"] == "hh2b2tau"]
+    assert len(hh) == 2 and len([nick for nick in hh if "_kl-1p00_" in nick]) == 1
+
+
+def test_sm_2018_inclusive_lists_swap_the_w_and_dy_partitions(datasets):
+    lists = Path(__file__).resolve().parents[1] / "sample_list"
+    binned = (lists / "sm_2018_binned.txt").read_text().splitlines()
+    inclusive = (lists / "sm_2018_inclusive.txt").read_text().splitlines()
+    assert inclusive == sorted(inclusive)
+    partitions = {
+        nick
+        for nick in binned
+        if nick.startswith(("WJetsToLNu_0J_", "WJetsToLNu_1J_", "WJetsToLNu_2J_", "DYJetsToLL_LHEFilterPtZ-"))
+    }
+    (added,) = set(inclusive) - set(binned)
+    assert added.startswith("WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX")
+    assert set(inclusive) == (set(binned) - partitions) | {added}
+    mc = [nick for nick in inclusive if datasets[nick]["sample_type"] != "data"]
+    assert (lists / "sm_2018_inclusive_mc.txt").read_text() == "".join(f"{nick}\n" for nick in mc)

@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from analysis_configurations.bbtautau import sm_tau_id_measurement_config
+from analysis_configurations.bbtautau.constants import ERAS_RUN2
 from analysis_configurations.bbtautau.tests.helpers import (
     V15_EMBEDDING_BRANCHES,
     build,
@@ -275,25 +276,42 @@ def test_only_the_mc_tau_energy_scale_shifts_match_cms_scale_t():
     assert all(set(change) == {"tau_es_variation"} for change in matching.values())
 
 
-def test_sample_list_covers_every_sample_type():
-    """sample_list/README.md: sorted 2018 nicks, SingleMuon data, mutau and muemb
-    embedding, and every sample type of the configuration."""
+# nicks of the measurement lists per era: data, MC, embedding
+LIST_LENGTHS = {
+    "2016preVFP": (5, 15, 10),
+    "2016postVFP": (3, 15, 6),
+    "2017": (5, 15, 10),
+    "2018": (4, 15, 8),
+}
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_sample_list_covers_every_sample_type(era):
+    """sample_list/README.md: sorted nicks of the era, SingleMuon data, mutau and muemb
+    embedding, W in jet bins, and every sample type of the configuration."""
     analysis = Path(__file__).resolve().parents[1]
     database = analysis.parents[2] / "sample_database/nanoAOD_v15/datasets.json"
     if not database.is_file():
         pytest.skip("KingMaker's sample_database is required")
     datasets = json.loads(database.read_text())
-    listed = (analysis / "sample_list/sm_2018_tau_id_measurement.txt").read_text()
+    listed = (analysis / f"sample_list/sm_{era}_tau_id_measurement.txt").read_text()
     nicks = listed.splitlines()
-    assert listed == "".join(f"{nick}\n" for nick in sorted(nicks))
+    assert listed == "".join(f"{nick}\n" for nick in sorted(set(nicks)))
     entries = [datasets[nick] for nick in nicks]
-    assert {entry["era"] for entry in entries} == {"2018"}
+    assert {entry["era"] for entry in entries} == {era}
     assert {entry["sample_type"] for entry in entries} == set(
         sm_tau_id_measurement_config.AVAILABLE_SAMPLES
     )
+    counts = {"data": 0, "mc": 0, "embedding": 0}
     for nick, entry in zip(nicks, entries):
-        if entry["sample_type"] == "data":
-            assert nick.startswith("SingleMuon_Run2018"), nick
-        if entry["sample_type"] == "embedding":
-            assert "_mutau_" in nick or "_muemb_" in nick, nick
-    assert len(nicks) == 25
+        kind = entry["sample_type"] if entry["sample_type"] in counts else "mc"
+        counts[kind] += 1
+        if kind == "data":
+            assert nick.startswith(f"SingleMuon_Run{era[:4]}"), nick
+        if kind == "embedding":
+            assert ("_mutau_" in nick or "_muemb_" in nick) and "_B_ver1_" not in nick, nick
+        if entry["sample_type"] == "wjets":
+            assert nick.startswith(("WJetsToLNu_0J_", "WJetsToLNu_1J_", "WJetsToLNu_2J_")), nick
+        if entry["sample_type"] == "dyjets":
+            assert not nick.startswith("DYJetsToLL_LHEFilterPtZ-"), nick
+    assert tuple(counts.values()) == LIST_LENGTHS[era]
