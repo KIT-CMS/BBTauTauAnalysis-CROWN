@@ -44,6 +44,16 @@ ERAS_RUN2 = ["2016preVFP", "2016postVFP", "2017", "2018"]
 ERAS_RUN3 = ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024", "2025"]
 ERAS = ERAS_RUN2 + ERAS_RUN3
 
+# Run-2 NanoAOD-v15 eras whose legacy HTT recoil file
+# (data/recoil_corrections/Type1_PuppiMET_<year>.root, derived in 2019 on the
+# pre-UL data sets) still describes the v15 Z -> mumu data and simulation. In
+# 2018 the correction, applied before the jet propagation, closes the MET,
+# response and resolution of mumu; the 2016 and 2017 files worsen them
+# (2017: data/MC of the MET tail 0.68 instead of 0.97), so DY and W of those
+# eras take the MET of every other simulated sample (met_recoil_study,
+# 2026-10-18).
+RUN2_V15_RECOIL_CORRECTION_ERAS = ("2018",)
+
 # correctionlib campaigns
 CORRECTIONLIB_CAMPAIGNS = {
     **{

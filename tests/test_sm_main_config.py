@@ -20,7 +20,11 @@ from analysis_configurations.bbtautau import (
     sm_btag_efficiency_config,
 )
 from analysis_configurations.bbtautau.producers import scalefactors
-from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
+from analysis_configurations.bbtautau.constants import (
+    ERAS_RUN2,
+    RUN2_V15_RECOIL_CORRECTION_ERAS,
+    SCOPES,
+)
 from analysis_configurations.bbtautau.tests.helpers import (
     FakeArgs,
     build,
@@ -207,24 +211,116 @@ def test_upart_dispatch_requires_the_payload_keys():
         scalefactors.upart_variation_dispatch(broken)
 
 
-@pytest.mark.parametrize("era", ERAS_RUN2)
+# The legacy HTT recoil files describe v15 in 2018 only (met_recoil_study,
+# 2026-10-18); DY and W of the other eras take the MET of every other sample.
+RECOIL_ERAS = [era for era in ERAS_RUN2 if era in RUN2_V15_RECOIL_CORRECTION_ERAS]
+NO_RECOIL_ERAS = [era for era in ERAS_RUN2 if era not in RUN2_V15_RECOIL_CORRECTION_ERAS]
+RECOIL_CHAIN = ("MetLeptonCorrectionOnPuppiMet", "RecoilCorrectionMet", "MetJetScaleAfterRecoil")
+
+
+def has_producer(config, scope, name):
+    try:
+        find_producer(config, scope, name)
+    except AssertionError:
+        return False
+    return True
+
+
+def test_recoil_correction_eras():
+    """Only the 2018 recoil file closes the v15 Z -> mumu MET; the 2016 and 2017
+    files worsen it."""
+    assert RUN2_V15_RECOIL_CORRECTION_ERAS == ("2018",)
+    assert RECOIL_ERAS == ["2018"]
+
+
+@pytest.mark.parametrize("era", RECOIL_ERAS)
 def test_sm_dyw_recoil_wiring(era):
-    """The merged dyjets/wjets names get the gen-boson four-vector and the intact
-    recoil-correction group, with the correction on; everything else takes RenameMet."""
+    """In the recoil-correction eras the merged dyjets/wjets names get the
+    gen-boson four-vector, the recoil chain with the correction on and the
+    JES-only jet pt; everything else replaces the correction by RenameMet and
+    drops the chain around it."""
     for sample in ("dyjets", "wjets"):
         config = build("sm_config", sample, era=era)
-        names = producer_names(config, "mt") | producer_names(config, "global")
-        assert {
-            "GenBosonQuantities",
-            "MetScopes",
-        } <= names and "RenameMet" not in names, sample
+        assert "GenBosonQuantities" in producer_names(config, "mt"), sample
+        assert all(has_producer(config, "mt", name) for name in RECOIL_CHAIN), sample
+        assert not has_producer(config, "mt", "RenameMet"), sample
+        assert has_producer(config, "global", "JetScaledPt"), sample
         assert config.config_parameters["mt"]["nominal"]["apply_recoil_correction"], sample
-    ttbar = build("sm_config", "ttbar", era=era, scopes=ALL_SCOPES)
-    names = producer_names(ttbar, "mt") | producer_names(ttbar, "global")
-    assert "RenameMet" in names and not {"GenBosonQuantities", "MetScopes"} & names
+    for sample in ("ttbar", "data", "embedding"):
+        config = build("sm_config", sample, era=era, scopes=ALL_SCOPES if sample == "ttbar" else ("mt",))
+        assert has_producer(config, "mt", "RenameMet"), sample
+        assert not any(has_producer(config, "mt", name) for name in RECOIL_CHAIN), sample
+        assert not has_producer(config, "global", "JetScaledPt"), sample
+        assert "GenBosonQuantities" not in producer_names(config, "mt"), sample
 
 
-@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize("era", NO_RECOIL_ERAS)
+@pytest.mark.parametrize("sample", ["dyjets", "wjets", "ttbar"])
+def test_sm_no_recoil_correction_outside_the_recoil_eras(sample, era):
+    """Outside the recoil-correction eras DY and W keep the propagated MET of every
+    other simulated sample: no recoil producer, no recoil jets and no recoil
+    shifts, the final MET is the renamed MET with propagated jets and leptons."""
+    config = build("sm_config", sample, era=era, shifts=("all",))
+    assert not any(has_producer(config, "mt", name) for name in RECOIL_CHAIN)
+    assert not has_producer(config, "global", "GoodRecoilJets")
+    assert not has_producer(config, "global", "JetScaledPt")
+    assert [q.name for q in find_producer(config, "mt", "RenameMet").get_inputs("mt")] == [
+        "met_p4_leptoncorrected"
+    ]
+    assert not [shift for shift in config.shifts["mt"] if "RecoilCalibration" in shift]
+
+
+@pytest.mark.parametrize("era", RECOIL_ERAS)
+@pytest.mark.parametrize("sample", ["dyjets", "wjets"])
+def test_sm_recoil_correction_before_the_jet_propagation(sample, era):
+    """The recoil correction acts on the MET its legacy file was derived on, the
+    NanoAOD PuppiMET with the propagated leptons; the jet energy scale of the
+    re-calibrated jets (pT > 15 GeV, JES with its shifts, without the JER
+    smearing) is propagated afterwards, as in data. Propagating the JER-smeared
+    jets before the correction counted the resolution twice (v7: data/MC of the
+    MET tail 60-150 GeV in mm 0.76 instead of 0.98)."""
+    config = build("sm_config", sample, era=era)
+
+    def io(name, scope="mt"):
+        producer = find_producer(config, scope, name)
+        return (
+            [q.name for q in producer.get_inputs(scope)],
+            [q.name for q in producer.get_outputs(scope)],
+        )
+
+    assert io("MetLeptonCorrectionOnPuppiMet") == (
+        ["met_p4_uncorrected", "p4_1_uncorrected", "p4_2_uncorrected", "p4_1", "p4_2"],
+        ["met_p4_recoil_input"],
+    )
+    assert io("RecoilCorrectionMet") == (
+        ["met_p4_recoil_input", "gen_boson_p4", "gen_vis_boson_p4", "Jet_recoilPt"],
+        ["met_p4_recoil_nojets"],
+    )
+    assert io("MetJetScaleAfterRecoil") == (
+        [
+            "met_p4_recoil_nojets", "Jet_scaledPt", "Jet_eta", "Jet_phi",
+            "Jet_correctedMass", "Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass",
+        ],
+        ["met_p4_recoilcorrected"],
+    )
+    assert io("JetScaledPt", "global") == (["Jet_jecResult"], ["Jet_scaledPt"])
+    assert "jec::ScaledPt" in find_producer(config, "global", "JetScaledPt").call
+    assert io("MetPt")[0] == ["met_p4_recoilcorrected"]
+    params = config.config_parameters["mt"]["nominal"]
+    assert (params["propagate_jets_to_met"], params["t1jet_min_pt"]) == (True, 15.0)
+    assert params["is_wjets"] is (sample == "wjets")
+
+
+@pytest.mark.parametrize("era", RECOIL_ERAS)
+def test_sm_recoil_corrected_met_follows_the_jes_and_recoil_shifts(era):
+    """The generated DY code writes the MET under the JES shifts (propagated after
+    the recoil correction through Jet_scaledPt) and under the recoil shifts."""
+    met = {o for o in generate_code("sm_config", "dyjets", era, shifts=("all",)).outputs["mt"] if o.startswith("met__")}
+    assert {"met__CMS_scale_j_AbsoluteUp", f"met__CMS_scale_j_Absolute_{era}Down"} <= met
+    assert {f"met__CMS_{kind}_met_RecoilCalibration_{era}{d}" for kind in ("scale", "res") for d in ("Up", "Down")} <= met
+
+
+@pytest.mark.parametrize("era", RECOIL_ERAS)
 def test_sm_recoil_correction_counts_the_recipe_jets(era):
     """The v15 recoil correction counts the jets of the HTT recipe (pT > 30 GeV,
     |eta| < 4.7, jet ID, DeltaR > 0.5 to both pair objects), not all NanoAOD jets;
@@ -250,10 +346,12 @@ def test_sm_recoil_correction_counts_the_recipe_jets(era):
     ) == (30.0, 4.7, 0.5)
     nmssm = build("nmssm_config", "dyjets_amcatnlo", era="2018")
     recoil = find_producer(nmssm, "mt", "RecoilCorrectionMet")
-    assert recoil.get_inputs("mt")[-1].name == "Jet_correctedPt"
+    assert [q.name for q in recoil.get_inputs("mt")] == [
+        "met_p4_leptoncorrected", "gen_boson_p4", "gen_vis_boson_p4", "Jet_correctedPt",
+    ]
 
 
-@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize("era", RECOIL_ERAS)
 def test_sm_recoil_file_has_the_labelled_z_pt_bins(era):
     """The recoil files of CROWN (one 2016 file for both halves) had the Z pT bin
     edges 0-5 instead of the 0/10/20/30/50/1000 GeV their labels name; the CROWN
@@ -296,18 +394,28 @@ def test_jet_propagation_to_the_met(module, sample, era, propagate):
         ("sm_config", "ttbar", "RenameMet"),
         ("sm_config", "data", "RenameMet"),
         ("sm_config", "embedding", "RenameMet"),
-        ("sm_config", "dyjets", "RecoilCorrectionMet"),
         nmssm=[("nmssm_config", "ttbar", "RenameMet")],
-    ),
+    )
+    + [pytest.param("sm_config", "dyjets", era, "RenameMet") for era in NO_RECOIL_ERAS]
+    + [
+        pytest.param("sm_config", "dyjets", era, "MetLeptonCorrectionOnPuppiMet")
+        for era in RECOIL_ERAS
+    ],
 )
 def test_met_keeps_the_lepton_propagation(module, sample, era, final_met):
-    """The final MET starts from the lepton-corrected MET, also in samples whose
-    recoil correction is replaced by a rename."""
+    """The final MET carries the lepton propagation, also in samples whose recoil
+    correction is replaced by a rename; the recoil-corrected samples propagate
+    the leptons to the PuppiMET the correction reads."""
     scopes = ("et", "mt", "tt")
     config = build(module, sample, era=era, scopes=scopes)
     for scope in scopes:
         inputs = find_producer(config, scope, final_met).get_inputs(scope)
-        assert inputs[0].name == "met_p4_leptoncorrected", scope
+        expected = (
+            "met_p4_uncorrected"
+            if final_met == "MetLeptonCorrectionOnPuppiMet"
+            else "met_p4_leptoncorrected"
+        )
+        assert inputs[0].name == expected, scope
 
 
 @pytest.mark.parametrize(
@@ -335,7 +443,7 @@ def test_pileup_and_jet_flavour_columns(module, sample, era):
     assert not (PILEUP_COLUMNS | FLAVOUR_COLUMNS) & nmssm
 
 
-@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize("era", RECOIL_ERAS)
 @pytest.mark.parametrize("sample", ["dyjets", "wjets"])
 def test_sm_recoil_shifts_set_the_run2_flags(sample, era):
     """The Run-2 recoil producer reads bool flags, not the Run-3 variation name."""
