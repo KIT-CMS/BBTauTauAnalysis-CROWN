@@ -82,14 +82,16 @@ KIT_EMBEDDING_PAYLOADS = {
     for era in ERAS_RUN2
 }
 
-# The tau energy scale and vsJet SF of the embedded taus, measured per era (v7 spec
-# E16, 5.4) at payloads/tau_embedding/Run2-<era>-UL-NanoAODv15/. Only the profiles
-# that correct the embedded taus (embedding_tau_corrections) need the era's entry.
+# The tau energy scale and vsJet SF of the embedded taus, measured per era with
+# ShapeSmith on smrun2_tau_id_v1 (v7 spec E16, 5.4) at
+# payloads/tau_embedding/Run2-<era>-UL-NanoAODv15/. Only the profiles that correct
+# the embedded taus (embedding_tau_corrections) need the era's entry.
 TAU_EMBEDDING_ID_ES_PAYLOADS = {
-    "2018": (
-        "payloads/tau_embedding/Run2-2018-UL-NanoAODv15/"
-        "DeepTau2018v2p5_id_es_embedding2018UL.json.gz"
-    ),
+    era: (
+        f"payloads/tau_embedding/Run2-{era}-UL-NanoAODv15/"
+        f"DeepTau2018v2p5_id_es_embedding{era}UL.json.gz"
+    )
+    for era in ERAS_RUN2
 }
 
 

@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
-from analysis_configurations.bbtautau.tests.helpers import build, era_cases, find_producer
+from analysis_configurations.bbtautau.tests.helpers import build, find_producer
 
 ANALYSIS = Path(__file__).resolve().parents[1]
 CROWN = ANALYSIS.parents[1]
@@ -148,7 +148,7 @@ def test_btag_efficiency_payload_of_the_era(era, scope):
     assert {item["key"] for item in working_points["content"]} == {"T", "M"}
 
 
-@pytest.mark.parametrize("era", era_cases(ERAS_RUN2, "tau_embedding_payloads"))
+@pytest.mark.parametrize("era", ERAS_RUN2)
 def test_embedding_tau_payload_of_the_era(era):
     params = nominal(era, "mt", "embedding")
     path = params["tau_vsjet_es_sf_file"]

@@ -27,7 +27,6 @@ from analysis_configurations.bbtautau.tests.helpers import (
     find_producer,
     generate_code,
     output_names,
-    pending,
     producer_names,
 )
 
@@ -46,14 +45,12 @@ ZZ_TO_2NU2Q = ("ZZTo2Nu2Q_5f_", "ZZTo2Q2Nu_")
 
 
 def sm_era_cases(*rows, nmssm=()):
-    """``pytest.param`` rows of sm_config in every Run-2 era (embedding marked
-    ``pending`` where its tau payload is missing) and of nmssm_config in 2018. Each
-    row starts with module and sample; the era follows them."""
+    """``pytest.param`` rows of sm_config in every Run-2 era and of nmssm_config in
+    2018. Each row starts with module and sample; the era follows them."""
     cases = []
     for row in rows:
         for era in ERAS_RUN2:
-            marks = pending(era, "tau_embedding_payloads") if row[1] == "embedding" else []
-            cases.append(pytest.param(row[0], row[1], era, *row[2:], marks=marks))
+            cases.append(pytest.param(row[0], row[1], era, *row[2:]))
     cases += [pytest.param(row[0], row[1], "2018", *row[2:]) for row in nmssm]
     return cases
 

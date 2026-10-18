@@ -25,7 +25,6 @@ from analysis_configurations.bbtautau.tau_triggersetup import (
 from analysis_configurations.bbtautau.tests.helpers import (
     V15_EMBEDDING_BRANCHES,
     build,
-    era_cases,
     find_producer,
     generate_code,
     nanoaod_inputs,
@@ -123,13 +122,21 @@ def shifts_of(config, scope):
         ("2018", ["ee"], "only, got"),
         ("2018", ["mt", "mm"], "only, got"),
         ("2024", ["mt"], "era '2024'"),
-        # the SM corrects the embedded taus: an era without its tau payload raises
-        ("2017", ["mt"], "No embedding tau ID/ES payload for era '2017'"),
     ],
 )
 def test_requests_outside_the_profile_raise(era, scopes, message):
     with pytest.raises(ValueError, match=message):
         embedding_run2_v15.setup(None, SM_PROFILE, era, scopes)
+
+
+def test_an_era_without_its_tau_payload_raises(monkeypatch):
+    """The SM corrects the embedded taus: an era without its tau payload raises
+    (every Run-2 era has one, so the table is patched)."""
+    payloads = dict(embedding_run2_v15.TAU_EMBEDDING_ID_ES_PAYLOADS)
+    del payloads["2017"]
+    monkeypatch.setattr(embedding_run2_v15, "TAU_EMBEDDING_ID_ES_PAYLOADS", payloads)
+    with pytest.raises(ValueError, match="No embedding tau ID/ES payload for era '2017'"):
+        embedding_run2_v15.setup(None, SM_PROFILE, "2017", ["mt"])
 
 
 def test_only_the_eff_data_tt_trigger_is_implemented():
@@ -359,12 +366,13 @@ def test_embedding_shifts_are_the_payload_tau_shifts_and_reach_their_producers(s
             assert set(change) <= reader, name
 
 
-def test_tau_payload_contract():
-    """The two corrections read from the payload cover the analysis working points,
-    are flat in pT (no step at 40 GeV), and are 1 for every tau that is not a
-    genuine hadronic tau."""
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_payload_contract(era):
+    """The two corrections read from the payload of every era cover the analysis
+    working points, are flat in pT (no step at 40 GeV), and are 1 for every tau that
+    is not a genuine hadronic tau."""
     correctionlib = pytest.importorskip("correctionlib")
-    payload = ANALYSIS / TAU_PAYLOAD
+    payload = ANALYSIS / embedding_run2_v15.TAU_EMBEDDING_ID_ES_PAYLOADS[era]
     corrections = correctionlib.CorrectionSet.from_file(str(payload))
     names = {c["name"] for c in json.load(gzip.open(payload))["corrections"]}
     assert {"DeepTau2018v2p5VSjet", "tau_energy_scale_dm_binned"} <= names
