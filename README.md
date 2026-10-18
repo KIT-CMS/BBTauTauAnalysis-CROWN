@@ -372,8 +372,10 @@ The inputs of an era are entries of three tables, so nothing else in the module 
 `data/embedding/{embeddingselection,muon,electron}_<era>UL.json.gz`, the trigger SFs of the analysis
 triggers of the era, and the MET filters the era's files lack), `TAU_EMBEDDING_ID_ES_PAYLOADS[era]` (the
 measured tau energy scale and vsJet SF, `payloads/tau_embedding/Run2-<era>-UL-NanoAODv15/`) and
-`TT_EMBEDDING_TRIGGER_EFFICIENCIES[era]`. The tau payloads of all four eras are measured with
-ShapeSmith on the tau-ID production `smrun2_tau_id_v1` (v7 spec 5.4, `payloads/tau_embedding/README.md`);
+`TT_EMBEDDING_TRIGGER_EFFICIENCIES[era]` (the measured efficiency of the di-tau leg in data,
+`payloads/tau_trigger_embedding/Run2-<era>-UL-NanoAODv15/`). The tau and tt trigger payloads of all four
+eras are measured with ShapeSmith on the tau-ID production `smrun2_tau_id_v1` (v7 spec 5.4 and E33,
+`payloads/tau_embedding/README.md`, `payloads/tau_trigger_embedding/README.md`);
 an `sm_config` embedding build of an era without one raises `ValueError`, while the tau-ID
 measurement, which leaves the embedded taus uncorrected, builds in every era.
 
@@ -402,15 +404,15 @@ therefore has no trigger requirement and is weighted with the data efficiency of
 each tau (v7 spec E33, variant A; `tt_embedding_trigger = "eff_data"`, the only implemented value):
 `trg_effdata_emb_Medium_<leg>` for taus that pass vsJet Medium and `trg_effdata_emb_AntiMedium_<leg>`
 for the anti-isolated ones of the fake-factor application region, both written for both taus; the
-event weight takes the class of each tau downstream. Until ShapeSmith's own measurement of the tau leg
-on the tau-ID production exists, the efficiencies are the POG v15 `tau_trigger` `eff_data` of the era
-(DeepTau2018v2p5, `ditau`): Medium for the isolated class and VVVLoose, the closest POG working point,
-for the anti-isolated one (`TT_EMBEDDING_TRIGGER_EFFICIENCIES`; the own payload brings
-`VVVLoose_not_Medium`). The AntiMedium value is a stopgap: VVVLoose contains the Medium taus, while
-the class is VVVLoose and not Medium (doc 12.6), so the datacards need an lnN for it until the own
-payload replaces it. Below the first p<sub>T</sub> edge of the POG payload (39.6 GeV, flow "error")
-the core evaluation catches the error and returns 1.0 (taus are selected from 20 GeV; the tt trigger
-p<sub>T</sub> cut of 40 GeV is applied downstream). They have no shifts yet (v7 is nominal only, E34). The flags of the MC names stay
+event weight takes the class of each tau downstream. The efficiencies are ShapeSmith's own measurement
+of the tau leg in data with &mu;&tau;<sub>h</sub> tag and probe on the tau-ID production
+`smrun2_tau_id_v1` (`TT_EMBEDDING_TRIGGER_EFFICIENCIES[era]`,
+`payloads/tau_trigger_embedding/Run2-<era>-UL-NanoAODv15/`, see its README): wp `Medium` for the
+isolated class and `VVVLoose_not_Medium` for the anti-isolated one, per decay mode and p<sub>T</sub>
+bin, with flow clamp (no p<sub>T</sub> falls back to the silent 1.0 of the core evaluation; the tt
+trigger p<sub>T</sub> cut of 40 GeV is applied downstream). They replace the POG v15 `eff_data` (Medium,
+and VVVLoose for the anti-isolated class) used until the measurement. They have no shifts yet (v7 is
+nominal only, E34); the payload carries `up`/`down`. The flags of the MC names stay
 as diagnostic columns, matched to the filter bits of TauEmbeddingSamplesUL without an HLT path
 (`triggers.TauTauTriggerFlagsEmbedding`): 2016 the final filter (bits 1 and 8), 2017 and 2018 the
 embedding di-tau L2 filter bit 23. The KIT file `tau_trigger<era>_UL` (DeepTau2017v2p1) is no longer

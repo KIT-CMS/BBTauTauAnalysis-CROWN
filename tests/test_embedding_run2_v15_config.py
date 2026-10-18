@@ -8,6 +8,7 @@ a NanoAOD branch the v15 embedding files do not contain.
 
 from dataclasses import replace
 import gzip
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -36,6 +37,12 @@ ANALYSIS = Path(__file__).resolve().parents[1]
 CROWN = ANALYSIS.parents[1]
 CHANNELS = ("et", "mt", "tt")
 POG_TAU_FILE = "/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-{era}-UL-NanoAODv15/2025-11-27/tau.json.gz"
+# E33: the eff_data of the di-tau leg measured with ShapeSmith (doc 12.6)
+TT_TRIGGER_PAYLOAD = (
+    "payloads/tau_trigger_embedding/Run2-{era}-UL-NanoAODv15/"
+    "ditau_trigger_DeepTau2018v2p5_embedding{era}UL.json.gz"
+)
+TT_TRIGGER_CLASSES = {"Medium": "Medium", "AntiMedium": "VVVLoose_not_Medium"}
 TAU_PAYLOAD = embedding_run2_v15.TAU_EMBEDDING_ID_ES_PAYLOADS["2018"]
 # the corrected embedding without its tau payload: builds in every era
 UNCORRECTED = replace(SM_PROFILE, embedding_tau_corrections=False)
@@ -191,7 +198,7 @@ def test_embedding_reads_the_payloads_of_its_era(era):
     assert {e["flagname"]: e["mc_trigger_sf"] for e in et["singlelectron_trigger_sf_mc"]} == (
         payloads.electron_trigger_sfs
     )
-    assert tt["tt_embedding_trigger_eff_file"] == POG_TAU_FILE.format(era=era)
+    assert tt["tt_embedding_trigger_eff_file"] == TT_TRIGGER_PAYLOAD.format(era=era)
     for scope in CHANNELS:
         for key, value in parameters(config, scope).items():
             if key.startswith(("embedding_", "tt_embedding_")) and str(value).endswith(".json.gz"):
@@ -253,10 +260,10 @@ def test_event_level_and_lepton_scale_factors():
     assert "EleID_SF" not in producer_names(config, "et")
     assert "TauEmbeddingMuonIDIsoSF" in producer_names(config, "mt")
     assert not {"MuonIDIso_SF", "SingleMuTriggerSF"} & producer_names(config, "mt")
-    # E33: no KIT tt trigger file, the POG eff_data of the era instead
+    # E33: no KIT tt trigger file and no MC trigger SF, the own eff_data of the era instead
     tt = parameters(config, "tt")
-    assert (tt["tau_trigger_sf_file"], tt["tau_trigger_cset_name"]) == (
-        POG_TAU_FILE.format(era="2018"),
+    assert (tt["tt_embedding_trigger_eff_file"], tt["tt_embedding_trigger_eff_name"]) == (
+        TT_TRIGGER_PAYLOAD.format(era="2018"),
         "tau_trigger",
     )
     assert "TauTauTriggerFlagsAndEffDataEmbedding" in producer_names(config, "tt")
@@ -293,10 +300,10 @@ def test_rendered_calls_of_the_embedding_producers():
     # overload (no trigger requirement)
     efficiency = " ".join(flags_and_efficiency[len(flags):].split())
     for leg in (1, 2):
-        for iso, wp in (("Medium", "Medium"), ("AntiMedium", "VVVLoose")):
+        for iso, wp in TT_TRIGGER_CLASSES.items():
             assert (
                 f'"trg_effdata_emb_{iso}_{leg}", "pt_{leg}", "tau_decaymode_{leg}", '
-                f'"{POG_TAU_FILE.format(era="2018")}", "tau_trigger", "ditau", "{wp}", '
+                f'"{TT_TRIGGER_PAYLOAD.format(era="2018")}", "tau_trigger", "ditau", "{wp}", '
                 '"eff_data", "nom")'
             ) in efficiency
     assert efficiency.count("scalefactor::Trigger(") == 4
@@ -317,21 +324,35 @@ def test_tt_embedding_filter_bits_of_the_era(era):
 
 @pytest.mark.parametrize("era", ERAS_RUN2)
 def test_tt_embedding_trigger_efficiencies_evaluate(era):
-    """12.6: every combination the consumer books (working point of each isolation
-    class, eff_data, decay mode, nominal) evaluates without exception in the tt
-    acceptance -- the flag-free overload would return 1 silently otherwise."""
+    """12.6: the own payload of the era, and every combination the consumer books
+    (working point of each isolation class, eff_data, every decay mode it passes,
+    nominal and both shifts) evaluates without exception to 0 < eff <= 1 with
+    down <= nom <= up, also below and above the measured pT range (flow clamp) --
+    the flag-free overload would return 1 silently otherwise."""
     correctionlib = pytest.importorskip("correctionlib")
     efficiency = embedding_run2_v15.TT_EMBEDDING_TRIGGER_EFFICIENCIES[era]
-    path = efficiency.file or POG_TAU_FILE.format(era=era)
-    if not Path(path).is_file():
-        pytest.skip("TAU payloads require CVMFS")
-    correction = correctionlib.CorrectionSet.from_file(path)[efficiency.correction]
-    assert set(efficiency.working_points) == {"Medium", "AntiMedium"}
+    assert efficiency.file == TT_TRIGGER_PAYLOAD.format(era=era)
+    assert dict(efficiency.working_points) == TT_TRIGGER_CLASSES
+    correction = correctionlib.CorrectionSet.from_file(str(ANALYSIS / efficiency.file))[efficiency.correction]
+    # the consumer passes dm -1 for every decay mode other than 0, 1, 10, 11
     for wp in efficiency.working_points.values():
-        for dm in (0, 1, 10, 11):
-            for pt in (40.0, 60.0, 150.0, 1000.0):
-                value = correction.evaluate(pt, dm, "ditau", wp, "eff_data", "nom")
-                assert 0 < value <= 1, (wp, dm, pt, value)
+        for dm in (-1, 0, 1, 10, 11):
+            for pt in (20.0, 39.9, 40.0, 42.5, 47.5, 55.0, 70.0, 100.0, 150.0, 1000.0, 5000.0):
+                values = {syst: correction.evaluate(pt, dm, "ditau", wp, "eff_data", syst) for syst in ("nom", "up", "down")}
+                assert all(0 < v <= 1 for v in values.values()), (wp, dm, pt, values)
+                assert values["down"] <= values["nom"] <= values["up"], (wp, dm, pt, values)
+            # flow clamp: the first and the last bin continue beyond the edges
+            assert correction.evaluate(20.0, dm, "ditau", wp, "eff_data", "nom") == correction.evaluate(40.0, dm, "ditau", wp, "eff_data", "nom")
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tt_embedding_trigger_payload_is_the_one_its_readme_records(era):
+    """payloads/tau_trigger_embedding/README.md records the sha256 of every file."""
+    path = ANALYSIS / TT_TRIGGER_PAYLOAD.format(era=era)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    readme = (ANALYSIS / "payloads/tau_trigger_embedding/README.md").read_text()
+    (row,) = [line for line in readme.splitlines() if f"`Run2-{era}-UL-NanoAODv15/" in line and "sha256" not in line]
+    assert f"`{digest}`" in row
 
 
 def expected_shifts():

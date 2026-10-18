@@ -474,8 +474,8 @@ ETGenerateSingleElectronTriggerSF = ExtendedVectorProducer(
 # classes Medium (signal region) and AntiMedium (VVVLoose and not Medium, the
 # application region of the fake factors), from the vec configurations
 # tt_embedding_trigger_eff_leg1/2 (embedding_run2_v15). The tau-trigger overload
-# without flag returns 1 where the payload throws (pT below its range), which the
-# tt selection (pT > 40 GeV) never reaches.
+# without flag returns 1 where the payload throws; the measured payloads clamp pT
+# beyond their edges, so it never does.
 _TT_EMBEDDING_TRIGGER_EFF_CALL = """physicsobject::tau::scalefactor::Trigger(
         {df},
         correctionManager,

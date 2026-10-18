@@ -108,15 +108,18 @@ class TtEmbeddingTriggerEfficiency:
     working_points: Mapping[str, str]
 
 
-# v7 spec E33 (docs v7_tt_emb_trigger 12.6): until ShapeSmith's own measurement of
-# the di-tau leg in data exists, the POG v15 eff_data (DeepTau2018v2p5): Medium for
-# the isolated taus and VVVLoose, the closest POG working point, for the
-# anti-isolated ones. The own payload brings the class VVVLoose_not_Medium.
+# v7 spec E33 (docs v7_tt_emb_trigger 12.6): the eff_data of the di-tau leg measured
+# per era with ShapeSmith on smrun2_tau_id_v1 (mu tau_h tag and probe) at
+# payloads/tau_trigger_embedding/Run2-<era>-UL-NanoAODv15/, in both isolation
+# classes: Medium and VVVLoose_not_Medium (VVVLoose and not Medium).
 TT_EMBEDDING_TRIGGER_EFFICIENCIES = {
     era: TtEmbeddingTriggerEfficiency(
-        file=None,
+        file=(
+            f"payloads/tau_trigger_embedding/Run2-{era}-UL-NanoAODv15/"
+            f"ditau_trigger_DeepTau2018v2p5_embedding{era}UL.json.gz"
+        ),
         correction="tau_trigger",
-        working_points={"Medium": "Medium", "AntiMedium": "VVVLoose"},
+        working_points={"Medium": "Medium", "AntiMedium": "VVVLoose_not_Medium"},
     )
     for era in ERAS_RUN2
 }
