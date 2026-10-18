@@ -214,31 +214,68 @@ def test_trigger_tables_match_the_module():
     assert tau_id_measurement.TM_KIT_TRIGGER_SFS == ERA_TRIGGER_SFS
 
 
+# The POG muon trigger SFs of MC per era (decision of 2026-10-18): column ->
+# correction of the era's muon_Z payload, and its pT range (|eta| < 2.4). 2018 has
+# no POG IsoMu27 SF; IsoMu24 || IsoMu27 is IsoMu24 there, so all three columns
+# take the IsoMu24 SF.
+POG_ISOMU24_2016 = "NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight"
+ERA_POG_TRIGGER_SFS = {
+    "2016preVFP": ({"trg_wgt_single_mu22": POG_ISOMU24_2016}, 26.0),
+    "2016postVFP": ({"trg_wgt_single_mu22": POG_ISOMU24_2016}, 26.0),
+    "2017": ({"trg_wgt_single_mu27": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight"}, 29.0),
+    "2018": (
+        {column: "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight" for column in TRIGGER_SFS},
+        26.0,
+    ),
+}
+
+
 @pytest.mark.parametrize("era", ERAS_RUN2)
-@pytest.mark.parametrize("sample,producer,sf_type", [
-    ("dyjets", "KitSingleMuonTriggerSF", "mc"),
-    ("embedding", "MTGenerateSingleMuonTriggerSF", "emb"),
-])
+@pytest.mark.parametrize("sample", ("dyjets", "wjets", "ttbar"))
 @pytest.mark.parametrize("scope", SCOPES)
-def test_trigger_sfs_are_the_kit_sfs_of_the_first_muon(sample, producer, sf_type, scope, era):
-    """MC evaluates with the pT cap of a defective payload bin (2016preVFP: 199.9 GeV
-    below |eta| 0.9, none elsewhere), embedding with the core function."""
-    sfs = calls(sample, scope, producer, era)
+def test_mc_trigger_sfs_are_the_pog_sfs_of_the_first_muon(sample, scope, era):
+    """MC evaluates the POG muon_Z trigger SF of the era (the muon ID/iso SF file),
+    clamped into its pT range from 26 GeV (2017: 29) and |eta| < 2.4, so the 2018
+    IsoMu24 flag from 25 GeV and the 2016 flags from 24 GeV take the lowest bin."""
+    sfs = calls(sample, scope, "PogSingleMuonTriggerSF", era)
+    columns, min_pt = ERA_POG_TRIGGER_SFS[era]
+    payload = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-{era}-UL-NanoAODv9/2024-07-02/muon_Z.json.gz"
+    for column, correction in columns.items():
+        assert (
+            f'"{column}", "pt_1", "eta_1", "{payload}", "{correction}", "nominal", 1.0, {min_pt}, 2.4)'
+        ) in sfs
+    assert sfs.count("pog_muon_trigger(") == len(columns)
+    names = producer_names(measurement(sample, era=era), scope)
+    assert not {"SingleMuTriggerSF", "KitSingleMuonTriggerSF", "MTGenerateSingleMuonTriggerSF"} & names
+    if Path(payload).is_file():
+        corrections = {c["name"] for c in json.load(gzip.open(payload))["corrections"]}
+        assert set(columns.values()) <= corrections
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize("scope", SCOPES)
+def test_embedding_trigger_sfs_are_the_kit_sfs_of_the_first_muon(scope, era):
+    """Embedding keeps the KIT trigger SFs (type emb) of the era with the core
+    function, and no MC trigger SF."""
+    sfs = calls("embedding", scope, "MTGenerateSingleMuonTriggerSF", era)
     for column, correction in ERA_TRIGGER_SFS[era].items():
-        cap = ""
-        if sf_type == "mc":
-            capped = (era, correction) == ("2016preVFP", "Trg_pt_eta_bins")
-            cap = ", 199.9, 0.9" if capped else ", 1000.0, 0.0"
         assert (
             f'"{column}", "pt_1", "eta_1", "data/embedding/muon_{era}UL.json.gz", '
-            f'"{correction}", "{sf_type}", 1.0{cap})'
+            f'"{correction}", "emb", 1.0)'
         ) in sfs
-    function = "kit_muon_trigger(" if sf_type == "mc" else "Scalefactor("
-    assert sfs.count(function) == len(ERA_TRIGGER_SFS[era])
-    assert "SingleMuTriggerSF" not in producer_names(measurement(sample, era=era), scope)
+    assert sfs.count("Scalefactor(") == len(ERA_TRIGGER_SFS[era])
+    names = producer_names(measurement("embedding", era=era), scope)
+    assert not {"SingleMuTriggerSF", "PogSingleMuonTriggerSF"} & names
     payload = CROWN / f"data/embedding/muon_{era}UL.json.gz"
     corrections = {c["name"] for c in json.load(gzip.open(payload))["corrections"]}
     assert set(ERA_TRIGGER_SFS[era].values()) <= corrections
+
+
+def test_pog_trigger_table_matches_the_module():
+    assert {
+        era: {column: correction for column, correction in sfs.items()}
+        for era, sfs in tau_id_measurement.TM_POG_TRIGGER_SFS.items()
+    } == {era: columns for era, (columns, _) in ERA_POG_TRIGGER_SFS.items()}
 
 
 @pytest.mark.parametrize("era", ERAS_RUN2)
@@ -466,7 +503,7 @@ def test_no_mc_shift_leaves_its_columns_nominal():
         "CMS_fake_t_DeepTau2018v2p5_VSe": "TauIDVsEleSF2",
         "CMS_fake_t_DeepTau2018v2p5_VSmu": "TauIDVsMuSF2",
         "CMS_scale_t_": "TauPtCorrectionMC",
-        "CMS_eff_m_trigger": "KitSingleMuonTriggerSF",
+        "CMS_eff_m_trigger": "PogSingleMuonTriggerSF",
         "CMS_scale_met_RecoilCalibration": "RecoilCorrectionMet",
         "CMS_res_met_RecoilCalibration": "RecoilCorrectionMet",
     }

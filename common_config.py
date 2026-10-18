@@ -2434,11 +2434,13 @@ def build_config(
     em_ele_trigger_sf = None if sm_light_controls else single_ele_trigger_sf
 
     # The single-lepton triggers of the KIT trigger SFs (v7 spec E2-E6, K8): the
-    # analysis triggers of the era matched within Delta R 0.1, and the KIT muon
-    # trigger SF of the era in MC (E5) in place of the POG one.
+    # analysis triggers of the era matched within Delta R 0.1. The muon trigger SF
+    # of MC is the POG one of the era (decision of 2026-10-18, in place of the KIT
+    # MC SF of E5), evaluated at every pT within the payload range
+    # (tau_triggersetup.POG_SINGLE_MUON_TRIGGER_SFS); embedding keeps the KIT SF.
     kit_single_lepton_triggers = profile.kit_single_lepton_triggers and era in ERAS_RUN2
     single_mu_trigger_sf = (
-        scalefactors.KitSingleMuonTriggerSF
+        scalefactors.PogSingleMuonTriggerSF
         if kit_single_lepton_triggers
         else scalefactors.SingleMuTriggerSF
     )
@@ -4455,8 +4457,9 @@ def build_config(
             )
 
     # Add shifts for single muon trigger SFs to scopes with at least one muon: the
-    # KIT SFs are scaled by 1.02 / 0.98 (CMS_eff_m_trigger_<era>, the TauAnalysis
-    # convention, v7 spec C6). The tau-ID measurement adds its own after setting
+    # SFs of the Run-2 single-lepton triggers are scaled by 1.02 / 0.98
+    # (CMS_eff_m_trigger_<era>, the TauAnalysis convention of the KIT SFs, v7 spec
+    # C6, kept for the POG SF of MC). The tau-ID measurement adds its own after setting
     # its trigger SFs, see tau_id_measurement.
     if not profile.tau_id_measurement:
         for scope in MUON_SCOPES:

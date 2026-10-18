@@ -6,15 +6,16 @@ measurement production SFs_EMB_Run2_04_08_26 (TauAnalysis config_run2_v15), the
 precedent listed in the README section "Tau-ID measurement":
 
 - the single-muon trigger of the era (TM_SINGLE_MUON_TRIGGERS) in data, MC and
-  embedding, with the KIT trigger SFs of the Tau Embedding group
-  (TM_KIT_TRIGGER_SFS; type "mc" in MC, "emb" in embedding): 2016 the IsoMu22
-  family, 2017 IsoMu27, 2018 IsoMu24 || IsoMu27 as the precedent;
+  embedding: 2016 the IsoMu22 family, 2017 IsoMu27, 2018 IsoMu24 || IsoMu27 as
+  the precedent; in MC with the POG trigger SF of the era (TM_POG_TRIGGER_SFS,
+  decision of 2026-10-18), in embedding with the KIT trigger SFs of the Tau
+  Embedding group (TM_KIT_TRIGGER_SFS, type "emb");
 - the KIT muon ID and isolation SFs in MC, of both muons in mm;
 - the MC tau energy scale of vsJet Loose and vsJet SFs for Medium and Tight;
 - the L1 prefiring weight of MC (v7 spec E11, 2018 the muon part), written by
   build_config with its Up/Dn columns (prefiring_weight_columns);
 - the MC shifts of the analysis, except for the vsJet SF it measures and the POG
-  muon SFs it replaces, plus the shifts of its KIT trigger SF and the prefiring
+  muon ID/iso SFs it replaces, plus the shifts of its trigger SF and the prefiring
   weight (the exception of v7 spec E34: the measurement production keeps its MC
   shifts).
 
@@ -42,7 +43,8 @@ from .tau_triggersetup import (
     TAU_LEG_EMBEDDING_FILTERS,
     TAU_LEG_MONITOR_TRIGGERS,
     TAU_LEG_TRIGGER_OBJECT_BITS,
-    kit_muon_trigger_sf_max_pt,
+    POG_SINGLE_MUON_TRIGGER_SFS,
+    pog_muon_trigger_sf_entries,
     single_lepton_triggers,
     tau_leg_flags,
 )
@@ -77,13 +79,25 @@ TM_SINGLE_MUON_TRIGGERS = {
         ]
     ],
 }
-# trigger SF column -> correction of the Tau Embedding group payload per era
+# trigger SF column -> correction of the Tau Embedding group payload per era, for
+# the embedding
 TM_KIT_TRIGGER_SFS = {
     **{era: KIT_SINGLE_MUON_TRIGGER_SFS[era] for era in ("2016preVFP", "2016postVFP", "2017")},
     "2018": {
         "trg_wgt_single_mu24": "Trg_IsoMu24_pt_eta_bins",
         "trg_wgt_single_mu27": "Trg_IsoMu27_pt_eta_bins",
         "trg_wgt_single_mu24ormu27": "Trg_IsoMu27_or_IsoMu24_pt_eta_bins",
+    },
+}
+# trigger SF column -> correction of the POG muon_Z payload per era, for MC. 2018
+# has no POG IsoMu27 SF: IsoMu24 is unprescaled there and fires whenever IsoMu27
+# does, so the selection IsoMu24 || IsoMu27 is IsoMu24 and all three columns take
+# its SF (_mu27 is read above 28 GeV, where both triggers are on the plateau).
+TM_POG_TRIGGER_SFS = {
+    **{era: POG_SINGLE_MUON_TRIGGER_SFS[era] for era in ("2016preVFP", "2016postVFP", "2017")},
+    "2018": {
+        column: POG_SINGLE_MUON_TRIGGER_SFS["2018"]["trg_wgt_single_mu24"]
+        for column in TM_KIT_TRIGGER_SFS["2018"]
     },
 }
 # The eras whose MC gets the prefiring shifts (E11; 2018: the muon prefiring)
@@ -111,27 +125,18 @@ def setup(configuration: Configuration, era: str, sample: str, scopes: list[str]
 
 
 def _add_muon_triggers(configuration: Configuration, era: str):
-    # The KIT SF producer of MC (scalefactors.KitSingleMuonTriggerSF) and its output
+    # The POG SF producer of MC (scalefactors.PogSingleMuonTriggerSF) and its output
     # come from build_config (kit_single_lepton_triggers); the common rules remove
-    # it from data and embedding, which embedding_run2_v15 gives the "emb" SFs.
-    sfs = TM_KIT_TRIGGER_SFS[era]
+    # it from data and embedding, which embedding_run2_v15 gives the KIT "emb" SFs.
     configuration.add_config_parameters(
         MEASUREMENT_SCOPES,
         {
             "mu_trigger": TM_SINGLE_MUON_TRIGGERS[era],
-            "singlemuon_trigger_sf_mc": [
-                {
-                    "flagname": flag,
-                    "mc_trigger_sf": sf,
-                    "mc_muon_trg_extrapolation": 1.0,
-                    **kit_muon_trigger_sf_max_pt(era, sf),
-                }
-                for flag, sf in sfs.items()
-            ],
+            "singlemuon_trigger_sf_mc": pog_muon_trigger_sf_entries(era, TM_POG_TRIGGER_SFS[era]),
             # in place of the analysis SFs of embedding_run2_v15
             "singlemuon_trigger_sf": [
                 {"flagname": flag, "embedding_trigger_sf": sf, "muon_trg_extrapolation": 1.0}
-                for flag, sf in sfs.items()
+                for flag, sf in TM_KIT_TRIGGER_SFS[era].items()
             ],
         },
     )
@@ -196,11 +201,11 @@ def _add_mc_tau_corrections(configuration: Configuration):
 
 
 def _add_mc_shifts(configuration: Configuration, era: str):
-    # the other MC shifts are the common ones of build_config; the KIT trigger SF
+    # the other MC shifts are the common ones of build_config; the trigger SF
     # shift CMS_eff_m_trigger_<era> (x 1.02 / 0.98) in mt, where the measurement
     # has its trigger uncertainty
     add_single_muon_trigger_extrapolation_shifts(
-        configuration, era, [scalefactors.KitSingleMuonTriggerSF], "mt"
+        configuration, era, [scalefactors.PogSingleMuonTriggerSF], "mt"
     )
     # CMS_ecal_prefiring_<year> of the prefiring weight, which build_config
     # writes on MC (prefiring_weight_columns) without shifts

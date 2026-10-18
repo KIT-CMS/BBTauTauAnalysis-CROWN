@@ -1071,26 +1071,26 @@ TauEmbeddingMuonIDIsoSF_MC = ProducerGroup(
     },
 )
 
-# KIT (Tau Embedding group) single-muon trigger SFs of MC, one per configured
-# trigger (singlemuon_trigger_sf_mc), of the muon of mt and em and the first muon of
-# mm, evaluated at every pT and iso (the flags select downstream); the payload has
-# no uncertainties, the shift scales the SF by 1.02 / 0.98. A muon above
-# mc_trigger_sf_max_pt with |eta| below mc_trigger_sf_max_pt_max_abs_eta is
-# evaluated at mc_trigger_sf_max_pt, which keeps a defective payload bin out
-# (tau_triggersetup.KIT_MUON_TRIGGER_SF_MC_MAX_PT).
-KitSingleMuonTriggerSF = ExtendedVectorProducer(
-    name="KitSingleMuonTriggerSF",
-    call="""xyh::scalefactor::kit_muon_trigger(
+# POG (MUO) single-muon trigger SFs of MC, one per configured trigger
+# (singlemuon_trigger_sf_mc, tau_triggersetup.POG_SINGLE_MUON_TRIGGER_SFS), of the
+# muon of mt and em and the first muon of mm, from the muon_Z payload of the era
+# (muon_sf_file), evaluated at every pT and iso (the flags select downstream) at the
+# pT and |eta| clamped into the payload range (mc_trigger_sf_min_pt,
+# mc_trigger_sf_max_abs_eta), as the payload throws outside it. The shift scales
+# the SF by 1.02 / 0.98 (mc_muon_trg_extrapolation, CMS_eff_m_trigger_<era>).
+PogSingleMuonTriggerSF = ExtendedVectorProducer(
+    name="PogSingleMuonTriggerSF",
+    call="""xyh::scalefactor::pog_muon_trigger(
         {df}, 
         correctionManager, 
         {output}, 
         {input}, 
-        "{mc_muon_sf_file}", 
+        "{muon_sf_file}", 
         "{mc_trigger_sf}", 
-        "mc", 
+        "nominal", 
         {mc_muon_trg_extrapolation},
-        {mc_trigger_sf_max_pt},
-        {mc_trigger_sf_max_pt_max_abs_eta})
+        {mc_trigger_sf_min_pt},
+        {mc_trigger_sf_max_abs_eta})
         """,
     input={
         "mt": [q.pt_1, q.eta_1],
