@@ -22,9 +22,8 @@ A config module may also declare `AVAILABLE_ERAS` and/or `AVAILABLE_SAMPLES`; `g
   X &rightarrow; YH &rightarrow; bb&tau;&tau; search. All eras, legacy (v9 / Run-3) inputs.
 * `sm_config.py` (`SM_PROFILE`) - The SM HH &rightarrow; bb&tau;&tau; production configuration:
   Run-2 NanoAOD-v15 inputs, UParTAK4 b-tagging, `AVAILABLE_ERAS = ERAS_RUN2` (2016preVFP, 2016postVFP,
-  2017, 2018), tau embedding in et, mt and tt (see [Tau embedding](#tau-embedding); built where the
-  era's embedding tau payload exists, 2018 so far). Sample lists per era in `sample_list/` (see its
-  `README.md`).
+  2017, 2018), tau embedding in et, mt and tt (see [Tau embedding](#tau-embedding)). Sample lists per
+  era in `sample_list/` (see its `README.md`).
 * `sm_btag_efficiency_config.py` (`SM_BTAG_EFFICIENCY_PROFILE`, a `dataclasses.replace(SM_PROFILE,
   ...)`) - The same selection, MC only and without b-tag scale factors, plus the probe-jet collection
   the UParT b-tag MC efficiency is measured from downstream in `TauFakeFactors`. Being
@@ -147,7 +146,7 @@ names (`Configuration._is_valid_shift`): `jes` selects every `jesUnc*` shift, `b
 Both SM profiles set `use_run2_v15_inputs = True`, for all four Run-2 eras (2016preVFP, 2016postVFP,
 2017, 2018) on one code path, which is why nothing on it is named after an era; genuinely era-specific
 choices are era-keyed parameters. The tau-ID measurement builds in every era; the embedding of
-`sm_config` needs the embedding tau payload of its era, which exists for 2018 only so far. Relative to
+`sm_config` reads the embedding tau payload of its era, measured for all four. Relative to
 the legacy Run-2 path NMSSM keeps using:
 
 - **Jet ID** -- v15 ships no usable `Jet_jetId`, so the AK4-PUPPI ID is evaluated from the composition
@@ -373,10 +372,10 @@ The inputs of an era are entries of three tables, so nothing else in the module 
 `data/embedding/{embeddingselection,muon,electron}_<era>UL.json.gz`, the trigger SFs of the analysis
 triggers of the era, and the MET filters the era's files lack), `TAU_EMBEDDING_ID_ES_PAYLOADS[era]` (the
 measured tau energy scale and vsJet SF, `payloads/tau_embedding/Run2-<era>-UL-NanoAODv15/`) and
-`TT_EMBEDDING_TRIGGER_EFFICIENCIES[era]`. The tau payload exists for 2018 only so far (2016 and 2017
-follow from the tau-ID measurement, v7 spec 5.4): an `sm_config` embedding build of another era raises
-`ValueError`, while the tau-ID measurement, which leaves the embedded taus uncorrected, builds in every
-era.
+`TT_EMBEDDING_TRIGGER_EFFICIENCIES[era]`. The tau payloads of all four eras are measured with
+ShapeSmith on the tau-ID production `smrun2_tau_id_v1` (v7 spec 5.4, `payloads/tau_embedding/README.md`);
+an `sm_config` embedding build of an era without one raises `ValueError`, while the tau-ID
+measurement, which leaves the embedded taus uncorrected, builds in every era.
 
 Embedded events are data apart from the simulated tau decays: golden JSON, data JEC, no pileup,
 b-tag, LHE-scale or top-pT weight, no JER. The MET filters drop `Flag_BadPFMuonDzFilter` in 2018, whose
@@ -394,8 +393,8 @@ corrections keep the MC column names and working points:
 | Tau vsE, vsMu SF | POG, as MC | same | same |
 
 The iso SFs take the correction of the lepton's `iso_1` bin (`xyh::scalefactor::embedding_iso_binned`,
-|&eta;| for muons, signed &eta; for electrons, like the core functions). The tau payload is preliminary,
-see `payloads/tau_embedding/README.md`. Electrons keep the EGM MC scale and smearing.
+|&eta;| for muons, signed &eta; for electrons, like the core functions). The tau payloads are described
+in `payloads/tau_embedding/README.md`. Electrons keep the EGM MC scale and smearing.
 
 The di-tau paths do not fire in embedding, and the efficiency of their tau leg in embedding cannot be
 measured in the &mu;&tau;<sub>h</sub> embedding (the di-tau filters need two taus). The tt embedding
@@ -557,8 +556,9 @@ the HLT branches and filter-bit doc strings of the eras' v15 files (`tests/fixtu
 `nanoaod_v15_trigobj_filterbits.json`, written by `tests/fixtures/make_hlt_fixtures.py`),
 `tests/test_v7_corrections.py` the prefiring columns, the MET propagation, the HEM flag and the electron
 SFs at the supercluster eta per era. Cases of an
-era that need a payload not measured yet are strict xfails listed in `tests.helpers.PENDING`: they
-turn into failures once the payload exists, and the entry goes. `tests.helpers.generate_code` emits the C++ code of a configuration in a
+era that need a payload not measured yet are strict xfails listed in `tests.helpers.PENDING` (empty
+since the embedding tau payloads of 2016 and 2017 exist): they turn into failures once the payload
+exists, and the entry goes. `tests.helpers.generate_code` emits the C++ code of a configuration in a
 subprocess, once per session; the embedding tests use it with a committed branch list of one v15
 embedding file (`tests/fixtures/nanoaod_v15_embedding_2018_branches.txt`). The synthetic b-tag fixtures
 (gitignored) are regenerated by the test from `tests/fixtures/make_btag_sf_strict_fixtures.py`.

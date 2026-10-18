@@ -16,7 +16,6 @@ from analysis_configurations.bbtautau.tests.helpers import (
     find_producer,
     generate_code,
     output_names,
-    pending,
     producer_names,
 )
 
@@ -31,13 +30,11 @@ def scopes_of(sample):
 
 
 def sample_era_cases(samples):
-    """``pytest.param`` per sample and era; sm_config builds the embedding of an era
-    once its embedding tau payload exists (``pending``)."""
+    """``pytest.param`` per sample and era."""
     return [
         pytest.param(
             sample,
             era,
-            marks=pending(era, "tau_embedding_payloads") if sample == "embedding" else [],
             id=f"{sample}-{era}",
         )
         for sample in samples
@@ -120,7 +117,6 @@ def test_jets_propagate_to_the_met_in_every_sample_type(sample, era):
         pytest.param(
             module,
             era,
-            marks=pending(era, "tau_embedding_payloads") if module == "sm_config" else [],
             id=f"{module}-{era}",
         )
         for module in ("sm_config", "sm_tau_id_measurement_config")

@@ -32,10 +32,7 @@ V15_EMBEDDING_BRANCHES = (
 # whose tests they break (keys: the items of the v7 spec, or the payloads still to
 # be measured). Tests mark those cases with ``pending``, a strict xfail: once a
 # part exists, its cases pass and fail the run until the entry here is removed.
-PENDING = {
-    # payloads still to be measured: the embedding tau ID/ES of 2016 and 2017
-    "tau_embedding_payloads": ("2016preVFP", "2016postVFP", "2017"),
-}
+PENDING = {}  # nothing pending: the embedding tau ID/ES payloads of every era are measured (v7 spec 5.4)
 
 
 def pending(era, *items):
