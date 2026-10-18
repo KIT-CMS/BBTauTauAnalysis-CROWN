@@ -311,13 +311,43 @@ def test_sm_recoil_correction_before_the_jet_propagation(sample, era):
     assert params["is_wjets"] is (sample == "wjets")
 
 
+# Every sample type the recoil rules exclude from RenameMet (common_config,
+# recoil_samples): the merged SM names and the legacy NMSSM ones.
+RECOIL_SAMPLE_TYPES = (
+    "dyjets", "wjets", "dyjets_madgraph", "dyjets_amcatnlo", "dyjets_amcatnlo_ll",
+    "dyjets_amcatnlo_tt", "dyjets_powheg", "wjets_madgraph", "wjets_amcatnlo",
+)
+
+
+@pytest.mark.parametrize("era", RECOIL_ERAS)
+@pytest.mark.parametrize("sample", RECOIL_SAMPLE_TYPES + ("ttbar", "diboson", "data", "embedding"))
+def test_sm_jet_scaled_pt_comes_with_the_recoil_chain(sample, era):
+    """Every sample type that keeps the recoil chain gets the JES-only jet pt it
+    propagates after the correction, also the legacy DY/W names (before, only the
+    merged dyjets/wjets did, and a v15 build of dyjets_amcatnlo read a column no
+    producer defined); the other samples get neither. Jet_scaledPt is an
+    intermediate column, not an output."""
+    config = build("sm_config", sample, era=era)
+    chain = has_producer(config, "mt", "MetJetScaleAfterRecoil")
+    assert chain is (sample in RECOIL_SAMPLE_TYPES)
+    assert all(has_producer(config, "mt", name) for name in RECOIL_CHAIN) is chain
+    assert has_producer(config, "global", "JetScaledPt") is chain
+    assert not any("Jet_scaledPt" in {q.name for q in outputs} for outputs in config.outputs.values())
+
+
 @pytest.mark.parametrize("era", RECOIL_ERAS)
 def test_sm_recoil_corrected_met_follows_the_jes_and_recoil_shifts(era):
     """The generated DY code writes the MET under the JES shifts (propagated after
-    the recoil correction through Jet_scaledPt) and under the recoil shifts."""
+    the recoil correction through Jet_scaledPt) and under the recoil shifts. The
+    unclustered-energy shift varies the NanoAOD PuppiMET, so for DY and W it acts
+    before the recoil correction, as it did before the fix (there through the
+    jet-propagated MET); the HTT recipe applies the recoil shifts instead of it to
+    recoil-corrected samples, to be decided with the shift production (nominal
+    unaffected, see variations/met.py)."""
     met = {o for o in generate_code("sm_config", "dyjets", era, shifts=("all",)).outputs["mt"] if o.startswith("met__")}
     assert {"met__CMS_scale_j_AbsoluteUp", f"met__CMS_scale_j_Absolute_{era}Down"} <= met
     assert {f"met__CMS_{kind}_met_RecoilCalibration_{era}{d}" for kind in ("scale", "res") for d in ("Up", "Down")} <= met
+    assert {f"met__CMS_scale_met_unclustered_energy_{era}{d}" for d in ("Up", "Down")} <= met
 
 
 @pytest.mark.parametrize("era", RECOIL_ERAS)

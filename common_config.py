@@ -3300,11 +3300,14 @@ def build_config(
         )
 
     # The jet energy scale without the JER smearing, which the v15 recoil
-    # correction of DY and W propagates to the MET after the correction
+    # correction of DY and W propagates to the MET after the correction: for
+    # every sample that keeps the recoil chain (recoil_samples, the exclusion
+    # list of the two rules above), so that no sample type reads Jet_scaledPt
+    # without its producer. It is an intermediate column, not an output.
     if v15_recoil_correction:
         configuration.add_modification_rule(
             GLOBAL_SCOPES,
-            AppendProducer([met.JetScaledPt], samples=sm_merged_dyw),
+            AppendProducer([met.JetScaledPt], samples=recoil_samples, update_output=False),
         )
 
     # Remove DeepTau ID scale factor producers from data samples
@@ -4390,6 +4393,8 @@ def build_config(
     #region
 
     # Propagation of unclustered energy shift to missing transverse momentum
+    # (for the recoil-corrected DY and W before the recoil correction, see the
+    # note in variations/met.py)
     add_unclustered_energy_shifts(configuration, era)
 
     # Uncertainties in the recoil calibration (none for the v15 eras without
