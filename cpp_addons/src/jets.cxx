@@ -963,6 +963,28 @@ ROOT::RDF::RNode MassCorrectionFromPt(ROOT::RDF::RNode df,
     return df1;
 }
 
+/**
+ * @brief Stores the jet \f$p_T\f$ after the jet energy scale correction and
+ * its shift, before the jet energy resolution smearing (`jet_pt_syst` of the
+ * `JECResult`). In data this is the fully corrected \f$p_T\f$. It is the jet
+ * \f$p_T\f$ whose difference to the NanoAOD jet \f$p_T\f$ carries the jet
+ * energy scale, but not the resolution smearing, to the MET.
+ *
+ * @param df input dataframe
+ * @param outputname name of the output column
+ * @param jec_result name of the column with the `JECResult` of every jet
+ *
+ * @return a dataframe with the new column
+ */
+ROOT::RDF::RNode ScaledPt(ROOT::RDF::RNode df, const std::string &outputname,
+                          const std::string &jec_result) {
+    auto func = [](const ROOT::RVec<JECResult> &result) {
+        return ROOT::VecOps::Map(
+            result, [](const JECResult &jet) { return jet.jet_pt_syst; });
+    };
+    return df.Define(outputname, func, {jec_result});
+}
+
 } // end namespace jec
 
 namespace quantities {

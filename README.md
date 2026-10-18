@@ -198,6 +198,19 @@ the legacy Run-2 path NMSSM keeps using:
   `ZPtBinsH` had the edges 0-5 instead of the 0/10/20/30/50/1000 GeV its labels name, so every event
   with a generator Z p<sub>T</sub> above 4 GeV got the `PtGt50` correction; CROWN 27262f4 fixed the
   edges, and the CROWN pin must contain it (`tests/test_sm_main_config.py` checks the edges per era).
+  The legacy files (2019, pre-UL data sets) describe v15 in 2018 only
+  (`constants.RUN2_V15_RECOIL_CORRECTION_ERAS`): there DY and W are corrected on the NanoAOD PuppiMET
+  with the propagated leptons, the MET the file was derived on, and the jet energy scale of the
+  re-calibrated jets (`Jet_scaledPt`: JES with its shifts, without the JER smearing) is propagated
+  afterwards, as in data (`met.MetScopesWithRecoilBeforeJets`). The JER smearing does not reach
+  their MET, as the recoil correction already gives the recoil the resolution of data. In 2016 and
+  2017 the files worsen the Z &rarr; &mu;&mu; MET closure, so DY and W have no recoil correction
+  and take the MET of every other simulated sample (`met.MetScopesWithoutRecoil`, no recoil shifts).
+  Z &rarr; &mu;&mu; with &ge; 2 recoil jets, data/MC (v7 &rarr; this setup) of the normalised MET
+  fraction at 60-150 GeV: 2016preVFP 0.96 &rarr; 1.04, 2016postVFP 0.91 &rarr; 0.98, 2017 0.70 &rarr;
+  0.91, 2018 0.78 &rarr; 0.97; of the fraction with mT(&mu;, MET) < 50 GeV: 0.965 &rarr; 0.972,
+  0.978 &rarr; 0.986, 1.038 &rarr; 1.016, 1.042 &rarr; 0.987 (study:
+  `/ceph/sdaigler/v7_results/met_recoil_study.md`).
 - **b-tagging** -- UParTAK4. `btag_payloads.py` reads the pinned per-era BTV payload
   (`BTV/Run2-<era>-UL-NanoAODv15/2026-06-18/btagging.json.gz`) with `btv_upart_payload`,
   `load_upart_wps` (working points) and `discover_upart_variations` (variation keys); MC efficiencies
@@ -500,7 +513,7 @@ everything not listed is the `sm_config` one.
 | vsJet SF, MC | `id_wgt_tau_vsJet_{Medium,Tight}_2`, wp_VSe VVLoose, `dm` | POG | Loose, Medium, Tight, VVLoose, `dm` | Medium |
 | vsJet SF, embedding | none | &ndash; | none | embedding payload |
 | vsEle / vsMu SF | `id_wgt_tau_vsEle_{VVLoose,Tight}_2`; `id_wgt_tau_vsMu_Tight_2` for both vsEle WPs (the v15 payload has no vsEle input) | POG | the same values, one vsMu column per vsEle WP | same |
-| MET recoil correction | DY and W (`dyjets`, `wjets`), jets of the HTT recipe | CROWN `data/recoil_corrections/Type1_PuppiMET_2018.root` (Z p<sub>T</sub> edges fixed in 27262f4) | DY and W (`MetCorrections_Run2`) | same |
+| MET recoil correction | DY and W (`dyjets`, `wjets`), jets of the HTT recipe, on the PuppiMET before the JES propagation; 2018 only | CROWN `data/recoil_corrections/Type1_PuppiMET_2018.root` (Z p<sub>T</sub> edges fixed in 27262f4) | DY and W (`MetCorrections_Run2`) | same |
 | b-tag SF | none | &ndash; | none | strict UParTAK4 weight |
 | Embedding tau p<sub>T</sub> threshold | 20/1.2 GeV | grid applied in ShapeSmith | 20 GeV, grid in CROWN | 20 GeV |
 

@@ -101,6 +101,10 @@ int main(int argc, char **argv) {
     df = correct(df, "nominal", true, "nom");
     df = correct(df, "unmatched", false, "nom");
     df = correct(df, "jer_up", true, "up");
+    // the JES-only pt that carries the jet energy scale to the MET of the
+    // recoil-corrected samples
+    df = physicsobject::jet::jec::ScaledPt(df, "nominal_scaled", "nominal_jec");
+    df = physicsobject::jet::jec::ScaledPt(df, "jer_up_scaled", "jer_up_jec");
 
     // Without JES shifts the JER input is the L2Relative-level pt, which is
     // the input pt itself if the JES is not reapplied
@@ -108,6 +112,8 @@ int main(int argc, char **argv) {
     auto nominal = df.Take<ROOT::RVec<float>>("nominal");
     auto unmatched = df.Take<ROOT::RVec<float>>("unmatched");
     auto jer_up = df.Take<ROOT::RVec<float>>("jer_up");
+    auto scaled = df.Take<ROOT::RVec<float>>("nominal_scaled");
+    auto scaled_up = df.Take<ROOT::RVec<float>>("jer_up_scaled");
 
     const ROOT::RVec<float> jer_pt = input->at(0);
     auto cset = correction::CorrectionSet::from_file(payload);
@@ -129,8 +135,18 @@ int main(int argc, char **argv) {
     };
     double max_input = 0., max_hybrid = 0., max_order = 0., max_variation = 0.;
     double s1 = 0., s2 = 0., s11 = 0., s22 = 0., s12 = 0.;
+    double max_scaled = 0., max_scaled_up = 0.;
+    unsigned smeared_differs = 0;
     for (unsigned e = 0; e < n; ++e) {
         const auto &p = (*nominal)[e];
+        for (int i = 0; i < 3; ++i) {
+            max_scaled = std::max(
+                max_scaled, double(std::abs((*scaled)[e][i] - (*input)[e][i])));
+            max_scaled_up =
+                std::max(max_scaled_up,
+                         double(std::abs((*scaled_up)[e][i] - (*scaled)[e][i])));
+        }
+        smeared_differs += (*scaled)[e][1] != p[1];
         for (int i = 0; i < 3; ++i) {
             max_input = std::max(max_input,
                                  double(std::abs((*input)[e][i] - jer_pt[i])));
@@ -192,5 +208,8 @@ int main(int argc, char **argv) {
     check(max_order == 0., "draws do not depend on the matching of other jets");
     check(max_variation < 1e-4, "JER up reuses the nominal numbers");
     check(hem_ok, "HEM down shift scales tight-ID jets in the HEM region");
+    check(max_scaled == 0., "the scaled pt is the pt before the JER smearing");
+    check(max_scaled_up == 0., "the JER variation leaves the scaled pt alone");
+    check(smeared_differs > n / 2, "the smeared pt differs from the scaled pt");
     return failures == 0 ? 0 : 1;
 }

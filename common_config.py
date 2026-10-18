@@ -58,7 +58,7 @@ from code_generation.modifiers import EraModifier, SampleModifier
 from code_generation.rules import AppendProducer, RemoveProducer, ReplaceProducer
 from code_generation.systematics import SystematicShift, SystematicShiftByQuantity
 
-from .constants import ERAS_RUN2, ERAS_RUN3, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
+from .constants import ERAS_RUN2, ERAS_RUN3, RUN2_V15_RECOIL_CORRECTION_ERAS, CORRECTIONLIB_CAMPAIGNS, ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, SL_SCOPES, FH_SCOPES, HAD_TAU_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, SCOPES, GLOBAL_SCOPES
 from .helpers import cpp_list, get_for_era
 
 
@@ -2206,9 +2206,10 @@ def add_met_corrections_config(
     """
 
     # Selection of jets for Type-I MET corrections and propagation of JEC
-    # to MET
+    # to MET (also in the scopes, where the Run-2 v15 recoil correction
+    # propagates the jet energy scale after the correction)
     configuration.add_config_parameters(
-        GLOBAL_SCOPES,
+        GLOBAL_SCOPES + SCOPES,
         {
             "t1jet_min_pt": 15.0,
             "t1jet_max_abs_eta": 5.2,
@@ -2488,7 +2489,10 @@ def build_config(
     # MET; the jets of CorrT1METJet are not in it. The recoil correction reads
     # the era files of add_met_corrections_config (one 2016 file for both
     # halves), whose ZPtBinsH has the Z pT edges its labels name since CROWN
-    # 27262f4.
+    # 27262f4. With the v15 inputs DY and W are recoil-corrected only in
+    # RUN2_V15_RECOIL_CORRECTION_ERAS, there on the PuppiMET with the
+    # propagated leptons and before the jet energy scale (not the JER) is
+    # propagated; elsewhere they take the MET of every other simulated sample.
     add_met_corrections_config(
         configuration, propagate_jets_in_every_sample=use_run2_v15_inputs
     )
@@ -2776,11 +2780,20 @@ def build_config(
 
     # MET scope quantities producer
     # For a detailed description, see producers/met.py. With the v15 inputs, the
-    # Run-2 recoil correction counts the jets of the HTT recipe.
-    MetScopes = v15_or(met.MetScopesWithRecoilJets, met.MetScopes)
-    MetRecoilCorrection = v15_or(
-        met.MetRecoilCorrectionWithRecoilJets, met.MetRecoilCorrection
-    )
+    # Run-2 recoil correction counts the jets of the HTT recipe and acts on the
+    # PuppiMET with the propagated leptons, before the jet energy scale is
+    # propagated, in the eras whose legacy recoil file describes v15; the
+    # other v15 eras have no recoil correction (MetRecoilCorrection None).
+    v15_recoil_correction = use_run2_v15_inputs and era in RUN2_V15_RECOIL_CORRECTION_ERAS
+    if v15_recoil_correction:
+        MetScopes = met.MetScopesWithRecoilBeforeJets
+        MetRecoilCorrection = MetRecoilShiftProducer = met.RecoilCorrectionOnPuppiMet
+    elif use_run2_v15_inputs:
+        MetScopes = met.MetScopesWithoutRecoil
+        MetRecoilCorrection = MetRecoilShiftProducer = None
+    else:
+        MetScopes = get_for_era(met.MetScopes, era)
+        MetRecoilCorrection = MetRecoilShiftProducer = get_for_era(met.MetRecoilCorrection, era)
 
     # Base jet selection
     # - In Run 2, the CHS collection is used and pileup ID is applied.
@@ -2790,7 +2803,8 @@ def build_config(
     # - The Run-2 v15 inputs are AK4 PUPPI without Jet_puId, so no pileup ID;
     #   they also select the jets the Run-2 recoil correction counts.
     base_jet_selection_producers = v15_or(
-        [jets.BaseJetSelectionWithoutPUID, met.GoodRecoilJets],
+        [jets.BaseJetSelectionWithoutPUID]
+        + ([met.GoodRecoilJets] if v15_recoil_correction else []),
         {
             tuple(ERAS_RUN2): [jets.BaseJetSelectionWithPUID],
             tuple(ERAS_RUN3): [jets.BaseJetSelectionWithoutPUID],
@@ -3259,21 +3273,39 @@ def build_config(
 
     # For all samples that are not DY and W, replace recoil corrections with
     # renaming operation
-    configuration.add_modification_rule(
-        SCOPES,
-        ReplaceProducer(
-            producers=[MetRecoilCorrection, met.RenameMet],
-            exclude_samples=[
-                "dyjets_madgraph",
-                "dyjets_amcatnlo",
-                "dyjets_amcatnlo_ll",
-                "dyjets_amcatnlo_tt",
-                "dyjets_powheg",
-                "wjets_madgraph",
-                "wjets_amcatnlo",
-            ] + sm_merged_dyw,
-        ),
-    )
+    recoil_samples = [
+        "dyjets_madgraph",
+        "dyjets_amcatnlo",
+        "dyjets_amcatnlo_ll",
+        "dyjets_amcatnlo_tt",
+        "dyjets_powheg",
+        "wjets_madgraph",
+        "wjets_amcatnlo",
+    ] + sm_merged_dyw
+    if MetRecoilCorrection is not None:
+        configuration.add_modification_rule(
+            SCOPES,
+            ReplaceProducer(
+                producers=[MetRecoilCorrection, met.RenameMet],
+                exclude_samples=recoil_samples,
+            ),
+        )
+    if v15_recoil_correction:
+        configuration.add_modification_rule(
+            SCOPES,
+            RemoveProducer(
+                producers=met.MET_RECOIL_BEFORE_JETS_HELPERS,
+                exclude_samples=recoil_samples,
+            ),
+        )
+
+    # The jet energy scale without the JER smearing, which the v15 recoil
+    # correction of DY and W propagates to the MET after the correction
+    if v15_recoil_correction:
+        configuration.add_modification_rule(
+            GLOBAL_SCOPES,
+            AppendProducer([met.JetScaledPt], samples=sm_merged_dyw),
+        )
 
     # Remove DeepTau ID scale factor producers from data samples
     configuration.add_modification_rule(
@@ -4360,14 +4392,16 @@ def build_config(
     # Propagation of unclustered energy shift to missing transverse momentum
     add_unclustered_energy_shifts(configuration, era)
 
-    # Uncertainties in the recoil calibration
-    add_recoil_calibration_shifts(
-        configuration,
-        era,
-        MetRecoilCorrection,
-        # the merged SM "wjets" joins via sm_merged_dyw (empty for NMSSM)
-        _get_recoil_calibration_samples() + sm_merged_dyw,
-    )
+    # Uncertainties in the recoil calibration (none for the v15 eras without
+    # a recoil correction)
+    if MetRecoilShiftProducer is not None:
+        add_recoil_calibration_shifts(
+            configuration,
+            era,
+            MetRecoilShiftProducer,
+            # the merged SM "wjets" joins via sm_merged_dyw (empty for NMSSM)
+            _get_recoil_calibration_samples() + sm_merged_dyw,
+        )
 
     #endregion
 

@@ -143,6 +143,8 @@ ROOT::RDF::RNode MassCorrectionFromPt(ROOT::RDF::RNode df,
                                       const std::string &jet_mass_raw,
                                       const std::string &jet_pt_raw,
                                       const std::string &jet_pt_corrected);
+ROOT::RDF::RNode ScaledPt(ROOT::RDF::RNode df, const std::string &outputname,
+                          const std::string &jec_result);
 
 } // namespace jec
 

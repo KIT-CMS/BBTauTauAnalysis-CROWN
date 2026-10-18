@@ -372,10 +372,10 @@ RecoilJetPt = Producer(
 )
 
 
-def _recoil_correction_run2(jet_pt):
+def _recoil_correction_run2(jet_pt, met=q.met_p4_leptoncorrected, output=q.met_p4_recoilcorrected):
     """
     Run-2 recoil correction from the ROOT files. It counts the jets above
-    30 GeV in `jet_pt` (+1 for W+jets).
+    30 GeV in `jet_pt` (+1 for W+jets) and corrects the MET vector `met`.
     """
     return Producer(
         name="RecoilCorrectionMet",
@@ -395,12 +395,12 @@ def _recoil_correction_run2(jet_pt):
         )
         """,
         input=[
-            q.met_p4_leptoncorrected,
+            met,
             q.gen_boson_p4,
             q.gen_vis_boson_p4,
             jet_pt,
         ],
-        output=[q.met_p4_recoilcorrected],
+        output=[output],
         scopes=SCOPES,
     )
 
@@ -464,6 +464,96 @@ MetScopesWithRecoilJets = ProducerGroup(
     ],
 )
 
+# Run-2 NanoAOD-v15 inputs in the eras whose legacy recoil file still describes
+# the v15 Z -> mumu data and simulation (constants.RUN2_V15_RECOIL_CORRECTION_ERAS):
+# the recoil correction acts on the MET it was derived on, the NanoAOD PuppiMET
+# with the propagated lepton energy scales, and the jet energy scale of the
+# re-calibrated jets (pT > t1jet_min_pt, with its shifts, without the JER
+# smearing) is propagated afterwards, as in data. The JER smearing does not
+# reach the MET of these samples: the recoil correction already gives the
+# hadronic recoil the resolution of data, propagating the smearing as well
+# counts it twice (met_recoil_study, 2026-10-18).
+JetScaledPt = Producer(
+    name="JetScaledPt",
+    call="physicsobject::jet::jec::ScaledPt({df}, {output}, {input})",
+    input=[q.Jet_jecResult],
+    output=[q.Jet_scaledPt],
+    scopes=GLOBAL_SCOPES,
+)
+
+MetLeptonCorrectionOnPuppiMet = Producer(
+    name="MetLeptonCorrectionOnPuppiMet",
+    call="""
+    lorentzvector::PropagateToMET(
+        {df},
+        {output},
+        {input},
+        {propagate_leptons_to_met}
+    )
+    """,
+    input=[
+        q.met_p4_uncorrected,
+        q.p4_1_uncorrected,
+        q.p4_2_uncorrected,
+        q.p4_1,
+        q.p4_2,
+    ],
+    output=[q.met_p4_recoil_input],
+    scopes=SCOPES,
+)
+
+RecoilCorrectionOnPuppiMet = _recoil_correction_run2(
+    q.Jet_recoilPt, met=q.met_p4_recoil_input, output=q.met_p4_recoil_nojets
+)
+
+MetJetScaleAfterRecoil = Producer(
+    name="MetJetScaleAfterRecoil",
+    call="""
+    physicsobject::PropagateToMET(
+        {df},
+        {output},
+        {input},
+        {propagate_jets_to_met},
+        {t1jet_min_pt}
+    )
+    """,
+    input=[
+        q.met_p4_recoil_nojets,
+        q.Jet_scaledPt,
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.Jet_correctedMass,
+        nanoAOD.Jet_pt,
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        nanoAOD.Jet_mass,
+    ],
+    output=[q.met_p4_recoilcorrected],
+    scopes=SCOPES,
+)
+
+# One flat group, as the modification rules unpack a single group level: the
+# samples without recoil correction replace RecoilCorrectionOnPuppiMet by
+# RenameMet and drop the two producers around it
+# (MET_RECOIL_BEFORE_JETS_HELPERS).
+MetScopesWithRecoilBeforeJets = ProducerGroup(
+    name="MetScopes",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        VetoOverlappingRecoilJets,
+        RecoilJetsMask,
+        RecoilJetPt,
+        MetLeptonCorrection,
+        MetLeptonCorrectionOnPuppiMet,
+        RecoilCorrectionOnPuppiMet,
+        MetJetScaleAfterRecoil,
+    ],
+)
+MET_RECOIL_BEFORE_JETS_HELPERS = [MetLeptonCorrectionOnPuppiMet, MetJetScaleAfterRecoil]
+
 # Replaces the recoil correction for samples without one, so their MET keeps
 # the propagated lepton energy scales
 RenameMet = Producer(
@@ -478,6 +568,21 @@ RenameMet = Producer(
     input=[q.met_p4_leptoncorrected],
     output=[q.met_p4_recoilcorrected],
     scopes=SCOPES,
+)
+
+# Run-2 NanoAOD-v15 inputs without a recoil correction (eras outside
+# constants.RUN2_V15_RECOIL_CORRECTION_ERAS): DY and W keep the MET of every
+# other simulated sample, the PuppiMET with the propagated jets and leptons
+MetScopesWithoutRecoil = ProducerGroup(
+    name="MetScopes",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        MetLeptonCorrection,
+        RenameMet,
+    ],
 )
 
 # Final MET pt

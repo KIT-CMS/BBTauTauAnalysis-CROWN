@@ -562,6 +562,10 @@ good_recoil_jets_mask = Quantity("good_recoil_jets_mask")
 recoil_jet_overlap_veto_mask = Quantity("recoil_jet_overlap_veto_mask")
 recoil_jets_mask = Quantity("recoil_jets_mask")
 Jet_recoilPt = Quantity("Jet_recoilPt")
+# the recoil correction on the PuppiMET with propagated leptons, before the jet
+# energy scale is propagated (Run-2 NanoAOD-v15 inputs, recoil-correction eras)
+met_p4_recoil_input = Quantity("met_p4_recoil_input")
+met_p4_recoil_nojets = Quantity("met_p4_recoil_nojets")
 gen_boson_p4 = Quantity("gen_boson_p4")
 gen_vis_boson_p4 = Quantity("gen_vis_boson_p4")
 gen_boson_pt = Quantity("gen_boson_pt")
@@ -804,6 +808,8 @@ Jet_l2relPt = Quantity("Jet_l2relPt")
 Jet_l2l3resPt = Quantity("Jet_l2l3resPt")
 Jet_correctedPt = Quantity("Jet_correctedPt")
 Jet_correctedMass = Quantity("Jet_correctedMass")
+# jet pt after the jet energy scale and its shift, before the JER smearing
+Jet_scaledPt = Quantity("Jet_scaledPt")
 
 # Outputs of the jet energy calibration including UParT/PNet jet pt regression
 Jet_jecResultRegressed = Quantity("Jet_jecResultRegressed")
