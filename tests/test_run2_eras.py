@@ -109,22 +109,77 @@ def test_kit_electron_trigger_sf_names_exist(era):
         assert set(expected.values()) <= set(corrections(CROWN / path)), scope
 
 
+# The POG single-muon trigger SFs of MC per era (decision of 2026-10-18, in place
+# of the KIT MC SF of E5), in the KIT column names ShapeSmith reads, and the range of
+# their binning (flow "error") the producer clamps into
+POG_MUON_TRIGGER_SFS = {
+    "2016preVFP": ("trg_wgt_single_mu22", "NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight", 26.0),
+    "2016postVFP": ("trg_wgt_single_mu22", "NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight", 26.0),
+    "2017": ("trg_wgt_single_mu27", "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight", 29.0),
+    "2018": ("trg_wgt_single_mu24", "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight", 26.0),
+}
+POG_MUON_FILE = "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-{era}-UL-NanoAODv9/2024-07-02/muon_Z.json.gz"
+
+
 @pytest.mark.parametrize("era", ERAS_RUN2)
-def test_kit_muon_trigger_sf_names_exist(era):
-    """mt, mm and em evaluate the KIT single-muon trigger SF of the era (E5): 2016
-    the IsoMu22 family (Trg_pt_eta_bins), 2017 IsoMu27, 2018 IsoMu24."""
-    expected = {
-        "2016preVFP": {"trg_wgt_single_mu22": "Trg_pt_eta_bins"},
-        "2016postVFP": {"trg_wgt_single_mu22": "Trg_pt_eta_bins"},
-        "2017": {"trg_wgt_single_mu27": "Trg_IsoMu27_pt_eta_bins"},
-        "2018": {"trg_wgt_single_mu24": "Trg_IsoMu24_pt_eta_bins"},
-    }[era]
-    config = build("sm_config", "ttbar", era=era, scopes=("mt", "mm", "em"))
+@pytest.mark.parametrize(
+    "module,sample",
+    [
+        ("sm_config", "ttbar"),
+        ("sm_config", "dyjets"),
+        ("sm_config", "wjets"),
+        ("sm_config", "hh2b2tau"),
+        ("sm_btag_efficiency_config", "diboson"),
+    ],
+)
+def test_pog_muon_trigger_sf_names_exist(module, sample, era):
+    """mt, mm and em of MC evaluate the POG single-muon trigger SF of the era from
+    the muon_Z payload of the muon ID/iso SFs: 2016 IsoMu24 || IsoTkMu24 (for the
+    IsoMu22 family), 2017 IsoMu27, 2018 IsoMu24, each with the range of its
+    binning, which starts at 26 (2017: 29) GeV and ends at |eta| 2.4."""
+    column, correction, min_pt = POG_MUON_TRIGGER_SFS[era]
+    config = build(module, sample, era=era, scopes=("mt", "mm", "em"))
     for scope in ("mt", "mm", "em"):
-        assert "SingleMuTriggerSF" not in {p.name for p in config.producers[scope]}, scope
-        sfs, path = kit_trigger_sfs(era, scope, "singlemuon_trigger_sf_mc", "mc_muon_sf_file")
-        assert dict(sfs) == expected, scope
-        assert set(expected.values()) <= set(corrections(CROWN / path)), scope
+        names = {p.name for p in config.producers[scope]}
+        assert "PogSingleMuonTriggerSF" in names, scope
+        assert not {"SingleMuTriggerSF", "KitSingleMuonTriggerSF"} & names, scope
+        params = config.config_parameters[scope]["nominal"]
+        assert params["muon_sf_file"] == POG_MUON_FILE.format(era=era), scope
+        assert params["singlemuon_trigger_sf_mc"] == [
+            {
+                "flagname": column,
+                "mc_trigger_sf": correction,
+                "mc_muon_trg_extrapolation": 1.0,
+                "mc_trigger_sf_min_pt": min_pt,
+                "mc_trigger_sf_max_abs_eta": 2.4,
+            }
+        ], scope
+        # the vector producer's output group, whose columns are the flagnames
+        assert "PogSingleMuonTriggerSF" in {q.name for q in config.outputs[scope]}, scope
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_pog_muon_trigger_sf_range_is_the_payload_binning(era):
+    """The configured correction exists in the era's muon_Z payload with the inputs
+    (eta, pt, scale_factors) the producer passes, eta through |eta|, and the
+    clamping range is that of its binning, which errors outside it."""
+    path = Path(POG_MUON_FILE.format(era=era))
+    if not path.is_file():
+        pytest.skip("MUO payloads require CVMFS")
+    _, correction, min_pt = POG_MUON_TRIGGER_SFS[era]
+    payload = corrections(path)[correction]
+    assert [i["name"] for i in payload["inputs"]] == ["eta", "pt", "scale_factors"]
+    data = payload["data"]
+    assert data["nodetype"] == "transform" and data["rule"]["expression"] == "abs(x)"
+    eta_axis = data["content"]
+    pt_axis = eta_axis["content"][0]
+    assert (eta_axis["input"], eta_axis["flow"]) == ("eta", "error")
+    assert eta_axis["edges"][0] == 0.0 and eta_axis["edges"][-1] == 2.4
+    for node in eta_axis["content"]:
+        assert (node["input"], node["flow"]) == ("pt", "error")
+        assert node["edges"][0] == min_pt and node["edges"][-1] == float("inf")
+        for leaf in node["content"]:
+            assert "nominal" in {item["key"] for item in leaf["content"]}
 
 
 @pytest.mark.parametrize("era", ERAS_RUN2)
@@ -194,7 +249,7 @@ def test_tau_pog_placeholders_are_2018_copies(name):
     assert copies == set(TAU_PLACEHOLDERS[name])
 
 
-# --- KIT trigger SF values in the phase space of their flags (E5, E6, C6) --------
+# --- Trigger SF values in the phase space of their flags (E5, E6, C6) ------------
 
 # leptons below flag min_pt + TURN_ON (GeV) are on the trigger turn-on, where data
 # and simulation (or embedding) differ most: only 0 < SF <= SF_RANGE[1] there
@@ -230,45 +285,52 @@ def kit_trigger_sf_cases():
 
 @pytest.mark.parametrize("era,lepton,sf_type", kit_trigger_sf_cases())
 def test_kit_trigger_sfs_are_plausible_where_their_flags_fire(era, lepton, sf_type):
-    """Every KIT trigger SF of the SM configuration and of the tau-ID measurement,
-    evaluated as the producers do (MC with its pT cap), at the bin centres of the
-    payload above the flag's pT threshold and below its |eta| limit, lies in
-    [0.5, 1.5] (on the turn-on in (0, 1.5]). 2016preVFP MC muons held 2.756 above
-    200 GeV in the barrel before the cap."""
+    """Every trigger SF of the SM configuration and of the tau-ID measurement,
+    evaluated as the producers do, at the bin centres of the payload above the
+    flag's pT threshold (and at the threshold) and below its |eta| limit, lies in
+    [0.5, 1.5] (on the turn-on in (0, 1.5]): the KIT electron SFs (MC and
+    embedding), the KIT muon SFs of the embedding, and the POG muon SFs of MC at
+    the pT and |eta| clamped into their range."""
     correctionlib = pytest.importorskip("correctionlib")
-    scope, flags_key, entries_key, file_key = {
-        "muon": ("mt", "mu_trigger", "singlemuon_trigger_sf_mc", "mc_muon_sf_file"),
-        "electron": ("et", "ele_trigger", "singlelectron_trigger_sf_mc", "mc_electron_sf_file"),
-    }[lepton]
-    configs = [build("sm_config", "ttbar", era=era, scopes=(scope,))]
+    pog = lepton == "muon" and sf_type == "mc"
+    scope, flags_key = {"muon": ("mt", "mu_trigger"), "electron": ("et", "ele_trigger")}[lepton]
+    entries_key, name_key, file_key = {
+        ("muon", "mc"): ("singlemuon_trigger_sf_mc", "mc_trigger_sf", "muon_sf_file"),
+        ("muon", "emb"): ("singlemuon_trigger_sf", "embedding_trigger_sf", "embedding_muon_sf_file"),
+        ("electron", "mc"): ("singlelectron_trigger_sf_mc", "mc_trigger_sf", "mc_electron_sf_file"),
+        ("electron", "emb"): ("singlelectron_trigger_sf_mc", "mc_trigger_sf", "mc_electron_sf_file"),
+    }[(lepton, sf_type)]
+    sample = "embedding" if (lepton, sf_type) == ("muon", "emb") else "ttbar"
+    sm_scopes = ("et", "mt", "tt") if sample == "embedding" else (scope,)
+    configs = [build("sm_config", sample, era=era, scopes=sm_scopes)]
     if lepton == "muon":
-        configs.append(build("sm_tau_id_measurement_config", "dyjets", era=era, scopes=("mt", "mm")))
+        tm_sample = "embedding" if sf_type == "emb" else "dyjets"
+        configs.append(build("sm_tau_id_measurement_config", tm_sample, era=era, scopes=("mt", "mm")))
     outliers = []
     for config in configs:
         params = config.config_parameters[scope]["nominal"]
-        path = CROWN / params[file_key]
+        path = Path(params[file_key]) if pog else CROWN / params[file_key]
+        if not path.is_file():
+            pytest.skip(f"{path} is required")
         payload = corrections(path)
         evaluators = correctionlib.CorrectionSet.from_file(str(path))
         flags = {flag["flagname"]: flag for flag in params[flags_key]}
         assert params[entries_key], (era, lepton)
         for entry in params[entries_key]:
-            name = entry["mc_trigger_sf"]
+            name = entry[name_key]
             flag = entry["flagname"].replace("trg_wgt_", "trg_")
             # the SF of an OR (2018 tau-ID measurement) covers its flags
             fired = [flags[flag]] if flag in flags else list(flags.values())
             min_pt = min(f["min_pt"] for f in fired)
             max_abs_eta = max(f.get("max_abs_eta", 2.5) for f in fired)
-            max_pt, cap_abs_eta = (
-                (entry["mc_trigger_sf_max_pt"], entry["mc_trigger_sf_max_pt_max_abs_eta"])
-                if sf_type == "mc" and lepton == "muon"
-                else (1000.0, 0.0)
-            )
-            eta_input = payload[name]["inputs"][1]["name"]
+            eta_input = "eta" if pog else payload[name]["inputs"][1]["name"]
             pt_edges, eta_edges = set(), set()
             _edges(payload[name]["data"], "pt", pt_edges)
             _edges(payload[name]["data"], eta_input, eta_edges)
             pt_edges, eta_edges = sorted(pt_edges), sorted(eta_edges)
-            pt_points = [
+            if pt_edges[-1] == float("inf"):
+                pt_edges[-1] = 2 * pt_edges[-2]
+            pt_points = [min_pt + 0.01] + [
                 max(low, min_pt) + 0.01
                 for low, high in zip(pt_edges, pt_edges[1:] + [2 * pt_edges[-1]])
                 if high > min_pt
@@ -280,8 +342,14 @@ def test_kit_trigger_sfs_are_plausible_where_their_flags_fire(era, lepton, sf_ty
             ]
             for pt in pt_points:
                 for eta in eta_points:
-                    at = pt if not (abs(eta) < cap_abs_eta and pt > max_pt) else max_pt
-                    value = evaluators[name].evaluate(at, eta, sf_type)
+                    if pog:
+                        value = evaluators[name].evaluate(
+                            min(abs(eta), entry["mc_trigger_sf_max_abs_eta"] - 1e-9),
+                            max(pt, entry["mc_trigger_sf_min_pt"]),
+                            "nominal",
+                        )
+                    else:
+                        value = evaluators[name].evaluate(pt, eta, sf_type)
                     low = SF_RANGE[0] if pt >= min_pt + TURN_ON else 0.0
                     if not (low < value <= SF_RANGE[1] if low == 0.0 else low <= value <= SF_RANGE[1]):
                         outliers.append((name, round(pt, 2), round(eta, 3), round(value, 3)))

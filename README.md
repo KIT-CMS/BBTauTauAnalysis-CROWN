@@ -287,32 +287,32 @@ the legacy Run-2 path NMSSM keeps using:
   (TauAnalysis-CROWN `tauembedding_tagandprobe.py`, `max_deltaR_triggermatch: 0.1`; MUO recommends
   0.1 as well; the tau legs keep 0.4):
 
-  | Era | Muon (mt, mm, em) | Electron (et, ee) | KIT SF (`data/embedding/{muon,electron}_<era>UL.json.gz`) |
-  |---|---|---|---|
-  | 2016preVFP, 2016postVFP | IsoMu22 &#124;&#124; IsoTkMu22 &#124;&#124; IsoMu22_eta2p1 &#124;&#124; IsoTkMu22_eta2p1 (bit 1 IsoMu, 3 IsoTkMu), p<sub>T</sub> > 24 GeV | Ele25_eta2p1_WPTight, p<sub>T</sub> > 27 GeV, &#124;&eta;&#124; < 2.1 | `Trg_pt_eta_bins` (the OR) &rarr; `trg_wgt_single_mu22`; `Trg25_Iso_pt_eta_bins` &rarr; `trg_wgt_single_ele25` |
-  | 2017 | IsoMu27, p<sub>T</sub> > 29 GeV (IsoMu24 is prescaled) | Ele32 (> 34 GeV) and Ele35 (> 37 GeV), no emulation | `Trg_IsoMu27_pt_eta_bins`; `Trg32_Iso`, `Trg35_Iso` &rarr; `trg_wgt_single_ele32/35` |
-  | 2018 | IsoMu24, p<sub>T</sub> > 26 GeV | Ele32, p<sub>T</sub> > 34 GeV | `Trg_IsoMu24_pt_eta_bins`; `Trg32_Iso_pt_eta_bins` |
+  | Era | Muon (mt, mm, em) | Electron (et, ee) | KIT SF (`data/embedding/{muon,electron}_<era>UL.json.gz`): electrons MC and embedding, muons embedding | POG muon SF of MC (`muon_Z.json.gz`, MUO `Run2-<era>-UL-NanoAODv9/2024-07-02`), range |
+  |---|---|---|---|---|
+  | 2016preVFP, 2016postVFP | IsoMu22 &#124;&#124; IsoTkMu22 &#124;&#124; IsoMu22_eta2p1 &#124;&#124; IsoTkMu22_eta2p1 (bit 1 IsoMu, 3 IsoTkMu), p<sub>T</sub> > 24 GeV | Ele25_eta2p1_WPTight, p<sub>T</sub> > 27 GeV, &#124;&eta;&#124; < 2.1 | `Trg_pt_eta_bins` (the OR) &rarr; `trg_wgt_single_mu22`; `Trg25_Iso_pt_eta_bins` &rarr; `trg_wgt_single_ele25` | `NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight` &rarr; `trg_wgt_single_mu22`; p<sub>T</sub> &ge; 26 GeV |
+  | 2017 | IsoMu27, p<sub>T</sub> > 29 GeV (IsoMu24 is prescaled) | Ele32 (> 34 GeV) and Ele35 (> 37 GeV), no emulation | `Trg_IsoMu27_pt_eta_bins`; `Trg32_Iso`, `Trg35_Iso` &rarr; `trg_wgt_single_ele32/35` | `NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight` &rarr; `trg_wgt_single_mu27`; p<sub>T</sub> &ge; 29 GeV |
+  | 2018 | IsoMu24, p<sub>T</sub> > 26 GeV | Ele32, p<sub>T</sub> > 34 GeV | `Trg_IsoMu24_pt_eta_bins`; `Trg32_Iso_pt_eta_bins` | `NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight` &rarr; `trg_wgt_single_mu24`; p<sub>T</sub> &ge; 26 GeV |
 
   The flags keep the trigger's &#124;&eta;&#124; (2.4 for muons); the &#124;&eta;&#124; < 2.1 of the
   triggering lepton is cut downstream. The SFs are evaluated at every p<sub>T</sub> and isolation
-  (`scalefactors.KitSingleMuonTriggerSF` in mt, mm and em, `ETGenerateSingleElectronTriggerSF_MC` in et
-  and ee); the flags select downstream. The KIT muon trigger SF replaces the POG one because its
-  denominator (medium ID, iso < 0.15) is the SM selection, as in TauAnalysis v9, jvoss's v15
-  production and smhtt_ul; MUO asks to "stick to centrally provided SFs" whenever possible, so the
-  choice is to be presented to MUO before the approval. One MC bin is defective: in
-  `muon_2016preVFPUL` `Trg_pt_eta_bins` holds 2.756 for type `mc` at p<sub>T</sub> &ge; 200 GeV and
-  &#124;&eta;&#124; < 0.9 (impossible, SF &times; &epsilon;<sub>MC</sub> > 1; 0.933 at 100-200 GeV,
-  0.885 for embedding, 0.926 in 2016postVFP). `KitSingleMuonTriggerSF`
-  (`xyh::scalefactor::kit_muon_trigger`) therefore evaluates the muons above 199.9 GeV with
-  &#124;&eta;&#124; < 0.9 at 199.9 GeV in 2016preVFP (`tau_triggersetup.KIT_MUON_TRIGGER_SF_MC_MAX_PT`,
-  entries `mc_trigger_sf_max_pt[_max_abs_eta]`); every other era and bin is evaluated as it is. The
-  precedents evaluate the payload as it is, so this is to be confirmed by the user.
-  `tests/test_run2_eras.py` checks every KIT trigger SF where its flag fires (0.5-1.5, on the first
+  (`scalefactors.PogSingleMuonTriggerSF` in mt, mm and em of MC, `MTGenerateSingleMuonTriggerSF` in
+  mt of the embedding, `ETGenerateSingleElectronTriggerSF_MC` in et and ee); the flags select
+  downstream. The muon trigger SF of MC is the POG one of the era (decision of 2026-10-18, in place of
+  the KIT MC SF of v7 spec E5, whose 2016preVFP payload held 2.756 at p<sub>T</sub> &ge; 200 GeV,
+  &#124;&eta;&#124; < 0.9); the embedding keeps the KIT SF. The POG denominator is the tight ID with
+  tight PF isolation, the SM muons are medium ID with iso < 0.15: accepted. In 2016 the POG SF is that
+  of IsoMu24 &#124;&#124; IsoTkMu24, applied to the IsoMu22 family (no POG IsoMu22 SF). The payloads
+  end at their edges with flow "error" (p<sub>T</sub> &ge; 26 GeV, 2017 29 GeV; &#124;&eta;&#124;
+  < 2.4), below the 2016 flags (24 GeV) and the 2018 IsoMu24 flag of the tau-ID measurement (25 GeV):
+  `xyh::scalefactor::pog_muon_trigger` evaluates the muon at its p<sub>T</sub> and &#124;&eta;&#124;
+  clamped into this range (`tau_triggersetup.POG_MUON_TRIGGER_SF_RANGE`, entries
+  `mc_trigger_sf_min_pt`, `mc_trigger_sf_max_abs_eta`), so 24-26 GeV muons take the 26-30 GeV SF.
+  `tests/test_run2_eras.py` checks every trigger SF where its flag fires (0.5-1.5, on the first
   3 GeV of the turn-on 0-1.5); the 2017 Ele32 SF of embedding fails it (1.8-3.2 at 34-36 GeV and
   1.57 < &#124;&eta;&#124; < 2.1, 0.47 at 42-50 GeV above &#124;&eta;&#124; 2.1) and is reported, not
   changed (strict xfail). The KIT files carry no uncertainties:
-  `CMS_eff_m_trigger_<era>` and `CMS_eff_e_trigger_<era>` scale the SFs by 1.02 / 0.98, the TauAnalysis
-  convention. The EGM `Electron-HLT-SF` exists only in the Run-3 payloads, so every Run-2
+  `CMS_eff_m_trigger_<era>` and `CMS_eff_e_trigger_<era>` scale the SFs of MC by 1.02 / 0.98, the
+  TauAnalysis convention, kept for the POG muon SF (not its `systup`/`systdown`). The EGM `Electron-HLT-SF` exists only in the Run-3 payloads, so every Run-2
   configuration, NMSSM included, evaluates the KIT electron SF. Di-tau (tt): 2016
   DoubleMediumIsoPFTau35 and DoubleMediumCombinedIsoPFTau35 (filter bits 1 Medium(Comb)Iso and 8 Dz of
   the 2016 scheme; CombinedIso exists in the data from 2016H on, downstream the MC takes the Iso path
@@ -464,9 +464,10 @@ in mm); sample lists `sample_list/sm_<era>_tau_id_measurement.txt`. Other eras a
 `ValueError`. The profile keeps the SM selection and sets `tau_id_measurement`, which replaces the
 corrections and the trigger below and drops the MC vsJet and POG muon SF shifts
 (`tau_id_measurement.setup`, called at the end of `build_config`). The per-era choices are the tables
-`TM_SINGLE_MUON_TRIGGERS` and `TM_KIT_TRIGGER_SFS`: 2016 and 2017 take the analysis triggers and their
-KIT SFs (the IsoMu22 family with `Trg_pt_eta_bins`, IsoMu27 with `Trg_IsoMu27_pt_eta_bins`), 2018 the
-triggers of the precedent below. All are matched within &Delta;R < 0.1. MC carries the L1 prefiring
+`TM_SINGLE_MUON_TRIGGERS`, `TM_POG_TRIGGER_SFS` (MC) and `TM_KIT_TRIGGER_SFS` (embedding): 2016 and
+2017 take the analysis triggers and their SFs (MC: the POG SFs of `sm_config`; embedding: the KIT
+`Trg_pt_eta_bins` of the IsoMu22 family, `Trg_IsoMu27_pt_eta_bins`), 2018 the triggers of the
+precedent below. All are matched within &Delta;R < 0.1. MC carries the L1 prefiring
 weight `prefiring_wgt` with its Up/Dn columns in every era (2018: the muon prefiring) and the shift
 `CMS_ecal_prefiring_<year>`; the measurement production keeps its MC shifts, the exception of v7 spec
 E34. In 2018 every sample writes the HEM flag `hem_veto`, which replaces the HEM shift.
@@ -501,9 +502,9 @@ everything not listed is the `sm_config` one.
 | Correction | This configuration | Source | Precedent | `sm_config` |
 |---|---|---|---|---|
 | Trigger (data, MC, embedding; mt, mm), 2018 | `trg_single_mu24` &#124;&#124; `trg_single_mu27`: HLT_IsoMu24/27, p<sub>T</sub> > 25/28 GeV, &#124;&eta;&#124; < 2.5, filter bit 3, &Delta;R < 0.1 | NanoAOD trigger objects | same (`MTGenerateSingleMuonTriggerFlags`, &Delta;R < 0.4) | IsoMu24 only (bit 1, 26 GeV, &#124;&eta;&#124; < 2.4) |
-| Muon trigger SF, MC, 2018 | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` of the first muon, type `mc`, evaluated at every p<sub>T</sub> (`_mu27` is meaningful above 28 GeV only, as the predecessor's weight uses it) | KIT `data/embedding/muon_2018UL.json.gz`: `Trg_IsoMu24`, `Trg_IsoMu27`, `Trg_IsoMu27_or_IsoMu24_pt_eta_bins` | `MTGenerateSingleMuonTriggerSF_MC` | KIT `Trg_IsoMu24_pt_eta_bins` |
+| Muon trigger SF, MC, 2018 | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` of the first muon, all three the POG IsoMu24 SF (IsoMu24 is unprescaled and fires whenever IsoMu27 does, so the OR is IsoMu24; no POG IsoMu27 SF in 2018), evaluated at every p<sub>T</sub>, clamped to &ge; 26 GeV and &#124;&eta;&#124; < 2.4 (the 25-26 GeV muons take the 26-30 GeV SF) | POG `muon_Z.json.gz` (`Run2-2018-UL-NanoAODv9/2024-07-02`): `NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight` (decision of 2026-10-18; before: KIT `Trg_IsoMu24`, `Trg_IsoMu27`, `Trg_IsoMu27_or_IsoMu24_pt_eta_bins`, type `mc`) | `MTGenerateSingleMuonTriggerSF_MC` (KIT) | POG `NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight` |
 | Muon trigger SF, embedding | the same three, type `emb` | same payload | `MTGenerateSingleMuonTriggerSF` (mt, mm) | `Trg_IsoMu24` only (mt) |
-| Trigger and SFs, 2016 and 2017 | the analysis triggers and KIT SFs of `sm_config` (Run-2 v15 section) | KIT `muon_<era>UL` | &ndash; | same |
+| Trigger and SFs, 2016 and 2017 | the analysis triggers and SFs of `sm_config` (Run-2 v15 section) | MC: POG `muon_Z`; embedding: KIT `muon_<era>UL` | &ndash; | same |
 | Prefiring weight, MC | `prefiring_wgt` in every era | NanoAOD `L1PreFiringWeight_Nom` | &ndash; | same, with the Up/Dn columns and without shifts |
 | Muon ID/iso SF, MC | `ID_pt_eta_bins`, `Iso_pt_eta_bins`, type `mc`, first muon (mt), both (mm) | KIT `muon_2018UL` | `PrivateMuonIDSF/IsoSF_{1,2}_MC` | POG `NUM_MediumID_DEN_TrackerMuons`, `NUM_TightRelIso_DEN_MediumID` |
 | Muon ID/iso SF, embedding | mt: ID + iso-binned (Part A), mm: `ID`, `Iso_pt_eta_bins` of both muons, type `emb` | KIT `muon_2018UL` | `TauEmbeddingMuonIDSF/IsoSF_{1,2}` (mt: `Iso` only, equal below iso 0.15) | &ndash; |
@@ -524,8 +525,8 @@ use either (a generator alternative, see `sample_list/README.md`).
 ### Shape systematics
 
 The MC shifts are the common ones of `build_config` (`variations/`), except for the vsJet SF shifts,
-since the measurement measures that SF, and the POG muon ID/iso and trigger SF shifts, since it
-replaces those SFs; its KIT trigger SF has a shift of its own. The table maps the shape systematics
+since the measurement measures that SF, and the POG muon ID/iso SF shifts, since it replaces those
+SFs; its trigger SF has a shift of its own (&times; 1.02 / 0.98). The table maps the shape systematics
 of the predecessor (jvoss's synced shapes of `SFs_EMB_Run2_04_08_26__full`) to them.
 `tests/test_sm_tau_id_measurement_config.py` holds the same map (`PREDECESSOR_SHIFTS`) and checks
 that every listed shift exists in mt and, for the families mm carries, in mm.
@@ -541,7 +542,7 @@ that every listed shift exists in mt and, for the families mm carries, in mm.
 | `CMS_eff_t_dm{0,1,10,11}_Run2018` | none, the measured SF (the predecessor's up/down evaluated the nominal SF) | &ndash; |
 | `CMS_fake_m_WH{1..5}_Run2018` | `CMS_fake_t_DeepTau2018v2p5_VSmu_wheel{1..5}_2018` | `id_wgt_tau_vsMu_Tight_2` |
 | `CMS_scale_fake_m_Run2018` | `CMS_scale_t_DeepTau2018v2p5_genMuon_wheel{1..5}_2018`, decorrelated in the muon wheels | tau four-vector and pair columns, as the genuine-tau shifts |
-| `CMS_eff_m_trigger_Run2018` | `CMS_eff_m_trigger_2018`: KIT MC trigger SFs &times; 1.02 / 0.98, mt | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` |
+| `CMS_eff_m_trigger_Run2018` | `CMS_eff_m_trigger_2018`: POG MC trigger SFs &times; 1.02 / 0.98, mt | `trg_wgt_single_mu24`, `_mu27`, `_mu24ormu27` |
 | (new, E11) | `CMS_ecal_prefiring_<year>`: `L1PreFiringWeight_Up/Dn` in place of `_Nom`, 2016-2018 | `prefiring_wgt` |
 | no predecessor family | `CMS_res_j_2018`, `CMS_scale_e_2018`, `CMS_res_e_2018`, `QCDscale_{ren,fac}`, `CMS_fake_t_DeepTau2018v2p5_VSe_DM<dm>_{barrel,endcap}_2018`, `CMS_scale_t_DeepTau2018v2p5_DM<dm>_genElectron_{barrel,endcap}_2018` | |
 | `CMS_htt_ttbarShape` | weight: `topPtReweightWeight` squared (up), removed (down) | `topPtReweightWeight` (nominal) |
@@ -563,9 +564,9 @@ The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer with all five a
 working points and the K1 rule, SM HH kinematic fit, electron reconstruction weight, electron SFs at
 the supercluster eta, embedding iso-binned SF and JER smearing with the payloads of every Run-2 era,
 FastMTT decay types, matched trigger object, HEM flag, fake factor summed over the payload processes,
-checked MET covariance, KIT muon trigger SF with its p<sub>T</sub> cap) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
+checked MET covariance, POG muon trigger SF clamped into its payload range) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
 `root-config`, `g++`, correctionlib and spdlog headers. `tests/test_run2_eras.py` checks the per-era
-inputs (MET filters, jet ID, KIT lepton and trigger SF names, b-tag efficiency and embedding tau
+inputs (MET filters, jet ID, KIT lepton and trigger SF names, POG muon trigger SF names and ranges, b-tag efficiency and embedding tau
 payloads, TAU POG placeholders), `tests/test_triggers.py` the trigger flags and SFs per era against
 the HLT branches and filter-bit doc strings of the eras' v15 files (`tests/fixtures/*_hlt.txt`,
 `nanoaod_v15_trigobj_filterbits.json`, written by `tests/fixtures/make_hlt_fixtures.py`),

@@ -16,6 +16,7 @@ import sys
 import pytest
 
 from analysis_configurations.bbtautau.constants import ERAS_RUN2
+from analysis_configurations.bbtautau.tests.helpers import build
 
 ANALYSIS = Path(__file__).resolve().parents[1]
 CROWN = ANALYSIS.parents[1]
@@ -149,24 +150,38 @@ def test_embedding_iso_binned_sf_follows_the_iso_bin_and_eta_convention(
     subprocess.run([str(embedding_iso_binary), *map(str, payloads)], check=True)
 
 
-def test_kit_muon_trigger_sf_with_the_pt_cap(tmp_path):
-    """E5/C6: the KIT single-muon trigger SF of MC is the payload value at the muon
-    pT, except above the cap of a defective bin (2016preVFP: 199.9 GeV below
-    |eta| 0.9, where the payload holds 2.756), times the extrapolation factor."""
-    payload = CROWN / "data/embedding/muon_2016preVFPUL.json.gz"
-    if not payload.is_file():
-        pytest.skip("The CROWN data/embedding payloads are required")
-    binary = compile_fixture(
-        tmp_path,
-        "kit_muon_trigger_sf",
+@pytest.fixture(scope="module")
+def pog_muon_trigger_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("pog_muon_trigger_sf"),
+        "pog_muon_trigger_sf",
         [
-            CPP / "test_kit_muon_trigger_sf.cxx",
-            ADDONS / "src/kit_trigger_sf.cxx",
+            CPP / "test_pog_muon_trigger_sf.cxx",
+            ADDONS / "src/pog_muon_trigger_sf.cxx",
             CORRECTION_MANAGER,
         ],
         correctionlib=True,
     )
-    subprocess.run([str(binary), str(payload)], check=True)
+
+
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_pog_muon_trigger_sf_clamped_to_the_payload_range(pog_muon_trigger_binary, era):
+    """The POG single-muon trigger SF of MC (v7 decision 2026-10-18) is the
+    payload value at the muon inside the range of the era's muon_Z correction,
+    and the value at the clamped (pT, |eta|) below its lowest pT edge (2016:
+    the IsoMu22 family from 24 GeV, payload from 26 GeV) and from |eta| 2.4 on,
+    where the payload (flow "error") throws; times the extrapolation factor."""
+    params = build("sm_config", "ttbar", era=era).config_parameters["mt"]["nominal"]
+    payload = Path(params["muon_sf_file"])
+    if not payload.is_file():
+        pytest.skip("The MUO payloads on /cvmfs are required")
+    (entry,) = params["singlemuon_trigger_sf_mc"]
+    correction = entry["mc_trigger_sf"]
+    min_pt, max_abs_eta = entry["mc_trigger_sf_min_pt"], entry["mc_trigger_sf_max_abs_eta"]
+    subprocess.run(
+        [str(pog_muon_trigger_binary), str(payload), correction, str(min_pt), str(max_abs_eta)],
+        check=True,
+    )
 
 
 def test_strict_upart_btag_weight_consumer(tmp_path):

@@ -125,9 +125,11 @@ def add_single_muon_trigger_extrapolation_shifts(
     scope: str,
 ):
     """
-    Add shifts for single-muon trigger scale factors from the payloads of the
-    Tau Embedding group for the given era and scope. The shifts carry the name
-    of the single-muon trigger shifts of the MUO scale factors.
+    Add shifts for the single-muon trigger scale factors of MC of the Run-2
+    single-lepton triggers (the POG SF, scalefactors.PogSingleMuonTriggerSF,
+    in place of the KIT one since 2026-10-18) for the given era and scope. They
+    keep the convention of the KIT SFs, x 1.02 / 0.98 (v7 spec C6), not the
+    payload's systup/systdown, and the name of the MUO trigger shifts.
     """
     _add_trigger_extrapolation_shifts(
         configuration,

@@ -51,9 +51,10 @@ class AnalysisProfile:
     # The single-lepton triggers of the KIT trigger SFs (Tau Embedding group):
     # only the isolated analysis triggers of the era (tau_triggersetup), matched to
     # their trigger object within Delta R 0.1 as in the KIT tag and probe, and in
-    # Run 2 the KIT muon trigger SF of the era in MC in place of the POG one.
-    # Otherwise the high-pT single-lepton triggers as well, matched within 0.4,
-    # with the POG muon trigger SF.
+    # Run 2 the POG muon trigger SF of the era in MC evaluated at every pT within
+    # the payload range (scalefactors.PogSingleMuonTriggerSF). Otherwise the
+    # high-pT single-lepton triggers as well, matched within 0.4, with the POG
+    # muon trigger SF where the trigger flag fires.
     kit_single_lepton_triggers: bool = False
     # The e-tau and mu-tau cross triggers (flags of et and mt).
     lepton_tau_cross_triggers: bool = True

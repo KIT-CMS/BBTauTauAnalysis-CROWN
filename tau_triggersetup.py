@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier
 
@@ -217,9 +219,10 @@ SINGLE_MUON_TRIGGERS = {
 }
 
 # The KIT (Tau Embedding group) trigger SFs of the analysis triggers per Run-2 era:
-# SF column -> correction of data/embedding/{muon,electron}_<era>UL.json.gz, for MC
-# (type "mc") and embedding (type "emb"). The 2016 muon SF is that of the OR of the
-# IsoMu22 family (v7 spec E5, E6).
+# SF column -> correction of data/embedding/{muon,electron}_<era>UL.json.gz, for
+# embedding (type "emb", both) and MC (type "mc", electrons only; the MC muons take
+# POG_SINGLE_MUON_TRIGGER_SFS). The 2016 muon SF is that of the OR of the IsoMu22
+# family (v7 spec E5, E6).
 KIT_SINGLE_MUON_TRIGGER_SFS = {
     "2016preVFP": {"trg_wgt_single_mu22": "Trg_pt_eta_bins"},
     "2016postVFP": {"trg_wgt_single_mu22": "Trg_pt_eta_bins"},
@@ -236,29 +239,53 @@ KIT_SINGLE_ELECTRON_TRIGGER_SFS = {
     "2018": {"trg_wgt_single_ele32": "Trg32_Iso_pt_eta_bins"},
 }
 
+# The POG (MUO) single-muon trigger SFs of MC per Run-2 era (decision of
+# 2026-10-18, in place of the KIT MC SF of v7 spec E5; embedding keeps the KIT
+# SF): SF column (the KIT column names, which ShapeSmith reads) -> correction of
+# the era's muon_Z.json.gz (muon_sf_file, MUO Run2-<era>-UL-NanoAODv9/2024-07-02),
+# evaluated by scalefactors.PogSingleMuonTriggerSF. The POG denominator is the
+# tight ID with tight PF isolation, the SM muons are medium ID with iso < 0.15:
+# accepted. The 2016 SF is that of IsoMu24 || IsoTkMu24, applied to the IsoMu22
+# family the 2016 flags take (the POG has no IsoMu22 SF).
+POG_SINGLE_MUON_TRIGGER_SFS = {
+    "2016preVFP": {"trg_wgt_single_mu22": "NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight"},
+    "2016postVFP": {"trg_wgt_single_mu22": "NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight"},
+    "2017": {"trg_wgt_single_mu27": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight"},
+    "2018": {"trg_wgt_single_mu24": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight"},
+}
+# The (min pT, max |eta|) of the binning of these corrections, which ends there with
+# flow "error"; the muons are evaluated at the pT and |eta| clamped into it. Below
+# the pT range: the 2016 flags from 24 GeV (payload from 26 GeV) and the 2018 IsoMu24
+# flag of the tau-ID measurement from 25 GeV; they take the SF of the lowest pT bin.
+POG_MUON_TRIGGER_SF_RANGE = {
+    "2016preVFP": (26.0, 2.4),
+    "2016postVFP": (26.0, 2.4),
+    "2017": (29.0, 2.4),
+    "2018": (26.0, 2.4),
+}
 
-# Defective high-pT bins of the KIT muon trigger SFs of MC: (era, correction) ->
-# (max_pt, max_abs_eta), evaluated at max_pt above it for |eta| < max_abs_eta
-# (scalefactors.KitSingleMuonTriggerSF). muon_2016preVFPUL Trg_pt_eta_bins, type mc,
-# holds 2.756 for pT >= 200 GeV and |eta| < 0.9, which no efficiency allows (SF x
-# eps_MC > 1), against 0.933 at 100-200 GeV, 0.885 for embedding and 0.926 in
-# 2016postVFP; the other |eta| bins of that row (0.81-0.88) follow the embedding SF
-# and stay. To be confirmed by the user (only precedented SFs): the precedents
-# evaluate the payload as it is.
-KIT_MUON_TRIGGER_SF_MC_MAX_PT = {("2016preVFP", "Trg_pt_eta_bins"): (199.9, 0.9)}
-# no cap: the payloads end at 1000 GeV, and no |eta| is below 0
-KIT_MUON_TRIGGER_SF_NO_MAX_PT = (1000.0, 0.0)
 
-
-def kit_muon_trigger_sf_max_pt(era: str, correction: str) -> dict:
-    """The pT cap entries of the KIT muon trigger SF `correction` of MC in `era`."""
-    max_pt, max_abs_eta = KIT_MUON_TRIGGER_SF_MC_MAX_PT.get(
-        (era, correction), KIT_MUON_TRIGGER_SF_NO_MAX_PT
-    )
-    return {
-        "mc_trigger_sf_max_pt": max_pt,
-        "mc_trigger_sf_max_pt_max_abs_eta": max_abs_eta,
-    }
+def pog_muon_trigger_sf_entries(era: str, sfs: Mapping[str, str] | None = None) -> list[dict]:
+    """
+    The vector configuration of scalefactors.PogSingleMuonTriggerSF in `era`: one
+    entry per SF column of `sfs` (default POG_SINGLE_MUON_TRIGGER_SFS of the era,
+    none in Run 3), nominal extrapolation, with the clamping range of the era.
+    """
+    if sfs is None:
+        sfs = POG_SINGLE_MUON_TRIGGER_SFS.get(era, {})
+    if not sfs:
+        return []
+    min_pt, max_abs_eta = POG_MUON_TRIGGER_SF_RANGE[era]
+    return [
+        {
+            "flagname": column,
+            "mc_trigger_sf": correction,
+            "mc_muon_trg_extrapolation": 1.0,
+            "mc_trigger_sf_min_pt": min_pt,
+            "mc_trigger_sf_max_abs_eta": max_abs_eta,
+        }
+        for column, correction in sfs.items()
+    ]
 
 
 def single_lepton_triggers(table: dict, era: str, kit: bool) -> list[dict]:
@@ -322,11 +349,13 @@ def _add_muon_triggers(configuration: Configuration, kit: bool):
 
 def _add_kit_trigger_sfs(configuration: Configuration):
     """
-    The KIT single-lepton trigger SFs of the Run-2 eras (empty in Run 3), read by
-    scalefactors.ETGenerateSingleElectronTriggerSF_MC (every Run-2 configuration;
-    the EGM Electron-HLT-SF exists in the Run-3 payloads only) and
-    scalefactors.KitSingleMuonTriggerSF (kit_single_lepton_triggers). The SF type
-    is "mc"; the embedding switches the electron one to "emb".
+    The single-lepton trigger SFs of MC in the Run-2 eras (empty in Run 3): the
+    KIT electron SFs, read by scalefactors.ETGenerateSingleElectronTriggerSF_MC
+    (every Run-2 configuration; the EGM Electron-HLT-SF exists in the Run-3
+    payloads only), with type "mc", which the embedding switches to "emb"; and
+    the POG muon SFs, read by scalefactors.PogSingleMuonTriggerSF
+    (kit_single_lepton_triggers), which the embedding replaces by its KIT SFs
+    (embedding_run2_v15).
     """
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
@@ -349,18 +378,7 @@ def _add_kit_trigger_sfs(configuration: Configuration):
         MUON_SCOPES,
         {
             "singlemuon_trigger_sf_mc": EraModifier(
-                {
-                    era: [
-                        {**entry, **kit_muon_trigger_sf_max_pt(era, entry["mc_trigger_sf"])}
-                        for entry in kit_trigger_sf_entries(
-                            KIT_SINGLE_MUON_TRIGGER_SFS,
-                            era,
-                            "mc_trigger_sf",
-                            "mc_muon_trg_extrapolation",
-                        )
-                    ]
-                    for era in ERAS_RUN2 + ERAS_RUN3
-                }
+                {era: pog_muon_trigger_sf_entries(era) for era in ERAS_RUN2 + ERAS_RUN3}
             ),
         },
     )

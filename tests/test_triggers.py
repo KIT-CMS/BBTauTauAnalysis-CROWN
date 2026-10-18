@@ -267,28 +267,38 @@ def test_no_pog_electron_trigger_sf_in_run2(module, era):
 
 
 @pytest.mark.parametrize("era", ERAS_RUN2)
-def test_kit_muon_trigger_sf_reads_the_muon_of_each_scope(era):
-    """C6: KitSingleMuonTriggerSF evaluates the muon of mt and mm (leg 1) and em (leg
-    2), type mc, from the KIT file of the era, with the pT cap of the defective
-    2016preVFP bin (199.9 GeV below |eta| 0.9) and none elsewhere; data has no
-    trigger SF."""
-    cap = "199.9, 0.9" if era == "2016preVFP" else "1000.0, 0.0"
+def test_pog_muon_trigger_sf_reads_the_muon_of_each_scope(era):
+    """PogSingleMuonTriggerSF evaluates the muon of mt and mm (leg 1) and em (leg 2)
+    of MC with the POG muon_Z payload of the era, clamped into its range (from 26
+    GeV, 2017 29 GeV; |eta| < 2.4); data and embedding have no MC trigger SF, the
+    embedding its KIT one (mt), with the same column."""
+    min_pt = 29.0 if era == "2017" else 26.0
+    payload = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-{era}-UL-NanoAODv9/2024-07-02/muon_Z.json.gz"
     generated = generate_code("sm_config", "dyjets", era=era, scopes=("mt", "em", "mm"))
     for scope, leg in (("mt", 1), ("mm", 1), ("em", 2)):
-        (path,) = generated.directory.rglob(f"src/{scope}/KitSingleMuonTriggerSF.cxx")
+        (path,) = generated.directory.rglob(f"src/{scope}/PogSingleMuonTriggerSF.cxx")
         call = " ".join(path.read_text().split())
-        assert "xyh::scalefactor::kit_muon_trigger(" in call, scope
-        assert f'"pt_{leg}", "eta_{leg}", "data/embedding/muon_{era}UL.json.gz"' in call, scope
-        assert f'"mc", 1.0, {cap})' in call, scope
+        assert "xyh::scalefactor::pog_muon_trigger(" in call, scope
+        assert f'"pt_{leg}", "eta_{leg}", "{payload}"' in call, scope
+        assert f'"nominal", 1.0, {min_pt}, 2.4)' in call, scope
+        assert not list(generated.directory.rglob(f"src/{scope}/KitSingleMuonTriggerSF.cxx"))
     data = generate_code("sm_config", "data", era=era, scopes=("mt", "em", "mm")).outputs
     assert not {o for scope in ("mt", "em", "mm") for o in data[scope] if o.startswith("trg_wgt")}
+    embedding = generate_code("sm_config", "embedding", era=era, scopes=("et", "mt", "tt"))
+    assert not list(embedding.directory.rglob("src/mt/PogSingleMuonTriggerSF.cxx"))
+    (path,) = embedding.directory.rglob("src/mt/MTGenerateSingleMuonTriggerSF.cxx")
+    call = " ".join(path.read_text().split())
+    assert f'"data/embedding/muon_{era}UL.json.gz"' in call and '"emb"' in call
+    column = {"2017": "trg_wgt_single_mu27", "2018": "trg_wgt_single_mu24"}.get(era, "trg_wgt_single_mu22")
+    assert column in embedding.outputs["mt"] and column in generated.outputs["mt"]
 
 
 @pytest.mark.parametrize("era", ERAS_RUN2)
 def test_kit_trigger_sf_shifts(era):
-    """C6: CMS_eff_m_trigger_<era> scales the KIT muon trigger SF by 1.02 / 0.98 in
-    mt, mm and em (the TauAnalysis convention, the KIT files have no variations);
-    CMS_eff_e_trigger_<era> the electron one in et and ee."""
+    """C6: CMS_eff_m_trigger_<era> scales the muon trigger SF of MC (POG since
+    2026-10-18) by 1.02 / 0.98 in mt, mm and em (the TauAnalysis convention of the
+    KIT SFs, which have no variations); CMS_eff_e_trigger_<era> the KIT electron one
+    in et and ee."""
     config = build("sm_config", "dyjets", era=era, scopes=tuple(SCOPES), shifts=("all",))
     for scope, name, key, extrapolation in [
         *((s, "CMS_eff_m_trigger", "singlemuon_trigger_sf_mc", "mc_muon_trg_extrapolation") for s in ("mt", "mm", "em")),
