@@ -8,11 +8,11 @@ both halves (each sample from the n-tuples of its half, normalised to its lumino
 | | |
 |---|---|
 | Source | `shapesmith measure -c configs/ff_smrun2_binned_v7b_w.yaml -s era=<2016, 2017, 2018>`, output `/ceph/sdaigler/shapesmith/smrun2_binned_v7b/output/fake_factors_w/<era>/`; copied byte for byte |
-| Code | ShapeSmith core `b6e35b4` (`feat/v7-run2`), BBTauTauAnalysis-ShapeSmith `5201a1c` (`bbtautau_shapesmith.ff_measurement:build`, tables `ff_tables.py` + `ff_edges.py`) |
-| Written | 2016 2026-10-19 04:49 UTC, 2017 2026-10-19 04:49 UTC, 2018 2026-10-19 04:53 UTC |
+| Code | ShapeSmith core `6ccdfdb` (`feat/v7-run2`), BBTauTauAnalysis-ShapeSmith `d9c8765` (`bbtautau_shapesmith.ff_measurement:build`, tables `ff_tables.py` + `ff_edges.py`) |
+| Written | 2016 2026-10-19 06:22–06:25 UTC, 2017 2026-10-19 06:22–06:25 UTC, 2018 2026-10-19 06:22–06:26 UTC (payload files, from their provenance) |
 | Sample database | KingMaker_sample_database `49d2b7b` |
 | Input n-tuples | data `smrun2_binned_v7` (`sm_<era>_binned.txt`), MC and embedding `smrun2_binned_v7b` (`sm_<era>_binned.txt`, `sm_<era>_embedding.txt`; MET fix, POG muon trigger SF on MC, re-measured embedding tau ID/ES and tt-trigger payloads, CROWN bbtautau f69a50b) |
-| Switches | `embedding: [et, mt, tt]` (genuine &tau;<sub>h</sub> subtracted with the embedding, E33), `dy_correction: njets_btag` (the v7b DY tables; 2016 the luminosity-weighted mean of both halves), `tt_fraction_region: application` (each leg's fractions where its fake factor is applied, v6), `ff_processes: [QCD, Wjets, ttbar]` |
+| Switches | `embedding: [et, mt]` (genuine &tau;<sub>h</sub> subtracted with the embedding in et and mt and with MC in tt: E33, decision of 2026-10-19 after the tt-embedding closure failed in every era; the et and mt payloads equal those measured with `[et, mt, tt]` in every value, only their provenance description differs), `dy_correction: njets_btag` (the v7b DY tables; 2016 the luminosity-weighted mean of both halves), `tt_fraction_region: application` (each leg's fractions where its fake factor is applied, v6), `ff_processes: [QCD, Wjets, ttbar]` |
 | Selection | the v7 analysis selection per era (spec 6.2: trigger of the era, lt \|&eta;<sub>1</sub>\| < 2.1, 2018 HEM veto, prefiring weight) |
 | Method | jvoss's TauFakeFactors method (fake factors, fractions, orthogonal DR&rightarrow;SR, compound non-closure) |
 | Model | QCD + W+jets + ttbar; the fractions carry the processes `QCD`, `Wjets`, `ttbar` in et and mt (keys `frac_QCD`, `frac_Wjets`, `frac_ttbar_J`); tt has no W+jets fake factor and keeps `QCD`, `ttbar` |
@@ -20,45 +20,56 @@ both halves (each sample from the n-tuples of its half, normalised to its lumino
 
 | File | md5 | sha256 |
 |---|---|---|
-| `2016/fake_factors_et.json.gz` | `24ed3ba308f491d93274af63eccf59df` | `2dd9949fca2fdd84cb2ced6b7f31a156e44789e8ee60b38f8ba4fa4352cb8f4c` |
-| `2016/fake_factors_mt.json.gz` | `cfa6af2978edb3f90a6e6a80e3f84b98` | `734d55b4969b2d39a95de45d8a2ad5a9d395878d35f1b174feb7c4680ed72c44` |
-| `2016/fake_factors_tt.json.gz` | `5c928c5dfde52345ee71733a509ddcb9` | `32f93b5fcca83cf8a249d2634f331aa2579d42df4238f1b819c4319ca7f42407` |
-| `2016/FF_corrections_et.json.gz` | `ef3f9359d6686f90b547328e15258122` | `91be0666df92d93252adf480fafd7265aeffe851edeff331fd528b69d9c3c192` |
-| `2016/FF_corrections_mt.json.gz` | `55d933ffff57a92cd1979b0145838c7f` | `d0ec0f8925cbe77caebaddde0faf43b72ea0d8788ac90bd5b8d310fb6187365b` |
-| `2016/FF_corrections_tt.json.gz` | `eef033ff97f042b7e861ecc3399bcb8b` | `4d677e7f74375382b00017c71a326dff55f0e47aef0b7190a0034bc291802adc` |
-| `2017/fake_factors_et.json.gz` | `a4771f78bc9a60a5fe27f11eed5a5a0c` | `cb2e546594aa0515ed6381bb9565a0d3088395c26aed25da4e2062ce64c13db7` |
-| `2017/fake_factors_mt.json.gz` | `4a9c21473d9801eaee69650343841b7e` | `ed4125517699dfc7cc3090ae2ad6de9118d0fd473fb70f7aa11c8365268ade50` |
-| `2017/fake_factors_tt.json.gz` | `926aa0a6c0e04b88b7bf8ea404ca17b2` | `30f7010f511c0b5a38ff1221207eeb5543eb19b2308327583228e3c0881464c3` |
-| `2017/FF_corrections_et.json.gz` | `cac7a67a0e64fa7da6dd11ae22cdea42` | `386c62cda2065622715b15455953b61f3b79febd71ee938afd3f0009c2678d12` |
-| `2017/FF_corrections_mt.json.gz` | `1970be34d73abda8419a6cae886aaf5e` | `6c63dd9f7136c23272c29cfa53d91dcdf9e886b3e8292ed62a45874354346beb` |
-| `2017/FF_corrections_tt.json.gz` | `e2452812ad07643053924f320c40f821` | `aaff2c2721e8d6f3f8064bc48ea402d5aa5aef55dc0bc164d89877ae5d172338` |
-| `2018/fake_factors_et.json.gz` | `47910aa4abb060fb03b58eec83b682b3` | `69250caed26d7e30290d87fe6264bae1c76a1e257066c748ad54fa44cf27f78b` |
-| `2018/fake_factors_mt.json.gz` | `11fc8fa86d23898f1cf9228252a508cb` | `1c01b4866bcb71bc6f4183cf96bbdf5db9bc640569b8cdda154eded36ee500b3` |
-| `2018/fake_factors_tt.json.gz` | `80f0673dcbdc3d67ba853aeeba175592` | `ccd5af2363323c02af612d15f25b65a7ea981d18038dde0c79d66b3e57a40d55` |
-| `2018/FF_corrections_et.json.gz` | `b47a268363575d3df3a9f03ffe0fe444` | `70be0a9221bc93c023dcecfb17cd51a15755aa287e7554983da93f4e9ca328a4` |
-| `2018/FF_corrections_mt.json.gz` | `5111140eb3e216042bef77cdd9809eff` | `3645f1eb6c1cff01d52e9bb9b9938dcf77cea2707184f29cf2bc41c4c3e00a30` |
-| `2018/FF_corrections_tt.json.gz` | `87d313da93e906ec74d453f9fb48b9db` | `bffb78e4f4611b7b3da154b3e194052d3a55fc64b734d811b9d712fda2675225` |
+| `2016/fake_factors_et.json.gz` | `c1239e2e4ead113b2f1d86f771885861` | `8436a0d486d8701c7b1571599613e1d7cb7a61e39e5852e7135adb8a704448a4` |
+| `2016/fake_factors_mt.json.gz` | `d2be9796a2f8f051547b22a4cfba6a5d` | `a76d54b122f54941cb962b85bce5c998956cc7286fd58cc8bb5dadac4bf8939c` |
+| `2016/fake_factors_tt.json.gz` | `23e8fd411e5cefe29cfa395a0223e35a` | `13846212e729f2d0859b0a7a485148de246ae4dff8ef4c0bf797c920d5d8b36c` |
+| `2016/FF_corrections_et.json.gz` | `20d8be612da875d71d20ec4a9bf0b835` | `ebec2045b8107fccc822abcc3c7e984e2f1043637c98df43e870f3fb4d8fa2d9` |
+| `2016/FF_corrections_mt.json.gz` | `ccc247ce30ecd76f40eb2334098f1803` | `7f0a2a1a12b0b8df5a932d3ec5176db2d6280300045009f13c117e982e7b0ab3` |
+| `2016/FF_corrections_tt.json.gz` | `09bde8499bde95aae8edc559a57a904a` | `9b6f7c45568fdffc2b7ae2ba269667fede73eab4d995dbd0793aab7edc776971` |
+| `2017/fake_factors_et.json.gz` | `3c99075fe81805bb56abd4007a764a22` | `655354261ea92b9b3c054b8c6911bad405c79d74a3935900530b45add55d4a6a` |
+| `2017/fake_factors_mt.json.gz` | `76ed798aa96918dba00696e7b3788794` | `56a0264a9215e722fb3fd5237434a05b2932cf554931f15ad712f4fc39abb3c4` |
+| `2017/fake_factors_tt.json.gz` | `35a76a7cd162a184d0b0cd2964d4f94a` | `dbf1fa3386d706ee164d5865a26c0a2ef2378f5f7dd1a2909f095c7595060727` |
+| `2017/FF_corrections_et.json.gz` | `701f4e83099473b6fbe1f8d33e398f4e` | `89de9eecc3b4e6b272e59a0b84af2b95ac1bda49c33d4a7c36c9303eb2c32906` |
+| `2017/FF_corrections_mt.json.gz` | `92ee0bb3b3ed8d802485c51ed7c81a89` | `492e004a403e0720abf1216f8bc7031565548567c02d0c8d132744544a062eab` |
+| `2017/FF_corrections_tt.json.gz` | `8012c80988f0b712d87f14f03d529910` | `2a0152c612a8fb394e3c55e3a3178f2e13e522cd7ebfa0c0a9b37245a72faa1e` |
+| `2018/fake_factors_et.json.gz` | `c7d042b27a835183681d03068385349f` | `6e4aea3de20edc43dca37f0bc084eeb13137cdc626f161197dcbb1693adaeb2c` |
+| `2018/fake_factors_mt.json.gz` | `a919e49fc19ea879228e0b7412fdaffa` | `7d0e6f1691e5b6be7f6181b3628b2f7f6411e861fc3bebf1a9b9d7971cd67099` |
+| `2018/fake_factors_tt.json.gz` | `3c3e4a3a1c74f043f6b9369c15f5a1fc` | `4ac9939954e4d42556aaec8d14b3275778cc8cb9b8d59f286289804d3ad0d813` |
+| `2018/FF_corrections_et.json.gz` | `7abf42d39839ee87e201120b18dd3018` | `3f39728d50e58af70849f755bc8af5b8edc8b5573aed8a3169718a61dd5ccaff` |
+| `2018/FF_corrections_mt.json.gz` | `95158bd2a710bb79d7482c0947cd32dc` | `1c08b34f5b1ad49177c7ca6c64f9e9df86dfd813c2325d8b0d59248a6c02e223` |
+| `2018/FF_corrections_tt.json.gz` | `cd94a7aac0ffadf7fe04db1ef10577c8` | `26daca101fd8e0e1aabb8013d946bf79ee1b6497e22faefdc786301c94964e16` |
 
 ## Notes
 
 - Measurement record, plots and validation next to the ShapeSmith output of each era (`measurement_<ch>.json`,
   `plots/<ch>/`, `validation.json` of `scripts/ff_validation.py`). Summary (German):
   `/ceph/sdaigler/v7_results/ff_v7b_summary.md`.
+- tt from MC (2026-10-19, E33): the tt-embedding closure failed in every era, so tt takes its genuine taus from MC as
+  in v6 and the measurement subtracts them as MC (`embedding: [et, mt]`). These payloads replace the first v7b ones
+  (`embedding: [et, mt, tt]`, commit 9115775): every et and mt value is unchanged (only the provenance description
+  of the files differs); in tt the ttbar data/MC factor moves (2016 0.59/0.67 -> 1.19/1.28, 2017 0.35/0.26 ->
+  0.95/0.68, 2018 0.83/1.74 -> 1.18/2.37 for tau 1/tau 2) and with it the raw ttbar fake factor, while the fractions
+  change by <= 0.02, the QCD fake factors by <= 2 % and the mean corrected fake factor in the application region by
+  -1.3 to +2.2 %; the DR closure of tt is the same (2/3/5 failures with p < 0.01 in 2016/2017/2018).
 - Mean corrected fake factor on the data application region (per b-tag 1 / >= 2 and n_jets 2 / >= 3): et 0.079-0.085,
-  mt 0.079-0.085, tt 0.15-0.24 in every era. With W+jets against without: 0.98-1.003 (W share of the prediction 10-13 %
+  mt 0.079-0.085, tt 0.155-0.243 in every era. With W+jets against without: 0.98-1.003 (W share of the prediction 10-13 %
   with <= 2 jets, 2-3 % with >= 3); the QCD and ttbar corrections of both variants are identical, only the fractions
-  differ. 2018 against the v6 payload on the same events: 0.988-1.014.
+  differ, and tt is identical in both variants. 2018 against the v6 payload on the same events: 0.988-1.015.
 - DR closure of the fully corrected fake factor (every table variable): QCD and W+jets close in every era except the
   decay mode of the tt QCD (2016 subleading, 2018 leading tau, up to 20 %); the ttbar MC closes within 3-5 % except in
   the decay mode of mt and tt (DM 1 about -5 %, DM 11 +15 to +29 %), which the mass non-closures after the
   decay-mode one bend again (measuring the decay mode last moves it into the mass, +-7 %).
-- The ttbar data/MC factor (et 0.16-0.69, mt 0.81-2.03, tt 0.26-1.74) cancels in the corrected fake factor (the
+- The ttbar data/MC factor (et 0.16-0.69, mt 0.81-2.03, tt 0.68-2.37) cancels in the corrected fake factor (the
   first, binwise non-closure absorbs it); it shows only in `fake_factor_raw`.
 - The QCD DR->SR correction of et and mt has 2 bins and is dominated by the subtracted MC (median stat error 0.3-0.7
   per bin); it is set to 1 where compatible with 1, everywhere but 2018 et (0.49-0.96). The W+jets DR->SR correction
   (W MC, 2 bins in mt_1, 3 in 2016 mt) is compatible with 1 in every era and set to 1 with its statistical band.
+- Binning: the rule "2016/2017 at most the 2018 count" was applied against the round-1 2018 counts, before the 2018
+  reductions, so three 2016 counts lie above the final 2018 ones (et QCD_non_closure_iso_1 5+1 vs 2+1, mt Wjets_DR_SR
+  3 vs 2, mt QCD_fake_factors 6 vs 5); their statistics are within the rule (2016 median relative stat error
+  0.16-0.24), so they are kept.
 - 2016: one measurement of both halves; a measurement per half with the same tables differs in the mean corrected
-  fake factor by -3 to +3 % (et, mt) and -10 to +4 % (tt), and the 2016 payload closes on each half like on both.
+  fake factor by -3 to +3 % (et, mt) and -11 to +4 % (tt), and the 2016 payload closes on each half like on both.
 
 KingMaker packs the CROWN sources (payloads included) once per production tag into the build job tarball, so a
 friend with a new payload on an existing production needs a new `--friend-tag` **and** `force_repack_tarball = True`
