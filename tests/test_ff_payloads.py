@@ -66,17 +66,19 @@ def test_sm_inputs_follow_payload_order(scope, leg):
 
 
 @pytest.mark.parametrize(
-    "scope,leg,closure",
+    "scope,leg,closure,variable",
     [
-        ("mt", "lt", ("tau_decaymode_2", "pt_1", "jpt_1", "met", "mt_tot", "mass_2", "iso_1", "n_jets")),
-        ("tt", "leading", ("tau_decaymode_1", "pt_2", "met", "mt_tot", "pt_vis", "mass_1", "mass_2", "n_jets")),
-        ("tt", "subleading", ("tau_decaymode_2", "pt_1", "met", "mt_tot", "pt_vis", "mass_2", "mass_1", "n_jets")),
+        ("mt", "lt", ("tau_decaymode_2", "pt_1", "jpt_1", "met", "mt_tot", "mass_2", "iso_1", "n_jets"), "pt_2"),
+        ("tt", "leading", ("tau_decaymode_1", "pt_2", "met", "mt_tot", "pt_vis", "mass_1", "mass_2", "n_jets"), "pt_1"),
+        ("tt", "subleading", ("tau_decaymode_2", "pt_1", "met", "mt_tot", "pt_vis", "mass_2", "mass_1", "n_jets"), "pt_2"),
     ],
 )
-def test_sm_closure_input_orders(scope, leg, closure):
+def test_sm_closure_input_orders(scope, leg, closure, variable):
+    """The v7b ttbar closure ends with a non-closure in the fake-factor variable (ShapeSmith
+    ff_tables.FF_VARIABLE_NON_CLOSURE), which comes before n_jets in its inputs."""
     by_role = corrections(SM_2018, scope, leg)
     assert by_role["closure_qcd"].inputs == closure
-    assert by_role["closure_ttbar"].inputs == closure
+    assert by_role["closure_ttbar"].inputs == closure[:-1] + (variable, "n_jets")
 
 
 def test_nmssm_inputs_are_aliased():

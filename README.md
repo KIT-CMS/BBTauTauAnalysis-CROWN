@@ -46,8 +46,8 @@ The friend entries are thin wrappers around the shared `FriendTreeConfiguration`
   `kinfit_convergence`, `kinfit_chi2`, `kinfit_prob`, `kinfit_mHH`.
 * `fake_factors_friend_config.py` / `sm_fake_factors.py` / `sm_fake_factors_w.py` - Fake-factor
   friends, NMSSM (Run 3, `NMSSM_PAYLOAD_DIRS`) and SM (the Run-2 eras with a payload,
-  `SM_PAYLOAD_DIRS`): `sm_fake_factors` sums QCD + ttbar (friend `ff_v7`), `sm_fake_factors_w`
-  QCD + W + ttbar (friend `ff_v7_w`, v7 spec E18, P5), each from its own `PAYLOADS` table with the
+  `SM_PAYLOAD_DIRS`): `sm_fake_factors` sums QCD + ttbar (friend `ff_v7b`), `sm_fake_factors_w`
+  QCD + W + ttbar in et and mt and QCD + ttbar in tt (friend `ff_v7b_w`, v7 spec E18, P5; `SCOPE_PROCESSES`), each from its own `PAYLOADS` table with the
   shared 2016 mapping, and each rejects a payload of the other variant (`PROCESSES`). See
   [Fake-factor friends](#fake-factor-friends).
 * `xyh_classifier_friend_config.py` - Produce PNN classifier friends for the NMSSM analysis.
@@ -102,9 +102,12 @@ input stays nominal under that shift (info log only).
 
 Payloads: the NMSSM Run-3 ones stay at `payloads/fake_factors/<version>/<era>/` (2022 and 2023:
 `fake-factors-2026-06-10`, 2024 and 2025: `fake-factors-2026-09-26`, which has no 2024 tt payload), new ones go to
-`payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payload is
-`payloads/fake_factors/sm/fake-factors-2026-10-09/2018/`, measured with ShapeSmith on `sm2018_binned_v6`
-with embedding in et and mt (see its README; the v5 payload `fake-factors-2026-10-03` stays for reference);
+`payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payloads are
+`payloads/fake_factors/sm/fake-factors-2026-10-19/<era>/` (QCD + ttbar) and
+`payloads/fake_factors/sm/fake-factors-2026-10-19-w/<era>/` (QCD + W + ttbar) for the payload eras 2016, 2017 and
+2018, measured with ShapeSmith on the v7b production (data `smrun2_binned_v7`, MC and embedding
+`smrun2_binned_v7b`) with embedding in et, mt and tt (see their READMEs; the v6 2018 payload
+`fake-factors-2026-10-09` and the v5 payload `fake-factors-2026-10-03` stay for reference);
 jvoss's `fake-factors-2026-09-22` stays as the base of the edited test payloads. A new payload goes into a new
 dated directory, and only the entry in `SM_PAYLOAD_DIRS` / `NMSSM_PAYLOAD_DIRS` changes. Friend tarballs and
 outputs are keyed by production and friend tag only, and KingMaker packs the CROWN sources once per tag, so
@@ -113,8 +116,8 @@ producing friends with a new payload on an existing production needs a new `--fr
 
 The SM payloads are keyed by payload era (`sm_fake_factors.PAYLOAD_ERAS`): 2016preVFP and 2016postVFP share
 one 2016 payload, measured on both halves together. `PAYLOADS` maps a payload era to its directory, and
-`SM_PAYLOAD_DIRS` / `AVAILABLE_ERAS` hold the eras whose payload era has one (2018 so far); a new 2016
-payload is one entry, `"2016": ".../<version>/2016"`.
+`SM_PAYLOAD_DIRS` / `AVAILABLE_ERAS` hold the eras whose payload era has one (all four Run-2 eras since the
+v7b payloads).
 
 ## Building
 

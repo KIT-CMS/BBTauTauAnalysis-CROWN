@@ -416,6 +416,8 @@ def test_fake_factor_entry_points_share_the_payload_eras():
     assert sm_fake_factors_w.PAYLOAD_ERAS is sm_fake_factors.PAYLOAD_ERAS
     assert sm_fake_factors.PROCESSES == ("QCD", "ttbar")
     assert sm_fake_factors_w.PROCESSES == ("QCD", "Wjets", "ttbar")
+    # tt has no W+jets fake factor: ff_v7b_w of tt sums QCD + ttbar
+    assert sm_fake_factors_w.SCOPE_PROCESSES == {"et": sm_fake_factors_w.PROCESSES, "mt": sm_fake_factors_w.PROCESSES, "tt": sm_fake_factors.PROCESSES}
     assert set(sm_fake_factors_w.SM_PAYLOAD_DIRS) <= set(ERAS_RUN2)
     assert sm_fake_factors_w.AVAILABLE_ERAS == list(sm_fake_factors_w.SM_PAYLOAD_DIRS)
     analysis = Path(sm_fake_factors_w.__file__).parent
@@ -448,3 +450,53 @@ def test_both_fake_factor_entry_points_generate(wjets_payload, scope, tmp_path):
         else:
             assert result.returncode != 0
             assert "this friend expects" in result.stderr, result.stderr[-2000:]
+
+
+# --- the v7b payloads of P5 (ff_v7b, ff_v7b_w) in every era and sample kind ------
+
+
+def relabelled_ff_map(era, sample, tmp_path):
+    """The 2018 ttbar fake-factor quantities map relabelled to ``era`` and ``sample``."""
+    quantities_map = json.loads(Path(MAP_FF_2018).read_text())
+    quantities_map["quantities"] = {era: {sample: quantities_map["quantities"]["2018"]["ttbar"]}}
+    quantities_map["metadata"].update(era=era, sample_type=sample)
+    relabelled = tmp_path / f"{era}_{sample}_fake_factors_quantities_map.json"
+    relabelled.write_text(json.dumps(quantities_map))
+    return str(relabelled)
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+@pytest.mark.parametrize("module", [sm_fake_factors, sm_fake_factors_w], ids=["ff_v7b", "ff_v7b_w"])
+def test_both_fake_factor_friends_build_in_every_run2_era_and_sample_kind(module, era, tmp_path):
+    """P5 builds ff_v7b and ff_v7b_w for the data, the MC and the embedding of every
+    Run-2 era from the v7b payloads (2016preVFP and 2016postVFP from the one 2016
+    payload); the friend does not depend on the sample kind, W+jets enters et and
+    mt of ff_v7b_w only, and every correction of the configuration is in the payload
+    of the era."""
+    assert module.AVAILABLE_ERAS == ERAS_RUN2
+    payload_era = module.PAYLOAD_ERAS[era]
+    directory = module.SM_PAYLOAD_DIRS[era]
+    variant = "fake-factors-2026-10-19" + ("-w" if module is sm_fake_factors_w else "")
+    assert directory == f"payloads/fake_factors/sm/{variant}/{payload_era}"
+    analysis = Path(module.__file__).parent
+    for scope in ("et", "mt", "tt"):
+        built = {}
+        for sample in ("data", "ttbar", "embedding"):
+            config = module.build_config(
+                era, sample, [scope], {"all"}, LEGACY_AVAILABLE_SAMPLES,
+                module.AVAILABLE_ERAS, SCOPES, relabelled_ff_map(era, sample, tmp_path),
+            )
+            nominal = config.config_parameters[scope]["nominal"]
+            assert nominal["ff_file"] == f"{directory}/fake_factors_{scope}.json.gz"
+            assert nominal["ff_corr_file"] == f"{directory}/FF_corrections_{scope}.json.gz"
+            with gzip.open(analysis / nominal["ff_file"], "rt") as handle:
+                names = {c["name"] for c in json.load(handle)["corrections"]}
+            with gzip.open(analysis / nominal["ff_corr_file"], "rt") as handle:
+                payload = json.load(handle)
+            names |= {c["name"] for c in payload["corrections"]}
+            names |= {c["name"] for c in payload.get("compound_corrections") or []}
+            used = {value for key, value in nominal.items() if key.endswith("_name") and value}
+            assert used and used <= names, sorted(used - names)
+            assert any("Wjets" in name for name in used) == (module is sm_fake_factors_w and scope != "tt")
+            built[sample] = (sorted(output_names(config, scope)), sorted(ff_shifts(config, scope)))
+        assert built["data"] == built["ttbar"] == built["embedding"], scope
