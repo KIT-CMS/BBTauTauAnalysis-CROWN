@@ -109,7 +109,8 @@ class TtEmbeddingTriggerEfficiency:
 
 
 # v7 spec E33 (docs v7_tt_emb_trigger 12.6): the eff_data of the di-tau leg measured
-# per era with ShapeSmith on smrun2_tau_id_v1 (mu tau_h tag and probe) at
+# per era with ShapeSmith on smrun2_tau_id_v2 (its MC; data and embedding of
+# smrun2_tau_id_v1; mu tau_h tag and probe) at
 # payloads/tau_trigger_embedding/Run2-<era>-UL-NanoAODv15/, in both isolation
 # classes: Medium and VVVLoose_not_Medium (VVVLoose and not Medium).
 TT_EMBEDDING_TRIGGER_EFFICIENCIES = {
