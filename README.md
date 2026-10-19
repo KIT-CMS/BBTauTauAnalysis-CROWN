@@ -387,8 +387,10 @@ triggers of the era, and the MET filters the era's files lack), `TAU_EMBEDDING_I
 measured tau energy scale and vsJet SF, `payloads/tau_embedding/Run2-<era>-UL-NanoAODv15/`) and
 `TT_EMBEDDING_TRIGGER_EFFICIENCIES[era]` (the measured efficiency of the di-tau leg in data,
 `payloads/tau_trigger_embedding/Run2-<era>-UL-NanoAODv15/`). The tau and tt trigger payloads of all four
-eras are measured with ShapeSmith on the tau-ID production `smrun2_tau_id_v1` (v7 spec 5.4 and E33,
-`payloads/tau_embedding/README.md`, `payloads/tau_trigger_embedding/README.md`);
+eras are measured with ShapeSmith on the tau-ID production (v7 spec 5.4 and E33): the tau payloads on
+`smrun2_tau_id_v2` (MC re-produced with the MET fix and the POG muon trigger SF, data and embedding of
+`smrun2_tau_id_v1`; `payloads/tau_embedding/README.md`), the tt trigger payloads on `smrun2_tau_id_v1`
+(`payloads/tau_trigger_embedding/README.md`);
 an `sm_config` embedding build of an era without one raises `ValueError`, while the tau-ID
 measurement, which leaves the embedded taus uncorrected, builds in every era.
 
