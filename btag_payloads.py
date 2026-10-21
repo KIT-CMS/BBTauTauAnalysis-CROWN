@@ -1,0 +1,138 @@
+"""UParT b-tagging payload helpers for the Run-2 UL NanoAOD v15 inputs.
+
+Config-time helpers that read the pinned BTV ``correctionlib`` payload using
+only the standard library (``payload_io``).  ``correctionlib`` itself is
+deliberately *not* imported here, so the analysis configuration can be
+constructed (and unit-tested) without the C++ correction backend.
+
+Working points and systematic variations are read directly from the selected
+BTV payload.
+"""
+from __future__ import annotations
+
+from typing import Dict, Set
+
+from .constants import ERAS_RUN2
+from .payload_io import get_correction, load_payload
+
+# Pinned BTV UParTAK4 payloads for the Run-2 UL NanoAOD v15 inputs, one per
+# era.  Each pin is a dated CAT-metadata snapshot on cvmfs (never the rolling
+# "latest" symlink); all four ship the UParTAK4_wp_values / UParTAK4_comb /
+# UParTAK4_light corrections read below.
+BTV_UPART_PAYLOADS: Dict[str, str] = {
+    era: (
+        "/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/"
+        f"Run2-{era}-UL-NanoAODv15/2026-06-18/btagging.json.gz"
+    )
+    for era in ERAS_RUN2
+}
+
+
+def btv_upart_payload(era: str) -> str:
+    """Return the pinned BTV UParTAK4 payload path for ``era``.
+
+    Raises a ``KeyError`` naming the pinned eras when ``era`` has no pin, so a
+    profile enabling the UParT path for an unsupported era fails at config
+    time instead of at run time inside correctionlib.
+    """
+    try:
+        return BTV_UPART_PAYLOADS[era]
+    except KeyError as error:
+        raise KeyError(
+            f"no pinned BTV UParTAK4 payload for era '{era}'; pinned eras: "
+            f"{sorted(BTV_UPART_PAYLOADS)}"
+        ) from error
+
+# Names of the UParTAK4 corrections stored in the pinned payload.
+WP_VALUES_CORRECTION = "UParTAK4_wp_values"
+COMB_SF_CORRECTION = "UParTAK4_comb"
+LIGHT_SF_CORRECTION = "UParTAK4_light"
+
+def load_upart_wps(path: str) -> Dict[str, float]:
+    """Read the ``UParTAK4_wp_values`` working points from the payload at ``path``.
+
+    Walks ``corrections[name == "UParTAK4_wp_values"].data.content`` and
+    returns its ``key`` -> ``value`` pairs.
+    """
+    payload = load_payload(path)
+    correction = get_correction(payload, WP_VALUES_CORRECTION, path)
+    return {
+        item["key"]: item["value"]
+        for item in correction["data"]["content"]
+    }
+
+
+def check_working_points(wps: Dict[str, float], working_points) -> tuple:
+    """Return ``working_points`` (tightest first) after checking them against the
+    payload's ``UParTAK4_wp_values`` thresholds ``wps``.
+
+    Raises ``ValueError`` for an empty or repeated list, a name the payload does
+    not have, or thresholds that do not decrease strictly in the given order --
+    the conditions under which the strict consumer throws at run time.
+    """
+    working_points = tuple(working_points)
+    if not working_points or len(set(working_points)) != len(working_points):
+        raise ValueError(f"invalid b-tag working points {working_points}")
+    missing = [wp for wp in working_points if wp not in wps]
+    if missing:
+        raise ValueError(
+            f"b-tag working points {missing} are not in {WP_VALUES_CORRECTION} "
+            f"({sorted(wps)})"
+        )
+    thresholds = [wps[wp] for wp in working_points]
+    if any(tight <= loose for tight, loose in zip(thresholds, thresholds[1:])):
+        raise ValueError(
+            f"b-tag working points {working_points} are not ordered tightest "
+            f"first: thresholds {thresholds}"
+        )
+    return working_points
+
+
+def _pt_binnings(node):
+    """Yield every ``pt`` binning node below ``node``."""
+    if isinstance(node, dict):
+        if node.get("nodetype") == "binning" and node.get("input") == "pt":
+            yield node
+        for value in node.values():
+            yield from _pt_binnings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _pt_binnings(value)
+
+
+def load_upart_comb_min_pt(path: str) -> float:
+    """Read the lowest calibrated pT of the ``UParTAK4_comb`` (b/c jet) SFs.
+
+    The first edge of the pT binnings, which must be the same in every
+    systematic, working point and flavour.
+    """
+    payload = load_payload(path)
+    correction = get_correction(payload, COMB_SF_CORRECTION, path)
+    edges = {binning["edges"][0] for binning in _pt_binnings(correction["data"])}
+    if len(edges) != 1:
+        raise ValueError(
+            f"{COMB_SF_CORRECTION} in '{path}' has no common lowest pT edge: "
+            f"{sorted(edges)}"
+        )
+    return float(edges.pop())
+
+
+def discover_upart_variations(path: str) -> Dict[str, Set[str]]:
+    """Return the systematic-variation keys of the two UParTAK4 SF corrections.
+
+    Collects ``data.content[*].key`` (the top-level ``systematic`` category) of
+    the ``UParTAK4_comb`` and ``UParTAK4_light`` corrections, e.g.::
+
+        {"UParTAK4_comb": {"central", "up", "down", "up_correlated", ...},
+         "UParTAK4_light": {"central", "up", "down", "up_correlated", ...}}
+    """
+    payload = load_payload(path)
+    variations: Dict[str, Set[str]] = {}
+    for name in (COMB_SF_CORRECTION, LIGHT_SF_CORRECTION):
+        correction = get_correction(payload, name, path)
+        variations[name] = {
+            item["key"]
+            for item in correction["data"]["content"]
+            if "key" in item
+        }
+    return variations

@@ -1,0 +1,20 @@
+{
+  "quantities": {
+    "2024": {
+      "ttbar": {
+        "mt": {
+          "": [
+            "pt_1", "pt_2", "n_jets", "n_bjets", "m_vis",
+            "tau_decaymode_2", "mass_2"
+          ],
+          "CMS_scale_t_DeepTau2018v2p5_DM0_pt20to40_genTau_2024Up": ["pt_2", "m_vis", "mass_2"]
+        }
+      }
+    }
+  },
+  "metadata": {
+    "era": "2024",
+    "sample_type": "ttbar",
+    "config": "test_ntuple"
+  }
+}

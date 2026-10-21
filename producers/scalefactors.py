@@ -220,9 +220,13 @@ def _create_tau_id_vsjet_sf_producer(
     vec_config: str,
 ):
 
-    # define names of common parameters
+    # define names of common parameters. tau_ides_sf_vsmu_wp is a C++ string
+    # literal, not a bare value: CROWN drops empty configuration parameters, and
+    # the empty WP ('""') is what selects the evaluation without wp_VSmu in the
+    # core's experimental::Id_vsJet (core 14f82c1 and later)
     vsjet_wp = "vsjet_wp"
     tau_ides_sf_vsele_wp = "tau_ides_sf_vsele_wp"
+    tau_ides_sf_vsmu_wp = "tau_ides_sf_vsmu_wp"
     tau_id_sf_vsjet_sf_dependence = "tau_id_sf_vsjet_sf_dependence"
 
     call_fn = ""
@@ -231,13 +235,14 @@ def _create_tau_id_vsjet_sf_producer(
         "correctionManager",
         "{output}", 
         "{input}", 
-        "\"{tau_ides_sf_file}\"",
+        "\"{tau_vsjet_es_sf_file}\"",
         "\"{discriminator}\"", 
     ]
     call_fn = "physicsobject::tau::scalefactor::experimental::Id_vsJet"
     parameters.extend([
         f"\"{{{vsjet_wp}}}\"", 
         f"\"{{{tau_ides_sf_vsele_wp}}}\"", 
+        f"{{{tau_ides_sf_vsmu_wp}}}",
         f"\"{{{tau_id_sf_vsjet_sf_dependence}}}\"",
         "\"{tau_id_sf_vsjet_variation}\""
     ])
@@ -531,34 +536,20 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
 #########################
 # Electron ID/ISO SF
 #########################
+# Electron reconstruction weight: the EGM payload stores the reconstruction
+# efficiency in pt categories, so the addon selects the category per electron
+# (see cpp_addons/include/electron_reco.hxx) and takes the era key from the
+# config instead of a fixed category name.
 Ele_1_Reco_SF = Producer(
     name="Ele_1_Reco_SF",
-    call="""physicsobject::electron::scalefactor::RecoRun3(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{ele_sf_year_id}", 
-        "{ele_sf_file}", 
-        "{ele_sf_cset_name}", 
-        "{ele_reco_sf_variation}")
-        """,
+    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_1, q.eta_1, q.phi_1],
     output=[q.reco_wgt_ele_1],
     scopes=["em", "ee", "et"],
 )
 Ele_2_Reco_SF = Producer(
     name="Ele_2_Reco_SF",
-    call="""physicsobject::electron::scalefactor::RecoRun3(
-        {df}, 
-        correctionManager, 
-        {output}, 
-        {input}, 
-        "{ele_sf_year_id}", 
-        "{ele_sf_file}", 
-        "{ele_sf_cset_name}", 
-        "{ele_reco_sf_variation}")
-        """,
+    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_2, q.eta_2, q.phi_2],
     output=[q.reco_wgt_ele_2],
     scopes=["ee"],
@@ -605,21 +596,74 @@ EleID_SF = ProducerGroup(
     scopes=["em", "ee", "et"],
     subproducers={
         "em": [
-            Ele_1_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_Reco_SF,
             Ele_1_ID_SF,
         ],
         "ee": [
-            Ele_1_Reco_SF,  # TODO a bit tedious to implement
-            Ele_2_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_Reco_SF,
+            Ele_2_Reco_SF,
             Ele_1_ID_SF,
             Ele_2_ID_SF,
         ],
         "et": [
-            Ele_1_Reco_SF,  # TODO a bit tedious to implement
+            Ele_1_Reco_SF,
             Ele_1_ID_SF,
         ],
     },
 )
+
+# The same SFs at the supercluster eta of the electrons, eta + deltaEtaSC, in which
+# the EGM payloads are binned (v7 spec K7, C22): an electron with eta below the
+# barrel edge 1.444 and supercluster eta above it takes the SF of the bin above.
+def _at_supercluster_eta(producer, eta, sc_eta):
+    """``producer`` with the input ``eta`` replaced by ``sc_eta``."""
+    inputs = producer.input[producer.scopes[0]]
+    if eta not in inputs:
+        raise ValueError(f"{producer.name} does not read {eta.name}")
+    return Producer(
+        name=f"{producer.name}_ScEta",
+        call=producer.call,
+        input=[sc_eta if quantity is eta else quantity for quantity in inputs],
+        output=list(producer.output),
+        scopes=list(producer.scopes),
+    )
+
+
+Ele_1_Reco_SF_ScEta = _at_supercluster_eta(Ele_1_Reco_SF, q.eta_1, q.sc_eta_1)
+Ele_2_Reco_SF_ScEta = _at_supercluster_eta(Ele_2_Reco_SF, q.eta_2, q.sc_eta_2)
+Ele_1_ID_SF_ScEta = _at_supercluster_eta(Ele_1_ID_SF, q.eta_1, q.sc_eta_1)
+Ele_2_ID_SF_ScEta = _at_supercluster_eta(Ele_2_ID_SF, q.eta_2, q.sc_eta_2)
+EleID_SF_ScEta = ProducerGroup(
+    name="EleID_SF_ScEta",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["em", "ee", "et"],
+    subproducers={
+        "em": [
+            Ele_1_Reco_SF_ScEta,
+            Ele_1_ID_SF_ScEta,
+        ],
+        "ee": [
+            Ele_1_Reco_SF_ScEta,
+            Ele_2_Reco_SF_ScEta,
+            Ele_1_ID_SF_ScEta,
+            Ele_2_ID_SF_ScEta,
+        ],
+        "et": [
+            Ele_1_Reco_SF_ScEta,
+            Ele_1_ID_SF_ScEta,
+        ],
+    },
+)
+
+
+def electron_id_sf(supercluster_eta: bool) -> ProducerGroup:
+    """The electron reconstruction and ID SF group, at the supercluster eta
+    (AnalysisProfile.electron_sf_supercluster_eta) or at the electron eta."""
+    return EleID_SF_ScEta if supercluster_eta else EleID_SF
+
+
 Ele_1_Reco_SF_boosted = Producer(
     name="Ele_1_Reco_SF_boosted",
     call="""physicsobject::electron::scalefactor::Id(
@@ -810,7 +854,7 @@ DoubleEleTauTriggerSF = ProducerGroup(
 # muon leg scale factor
 TauTauTriggerLeg1SF = ExtendedVectorProducer(
     name="DoubleTauTauTriggerLeg1SF",
-    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg1_sf_name}", "Medium", "sf", "{tt_trigger_leg1_variation}")',
+    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "{tau_trigger_cset_name}", "{tt_trigger_leg1_sf_name}", "Medium", "sf", "{tt_trigger_leg1_variation}")',
     input=[
         q.pt_1,
         q.tau_decaymode_1,
@@ -823,7 +867,7 @@ TauTauTriggerLeg1SF = ExtendedVectorProducer(
 # tau leg scale factor (for the Medium DeepTau WP)
 TauTauTriggerLeg2SF = ExtendedVectorProducer(
     name="DoubleTauTauTriggerLeg2SF",
-    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg2_sf_name}", "Medium", "sf", "{tt_trigger_leg2_variation}")',
+    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "{tau_trigger_cset_name}", "{tt_trigger_leg2_sf_name}", "Medium", "sf", "{tt_trigger_leg2_variation}")',
     input=[
         q.pt_2,
         q.tau_decaymode_2,
@@ -865,12 +909,12 @@ ETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
         {input}, 
         "{mc_electron_sf_file}", 
         "{mc_trigger_sf}", 
-        "mc", 
+        "{electron_trigger_sf_type}", 
         {mc_electron_trg_extrapolation})
         """,
     input=[q.pt_1, q.eta_1],
     output="flagname",
-    scopes=["et", "ee"],
+    scopes=ELECTRON_SCOPES,
     vec_config="singlelectron_trigger_sf_mc",
 )
 BoostedETGenerateSingleElectronTriggerSF_MC = ExtendedVectorProducer(
@@ -1006,6 +1050,56 @@ TauEmbeddingMuonIsoSF_2_MC = Producer(
     input=[q.pt_2, q.eta_2],
     output=[q.iso_wgt_mu_2],
     scopes=["mm", "em"],
+)
+
+# muon ID and isolation SFs of the first muon (mt) or of both (mm), in place of
+# the POG MuonIDIso_SF group
+TauEmbeddingMuonIDIsoSF_MC = ProducerGroup(
+    name="TauEmbeddingMuonIDIsoSF_MC",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["mt", "mm"],
+    subproducers={
+        "mt": [TauEmbeddingMuonIDSF_1_MC, TauEmbeddingMuonIsoSF_1_MC],
+        "mm": [
+            TauEmbeddingMuonIDSF_1_MC,
+            TauEmbeddingMuonIsoSF_1_MC,
+            TauEmbeddingMuonIDSF_2_MC,
+            TauEmbeddingMuonIsoSF_2_MC,
+        ],
+    },
+)
+
+# POG (MUO) single-muon trigger SFs of MC, one per configured trigger
+# (singlemuon_trigger_sf_mc, tau_triggersetup.POG_SINGLE_MUON_TRIGGER_SFS), of the
+# muon of mt and em and the first muon of mm, from the muon_Z payload of the era
+# (muon_sf_file), evaluated at every pT and iso (the flags select downstream) at the
+# pT and |eta| clamped into the payload range (mc_trigger_sf_min_pt,
+# mc_trigger_sf_max_abs_eta), as the payload throws outside it. The shift scales
+# the SF by 1.02 / 0.98 (mc_muon_trg_extrapolation, CMS_eff_m_trigger_<era>).
+PogSingleMuonTriggerSF = ExtendedVectorProducer(
+    name="PogSingleMuonTriggerSF",
+    call="""xyh::scalefactor::pog_muon_trigger(
+        {df}, 
+        correctionManager, 
+        {output}, 
+        {input}, 
+        "{muon_sf_file}", 
+        "{mc_trigger_sf}", 
+        "nominal", 
+        {mc_muon_trg_extrapolation},
+        {mc_trigger_sf_min_pt},
+        {mc_trigger_sf_max_abs_eta})
+        """,
+    input={
+        "mt": [q.pt_1, q.eta_1],
+        "mm": [q.pt_1, q.eta_1],
+        "em": [q.pt_2, q.eta_2],
+    },
+    output="flagname",
+    scopes=MUON_SCOPES,
+    vec_config="singlemuon_trigger_sf_mc",
 )
 
 TauEmbeddingBoostedMuonIDSF_1_MC = Producer(
@@ -1215,7 +1309,7 @@ BJetWPUParT_SF = Producer(
         "{bjet_eff_name}",
         "{bjet_eff_sample_type}",
         "{bjet_sf_variation_bc}",
-        "{bjet_sf_variation_lf}"
+        "{bjet_sf_variation_light}"
     )
     """,
     input=[
@@ -1230,6 +1324,152 @@ BJetWPUParT_SF = Producer(
     output=[q.id_wgt_bjet],
     scopes=SCOPES,
 )
+
+##############################################################################
+# Strict UParTAK4 multiple-working-point b-tag EVENT weight (UParT profiles on
+# the Run-2 NanoAOD-v15 inputs).
+#
+# The strict counterpart of BJetWPUParT_SF / BtaggingMultipleWP: the C++
+# consumer xyh::scalefactor::btagging_strict::multi_wp_event_weight throws
+# (with the offending jet kinematics) instead of silently substituting 1.0 for
+# a degenerate jet contribution, and it dispatches per correction (comb for
+# b/c, light for light) with independent variation keys. It evaluates the
+# working points of the profile (btag_sf_working_points, v7: [T, M]) and sets
+# an intermediate factor with a negative numerator to 1 (BTV, v7 spec K1),
+# counted per event in a column of its own. The producer emits the nominal
+# event weight plus the eight weight-only columns of the fixed-WP nuisances
+# (v7 spec C14), visible on the nominal tree (with -DSHIFTS=none).
+##############################################################################
+
+# Kinematic b-jet acceptance (pt > 20, |eta| < 2.4, jet ID) BEFORE the b-tag WP
+# cut, cleaned of lepton overlaps -- the exact jet set the fixed-WP event
+# reweighting runs over, and already inside the [0, 2.4) eta support the strict
+# consumer requires.
+StrictUParTBtagMask = Producer(
+    name="StrictUParTBtagMask",
+    call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
+    input=[q.base_bjets_mask, q.jet_overlap_veto_mask],
+    output=[q.base_bjets_with_veto_mask],
+    scopes=SCOPES,
+)
+
+# The fixed-WP nuisances (v7 spec C14, E14): b/c and light jets, each correlated
+# between the eras and uncorrelated; one flavour varied, the other at central.
+UPART_FLAVOUR_CORRECTIONS = {"bc": "UParTAK4_comb", "light": "UParTAK4_light"}
+UPART_CORRELATIONS = ("correlated", "uncorrelated")
+
+
+def upart_variation_dispatch(variations):
+    """The per-correction variation dispatch of the weight columns.
+
+    ``variations`` is the mapping returned by
+    ``btag_payloads.discover_upart_variations`` (correction name -> set of
+    systematic keys). For each flavour group (bc: ``UParTAK4_comb``, light:
+    ``UParTAK4_light``), correlation (correlated, uncorrelated) and direction
+    (up, down), one weight column ``btag_weight_upart_<direction>_<flavour>_
+    <correlation>`` varies that flavour group by the payload key
+    ``<direction>_<correlation>`` and keeps the other at ``central``.
+
+    Returns an ordered list of dicts ``{"suffix", "variation_comb",
+    "variation_light"}``; a key missing in its correction raises ``KeyError``.
+    """
+    dispatch = []
+    for flavour, correction in UPART_FLAVOUR_CORRECTIONS.items():
+        for correlation in UPART_CORRELATIONS:
+            for direction in ("up", "down"):
+                key = f"{direction}_{correlation}"
+                if key not in variations[correction]:
+                    raise KeyError(
+                        f"systematic '{key}' is not in {correction}; it has "
+                        f"{sorted(variations[correction])}"
+                    )
+                dispatch.append(
+                    {
+                        "suffix": f"{direction}_{flavour}_{correlation}",
+                        "variation_comb": key if flavour == "bc" else "central",
+                        "variation_light": key if flavour == "light" else "central",
+                    }
+                )
+    return dispatch
+
+
+def _strict_upart_weight_producer(
+    name, output_quantity, count_quantity, variation_comb, variation_light
+):
+    """One multi_wp_event_weight Producer for a fixed (comb, light) variation.
+
+    The two variation keys are known at config time and baked into the call;
+    the payload files, the efficiency sample_type, the lowest calibrated b/c-jet
+    pT and the working points remain config parameters resolved per scope. The
+    WP thresholds are read from the SF payload by the C++ consumer.
+    """
+    call = (
+        "xyh::scalefactor::btagging_strict::multi_wp_event_weight("
+        "{df}, correctionManager, {output}, {input}, "
+        '"{bjet_sf_file}", "{bjet_eff_file}", "{bjet_eff_sample_type}", '
+        "{bjet_sf_bc_min_pt}, "
+        "{vec_open}{bjet_sf_working_points}{vec_close}, "
+        '"' + variation_comb + '", "' + variation_light + '")'
+    )
+    return Producer(
+        name=name,
+        call=call,
+        input=[
+            q.Jet_correctedPt,
+            nanoAOD.Jet_eta,
+            nanoAOD.Jet_hadronFlavour,
+            nanoAOD.Jet_btagUParTAK4B,
+            q.base_bjets_with_veto_mask,
+        ],
+        output=[output_quantity, count_quantity],
+        scopes=SCOPES,
+    )
+
+
+def build_strict_upart_btag_weight(variations):
+    """Assemble the ``StrictUParTBtagWeight`` ProducerGroup for the SM path.
+
+    Emits the nominal weight ``btag_weight_upart``, the eight variation columns
+    ``btag_weight_upart_<direction>_<flavour>_<correlation>`` and, per weight,
+    the count of factors set to 1 (``btag_unity_jets_upart[_<suffix>]``), plus
+    (as the first subproducer) the acceptance mask.
+
+    Returns ``(producer_group, output_quantities)`` where ``output_quantities``
+    is the list of columns to hand to ``add_outputs``.
+    """
+    entries = [{"suffix": None, "variation_comb": "central", "variation_light": "central"}]
+    entries += upart_variation_dispatch(variations)
+
+    subproducers = [StrictUParTBtagMask]
+    output_quantities = []
+    for entry in entries:
+        if entry["suffix"] is None:
+            name, weight, count = (
+                "StrictUParTBtagWeightNominal",
+                q.btag_weight_upart,
+                q.btag_unity_jets_upart,
+            )
+        else:
+            name = f"StrictUParTBtagWeight_{entry['suffix']}"
+            weight = Quantity(f"btag_weight_upart_{entry['suffix']}")
+            count = Quantity(f"btag_unity_jets_upart_{entry['suffix']}")
+        output_quantities += [weight, count]
+        subproducers.append(
+            _strict_upart_weight_producer(
+                name, weight, count, entry["variation_comb"], entry["variation_light"]
+            )
+        )
+
+    group = ProducerGroup(
+        name="StrictUParTBtagWeight",
+        call=None,
+        input=None,
+        output=None,
+        scopes=SCOPES,
+        subproducers=subproducers,
+    )
+    return group, output_quantities
+
 
 btagging_SF_boosted = Producer(
     name="btagging_SF_boosted",

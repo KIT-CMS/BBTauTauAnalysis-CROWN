@@ -1,12 +1,15 @@
+import re
+
 from code_generation.configuration import Configuration
 from code_generation.producer import Producer, ProducerGroup
-from ..producers import pairselection as pairselection
-from ..producers import muons as muons
-from ..producers import electrons as electrons
-
 from ..constants import ERAS_RUN2
 
 from ._util import add_systematic_shift, KeyValueShift
+
+
+# Exclude data, as well as embedding samples, which have their own tau
+# corrections
+EXCLUDE_SAMPLES = ["data", "embedding", "embedding_mc"]
 
 
 def _get_run2_2022_2023_tau_id_vs_jet_shifts(
@@ -16,13 +19,17 @@ def _get_run2_2022_2023_tau_id_vs_jet_shifts(
     """
     Shift specifications of the tau ID vs jet scale factor variations for 2022
     and 2023.
+
+    The correction file names the variations with the direction as suffix and
+    separates the era period from the year, e.g. `syst_2022_preEE_up`.
     """
+    era_token = re.sub(r"^(\d{4})(pre|post)", r"\1_\2", era)
     return [
         *[
             KeyValueShift(
                 name=f"CMS_eff_t_{tau_id_algorithm}_VSjet_dm_stat{i}_DM{dm}_{era}",
                 key="tau_id_sf_vsjet_variation",
-                value=f"{{direction}}_stat{i}_dm{dm}",
+                value=f"stat{i}_dm{dm}_{{direction}}",
             )
             for i in range(1, 3)
             for dm in [0, 1, 10, 11]
@@ -30,12 +37,12 @@ def _get_run2_2022_2023_tau_id_vs_jet_shifts(
         KeyValueShift(
             name=f"CMS_eff_t_{tau_id_algorithm}_VSjet_dm_syst_alleras",
             key="tau_id_sf_vsjet_variation",
-            value="{direction}_syst_alleras",
+            value="syst_alleras_{direction}",
         ),
         KeyValueShift(
             name=f"CMS_eff_t_{tau_id_algorithm}_VSjet_dm_syst_{era}",
             key="tau_id_sf_vsjet_variation",
-            value=f"{{direction}}_syst_{era}",
+            value=f"syst_{era_token}_{{direction}}",
         ),
     ]
 
@@ -107,7 +114,13 @@ def add_tau_id_vs_jet_shifts(
 
     # Add up and down variation for each shift
     for shift in shifts:
-        add_systematic_shift(configuration, shift, producers, scopes=scopes)
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
 
 
 def add_tau_id_vs_e_shifts(
@@ -142,7 +155,13 @@ def add_tau_id_vs_e_shifts(
 
     # Add up and down variation for each shift
     for shift in shifts:
-        add_systematic_shift(configuration, shift, producers, scopes=scopes)
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
 
 
 def add_tau_id_vs_mu_shifts(
@@ -168,7 +187,7 @@ def add_tau_id_vs_mu_shifts(
     shifts = [
         KeyValueShift(
             name=f"CMS_fake_t_{tau_id_algorithm}_VSmu_{eta_region}_{era}",
-            key="tau_id_sf_vsele_variation",
+            key="tau_id_sf_vsmu_variation",
             value=f"{{direction}}_custom_{eta_region}",
         )
         for eta_region in (f"wheel{i}" for i in range(1, 6))
@@ -176,7 +195,13 @@ def add_tau_id_vs_mu_shifts(
 
     # Add up and down variation for each shift
     for shift in shifts:
-        add_systematic_shift(configuration, shift, producers, scopes=scopes)
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
 
 
 def add_tau_es_shifts(
@@ -196,6 +221,12 @@ def add_tau_es_shifts(
     $\\text{e} \\to \\tau{\\text{h}}$ and $\\mu \\to \\tau{\\text{h}}$ fakes,
     the correlation scheme from the corresponding tau ID (`VSe` and `VSmu`) is
     adopted.
+
+    A shifted tau pT can change the selected pair, and events can enter the
+    selection under a shift only. So every producer behind the pair selection
+    is recomputed, the light lepton leg of et and mt included; ignoring its
+    producers left these events with a default lepton leg (pt_1 = -10, no
+    trigger flags or weights).
     """
 
     # Specify properties of the shifts
@@ -234,18 +265,83 @@ def add_tau_es_shifts(
         ],
     ]
 
-    # Add up and down variation for each shift 
+    # Add up and down variation for each shift
     for shift in shifts:
         add_systematic_shift(
             configuration,
             shift,
             producer,
-            shift_kwargs={
-                # TODO understand why these producers need to be ignored
-                "ignore_producers": {
-                    "et": [pairselection.LVEl1, electrons.VetoElectrons],
-                    "mt": [pairselection.LVMu1, muons.VetoMuons],
-                    "tt": [],
-                },
-            },
+            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+        )
+
+
+def add_embedding_tau_id_vs_jet_shifts(
+    configuration: Configuration,
+    era: str,
+    producers: list[Producer | ProducerGroup],
+    scopes: list[str],
+    tau_id_algorithm: str = "DeepTau2018v2p5",
+):
+    """
+    Add shifts for tau ID vs jet scale factors of tau-embedded events for the
+    given era.
+
+    The scale factors are applied in bins of the hadronic tau decay mode. Shifts
+    are performed independently for each decay mode.
+    """
+
+    # Independent shifts of the tau ID vs jet scale factor in each DM
+    shifts = [
+        KeyValueShift(
+            name=f"CMS_eff_t_emb_{tau_id_algorithm}_VSjet_DM{dm}_{era}",
+            key="tau_id_sf_vsjet_variation",
+            value=f"{{direction}}_custom_dm{dm}",
+        )
+        for dm in [0, 1, 10, 11]
+    ]
+
+    # Add up and down variation for each shift
+    for shift in shifts:
+        add_systematic_shift(
+            configuration,
+            shift,
+            producers,
+            scopes=scopes,
+            add_kwargs={"samples": ["embedding"]},
+        )
+
+
+def add_embedding_tau_es_shifts(
+    configuration: Configuration,
+    era: str,
+    producer: Producer | ProducerGroup,
+    tau_id_algorithm: str = "DeepTau2018v2p5",
+):
+    """
+    Add shifts for the tau energy scale (TES) of tau-embedded events for the
+    given era.
+
+    The embedded taus are genuine hadronic tau decays. Their energy scale has
+    been measured per decay mode, the shifts are decorrelated between the DMs.
+    """
+
+    # Independent shifts of the tau energy scale in each DM
+    shifts = [
+        KeyValueShift(
+            name=f"CMS_scale_t_emb_{tau_id_algorithm}_DM{dm}_{era}",
+            key="tau_es_variation",
+            value=f"{{direction}}_custom_genTau_dm{dm}",
+        )
+        for dm in [0, 1, 10, 11]
+    ]
+
+    # Add up and down variation for each shift. As for MC, every producer behind
+    # the pair selection is recomputed, the light lepton leg and its embedding
+    # SFs included.
+    for shift in shifts:
+        add_systematic_shift(
+            configuration,
+            shift,
+            producer,
+            add_kwargs={"samples": ["embedding"]},
         )

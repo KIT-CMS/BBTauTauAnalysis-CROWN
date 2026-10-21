@@ -2,6 +2,7 @@
 Constant definitions.
 """
 
+
 __all__ = [
     "GLOBAL_SCOPES",
     "ET_SCOPES",
@@ -18,6 +19,7 @@ __all__ = [
     "HAD_TAU_SCOPES",
     "SCOPES",
     "ERAS",
+    "LEGACY_AVAILABLE_SAMPLES",
 ]
 
 
@@ -41,6 +43,16 @@ SCOPES = SL_SCOPES + FH_SCOPES + FL_SCOPES
 ERAS_RUN2 = ["2016preVFP", "2016postVFP", "2017", "2018"]
 ERAS_RUN3 = ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024", "2025"]
 ERAS = ERAS_RUN2 + ERAS_RUN3
+
+# Run-2 NanoAOD-v15 eras whose legacy HTT recoil file
+# (data/recoil_corrections/Type1_PuppiMET_<year>.root, derived in 2019 on the
+# pre-UL data sets) still describes the v15 Z -> mumu data and simulation. In
+# 2018 the correction, applied before the jet propagation, closes the MET,
+# response and resolution of mumu; the 2016 and 2017 files worsen them
+# (2017: data/MC of the MET tail 0.68 instead of 0.97), so DY and W of those
+# eras take the MET of every other simulated sample (met_recoil_study,
+# 2026-10-18).
+RUN2_V15_RECOIL_CORRECTION_ERAS = ("2018",)
 
 # correctionlib campaigns
 CORRECTIONLIB_CAMPAIGNS = {
@@ -324,4 +336,41 @@ XYH_MASS_POINTS = [
     (4000, 2600),
     (4000, 3000),
     (4000, 3500),
+]
+
+# legacy sample surface (verbatim, formerly generate.py:11-43); the fallback
+# also the sample surface every Configuration is built against
+LEGACY_AVAILABLE_SAMPLES = [
+    "ggh_htautau",
+    "ggh_hbb",
+    "vbf_htautau",
+    "vbf_hbb",
+    "rem_htautau",
+    "rem_hbb",
+    "rem_hww",
+    "rem_hzz",
+    "rem_higgs",
+    "higgs",
+    "hh4b",
+    "hh2b2tau",
+    "hh4v",
+    "embedding",
+    "embedding_mc",
+    "singletop",
+    "ttbar",
+    "rem_ttbar",
+    "diboson",
+    "dyjets",
+    "dyjets_madgraph",
+    "dyjets_amcatnlo",
+    "dyjets_amcatnlo_ll",
+    "dyjets_amcatnlo_tt",
+    "dyjets_powheg",
+    "wjets",
+    "wjets_madgraph",
+    "wjets_amcatnlo",
+    "data",
+    "electroweak_boson",
+    "nmssm_Ybb",
+    "nmssm_Ytautau",
 ]
