@@ -103,5 +103,30 @@
   "output": "probabilities",
   "n_outputs": 2,
   "dynamic": true
+ },
+ "k2_constants": {
+  "folds": 2,
+  "inputs": [
+   "pt_1",
+   "era_index",
+   "m_vis",
+   "channel_index",
+   "pt_2",
+   "n_jets"
+  ],
+  "classes": [
+   "HH",
+   "tautau",
+   "Top",
+   "jetFakes",
+   "Other"
+  ],
+  "output": "probabilities",
+  "n_outputs": 5,
+  "dynamic": false,
+  "constants": {
+   "era_index": 3.0,
+   "channel_index": 1.0
+  }
  }
 }

@@ -497,16 +497,21 @@ def test_sm_classifier_scores_every_event_with_the_model_of_its_residue(tmp_path
     the events with event % n == r, on unsigned 64-bit event numbers at 2^24, 2^31, 2^32
     and 2^63, and reproduces onnxruntime's scores of that model; outside the gate every
     output is -1; dynamic dimensions, other shapes, inputs of another length and NaN
-    inputs throw; the gate flag reads its columns by index (shifted columns)."""
+    inputs throw; the gate flag reads its columns by index (shifted columns); the
+    constants of a manifest (k2_constants) are float columns that enter the input vector
+    of fakefactors::BuildFloatVector at their position."""
     binary = compile_fixture(
         tmp_path,
         "sm_classifier",
         [
             CPP / "test_sm_classifier.cxx",
             ADDONS / "src/sm_classifier.cxx",
+            ADDONS / "src/fakefactors.cxx",
             CROWN / "src/utility/OnnxSessionManager.cxx",
+            CORRECTION_MANAGER,
         ],
         defines=["-O2"],
+        correctionlib=True,
         libraries=onnxruntime_flags(),
     )
     result = subprocess.run(
@@ -514,4 +519,4 @@ def test_sm_classifier_scores_every_event_with_the_model_of_its_residue(tmp_path
     )
     summary = [line for line in result.stdout.splitlines() if line.startswith(("PASS", "FAIL"))]
     assert result.returncode == 0, "\n".join(summary) + result.stderr[-3000:]
-    assert len(summary) == 3 * 5 + 7 + 3 and all(line.startswith("PASS") for line in summary), summary
+    assert len(summary) == 3 * 5 + 7 + 3 + 3 and all(line.startswith("PASS") for line in summary), summary

@@ -1,9 +1,11 @@
 """Producers of the NN classifier friend (sm_nn_classifier, nn spec 3.4), built from the gate and the payloads.
 
 ``gate_producer`` defines the gate flag (``nn_gate.skim_cuts``) once per friend; per model, ``classifier_producers``
-builds the input vector in the order of the manifest (``fakefactors::BuildFloatVector``), the scores of the model of
-the event's residue (``xyh::classifier::EvaluateFolds``, empty outside the gate) and the output columns
-(``xyh::classifier::UnpackScores``, -1 outside the gate).
+defines a float column ``<prefix>constant_<input>`` for every constant of the manifest (``event::quantity::Define``),
+builds the input vector in the order of the manifest from the columns and these constants
+(``fakefactors::BuildFloatVector``), the scores of the model of the event's residue
+(``xyh::classifier::EvaluateFolds``, empty outside the gate) and the output columns (``xyh::classifier::UnpackScores``,
+-1 outside the gate).
 """
 from typing import Dict, List, NamedTuple
 
@@ -42,9 +44,15 @@ def gate_producer(scope: str, columns: List[str]) -> Producer:
 
 
 class ClassifierProducers(NamedTuple):
+    constants: List[Producer]
     inputs: Producer
     scores: Producer
     outputs: Producer
+
+
+def constant_name(prefix: str, name: str) -> str:
+    """The column (and parameter) of the constant input ``name`` of the model with prefix ``prefix``."""
+    return f"{prefix}constant_{name}"
 
 
 def output_names(prefix: str, payload: NNPayload) -> List[str]:
@@ -67,18 +75,32 @@ def classifier_parameters(prefix: str, payload: NNPayload) -> Dict[str, object]:
             f"{prefix}softmax": payload.softmax,
         }
     )
+    parameters.update({constant_name(prefix, name): value for name, value in payload.constants})
     return parameters
 
 
 def classifier_producers(scope: str, prefix: str, payload: NNPayload) -> ClassifierProducers:
-    """Input vector, scores and output columns of the model with column prefix ``prefix``."""
+    """Constants, input vector, scores and output columns of the model with column prefix ``prefix``."""
     inputs, scores = q.classifier_quantity(f"{prefix}inputs"), q.classifier_quantity(f"{prefix}scores")
     files = ", ".join(f'"{{{prefix}onnx_file_r{r}}}"' for r in range(payload.folds))
+    constants = {
+        name: Producer(
+            name=f"NNConstant_{constant_name(prefix, name)}",
+            call=f"event::quantity::Define<float>({{df}}, {{output}}, {{{constant_name(prefix, name)}}})",
+            input=[],
+            output=[q.classifier_quantity(constant_name(prefix, name))],
+            scopes=[scope],
+        )
+        for name, _ in payload.constants
+    }
     return ClassifierProducers(
+        constants=list(constants.values()),
         inputs=Producer(
             name=f"NNInputs_{prefix}",
             call=BUILD_FLOAT_VECTOR_CALL,
-            input=[q.ntuple_column(name) for name in payload.inputs],
+            input=[
+                constants[name].output[0] if name in constants else q.ntuple_column(name) for name in payload.inputs
+            ],
             output=[inputs],
             scopes=[scope],
         ),

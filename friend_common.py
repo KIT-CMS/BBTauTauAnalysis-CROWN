@@ -130,8 +130,9 @@ def build_nn_classifier_friend(
 
     The manifest of every model for the era and the scope is read and checked now (``nn_payloads``); its inputs
     are columns of the main n-tuple or of the friends in the quantities maps (the FastMTT friend for
-    ``m/pt/eta/phi_fastmtt``), whose absence fails the configuration. Every model writes its columns with its own
-    prefix; outside the gate (``nn_gate``) every column is -1.
+    ``m/pt/eta/phi_fastmtt``), whose absence fails the configuration, or constants of the manifest (such as
+    ``era_index`` and ``channel_index`` of a model of all eras and scopes). Every model writes its columns with its
+    own prefix; outside the gate (``nn_gate``) every column is -1.
     """
     (scope,) = scopes
     if scope not in FRIEND_SCOPES:
@@ -159,7 +160,7 @@ def build_nn_classifier_friend(
         payload = nn_payloads.read_payload(ANALYSIS_DIR, model.payload, era, scope)
         classifier = sm_nn.classifier_producers(scope, model.prefix, payload)
         configuration.add_config_parameters([scope], sm_nn.classifier_parameters(model.prefix, payload))
-        producers += [classifier.inputs, classifier.scores, classifier.outputs]
+        producers += [*classifier.constants, classifier.inputs, classifier.scores, classifier.outputs]
         outputs += classifier.outputs.output
     configuration.add_producers([scope], producers)
     configuration.add_outputs([scope], outputs)

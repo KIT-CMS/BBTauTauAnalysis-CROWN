@@ -13,8 +13,10 @@ outputs are committed under ``tests/fixtures/nn_classifier/``:
     tests write manifests in the payload layout (``payloads/nn_classifier/README.md``).
 
 Families: ``k2`` (2 folds, 5 classes, probabilities), ``k4`` (4 folds, 5 classes and a binary head, so C + 1
-outputs), ``k2_logits`` (2 folds, 3 classes, logits; the friend applies the softmax) and ``dynamic`` (a dynamic batch
-axis, which the friend refuses).
+outputs), ``k2_logits`` (2 folds, 3 classes, logits; the friend applies the softmax), ``dynamic`` (a dynamic batch
+axis, which the friend refuses) and ``k2_constants`` (2 folds, 5 classes, with the constant inputs ``era_index`` and
+``channel_index`` between the columns, as the models of all eras and scopes take them; their values are in every row
+of ``inputs.txt`` and in ``families.json`` ``constants``).
 
     source /cvmfs/sft.cern.ch/lcg/views/LCG_110_cuda/x86_64-el9-gcc13-opt/setup.sh
     CUDA_VISIBLE_DEVICES= python3 tests/fixtures/make_nn_classifier_fixtures.py
@@ -54,6 +56,10 @@ FAMILIES = {
     ),
     "dynamic": dict(folds=2, inputs=["pt_1", "pt_2", "m_vis"], classes=["HH", "Other"], output="probabilities",
                     binary_head=False, dynamic=True),
+    "k2_constants": dict(
+        folds=2, inputs=["pt_1", "era_index", "m_vis", "channel_index", "pt_2", "n_jets"], classes=V7B_CLASSES,
+        output="probabilities", binary_head=False, constants={"era_index": 3.0, "channel_index": 1.0},
+    ),
 }
 
 
@@ -110,6 +116,8 @@ def main():
         n_inputs, n_classes = len(spec["inputs"]), len(spec["classes"])
         # inputs around the scaler of every residue, read back exactly from the text the C++ test reads
         x = (rng.uniform(0, 50, (N_EVENTS, n_inputs)) + rng.normal(0, 30, (N_EVENTS, n_inputs))).astype(np.float32)
+        for name, value in spec.get("constants", {}).items():
+            x[:, spec["inputs"].index(name)] = value
         write_rows(directory / "inputs.txt", x)
         x = np.loadtxt(directory / "inputs.txt", dtype=np.float32, ndmin=2)
         outputs = []
@@ -135,6 +143,7 @@ def main():
             "output": spec["output"],
             "n_outputs": n_classes + int(spec["binary_head"]),
             "dynamic": spec.get("dynamic", False),
+            **({"constants": spec["constants"]} if "constants" in spec else {}),
         }
     (OUT / "families.json").write_text(json.dumps(families, indent=1) + "\n")
 
