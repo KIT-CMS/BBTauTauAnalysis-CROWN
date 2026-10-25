@@ -914,6 +914,45 @@ ff_2_corr_closure_input_wjets = Quantity("ff_2_corr_closure_input_wjets")
 fake_factor_2_raw = Quantity("fake_factor_2_raw")
 fake_factor_2 = Quantity("fake_factor_2")
 
+# NN classifier friend (sm_nn_classifier, nn spec 3.4): the gate flag, and per model with column prefix p the input
+# vector p + "inputs", the scores p + "scores" and the outputs p + "predicted_class", p + "predicted_max_value",
+# p + "nn_score_<class>" for every class and, with a binary head, p + "binary_score". These names follow the models
+# of a production and the classes of their manifests, so classifier_quantity makes them when the friend is
+# configured.
+nn_gate = Quantity("nn_gate")
+
+
+def classifier_quantity(name):
+    """The NN classifier friend quantity ``name``, added to this module the first time."""
+    quantity = getattr(this_module, name, None)
+    if quantity is None:
+        quantity = Quantity(name)
+        setattr(this_module, name, quantity)
+    elif not isinstance(quantity, Quantity) or quantity.name != name:
+        raise ValueError(f"'{name}' is taken in quantities/output.py by {quantity!r}")
+    return quantity
+
+
+_ntuple_columns = {}
+
+
+def ntuple_column(name):
+    """The quantity of the n-tuple column ``name`` a friend reads: the quantity of this module whose branch is
+    ``name``, else one of its own (the outputs of ExtendedVectorProducers, such as the trigger and tau ID flags,
+    have none here)."""
+    matches = {
+        id(value): value
+        for value in vars(this_module).values()
+        if isinstance(value, Quantity) and value.name == name
+    }
+    if len(matches) > 1:
+        raise ValueError(f"column '{name}' matches {len(matches)} quantities in quantities/output.py")
+    if matches:
+        return next(iter(matches.values()))
+    if name not in _ntuple_columns:
+        _ntuple_columns[name] = Quantity(name)
+    return _ntuple_columns[name]
+
 
 pnn_reco_inputs = Quantity("pnn_reco_inputs")
 

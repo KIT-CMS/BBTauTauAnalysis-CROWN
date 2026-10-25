@@ -1,13 +1,13 @@
-"""Shared bodies of the friend-tree configurations (FastMTT, kinematic fit, fake factors)."""
+"""Shared bodies of the friend-tree configurations (FastMTT, kinematic fit, fake factors, NN classifier)."""
 from __future__ import annotations
 import os
-from typing import List, Tuple, Union
+from typing import List, Sequence, Tuple, Union
 
 from code_generation.friend_trees import FriendTreeConfiguration
 from code_generation.systematics import SystematicShift
 
-from . import ff_payloads
-from .producers import fakefactors
+from . import ff_payloads, nn_gate, nn_payloads
+from .producers import fakefactors, sm_nn
 
 FRIEND_SCOPES = ["mt", "et", "tt"]
 ANALYSIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -113,6 +113,57 @@ def _add_fake_factor_shifts(configuration, scope, leg, producers) -> None:
                     producers={(scope,): targets},
                 )
             )
+
+
+def build_nn_classifier_friend(
+    models: Sequence[nn_payloads.NNModel],
+    era: str,
+    sample: str,
+    scopes: List[str],
+    shifts: List[str],
+    available_sample_types: List[str],
+    available_eras: List[str],
+    available_scopes: List[str],
+    quantities_map: Union[str, None] = None,
+):
+    """NN classifier friend (nn spec 3.4): the scores of every model of ``models`` inside the gate.
+
+    The manifest of every model for the era and the scope is read and checked now (``nn_payloads``); its inputs
+    are columns of the main n-tuple or of the friends in the quantities maps (the FastMTT friend for
+    ``m/pt/eta/phi_fastmtt``), whose absence fails the configuration. Every model writes its columns with its own
+    prefix; outside the gate (``nn_gate``) every column is -1.
+    """
+    (scope,) = scopes
+    if scope not in FRIEND_SCOPES:
+        raise ValueError(f"The NN classifier friend runs in {FRIEND_SCOPES}, not in {scope}.")
+    configuration = FriendTreeConfiguration(
+        era,
+        sample,
+        scopes,
+        shifts,
+        available_sample_types,
+        available_eras,
+        available_scopes,
+        quantities_map,
+    )
+    if not models:
+        raise ValueError("The NN classifier friend has no model: list the models of the production in MODELS.")
+    prefixes = [model.prefix for model in models]
+    for prefix in prefixes:
+        if not prefix.endswith("_") or not prefix[:-1].isidentifier() or prefixes.count(prefix) > 1:
+            raise ValueError(f"NN classifier column prefixes {prefixes}: each must be unique, a name ending in '_'.")
+    expression, columns = nn_gate.cpp_expression(nn_gate.skim_cuts(scope, era))
+    configuration.add_config_parameters([scope], {"nn_gate_expression": expression})
+    producers, outputs = [sm_nn.gate_producer(scope, columns)], []
+    for model in models:
+        payload = nn_payloads.read_payload(ANALYSIS_DIR, model.payload, era, scope)
+        classifier = sm_nn.classifier_producers(scope, model.prefix, payload)
+        configuration.add_config_parameters([scope], sm_nn.classifier_parameters(model.prefix, payload))
+        producers += [classifier.inputs, classifier.scores, classifier.outputs]
+        outputs += classifier.outputs.output
+    configuration.add_producers([scope], producers)
+    configuration.add_outputs([scope], outputs)
+    return _finish(configuration)
 
 
 def _finish(configuration: FriendTreeConfiguration):
