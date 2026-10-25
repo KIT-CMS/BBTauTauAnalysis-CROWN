@@ -1,0 +1,107 @@
+{
+ "k2": {
+  "folds": 2,
+  "inputs": [
+   "bpair_btag_value_1",
+   "bpair_btag_value_2",
+   "bpair_deltaR",
+   "bpair_m_inv",
+   "bpair_pt_1",
+   "bpair_pt_dijet",
+   "deltaR_ditaupair",
+   "jpt_1",
+   "m_fastmtt",
+   "mjj",
+   "n_bjets",
+   "n_jets",
+   "pt_fastmtt",
+   "m_vis",
+   "mt_tot",
+   "jpt_2",
+   "pt_1",
+   "pt_dijet",
+   "pt_vis"
+  ],
+  "classes": [
+   "HH",
+   "tautau",
+   "Top",
+   "jetFakes",
+   "Other"
+  ],
+  "output": "probabilities",
+  "n_outputs": 5,
+  "dynamic": false
+ },
+ "k4": {
+  "folds": 4,
+  "inputs": [
+   "bpair_btag_value_1",
+   "bpair_btag_value_2",
+   "bpair_deltaR",
+   "bpair_m_inv",
+   "bpair_pt_1",
+   "bpair_pt_dijet",
+   "deltaR_ditaupair",
+   "jpt_1",
+   "m_fastmtt",
+   "mjj",
+   "n_bjets",
+   "n_jets",
+   "pt_fastmtt",
+   "m_vis",
+   "mt_tot",
+   "jpt_2",
+   "pt_1",
+   "pt_dijet",
+   "pt_vis",
+   "pt_2",
+   "met",
+   "metphi",
+   "eta_fastmtt",
+   "phi_fastmtt"
+  ],
+  "classes": [
+   "HH",
+   "tautau",
+   "Top",
+   "jetFakes",
+   "Other"
+  ],
+  "output": "probabilities",
+  "n_outputs": 6,
+  "dynamic": false
+ },
+ "k2_logits": {
+  "folds": 2,
+  "inputs": [
+   "pt_1",
+   "pt_2",
+   "m_vis",
+   "n_jets"
+  ],
+  "classes": [
+   "HH",
+   "Top",
+   "Other"
+  ],
+  "output": "logits",
+  "n_outputs": 3,
+  "dynamic": false
+ },
+ "dynamic": {
+  "folds": 2,
+  "inputs": [
+   "pt_1",
+   "pt_2",
+   "m_vis"
+  ],
+  "classes": [
+   "HH",
+   "Other"
+  ],
+  "output": "probabilities",
+  "n_outputs": 2,
+  "dynamic": true
+ }
+}

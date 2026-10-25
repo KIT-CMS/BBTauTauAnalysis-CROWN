@@ -8,6 +8,7 @@ The accessors keep the producer-group traversal in one place.
 """
 import atexit
 import functools
+import hashlib
 import importlib
 import json
 import logging
@@ -20,13 +21,68 @@ from typing import NamedTuple
 
 import pytest
 
-from analysis_configurations.bbtautau.constants import ERAS, LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.constants import ERAS, ERAS_RUN2, LEGACY_AVAILABLE_SAMPLES, SCOPES
 from code_generation.quantity import NanoAODQuantity
 
 # The branches of one v15 embedding file (mutau 2018A nano_1)
 V15_EMBEDDING_BRANCHES = (
     Path(__file__).resolve().parent / "fixtures/nanoaod_v15_embedding_2018_branches.txt"
 )
+
+# The toy ONNX models of the NN classifier friend (fixtures/make_nn_classifier_fixtures.py) and the
+# quantities maps of its tests: the v7b ttbar n-tuple of every Run-2 era (et, mt, tt) and the FastMTT friend
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+NN_FIXTURES = FIXTURES / "nn_classifier"
+NN_FASTMTT_MAP = FIXTURES / "nn_classifier_fastmtt_quantities_map.json"
+
+
+def nn_classifier_payload(family, directory, eras=tuple(ERAS_RUN2), scopes=("et", "mt", "tt"), edit=None):
+    """The toy model ``family`` in the layout of payloads/nn_classifier below ``directory``: per era and
+    scope the ONNX files and the manifest the trainer writes; ``edit(manifest, era, scope)`` may change a
+    manifest. Returns ``directory`` as a string."""
+    spec = json.loads((NN_FIXTURES / "families.json").read_text())[family]
+    folds = spec["folds"]
+    for era in eras:
+        for scope in scopes:
+            target = Path(directory) / era / scope
+            target.mkdir(parents=True, exist_ok=True)
+            files = {}
+            for residue in range(folds):
+                name = f"model_k{folds}_r{residue}.onnx"
+                shutil.copyfile(NN_FIXTURES / family / name, target / name)
+                files[str(residue)] = {"file": name, "sha256": hashlib.sha256((target / name).read_bytes()).hexdigest()}
+            manifest = {
+                "model": f"toy_{family}",
+                "channel": scope,
+                "repetition": 0,
+                "folds": folds,
+                "files": files,
+                "inputs": spec["inputs"],
+                "classes": spec["classes"],
+                "output": spec["output"],
+                "opset": 17,
+            }
+            if spec["n_outputs"] == len(spec["classes"]) + 1:
+                manifest["binary_head"] = True
+            if edit is not None:
+                edit(manifest, era, scope)
+            (target / "manifest.json").write_text(json.dumps(manifest, indent=1))
+    return str(directory)
+
+
+def nn_classifier_maps(era, directory, fastmtt=True):
+    """The quantities maps of the NN classifier friend in ``era``: the v7b ttbar n-tuple and, with
+    ``fastmtt``, the FastMTT friend (its 2018 map relabelled to ``era``)."""
+    maps = [str(FIXTURES / f"nn_classifier_{era}_quantities_map.json")]
+    if fastmtt:
+        quantities_map = json.loads(NN_FASTMTT_MAP.read_text())
+        quantities_map["quantities"] = {era: quantities_map["quantities"].pop("2018")}
+        quantities_map["metadata"]["era"] = era
+        path = Path(directory) / f"{era}_nn_classifier_fastmtt_quantities_map.json"
+        path.write_text(json.dumps(quantities_map))
+        maps.append(str(path))
+    return maps
+
 
 # Parts of the full Run-2 (v7) configuration that do not exist yet, with the eras
 # whose tests they break (keys: the items of the v7 spec, or the payloads still to
