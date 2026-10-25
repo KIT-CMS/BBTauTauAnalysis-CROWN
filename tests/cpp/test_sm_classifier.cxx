@@ -5,11 +5,17 @@
 // and 2^63 (the thesis friend converted to float and int); n = 2 and n = 4,
 // probabilities, logits (softmax in C++) and a binary head; outside the gate
 // every output is -1; dynamic dimensions, wrong shapes, inputs of another
-// length and non-finite inputs throw; the gate flag substitutes its columns.
+// length and non-finite inputs throw; the gate flag substitutes its columns;
+// the constants of a manifest (era_index and channel_index of a model of all
+// eras and scopes) enter the input vector at their position, as the friend
+// generates it (event::quantity::Define<float>, fakefactors::BuildFloatVector).
 // Prints the latency per event of the batch-1 evaluation.
 //
 // Usage: test_sm_classifier <tests/fixtures/nn_classifier>
 
+// the event.hxx of the CROWN core, not the one of the addons
+#include "../../../../include/event.hxx"
+#include "fakefactors.hxx"
 #include "sm_classifier.hxx"
 
 #include <ROOT/RDataFrame.hxx>
@@ -22,6 +28,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -304,6 +311,99 @@ void test_selection_flag() {
           "gate flag: '$' without an index throws");
 }
 
+// The toy family k2_constants (families.json): the inputs in the order of the
+// manifest, two of them constants whose values are in every row of inputs.txt.
+const std::vector<std::string> kConstantInputs = {
+    "pt_1", "era_index", "m_vis", "channel_index", "pt_2", "n_jets"};
+const std::map<std::string, float> kConstants = {{"era_index", 3.f},
+                                                 {"channel_index", 1.f}};
+
+// Scores of `family` with the input vector built by the friend's producers:
+// one float column per constant, the others read from columns, the vector in
+// the order of `order` (the manifest's, or another one for the control).
+std::vector<ROOT::RVec<float>> constant_scores(
+    OnnxSessionManager &manager, const Family &family,
+    const std::vector<ULong64_t> &events, const std::vector<std::string> &order,
+    std::string *column_type = nullptr) {
+    const auto rows = family.inputs;
+    ROOT::RDF::RNode df = ROOT::RDataFrame(events.size())
+                              .Define("event",
+                                      [events](ULong64_t entry) {
+                                          return events[entry];
+                                      },
+                                      {"rdfentry_"})
+                              .Define("gate", [] { return true; });
+    std::vector<std::string> columns;
+    for (size_t i = 0; i < kConstantInputs.size(); ++i) {
+        const auto &name = kConstantInputs[i];
+        if (kConstants.count(name)) {
+            df = event::quantity::Define<float>(df, "nn_constant_" + name,
+                                               kConstants.at(name));
+            continue;
+        }
+        df = df.Define(name,
+                       [rows, i](ULong64_t entry) {
+                           return rows[entry % rows.size()][i];
+                       },
+                       {"rdfentry_"});
+    }
+    for (const auto &name : order) {
+        columns.push_back(kConstants.count(name) ? "nn_constant_" + name
+                                                 : name);
+    }
+    if (column_type != nullptr) {
+        *column_type = df.GetColumnType("nn_constant_era_index");
+    }
+    df = fakefactors::BuildFloatVector(df, "inputs", columns);
+    auto scored = xyh::classifier::EvaluateFolds(
+        df, manager, "scores", "inputs", "event", "gate", family.files,
+        family.num_inputs, family.num_classes, family.num_outputs,
+        family.softmax);
+    return scored.Take<ROOT::RVec<float>>("scores").GetValue();
+}
+
+void test_constants(OnnxSessionManager &manager, const Family &family) {
+    const auto events = event_numbers(2 * family.inputs.size());
+    std::string column_type;
+    const auto scores =
+        constant_scores(manager, family, events, kConstantInputs, &column_type);
+    // the control: the constants after the columns instead of at their position
+    std::vector<std::string> appended;
+    for (const auto &name : kConstantInputs) {
+        if (!kConstants.count(name)) {
+            appended.push_back(name);
+        }
+    }
+    for (const auto &[name, value] : kConstants) {
+        appended.push_back(name);
+    }
+    const auto misplaced = constant_scores(manager, family, events, appended);
+    double closure = 0, separation = std::numeric_limits<double>::max();
+    for (size_t entry = 0; entry < events.size(); ++entry) {
+        const auto residue = events[entry] % family.folds;
+        const auto &row =
+            family.outputs[residue].at(entry % family.inputs.size());
+        double difference = 0, moved = 0;
+        for (int i = 0; i < family.num_outputs; ++i) {
+            difference = std::max(difference,
+                                  std::abs(double(scores[entry][i]) - row[i]));
+            moved = std::max(moved, std::abs(double(misplaced[entry][i]) -
+                                             scores[entry][i]));
+        }
+        closure = std::max(closure, difference);
+        separation = std::min(separation, moved);
+    }
+    check(closure <= 1e-6,
+          "constants: the input vector of columns and constants in the order "
+          "of the manifest reproduces onnxruntime, max |diff| " +
+              scientific(closure));
+    check(separation > 1e-5, "constants: at other positions the scores "
+                             "differ on every event, by > " +
+                                 scientific(separation));
+    check(column_type == "float",
+          "constants: defined as float columns (" + column_type + ")");
+}
+
 void latency(OnnxSessionManager &manager, const Family &family) {
     const auto events = event_numbers(200000);
     auto scored = xyh::classifier::EvaluateFolds(
@@ -336,11 +436,13 @@ int main(int argc, char **argv) {
     const auto k4 = load(directory, "k4", 4, 5, 6, false);
     const auto logits = load(directory, "k2_logits", 2, 3, 3, true);
     const auto dynamic = load(directory, "dynamic", 2, 2, 2, false);
+    const auto constants = load(directory, "k2_constants", 2, 5, 5, false);
     test_residues(manager, k2);
     test_residues(manager, k4);
     test_residues(manager, logits);
     test_errors(manager, k2, dynamic);
     test_selection_flag();
+    test_constants(manager, constants);
     latency(manager, k2);
     latency(manager, k4);
     std::cout << (g_failures == 0 ? "ALL PASSED" : "FAILURES: ") << " "

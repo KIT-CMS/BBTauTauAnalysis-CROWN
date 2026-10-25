@@ -64,6 +64,8 @@ def nn_classifier_payload(family, directory, eras=tuple(ERAS_RUN2), scopes=("et"
             }
             if spec["n_outputs"] == len(spec["classes"]) + 1:
                 manifest["binary_head"] = True
+            if "constants" in spec:
+                manifest["constants"] = dict(spec["constants"])
             if edit is not None:
                 edit(manifest, era, scope)
             (target / "manifest.json").write_text(json.dumps(manifest, indent=1))

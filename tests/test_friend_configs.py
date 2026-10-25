@@ -13,6 +13,7 @@ import gzip
 import inspect
 import json
 import logging
+import re
 from pathlib import Path
 from unittest import mock
 
@@ -669,3 +670,31 @@ def test_nn_classifier_friend_generates_in_every_run2_era(nn_models, era, scope,
     with open(directory / "outputs.json") as f:
         written = set(json.load(f)[scope])
     assert written == nn_columns("nn_m0_", V7B_CLASSES) | nn_columns("nn_m0k4_", V7B_CLASSES, True)
+
+
+def test_nn_classifier_friend_generates_the_constants(tmp_path):
+    """A model of all eras and scopes (toy family k2_constants): the C++ defines one float column per constant of
+    the manifest with its value and builds the input vector from the columns and the constants in the order of the
+    manifest."""
+    import subprocess
+    import sys
+
+    payload = nn_classifier_payload("k2_constants", tmp_path / "joint", eras=["2017"], scopes=["et"])
+    directory = tmp_path / "et"
+    directory.mkdir()
+    arguments = json.dumps([[[payload, "nn_j_"]], "2017", "et", nn_classifier_maps("2017", tmp_path), str(directory)])
+    result = subprocess.run(
+        [sys.executable, "-c", _GENERATE_NN_FRIEND, arguments],
+        cwd=Path(__file__).resolve().parents[3],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
+    sources = "\n".join(p.read_text() for p in sorted(directory.rglob("*.cxx")))
+    for name, value in (("era_index", "3.0"), ("channel_index", "1.0")):
+        assert re.search(rf'event::quantity::Define<float>\(\w+, "nn_j_constant_{name}", {value}\)', sources), name
+    columns = ["pt_1", "nn_j_constant_era_index", "m_vis", "nn_j_constant_channel_index", "pt_2", "n_jets"]
+    vector = re.search(r'fakefactors::BuildFloatVector\(\s*\w+,\s*"nn_j_inputs",\s*\{([^}]*)\}', sources)
+    assert vector and [c.strip().strip('"') for c in vector[1].split(",")] == columns
+    with open(directory / "outputs.json") as f:
+        assert set(json.load(f)["et"]) == nn_columns("nn_j_", V7B_CLASSES)

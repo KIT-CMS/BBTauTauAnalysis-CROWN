@@ -3,7 +3,8 @@ the gate.
 
 A wrong payload must fail the configuration, not give scores: a manifest of another scope, a file that is
 missing or changed after the manifest, a model whose shapes differ from the manifest or have a dynamic
-dimension, or residue files named against the convention. The gate must keep every event of the ShapeSmith
+dimension, residue files named against the convention or outside the model directory, constants that are no
+inputs or no numbers, or a raw vsJet score read as an input. The gate must keep every event of the ShapeSmith
 tau skims (tau_control and tau_ff), and its C++ translation must select what ShapeSmith's pandas.eval selects.
 """
 
@@ -11,6 +12,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import sys
 from pathlib import Path
 from unittest import mock
@@ -20,7 +22,7 @@ import pytest
 from analysis_configurations.bbtautau import friend_common, nn_gate, nn_payloads, sm_nn_classifier
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, LEGACY_AVAILABLE_SAMPLES, SCOPES
 from analysis_configurations.bbtautau.nn_payloads import NNModel
-from analysis_configurations.bbtautau.tests.helpers import nn_classifier_maps, nn_classifier_payload
+from analysis_configurations.bbtautau.tests.helpers import find_producer, nn_classifier_maps, nn_classifier_payload
 from code_generation.exceptions import InvalidInputError
 
 TAU_SCOPES = ("et", "mt", "tt")
@@ -136,6 +138,135 @@ def test_logits_take_the_softmax_and_files_are_relative_to_the_analysis(tmp_path
     nominal = config.config_parameters["mt"]["nominal"]
     assert nominal["nn_l_softmax"] is True and nominal["nn_l_num_outputs"] == 3
     assert nominal["nn_l_onnx_file_r1"] == f"{relative}/2018/mt/model_k2_r1.onnx"
+
+
+# --- constants, raw vsJet scores and shared files ---------------------------------------------------------
+
+
+def _constants(value):
+    return _set("constants", value)
+
+
+@pytest.mark.parametrize(
+    "edit,message",
+    [
+        (_constants({"met": 1.0}), "constant 'met' is no input"),
+        (_constants({"era_index": "3"}), "constant 'era_index' is '3', expected a finite number"),
+        (_constants({"era_index": True}), "constant 'era_index' is True"),
+        (_constants({"era_index": float("nan")}), "constant 'era_index' is nan"),
+        (_constants([["era_index", 3]]), "expected a mapping"),
+    ],
+    ids=["no_input", "string", "bool", "nan", "list"],
+)
+def test_constant_errors_fail_the_configuration(edit, message, tmp_path):
+    payload = nn_classifier_payload("k2_constants", tmp_path / "joint", eras=["2018"], scopes=["mt"], edit=edit)
+    with pytest.raises(ValueError, match=re.escape(message)):
+        build((NNModel(payload, "nn_j_"),), tmp_path)
+
+
+def test_constants_are_fed_at_their_position(tmp_path):
+    """The constants of a model of all eras and scopes are float columns of the friend, defined once per model,
+    and enter the input vector at their position in the manifest; the others are read from the n-tuple."""
+    payload = nn_classifier_payload("k2_constants", tmp_path / "joint", eras=["2017"], scopes=["et"])
+    read = nn_payloads.read_payload(friend_common.ANALYSIS_DIR, payload, "2017", "et")
+    assert read.constants == (("era_index", 3.0), ("channel_index", 1.0))
+    assert read.columns == ("pt_1", "m_vis", "pt_2", "n_jets")
+    config = build((NNModel(payload, "nn_j_"),), tmp_path, era="2017", scope="et")
+    nominal = config.config_parameters["et"]["nominal"]
+    assert (nominal["nn_j_constant_era_index"], nominal["nn_j_constant_channel_index"]) == (3.0, 1.0)
+    inputs = [q.name for q in find_producer(config, "et", "NNInputs_nn_j_").input["et"]]
+    assert inputs == ["pt_1", "nn_j_constant_era_index", "m_vis", "nn_j_constant_channel_index", "pt_2", "n_jets"]
+    for name in ("era_index", "channel_index"):
+        constant = find_producer(config, "et", f"NNConstant_nn_j_constant_{name}")
+        assert constant.input["et"] == [] and constant.call.count("event::quantity::Define<float>(") == 1
+        assert f"{{nn_j_constant_{name}}}" in constant.call
+    assert not {q.name for q in config.outputs["et"]} & {"nn_j_constant_era_index", "nn_j_constant_channel_index"}
+
+
+@pytest.mark.parametrize(
+    "scope,name,refused",
+    [("tt", "iso_1", True), ("tt", "iso_2", True), ("mt", "iso_2", True), ("et", "iso_2", True),
+     ("mt", "tau_rawDeepTauVSjet_2", True), ("mt", "iso_1", False), ("et", "iso_1", False)],
+)
+def test_raw_vsjet_scores_are_no_inputs(scope, name, refused, tmp_path):
+    """iso_1 in tt and the raw vsJet scores define the application region of the jet fakes (nn spec 0, 5.3): a
+    model reading them fails the configuration; as a constant (a step-2 graph ignores iso_1 in tt) iso_1 is fine."""
+
+    def read_it(manifest, era, scope):
+        manifest["inputs"][0] = name
+
+    payload = nn_classifier_payload("k2", tmp_path / "m0", eras=["2018"], scopes=[scope], edit=read_it)
+    if refused:
+        with pytest.raises(ValueError, match=re.escape(f"inputs ['{name}'] are raw vsJet scores in {scope}")):
+            nn_payloads.read_payload(friend_common.ANALYSIS_DIR, payload, "2018", scope)
+    else:
+        assert nn_payloads.read_payload(friend_common.ANALYSIS_DIR, payload, "2018", scope).inputs[0] == name
+
+    def constant_iso(manifest, era, scope):
+        manifest["inputs"][2] = "iso_1"  # m_vis of the toy model
+        manifest["constants"]["iso_1"] = 0.0
+
+    payload = nn_classifier_payload("k2_constants", tmp_path / "joint", eras=["2018"], scopes=["tt"], edit=constant_iso)
+    read = nn_payloads.read_payload(friend_common.ANALYSIS_DIR, payload, "2018", "tt")
+    assert dict(read.constants)["iso_1"] == 0.0 and "iso_1" not in read.columns
+
+
+def _share(payload, era, scope):
+    """Move the ONNX files of (era, scope) to <payload>/onnx/<scope>/ and refer to them relative to the manifest."""
+    directory = Path(payload) / era / scope
+    manifest = json.loads((directory / "manifest.json").read_text())
+    shared = Path(payload) / "onnx" / scope
+    shared.mkdir(parents=True, exist_ok=True)
+    for entry in manifest["files"].values():
+        os.replace(directory / entry["file"], shared / entry["file"])
+        entry["file"] = f"../../onnx/{scope}/{entry['file']}"
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    return manifest
+
+
+def test_shared_files_inside_the_model_directory(tmp_path):
+    """The eras and scopes of a model may share its ONNX files (a path relative to the manifest, inside the model
+    directory); the sha256 is still checked, and a path leaving the model directory, also through a symbolic
+    link, or an absolute one fails."""
+    relative = "payloads/nn_classifier/shared_v1"
+    payload = nn_classifier_payload("k2", tmp_path / relative, eras=["2017", "2018"], scopes=["mt"])
+    _share(payload, "2018", "mt")
+    for era in ("2017",):
+        manifest_path = Path(payload) / era / "mt" / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        for entry in manifest["files"].values():
+            os.remove(Path(payload) / era / "mt" / entry["file"])
+            entry["file"] = f"../../onnx/mt/{entry['file']}"
+        manifest_path.write_text(json.dumps(manifest))
+    for era in ("2017", "2018"):
+        read = nn_payloads.read_payload(str(tmp_path), relative, era, "mt")
+        assert read.files == (f"{relative}/onnx/mt/model_k2_r0.onnx", f"{relative}/onnx/mt/model_k2_r1.onnx")
+    config = build((NNModel(relative, "nn_s_"),), tmp_path, era="2017", analysis_dir=str(tmp_path))
+    assert config.config_parameters["mt"]["nominal"]["nn_s_onnx_file_r1"] == f"{relative}/onnx/mt/model_k2_r1.onnx"
+    assert len(list(Path(payload).rglob("*.onnx"))) == 2
+
+    manifest_path = Path(payload) / "2018" / "mt" / "manifest.json"
+    original = manifest_path.read_text()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    shutil.copyfile(Path(payload) / "onnx/mt/model_k2_r1.onnx", outside / "model_k2_r1.onnx")
+    (Path(payload) / "link").symlink_to(outside)
+    for file, message in [
+        ("../../../../../outside/model_k2_r1.onnx", "not a relative path inside the model directory"),
+        (str(outside / "model_k2_r1.onnx"), "not a relative path inside the model directory"),
+        ("../../link/model_k2_r1.onnx", "not a relative path inside the model directory"),
+        ("../../onnx/mt/model_k2_r0.onnx", "residue 1 is '../../onnx/mt/model_k2_r0.onnx'"),
+    ]:
+        manifest = json.loads(original)
+        manifest["files"]["1"]["file"] = file
+        manifest_path.write_text(json.dumps(manifest))
+        with pytest.raises(ValueError, match=re.escape(message)):
+            nn_payloads.read_payload(str(tmp_path), relative, "2018", "mt")
+    manifest_path.write_text(original)
+    with open(Path(payload) / "onnx/mt/model_k2_r1.onnx", "ab") as handle:
+        handle.write(b"\0")
+    with pytest.raises(ValueError, match=re.escape("sha256 of ../../onnx/mt/model_k2_r1.onnx")):
+        nn_payloads.read_payload(str(tmp_path), relative, "2017", "mt")
 
 
 def test_payload_readme_exists():
