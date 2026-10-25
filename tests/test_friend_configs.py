@@ -1,4 +1,4 @@
-"""Friend-tree entry points: dispatch marker, era gate, output contracts and FF shifts.
+"""Friend-tree entry points: dispatch marker, era gate, output contracts, FF shifts and the NN classifier.
 
 The friend entries are thin wrappers around bodies shared in ``friend_common``,
 so what is worth testing are the surfaces where a mistake is silent: the
@@ -23,10 +23,12 @@ from analysis_configurations.bbtautau import (
     generate_friends,
     nmssm_fastmtt,
     nmssm_kinfit_resolved,
+    nn_gate,
     sm_fake_factors,
     sm_fake_factors_w,
     sm_fastmtt,
     sm_kinfit_resolved,
+    sm_nn_classifier,
 )
 from analysis_configurations.bbtautau.constants import (
     ERAS,
@@ -34,8 +36,16 @@ from analysis_configurations.bbtautau.constants import (
     LEGACY_AVAILABLE_SAMPLES,
     SCOPES,
 )
+from analysis_configurations.bbtautau.nn_payloads import NNModel
 from analysis_configurations.bbtautau.producers import fakefactors
-from analysis_configurations.bbtautau.tests.helpers import FakeArgs, output_names
+from analysis_configurations.bbtautau.tests.helpers import (
+    FakeArgs,
+    find_producer,
+    nn_classifier_maps,
+    nn_classifier_payload,
+    output_names,
+)
+from code_generation.exceptions import InvalidInputError
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 MAP_FASTMTT, MAP_KINFIT = str(FIXTURES / "fastmtt_quantities_map.json"), str(
@@ -53,6 +63,7 @@ ENTRY_MODULES = (
     fake_factors_friend_config,
     sm_fake_factors,
     sm_fake_factors_w,
+    sm_nn_classifier,
 )
 
 FASTMTT_LEAVES = {"m_fastmtt", "pt_fastmtt", "eta_fastmtt", "phi_fastmtt"}
@@ -83,6 +94,7 @@ def test_friend_entry_points_expose_friendtreeconfiguration(module):
         ("sm_kinfit_resolved", sm_kinfit_resolved, "2024"),
         ("sm_fake_factors", sm_fake_factors, "2024"),
         ("sm_fake_factors_w", sm_fake_factors_w, "2024"),
+        ("sm_nn_classifier", sm_nn_classifier, "2024"),
         ("fake_factors_friend_config", fake_factors_friend_config, "2018"),
     ],
 )
@@ -500,3 +512,160 @@ def test_both_fake_factor_friends_build_in_every_run2_era_and_sample_kind(module
             assert any("Wjets" in name for name in used) == (module is sm_fake_factors_w and scope != "tt")
             built[sample] = (sorted(output_names(config, scope)), sorted(ff_shifts(config, scope)))
         assert built["data"] == built["ttbar"] == built["embedding"], scope
+
+
+# --- NN classifier friend (nn spec 3.4, N1, N21, N28) ---------------------------
+
+V7B_CLASSES = ("HH", "tautau", "Top", "jetFakes", "Other")
+# the inputs of the toy models (tests/fixtures/nn_classifier/families.json)
+M0_INPUTS = [
+    "bpair_btag_value_1", "bpair_btag_value_2", "bpair_deltaR", "bpair_m_inv", "bpair_pt_1", "bpair_pt_dijet",
+    "deltaR_ditaupair", "jpt_1", "m_fastmtt", "mjj", "n_bjets", "n_jets", "pt_fastmtt", "m_vis", "mt_tot", "jpt_2",
+    "pt_1", "pt_dijet", "pt_vis",
+]
+M0_K4_INPUTS = M0_INPUTS + ["pt_2", "met", "metphi", "eta_fastmtt", "phi_fastmtt"]
+
+
+def nn_columns(prefix, classes, binary_head=False):
+    columns = {f"{prefix}predicted_class", f"{prefix}predicted_max_value"}
+    columns |= {f"{prefix}nn_score_{name}" for name in classes}
+    return columns | ({f"{prefix}binary_score"} if binary_head else set())
+
+
+@pytest.fixture(scope="module")
+def nn_models(tmp_path_factory):
+    """The models of a production in the layout of payloads/nn_classifier, every Run-2 era and tau
+    scope: an M0-like model with two folds and one with four folds and a binary head (toy models)."""
+    root = tmp_path_factory.mktemp("nn_classifier")
+    return (
+        NNModel(nn_classifier_payload("k2", root / "m0"), "nn_m0_"),
+        NNModel(nn_classifier_payload("k4", root / "m0_k4"), "nn_m0k4_"),
+    )
+
+
+def build_nn_friend(models, era, scope, maps, shifts=("none",)):
+    logging.disable(logging.CRITICAL)
+    try:
+        with mock.patch.object(sm_nn_classifier, "MODELS", models):
+            return sm_nn_classifier.build_config(
+                era, "ttbar", [scope], set(shifts), LEGACY_AVAILABLE_SAMPLES,
+                sm_nn_classifier.AVAILABLE_ERAS, SCOPES, maps,
+            )
+    finally:
+        logging.disable(logging.NOTSET)
+
+
+@pytest.mark.parametrize("scope", ["et", "mt", "tt"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_nn_classifier_friend_builds_in_every_run2_era(nn_models, era, scope, tmp_path):
+    """sm_nn_classifier builds in every Run-2 era and tau scope on the v7b ttbar n-tuple with the FastMTT
+    friend: every model writes class, maximum and one score per output with its prefix, reads its
+    inputs in the order of the manifest and the files of its era and scope, one per residue; the gate
+    is the translated skim selection of the era and scope."""
+    assert sm_nn_classifier.AVAILABLE_ERAS == ERAS_RUN2
+    config = build_nn_friend(nn_models, era, scope, nn_classifier_maps(era, tmp_path))
+    assert output_names(config, scope) == nn_columns("nn_m0_", V7B_CLASSES) | nn_columns(
+        "nn_m0k4_", V7B_CLASSES, binary_head=True
+    )
+    nominal = config.config_parameters[scope]["nominal"]
+    expression, columns = nn_gate.cpp_expression(nn_gate.skim_cuts(scope, era))
+    assert nominal["nn_gate_expression"] == expression
+    assert [q.name for q in find_producer(config, scope, "NNGate").input[scope]] == columns
+    for (payload, prefix), inputs, folds, outputs in zip(nn_models, (M0_INPUTS, M0_K4_INPUTS), (2, 4), (5, 6)):
+        assert [nominal[f"{prefix}onnx_file_r{r}"] for r in range(folds)] == [
+            f"{payload}/{era}/{scope}/model_k{folds}_r{r}.onnx" for r in range(folds)
+        ]
+        assert f"{prefix}onnx_file_r{folds}" not in nominal
+        assert (nominal[f"{prefix}num_inputs"], nominal[f"{prefix}num_classes"]) == (len(inputs), 5)
+        assert (nominal[f"{prefix}num_outputs"], nominal[f"{prefix}softmax"]) == (outputs, False)
+        assert [q.name for q in find_producer(config, scope, f"NNInputs_{prefix}").input[scope]] == inputs
+        scores = find_producer(config, scope, f"NNScores_{prefix}")
+        assert [q.name for q in scores.input[scope]] == [f"{prefix}inputs", "event", "nn_gate"]
+        assert scores.call.count("onnx_file_r") == folds
+
+
+def test_nn_classifier_friend_reads_fastmtt_from_its_friend(nn_models, tmp_path):
+    """The models read m/pt/eta/phi_fastmtt, which only the FastMTT friend has: without its quantities
+    map (no friend chain) the configuration fails."""
+    with pytest.raises(InvalidInputError, match="fastmtt"):
+        build_nn_friend(nn_models, "2018", "mt", nn_classifier_maps("2018", tmp_path, fastmtt=False))
+
+
+def test_nn_classifier_friend_without_models_fails(tmp_path):
+    assert sm_nn_classifier.MODELS == ()  # none is trained on v7b yet
+    with pytest.raises(ValueError, match="no model"):
+        build_nn_friend((), "2018", "mt", nn_classifier_maps("2018", tmp_path))
+
+
+def test_nn_classifier_friend_shifts_the_gate_and_the_scores(nn_models, tmp_path):
+    """With shifted inputs in the quantities map (P6), the gate, the input vectors, the scores and every
+    output column are shifted; a shift of a column no model and no gate cut reads shifts nothing."""
+    maps = nn_classifier_maps("2018", tmp_path)
+    quantities_map = json.loads(Path(maps[0]).read_text())
+    inputs = quantities_map["quantities"]["2018"]["ttbar"]["mt"]
+    inputs["CMS_scale_t_DM0_2018Up"] = ["pt_2", "m_vis", "pt_vis", "mt_tot", "met", "metphi"]
+    inputs["CMS_unrelated_2018Up"] = ["genWeight"]
+    maps[0] = str(tmp_path / "shifted.json")
+    Path(maps[0]).write_text(json.dumps(quantities_map))
+    config = build_nn_friend(nn_models, "2018", "mt", maps, shifts=("all",))
+    # (the shared input quantities keep the shifts of configurations built before in this process, so only
+    # the shifts of this map are checked)
+    for leaf in output_names(config, "mt"):
+        (quantity,) = [q for q in config.outputs["mt"] if q.name == leaf]
+        shifts = set(quantity.get_shifts("mt"))
+        assert "__CMS_scale_t_DM0_2018Up" in shifts and "__CMS_unrelated_2018Up" not in shifts, leaf
+    assert "__CMS_scale_t_DM0_2018Up" in find_producer(config, "mt", "NNGate").output[0].get_shifts("mt")
+
+
+_GENERATE_NN_FRIEND = """
+import json, logging, sys
+from analysis_configurations.bbtautau import sm_nn_classifier
+from analysis_configurations.bbtautau.constants import LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.nn_payloads import NNModel
+from code_generation.code_generation import CodeGenerator
+models, era, scope, maps, directory = json.loads(sys.argv[1])
+sm_nn_classifier.MODELS = tuple(NNModel(*model) for model in models)
+logging.disable(logging.CRITICAL)
+config = sm_nn_classifier.build_config(era, "ttbar", [scope], {"none"}, LEGACY_AVAILABLE_SAMPLES,
+                                       sm_nn_classifier.AVAILABLE_ERAS, SCOPES, maps)
+generator = CodeGenerator("code_generation/analysis_template_friends.cxx",
+                          "code_generation/subset_template.cxx", config, "bbtautau",
+                          "sm_nn_classifier", f"sm_nn_classifier_ttbar_{era}_{scope}", directory)
+generator.generate_code()
+with open(f"{directory}/outputs.json", "w") as f:
+    json.dump(generator.output_commands, f)
+"""
+
+
+# one scope per era (a generation takes ~20 s); the configurations of every era and scope are built above
+@pytest.mark.parametrize("era,scope", [("2016preVFP", "tt"), ("2016postVFP", "et"), ("2017", "mt"), ("2018", "tt")])
+def test_nn_classifier_friend_generates_in_every_run2_era(nn_models, era, scope, tmp_path):
+    """The C++ code (in a subprocess, code generation mutates module-level producers): the gate flag with
+    the columns of the era, one EvaluateFolds per model with its files in residue order and its
+    dimensions, and the unpacked outputs."""
+    import subprocess
+    import sys
+
+    directory = tmp_path / scope
+    directory.mkdir()
+    arguments = json.dumps([list(nn_models), era, scope, nn_classifier_maps(era, tmp_path), str(directory)])
+    result = subprocess.run(
+        [sys.executable, "-c", _GENERATE_NN_FRIEND, arguments],
+        cwd=Path(__file__).resolve().parents[3],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
+    sources = "\n".join(p.read_text() for p in sorted(directory.rglob("*.cxx")))
+    (gate,) = [p.read_text() for p in directory.rglob("*.cxx") if "SelectionFlag" in p.read_text()]
+    expression, columns = nn_gate.cpp_expression(nn_gate.skim_cuts(scope, era))
+    assert f'"{expression}"' in gate and "{" + ",".join(f'"{c}"' for c in columns) + "}" in gate
+    assert ('"hem_veto"' in gate) == (era == "2018")
+    for (payload, prefix), folds, inputs, outputs in zip(nn_models, (2, 4), (19, 24), (5, 6)):
+        files = ", ".join(f'"{payload}/{era}/{scope}/model_k{folds}_r{r}.onnx"' for r in range(folds))
+        assert f'"{prefix}scores",\n        "{prefix}inputs", "event", "nn_gate",\n        {{{files}}},' in sources
+        assert f"{{{files}}},\n        {inputs},\n        5,\n        {outputs},\n        false" in sources
+    assert sources.count("xyh::classifier::UnpackScores(") == 2
+    with open(directory / "outputs.json") as f:
+        written = set(json.load(f)[scope])
+    assert written == nn_columns("nn_m0_", V7B_CLASSES) | nn_columns("nn_m0k4_", V7B_CLASSES, True)

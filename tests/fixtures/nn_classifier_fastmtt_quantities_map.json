@@ -1,0 +1,42 @@
+{
+ "quantities": {
+  "2018": {
+   "ttbar": {
+    "et": {
+     "": [
+      "eta_fastmtt",
+      "m_fastmtt",
+      "phi_fastmtt",
+      "pt_fastmtt"
+     ]
+    },
+    "mt": {
+     "": [
+      "eta_fastmtt",
+      "m_fastmtt",
+      "phi_fastmtt",
+      "pt_fastmtt"
+     ]
+    },
+    "tt": {
+     "": [
+      "eta_fastmtt",
+      "m_fastmtt",
+      "phi_fastmtt",
+      "pt_fastmtt"
+     ]
+    }
+   }
+  }
+ },
+ "metadata": {
+  "analysis": "bbtautau",
+  "analysis_commit": "da1bc779ff515d71b3b2ba6ee59d0d003076a326",
+  "analysis_is_clean": false,
+  "commit": "bf01115e9e905140bc591540f4eb309944aa95f5",
+  "config": "sm_fastmtt",
+  "era": "2018",
+  "is_clean": false,
+  "sample_type": "ttbar"
+ }
+}

@@ -74,7 +74,22 @@ def toolchain():
     return compiler, flags, corr, spdlog
 
 
-def compile_fixture(directory, name, sources, defines=(), correctionlib=False):
+def onnxruntime_flags():
+    """Include and link flags of the ONNX Runtime C++ API next to root-config (LCG view:
+    include/onnxruntime and lib64; CROWN container: include/onnxruntime/core/session and lib)."""
+    root_config = shutil.which("root-config")
+    if not root_config:
+        pytest.skip("ROOT and a C++ compiler are required")
+    view = Path(root_config).parent.parent
+    headers = [view / "include/onnxruntime", view / "include/onnxruntime/core/session"]
+    header = next((d for d in headers if (d / "onnxruntime_cxx_api.h").is_file()), None)
+    library = next((d for d in (view / "lib64", view / "lib") if (d / "libonnxruntime.so").is_file()), None)
+    if header is None or library is None:
+        pytest.skip("the ONNX Runtime C++ API is required")
+    return [f"-I{header}", f"-L{library}", "-lonnxruntime", f"-Wl,-rpath,{library}"]
+
+
+def compile_fixture(directory, name, sources, defines=(), correctionlib=False, libraries=()):
     compiler, flags, corr, spdlog = toolchain()
     includes = [ADDONS / "include", CROWN / "include", spdlog, corr / "include"]
     command = [
@@ -92,6 +107,7 @@ def compile_fixture(directory, name, sources, defines=(), correctionlib=False):
             "-lz",
             "-lpthread",
         ]
+    command += list(libraries)
     binary = Path(directory) / name
     result = subprocess.run(
         [*command, "-o", str(binary)], capture_output=True, text=True
@@ -470,3 +486,32 @@ def test_fake_factor_sum_over_the_payload_processes(tmp_path):
     assert result.returncode == 0, "\n".join(summary) + result.stderr[-3000:]
     legs = 8 + 3 * 4 + 3 * 4  # + per v7b payload era: et, mt, tt leading and subleading, in both variants
     assert len(summary) == legs and all(line.startswith("PASS") for line in summary), summary
+
+
+# --- NN classifier friend (nn spec 3.3, 3.4) ------------------------------------
+
+
+def test_sm_classifier_scores_every_event_with_the_model_of_its_residue(tmp_path):
+    """sm_nn_classifier on the toy models of tests/fixtures/nn_classifier (two and four
+    folds, probabilities, logits, a binary head): the model of residue r scores exactly
+    the events with event % n == r, on unsigned 64-bit event numbers at 2^24, 2^31, 2^32
+    and 2^63, and reproduces onnxruntime's scores of that model; outside the gate every
+    output is -1; dynamic dimensions, other shapes, inputs of another length and NaN
+    inputs throw; the gate flag reads its columns by index (shifted columns)."""
+    binary = compile_fixture(
+        tmp_path,
+        "sm_classifier",
+        [
+            CPP / "test_sm_classifier.cxx",
+            ADDONS / "src/sm_classifier.cxx",
+            CROWN / "src/utility/OnnxSessionManager.cxx",
+        ],
+        defines=["-O2"],
+        libraries=onnxruntime_flags(),
+    )
+    result = subprocess.run(
+        [str(binary), str(FIXTURES / "nn_classifier")], capture_output=True, text=True
+    )
+    summary = [line for line in result.stdout.splitlines() if line.startswith(("PASS", "FAIL"))]
+    assert result.returncode == 0, "\n".join(summary) + result.stderr[-3000:]
+    assert len(summary) == 3 * 5 + 7 + 3 and all(line.startswith("PASS") for line in summary), summary
