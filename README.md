@@ -35,8 +35,8 @@ A config module may also declare `AVAILABLE_ERAS` and/or `AVAILABLE_SAMPLES`; `g
 ## Available Friend Configurations
 
 The friend entries are thin wrappers around the shared `FriendTreeConfiguration` bodies in
-`friend_common.py`: `build_friend_config` (FastMTT, resolved kinematic fit) and
-`build_fake_factor_friend` (fake factors).
+`friend_common.py`: `build_friend_config` (FastMTT, resolved kinematic fit),
+`build_fake_factor_friend` (fake factors) and `build_nn_classifier_friend` (NN classifier).
 
 * `nmssm_fastmtt.py` / `sm_fastmtt.py` - Produce FastMTT friends (`m/pt/eta/phi_fastmtt`); the SM
   module re-exports the NMSSM builder and only adds `AVAILABLE_ERAS = ERAS_RUN2`.
@@ -51,6 +51,10 @@ The friend entries are thin wrappers around the shared `FriendTreeConfiguration`
   shared 2016 mapping, and each rejects a payload of the other variant (`PROCESSES`). See
   [Fake-factor friends](#fake-factor-friends).
 * `xyh_classifier_friend_config.py` - Produce PNN classifier friends for the NMSSM analysis.
+* `sm_nn_classifier.py` - SM HH NN classifier scores of the models of a production (`MODELS`), Run-2 eras,
+  et, mt and tt, chained on the FastMTT friend; per model `<prefix>predicted_class`,
+  `<prefix>predicted_max_value`, `<prefix>nn_score_<class>`, -1 outside the gate (nn spec 3.4). See
+  [NN classifier friend](#nn-classifier-friend).
 
 ### Fake-factor friends
 
@@ -118,6 +122,34 @@ The SM payloads are keyed by payload era (`sm_fake_factors.PAYLOAD_ERAS`): 2016p
 one 2016 payload, measured on both halves together. `PAYLOADS` maps a payload era to its directory, and
 `SM_PAYLOAD_DIRS` / `AVAILABLE_ERAS` hold the eras whose payload era has one (all four Run-2 eras since the
 v7b payloads).
+
+### NN classifier friend
+
+`sm_nn_classifier.py` (nn spec 3.3, 3.4, N1, N21, N28) evaluates every model of `MODELS`, a tuple of
+`nn_payloads.NNModel(payload directory, column prefix)`, e.g. `NNModel("payloads/nn_classifier/m0_v1", "nn_m0_")`.
+A model is trained in n outer folds (n = 2 or 4): `<payload>/<era>/<scope>/model_k<n>_r<r>.onnx` scores the events
+with `event % n == r` on the unsigned 64-bit event number (`xyh::classifier::EvaluateFolds` in
+`cpp_addons/include/sm_classifier.hxx`, inline like `EvaluatePNN`; no conversion to float or int, unlike the thesis
+friend and `ml::StandardTransformer`). The manifest next to the files (`payloads/nn_classifier/README.md`) is read when
+the friend is configured (`nn_payloads.py`, standard library only): scope, residue files, sha256, and the ONNX shapes
+(one float input `[1, len(inputs)]`, one output `[1, C]` or `[1, C + 1]` with a declared binary head, no dynamic
+dimension) are checked, a missing era or scope fails. The inputs are n-tuple columns in manifest order
+(`fakefactors::BuildFloatVector`), `m/pt/eta/phi_fastmtt` from the FastMTT friend, so the friend needs the chain
+`sm_nn_classifier: {friend_tag: <tag>, requires: [sm_fastmtt]}`, `sm_fastmtt: {friend_tag: fastmtt}`. The C++ throws
+on an input vector of another length and on a non-finite input or score; the softmax is applied only to models whose
+manifest declares `output: logits`.
+
+The gate (`nn_gate.py`, N21) is ShapeSmith's tau skim selection `skim_cuts(channel, era, control_regions=True)` without
+the opposite-sign requirement (the `tau_control` skims, containing the `tau_ff` ones), translated to an RDataFrame
+expression whose columns are read by index, so that P6 shifts reach it. Outside the gate the models are not evaluated
+and every output is -1. `tests/test_nn_classifier_friend.py` compares the cuts with ShapeSmith and the translation with
+pandas.eval; `scripts/nn_gate_pass_fraction.py` measures the pass fraction on one file per era, sample type and scope.
+`tests/cpp/test_sm_classifier.cxx` (toy models of `tests/fixtures/make_nn_classifier_fixtures.py`) checks the residue
+selection for n = 2 and 4 at the event numbers 2^24, 2^31, 2^32 and 2^63, the exceptions and the -1 outside the gate.
+
+| Scope | Gate | Outputs per model (prefix p) |
+|---|---|---|
+| et, mt, tt | `nn_gate.skim_cuts(scope, era)` | `p`+`predicted_class`, `p`+`predicted_max_value`, `p`+`nn_score_<class>`, `p`+`binary_score` (binary head only) |
 
 ## Building
 
