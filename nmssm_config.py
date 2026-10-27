@@ -1443,8 +1443,8 @@ def add_ak4jet_config(configuration: Configuration):
                     "2018": "Summer19UL18_JRV2",
                     "2022preEE": "Summer22_22Sep2023_JRV2",
                     "2022postEE": "Summer22EE_22Sep2023_JRV2",
-                    "2023preBPix": "Summer23Prompt23_RunCv123_JRV2",
-                    "2023postBPix": "Summer23BPixPrompt23_RunD_JRV2",
+                    "2023preBPix": "Summer23Prompt23_RunCv1234_JRV3",
+                    "2023postBPix": "Summer23BPixPrompt23_RunD_JRV3",
                     "2024": "Summer24Prompt24_JRV2",
                     "2025": "Summer24Prompt25_JRV2",
                 }
