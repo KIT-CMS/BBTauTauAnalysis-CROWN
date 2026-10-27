@@ -2880,12 +2880,15 @@ def build_config(
     #
 
 
-    # Add sample split filter for 2024-2025 simulation
+    # Add sample split filter and corresponding weight for 2024-2025 simulation
     if era in ["2024", "2025"]:
         configuration.add_modification_rule(
             GLOBAL_SCOPES,
             AppendProducer(
-                producers=[event.SampleSplitFilter],
+                producers=[
+                    event.SampleSplitFilter,
+                    event.SampleSplitWeight,
+                ],
                 exclude_samples=["data", "embedding"],
             ),
         )
@@ -3485,6 +3488,15 @@ def build_config(
             q.jet_hemisphere,
         ],
     )
+
+    if era in ["2024", "2025"] and sample not in ["data", "embedding"]:
+        configuration.add_outputs(
+            SCOPES,
+            [
+                q.wgt_sample_split,
+            ],
+        )
+
     # if era in ["2018"] and sample not in ["data", "embedding", "embedding_mc"]:
     #     # in 2018, we have the Xbb tagging scale factors
     #     configuration.add_outputs(
