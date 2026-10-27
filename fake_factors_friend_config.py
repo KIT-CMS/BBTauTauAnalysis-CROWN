@@ -10,7 +10,7 @@ from code_generation.systematics import SystematicShift
 from .constants import TT_SCOPES, ERAS_RUN2, ERAS_RUN3, SL_SCOPES, FH_SCOPES
 
 
-FAKE_FACTOR_VERSION = "fake-factors-2026-10-03"
+FAKE_FACTOR_VERSION = "fake-factors-2026-10-25"
 
 
 def build_config(
