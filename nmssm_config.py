@@ -2879,6 +2879,17 @@ def build_config(
     # Remove, append, or modify producers in specific cases.
     #
 
+
+    # Add sample split filter for 2024-2025 simulation
+    if era in ["2024", "2025"]:
+        configuration.add_modification_rule(
+            GLOBAL_SCOPES,
+            AppendProducer(
+                producers=[event.SampleSplitFilter],
+                exclude_samples=["data", "embedding"],
+            ),
+        )
+
     # For DY samples, add producer for flag indicating the flavor of the decay products
     if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
         configuration.add_modification_rule(
