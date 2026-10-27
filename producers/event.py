@@ -14,6 +14,47 @@ from .muons import DiMuonVeto
 # Set of general producers for event quantities
 ####################
 
+EventHashForSampleSplit = Producer(
+    name="EventSeedForSampleSplit",
+    call="event::quantity::GenerateSeed({df}, {output}, {input}, {master_seed_sample_split})",
+    input=[
+        nanoAOD.luminosityBlock,
+        nanoAOD.run,
+        nanoAOD.event,
+    ],
+    output=[
+        q.event_hash_split,
+    ],
+    scopes=["global"],
+)
+
+SampleSplitHashFilter = BaseFilter(
+    name="SampleSplitHashFilter",
+    call="event::filter::HashFilter({df}, \"SampleSplitFilter\", {input}, {sample_split_u_min}, {sample_split_u_max})",
+    input=[q.event_hash_split],
+    scopes=["global"],
+)
+
+SampleSplitFilter = ProducerGroup(
+    name="SampleSplitFilter",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["global"],
+    subproducers=[
+        EventHashForSampleSplit,
+        SampleSplitHashFilter,
+    ],
+)
+
+SampleSplitWeight = Producer(
+    name="SampleSplitWeight",
+    call="event::quantity::SampleSplitWeight({df}, {output}, {sample_split_u_min}, {sample_split_u_max})",
+    input=[],
+    output=[q.wgt_sample_split],
+    scopes=["global"],
+)
+
 RunLumiEventFilter = VectorProducer(
     name="RunLumiEventFilter",
     call='event::filter::Quantity<{RunLumiEventFilter_Quantity_Types}>({df}, "RunLumiEventFilter", "{RunLumiEventFilter_Quantities}", {vec_open}{RunLumiEventFilter_Selections}{vec_close})',

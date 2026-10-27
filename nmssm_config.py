@@ -2425,6 +2425,34 @@ def build_config(
         },
     )
 
+    # Configuration for splitting 2024 simulation according to recorded
+    # 2024-2026 luminosities
+    # 2024: 109.82
+    # 2025: 110.37
+    # 2026: 28.06
+    configuration.add_config_parameters(
+        ["global"],
+        {
+            "master_seed_sample_split": 8102013,
+            "sample_split_u_min": EraModifier(
+                {
+                    "2024": 0.0,
+                    "2025": 0.442,
+                    # "2026": 8.887,
+                },
+                default=0.0,
+            ),
+            "sample_split_u_max": EraModifier(
+                {
+                    "2024": 0.442,
+                    "2025": 0.887,
+                    # "2026": 1.0,
+                },
+                default=0.0,
+            ),
+        },
+    )
+
     # fatjet trigger settings
     # configuration.add_config_parameters(
     #     SCOPES,
@@ -2850,6 +2878,20 @@ def build_config(
     # 
     # Remove, append, or modify producers in specific cases.
     #
+
+
+    # Add sample split filter and corresponding weight for 2024-2025 simulation
+    if era in ["2024", "2025"]:
+        configuration.add_modification_rule(
+            GLOBAL_SCOPES,
+            AppendProducer(
+                producers=[
+                    event.SampleSplitFilter,
+                    event.SampleSplitWeight,
+                ],
+                exclude_samples=["data", "embedding"],
+            ),
+        )
 
     # For DY samples, add producer for flag indicating the flavor of the decay products
     if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
@@ -3446,6 +3488,15 @@ def build_config(
             q.jet_hemisphere,
         ],
     )
+
+    if era in ["2024", "2025"] and sample not in ["data", "embedding"]:
+        configuration.add_outputs(
+            SCOPES,
+            [
+                q.wgt_sample_split,
+            ],
+        )
+
     # if era in ["2018"] and sample not in ["data", "embedding", "embedding_mc"]:
     #     # in 2018, we have the Xbb tagging scale factors
     #     configuration.add_outputs(
