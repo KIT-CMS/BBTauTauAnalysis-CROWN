@@ -12,6 +12,9 @@ puweight = Quantity("puweight")
 prefireweight = Quantity("prefiring_wgt")
 lhe_scale_weight = Quantity("lhe_scale_weight")
 
+# Seed and random numbers for sample splitting
+event_hash_split = Quantity("event_hash_split")
+
 # kinematic fit
 kinfit_convergence_YToBB = Quantity("kinfit_convergence_YToBB")
 kinfit_mX_YToBB = Quantity("kinfit_mX_YToBB")
