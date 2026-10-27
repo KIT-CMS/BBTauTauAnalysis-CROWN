@@ -14,6 +14,7 @@ lhe_scale_weight = Quantity("lhe_scale_weight")
 
 # Seed and random numbers for sample splitting
 event_hash_split = Quantity("event_hash_split")
+wgt_sample_split = Quantity("wgt_sample_split")
 
 # kinematic fit
 kinfit_convergence_YToBB = Quantity("kinfit_convergence_YToBB")

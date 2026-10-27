@@ -47,6 +47,14 @@ SampleSplitFilter = ProducerGroup(
     ],
 )
 
+SampleSplitWeight = Producer(
+    name="SampleSplitWeight",
+    call="event::quantity::SampleSplitWeight({df}, {output}, {sample_split_u_min}, {sample_split_u_max})",
+    input=[],
+    output=[q.wgt_sample_split],
+    scopes=["global"],
+)
+
 RunLumiEventFilter = VectorProducer(
     name="RunLumiEventFilter",
     call='event::filter::Quantity<{RunLumiEventFilter_Quantity_Types}>({df}, "RunLumiEventFilter", "{RunLumiEventFilter_Quantities}", {vec_open}{RunLumiEventFilter_Selections}{vec_close})',
