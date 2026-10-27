@@ -59,7 +59,7 @@ YHKinFit_YToTauTau = Producer(
         q.bpair_eta_1,
         q.bpair_phi_1,
         q.bpair_mass_1,
-        q.bpair_pt_resolution_regressed_2,
+        q.bpair_pt_resolution_regressed_1,
         q.bpair_pt_regressed_2,
         q.bpair_eta_2,
         q.bpair_phi_2,
