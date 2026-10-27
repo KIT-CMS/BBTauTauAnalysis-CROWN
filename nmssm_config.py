@@ -2425,6 +2425,34 @@ def build_config(
         },
     )
 
+    # Configuration for splitting 2024 simulation according to recorded
+    # 2024-2026 luminosities
+    # 2024: 109.82
+    # 2025: 110.37
+    # 2026: 28.06
+    configuration.add_config_parameters(
+        ["global"],
+        {
+            "master_seed_sample_split": 8102013,
+            "sample_split_u_min": EraModifier(
+                {
+                    "2024": 0.0,
+                    "2025": 0.442,
+                    # "2026": 8.887,
+                },
+                default=0.0,
+            ),
+            "sample_split_u_max": EraModifier(
+                {
+                    "2024": 0.442,
+                    "2025": 0.887,
+                    # "2026": 1.0,
+                },
+                default=0.0,
+            ),
+        },
+    )
+
     # fatjet trigger settings
     # configuration.add_config_parameters(
     #     SCOPES,
