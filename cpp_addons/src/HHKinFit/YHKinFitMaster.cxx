@@ -7,6 +7,7 @@
 #include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
+#include <cmath>
 
 YHKinFitMaster::YHKinFitMaster(
     ROOT::Math::PtEtaPhiEVector bjet1, float bjet_reso_1,
@@ -404,8 +405,8 @@ TMatrixD YHKinFitMaster::CalcCov(ROOT::Math::PtEtaPhiEVector p4, double dE) {
 
 double YHKinFitMaster::CalcBjetResolution(ROOT::Math::PtEtaPhiEVector p4,
                                           double res) {
-    double pt_res = p4.Pt() * res;
-    double dE = pt_res * p4.P() / sin(p4.Theta()) / p4.E();
+    // double pt_res = p4.Pt() * res;
+    double dE = res * p4.P() / sin(p4.Theta()) / p4.E();
     return dE;
 }
 
@@ -617,7 +618,7 @@ double YHKinFitMaster::ConstrainEnergy(ROOT::Math::PtEtaPhiEVector p4_mother,
 
     int loopCount = 0;
 
-    while (abs(M_reco - M_truth) > 0.0001) {
+    while (std::abs(M_reco - M_truth) > 0.0001) {
         loopCount++;
 
         if (loopCount >= 100) {

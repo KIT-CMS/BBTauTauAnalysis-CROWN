@@ -11,6 +11,7 @@
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
 #include <algorithm>
+#include <cmath>
 
 namespace physicsobject {
 
@@ -57,10 +58,15 @@ float apply_jes_l1(const float &jet_pt, const float &jet_eta,
 
 float apply_jes_l2rel(const float &jet_pt, const float &jet_eta,
                       const float &jet_phi, const std::string &era,
+                      const std::string &jec_algo,
                       const correction::Correction *jes_l2rel_evaluator) {
     // Calculate the L2rel-corrected pt
     float pt_corrected;
-    if (std::stoi(era.substr(0, 4)) <= 2022 || era == "2023preBPix") {
+    if (
+        (std::stoi(era.substr(0, 4)) <= 2022 || era == "2023preBPix")
+        || (jec_algo.find("UParT") != std::string::npos)
+        || (jec_algo.find("PNet") != std::string::npos)
+    ) {
         // For era <= 2023preBPix, phi is not an input argument
         pt_corrected =
             jet_pt * jes_l2rel_evaluator->evaluate({jet_eta, jet_pt});
@@ -134,7 +140,7 @@ float apply_jer(
     const correction::Correction *jer_scalefactor_evaluator,
     const correction::Correction *jer_scalefactor_uncertainty_evaluator,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 &randgen) {
+    const std::string &era, const float &random_normal) {
     // Get the JER MC resolution and data-MC scale factor for the smearing
     auto resol = jer_resolution_evaluator->evaluate({jet_eta, jet_pt, rho});
     auto sf = 1.0;
@@ -182,12 +188,12 @@ float apply_jer(
         if (
             std::stoi(era.substr(0, 4)) >= 2022
             && std::stoi(era.substr(0, 4)) <= 2024
-            && abs(jet_eta) > 2.5
-            && abs(jet_eta) < 3.0
+            && std::abs(jet_eta) > 2.5
+            && std::abs(jet_eta) < 3.0
         ) {
             c_jer = 1.0;
         } else {
-            c_jer = 1 + randgen.Gaus(0, resol) *
+            c_jer = 1 + random_normal * resol *
                         (std::sqrt(std::max(std::pow(sf, 2) - 1.0, 0.0)));
         }
     }
@@ -206,7 +212,8 @@ JECResult apply_full_jec_mc(
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
     const int &jes_shift_factor, const std::string &jer_shift,
-    const float &jet_radius, const std::string &era, TRandom3 &randgen,
+    const std::string &jec_algo, const float &jet_radius, const std::string &era,
+    const float &random_normal,
     const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
@@ -217,7 +224,7 @@ JECResult apply_full_jec_mc(
     auto jet_pt_l1 =
         apply_jes_l1(jet_pt, jet_eta, jet_area, rho, jes_l1_evaluator);
     auto jet_pt_l2rel =
-        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jes_l2rel_evaluator);
+        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jec_algo, jes_l2rel_evaluator);
     auto jet_pt_syst = apply_jes_shifts(jet_pt_l2rel, jet_eta, jet_phi, jet_id,
                                         jes_shift_source, jes_shift_factor,
                                         jes_shift_evaluators);
@@ -225,7 +232,7 @@ JECResult apply_full_jec_mc(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
         jer_resolution_evaluator, jer_scalefactor_evaluator,
         jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
-        randgen);
+        random_normal);
 
     // Create the JECResult which also contains intermediate results of the
     // calibration
@@ -244,7 +251,7 @@ JECResult apply_jes_shifts_and_jer_mc(
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
     const std::string &jes_shift_source, const int &jes_shift_factor,
     const std::string &jer_shift, const float &jet_radius,
-    const std::string &era, TRandom3 &randgen,
+    const std::string &era, const float &random_normal,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
     const correction::Correction *jer_scalefactor_evaluator,
@@ -257,7 +264,7 @@ JECResult apply_jes_shifts_and_jer_mc(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
         jer_resolution_evaluator, jer_scalefactor_evaluator,
         jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
-        randgen);
+        random_normal);
 
     // Create the JECResult which also contains intermediate results of the
     // calibration
@@ -272,14 +279,14 @@ JECResult apply_jes_shifts_and_jer_mc(
 JECResult apply_full_jec_data(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const float &jet_area, const float &rho, const unsigned int &run,
-    const std::string &era, const correction::Correction *jes_l1_evaluator,
+    const std::string &era, const std::string &jec_algo, const correction::Correction *jes_l1_evaluator,
     const correction::Correction *jes_l2rel_evaluator,
     const correction::Correction *jes_l2l3res_evaluator) {
     // Apply the consecutive steps of the jet energy calibration
     auto jet_pt_l1 =
         apply_jes_l1(jet_pt, jet_eta, jet_area, rho, jes_l1_evaluator);
     auto jet_pt_l2rel =
-        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jes_l2rel_evaluator);
+        apply_jes_l2rel(jet_pt_l1, jet_eta, jet_phi, era, jec_algo, jes_l2rel_evaluator);
     auto jet_pt_l2l3res =
         apply_jes_l2l3res(jet_pt_l2rel, jet_eta, static_cast<float>(run), era,
                           jes_l2l3res_evaluator);
@@ -564,7 +571,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
 
     // Function to retrieve the JEC result with intermediate steps
     auto func_jec_result = [jes_shift_source, jes_shift_factor, jer_shift,
-                            jet_radius, reapply_jes, era, jes_l1_evaluator,
+                            jec_algo, jet_radius, reapply_jes, era, jes_l1_evaluator,
                             jes_l2rel_evaluator, jes_shift_evaluators,
                             jer_resolution_evaluator, jer_scalefactor_evaluator,
                             jer_scalefactor_uncertainty_evaluator](
@@ -579,6 +586,10 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                                const float &rho, const unsigned int &seed) {
         // Random value generator for jet energy resolution smearing
         TRandom3 randgen = TRandom3(seed);
+        ROOT::RVec<float> random_normal(jet_pt_raw.size());
+        for (auto &z : random_normal) {
+            z = randgen.Gaus(0., 1.);
+        }
 
         ROOT::RVec<JECResult> jet_jec_result;
         if (reapply_jes) {
@@ -587,19 +598,19 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             // for single jets and wrap it with ROOT::VecOps::Map to retrieve
             // the calibrated momenta for the full collection.
             jet_jec_result = ROOT::VecOps::Map(
-                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
+                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area, random_normal,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era, &randgen,
+                 jes_shift_factor, jer_shift, jec_algo, jet_radius, era,
                  jes_l1_evaluator, jes_l2rel_evaluator, jes_shift_evaluators,
                  jer_resolution_evaluator, jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
-                    const float &jet_area) {
+                    const float &jet_area, const float random_normal) {
                     return apply_full_jec_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, jet_area, rho,
                         genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era, randgen,
+                        jes_shift_factor, jer_shift, jec_algo, jet_radius, era, random_normal,
                         jes_l1_evaluator, jes_l2rel_evaluator,
                         jes_shift_evaluators, jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
@@ -612,19 +623,19 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             // function for single jets and wrap it with ROOT::VecOps::Map to
             // retrieve the calibrated momenta for the full collection.
             jet_jec_result = ROOT::VecOps::Map(
-                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area,
+                jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area, random_normal,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era, &randgen,
+                 jes_shift_factor, jer_shift, jet_radius, era,
                  jes_shift_evaluators, jer_resolution_evaluator,
                  jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
                     const float &jet_pt, const float &jet_eta,
                     const float &jet_phi, const float &jet_id,
-                    const float &jet_area) {
+                    const float &jet_area, const float &random_normal) {
                     return apply_jes_shifts_and_jer_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, rho, genjet_pt,
                         genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era, randgen,
+                        jes_shift_factor, jer_shift, jet_radius, era, random_normal,
                         jes_shift_evaluators, jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
                         jer_scalefactor_uncertainty_evaluator);
@@ -795,7 +806,7 @@ PtCorrectionData(ROOT::RDF::RNode df,
 
     // Function to retrieve the JEC result with intermediate steps
     auto func_jec_result =
-        [era, reapply_jes, jes_l1_evaluator, jes_l2rel_evaluator,
+        [era, jec_algo, reapply_jes, jes_l1_evaluator, jes_l2rel_evaluator,
          jes_l2l3res_evaluator](const ROOT::RVec<float> &jet_pt_raw,
                                 const ROOT::RVec<float> &jet_eta,
                                 const ROOT::RVec<float> &jet_phi,
@@ -809,13 +820,13 @@ PtCorrectionData(ROOT::RDF::RNode df,
                 // momenta for the full collection.
                 jet_jec_result = ROOT::VecOps::Map(
                     jet_pt_raw, jet_eta, jet_phi, jet_area,
-                    [rho, run, era, jes_l1_evaluator, jes_l2rel_evaluator,
-                     jes_l2l3res_evaluator](
+                    [rho, run, era, jec_algo, jes_l1_evaluator,
+                     jes_l2rel_evaluator, jes_l2l3res_evaluator](
                         const float &jet_pt, const float &jet_eta,
                         const float &jet_phi, const float &jet_area) {
                         return apply_full_jec_data(
                             jet_pt, jet_eta, jet_phi, jet_area, rho, run, era,
-                            jes_l1_evaluator, jes_l2rel_evaluator,
+                            jec_algo, jes_l1_evaluator, jes_l2rel_evaluator,
                             jes_l2l3res_evaluator);
                     });
             } else {
@@ -1079,12 +1090,12 @@ ROOT::RDF::RNode CorrectJetIDRun3NanoV12(
         for (int i = 0; i < jet_pt.size(); ++i) {
             // evaluate if the jet passes the tight WP
             bool pass_tight = false;
-            if (abs(jet_eta.at(i)) <= 2.7) {
+            if (std::abs(jet_eta.at(i)) <= 2.7) {
                 pass_tight = jet_id.at(i) & (1 << 1);
-            } else if (abs(jet_eta.at(i)) > 2.7 && abs(jet_eta.at(i)) <= 3.0) {
+            } else if (std::abs(jet_eta.at(i)) > 2.7 && std::abs(jet_eta.at(i)) <= 3.0) {
                 pass_tight =
                     (jet_id.at(i) & (1 << 1)) && (jet_ne_hef.at(i) < 0.99);
-            } else if (abs(jet_eta.at(i)) > 3.0) {
+            } else if (std::abs(jet_eta.at(i)) > 3.0) {
                 pass_tight =
                     (jet_id.at(i) & (1 << 1)) && (jet_ne_em_ef.at(i) < 0.4);
             }
@@ -1092,7 +1103,7 @@ ROOT::RDF::RNode CorrectJetIDRun3NanoV12(
             // evaluate if the jet passes the tight WP and fulfills the lepton
             // veto
             bool pass_tight_lep_veto = false;
-            if (abs(jet_eta.at(i)) <= 2.7) {
+            if (std::abs(jet_eta.at(i)) <= 2.7) {
                 pass_tight_lep_veto = pass_tight && (jet_mu_ef.at(i) < 0.8) &&
                                       (jet_ch_em_ef.at(i) < 0.8);
             } else {
