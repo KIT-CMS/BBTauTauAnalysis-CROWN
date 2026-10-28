@@ -634,12 +634,11 @@ TauTauJetTriggerLeg2SF = ExtendedVectorProducer(
 # Scale factor for the jet leg of the di-tau+jet trigger
 TauTauJetTriggerLeg3SF = ExtendedVectorProducer(
     name="TauTauJetTriggerLeg3SF",
-    call='physicsobject::tau::scalefactor::TriggerJetLeg({df}, correctionManager, {output}, {input}, "{ttj_trigger_flag}", "{tautaujet_jetleg_trigger_sf_file}", "{tautaujet_jetleg_trigger_cset_name}", "{tt_trigger_leg2_variation}", "{tautaujet_jetleg_trigger_jec_variation}", "{ttj_trigger_leg3_correction_type}")',
+    call='physicsobject::tau::scalefactor::TriggerJetLeg({df}, correctionManager, {input}, {output}, "{ttj_trigger_flag}", "{tautaujet_jetleg_trigger_sf_file}", "{tautaujet_jetleg_trigger_cset_name}", "{ttj_trigger_leg3_variation}", "{tautaujet_jetleg_trigger_jec_variation}", "{ttj_trigger_leg3_correction_type}")',
     input=[
-        q.pt_2,
-        q.tau_decaymode_2,
+        q.jet_p4_1,
     ],
-    output="tt_trigger_leg3_flagname",
+    output="ttj_trigger_leg3_flagname",
     scopes=TT_SCOPES,
     vec_config="tautaujet_trigger_leg3_sf",
 )
