@@ -1275,6 +1275,88 @@ def _add_tautau_triggers(
     )
 
 
+def _add_electron_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Add trigger scale factor and efficiency configuration for single-electron
+    triggers.
+
+    Efficiencies on data and MC are needed if this trigger is combined with
+    other ones to calculate the scale factors "on-the-fly".
+    """
+
+    # Parameters for the single-electron trigger SF
+    ele_trigger_sf_parameters = {
+        "e_trigger_flagname": "trg_wgt_single_ele30",
+        "e_trigger_flag": "trg_single_ele30",
+        "e_trigger_era": EraModifier(
+            {
+                **{
+                    _era: _era
+                    for _era in ERAS_RUN2
+                },
+                "2022preEE": "2022Re-recoBCD",
+                "2022postEE": "2022Re-recoE+PromptFG",
+                "2023preBPix": "2023PromptC",
+                "2023postBPix": "2023PromptD",
+                "2024": "2024Prompt",
+                "2025": "2024Prompt",  # TODO update as soon as dedicated corrections are available for 2025
+            }
+        ),
+        "e_trigger_sf_name": "Electron-HLT-SF",
+        "e_trigger_path_id_name": "HLT_SF_Ele30_MVAiso90ID",
+        "e_trigger_variation": "sf",
+    }
+
+    # Parameters for the single-electron trigger efficiency on data
+    ele_trigger_eff_data_parameters = _get_updated_dict(
+        ele_trigger_sf_parameters,
+        {
+            "e_trigger_flagname": "trg_eff_data_single_ele30",
+            "e_trigger_sf_name": "Electron-HLT-DataEff",
+            "e_trigger_variation": "nom",
+        }
+    )
+
+    # Parameters for the single-electron trigger efficiency on MC
+    ele_trigger_eff_mc_parameters = _get_updated_dict(
+        ele_trigger_sf_parameters,
+        {
+            "e_trigger_flagname": "trg_eff_mc_single_ele30",
+            "e_trigger_sf_name": "Electron-HLT-McEff",
+            "e_trigger_variation": "nom",
+        }
+    )
+
+    # Add configuration for trigger scale factors and efficiencies
+    configuration.add_config_parameters(
+        ELECTRON_SCOPES,
+        {
+            # TODO Update 2025 corrections as soon as dedicated corrections are available
+            "e_trigger_sf_file": EraModifier(
+                {  # TODO clarify if we can actually just use the electron trigger SFs
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2017-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",  # TODO update
+                }
+            ),
+            "ele_trigger_sf": [
+                ele_trigger_sf_parameters,
+                ele_trigger_eff_data_parameters,
+                ele_trigger_eff_mc_parameters,
+            ],
+        },
+    )
+
+
 def add_diTauTriggerSetup(configuration: Configuration):
 
     # Add isolated and non-isolated single-electron triggers to the et, em, and 
@@ -1295,49 +1377,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
     _add_tautau_triggers(configuration)
 
     # single electron trigger scale factors
-    configuration.add_config_parameters(
-        ELECTRON_SCOPES,
-        {
-            # TODO Update 2025 corrections as soon as dedicated corrections are available
-            "e_trigger_sf_file": EraModifier(
-                {  # TODO clarify if we can actually just use the electron trigger SFs
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2017-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
-                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
-                }
-            ),
-            "ele_trigger_sf": [
-                {
-                    "e_trigger_flagname": "trg_wgt_single_ele30",
-                    "e_trigger_flag": "trg_single_ele30",
-                    "e_trigger_era": EraModifier(
-                        {
-                            **{
-                                _era: _era
-                                for _era in ERAS_RUN2
-                            },
-                            "2022preEE": "2022Re-recoBCD",
-                            "2022postEE": "2022Re-recoE+PromptFG",
-                            "2023preBPix": "2023PromptC",
-                            "2023postBPix": "2023PromptD",
-                            "2024": "2024Prompt",
-                            "2025": "2024Prompt",  # TODO update as soon as dedicated corrections are available for 2025
-                        }
-                    ),
-                    "e_trigger_sf_name": "Electron-HLT-SF",
-                    "e_trigger_path_id_name": "HLT_SF_Ele30_MVAiso90ID",
-                    "e_trigger_variation": "sf",
-                },
-            ],
-        },
-    )
+    _add_electron_trigger_scale_factors(configuration)
 
     # double electron-tau trigger scale factors
     # TODO update scale factors for 2025 as soon as dedicated corrections are available
@@ -1358,7 +1398,7 @@ def add_diTauTriggerSetup(configuration: Configuration):
                                 _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
                                 for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
                             },
-                            "2025": f"data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",
+                            "2025": "data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",
                         }
                     ),
                     "et_trigger_leg1_era": EraModifier(
