@@ -228,6 +228,95 @@ def _add_electron_triggers(
     )
 
 
+def _add_electron_tau_triggers(
+    configuration: Configuration,
+):
+    """
+    Add configuration of electron-tau cross-trigger trigger producers. The
+    configuration adds electron-tau triggers to the `et` scope.
+
+    The use of the following isolated electron triggers is recommended by the
+    EGM POG:
+
+    - 2016, 2017, 2018: TODO
+    - 2022, 2023: `HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1`
+    - 2024, 2025, 2026: `HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1`
+
+    The electron-tau trigger recommendations can be found at the following
+    EGM POG TWiki page: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
+    """
+
+    ## Electron-tau cross triggers
+
+    # TODO Add Run 2 triggers
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1 parameters
+    ele_24_tau_30_deeptau_parameters = {
+        "flagname": "trg_ele24_tau30_deeptau",
+        "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1",
+        "p1_min_pt": 24.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 3,
+        "p1_particle_id": 11,
+        "p2_min_pt": 30.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": [3, 8],
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1 parameters
+    ele_24_tau_30_pnet_parameters = {
+        "flagname": "trg_ele24_tau30_pnet",
+        "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1",
+        "p1_min_pt": 24.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 3,
+        "p1_particle_id": 11,
+        "p2_min_pt": 30.,
+        "p2_max_abs_eta": 2.3,
+        "p2_filter_bit": [0, 4, 12],
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # Add triggers to the configuration
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "eletau_trigger": EraModifier(
+                {
+                    **{
+                        _era: [
+                            # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1
+                            # final e filter:     hltOverlapFilterIsoEle24IsoTau30WPTightGsfCaloJet5
+                            # e filter bit:       3
+                            # final tau filter:   hltHpsOverlapFilterIsoEle24WPTightGsfLooseETauWPPNetPFTau30L1Seeded
+                            # tau filter bits:    0, 4, 12
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2024
+                            ele_24_tau_30_pnet_parameters,
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
+                    **{
+                        _era: [
+                            # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1
+                            # final e filter:     hltOverlapFilterIsoEle24IsoTau30WPTightGsfCaloJet5
+                            # e filter bit:       3
+                            # final tau filter:   hltHpsOverlapFilterIsoEle24WPTightGsfLooseETauWPDeepTauPFTau30
+                            # tau filter bits:    3, 8
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2022
+                            ele_24_tau_30_deeptau_parameters,
+                        ]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                },
+                default=[],
+            ),
+        },
+    )
+
+
 def _add_muon_triggers(
     configuration: Configuration,
 ):
