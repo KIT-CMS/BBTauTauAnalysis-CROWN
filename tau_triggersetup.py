@@ -818,7 +818,7 @@ def _add_muon_tau_triggers(
 
     # HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1 parameters
     mu_20_tau_27_deeptau_parameters = {
-        "flagname": "trg_mu20_tau27_deeptau",
+        "flagname": "trg_mu20_tau27",
         "hlt_path": "HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1",
         "p1_min_pt": 22.,
         "p1_max_abs_eta": 2.1,
@@ -833,7 +833,7 @@ def _add_muon_tau_triggers(
 
     # HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1 parameters
     mu_20_tau_27_pnet_parameters = {
-        "flagname": "trg_mu20_tau27_pnet",
+        "flagname": "trg_mu20_tau27",
         "hlt_path": "HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1",
         "p1_min_pt": 22.,
         "p1_max_abs_eta": 2.1,
@@ -1556,7 +1556,7 @@ def _add_tau_trigger_scale_factors(
     configuration.add_config_parameters(
         ET_SCOPES,
         {
-            "double_eletau_trigger_leg2_sf": EraModifier(
+            "eletau_trigger_leg2_sf": EraModifier(
                 {
                     # TODO fill Run 2
                     "2016preVFP": [],
@@ -1582,8 +1582,8 @@ def _add_tau_trigger_scale_factors(
 
     # Parameters for the tau leg of the muon-tau cross trigger scale factors
     mt_trigger_tauleg_sf_parameters = {
-        "mt_trigger_leg2_flagname": "trg_wgt_double_mu20_tau27_leg2",
-        "mt_trigger_flag": "trg_double_mu20_tau27",
+        "mt_trigger_leg2_flagname": "trg_wgt_mu20_tau27_leg2",
+        "mt_trigger_flag": "trg_mu20_tau27",
         "mt_trigger_leg2_sf_name": "mutau",
         "mt_trigger_leg2_correction_type": "sf",
         "mt_trigger_leg2_variation": "nom",
@@ -1594,7 +1594,7 @@ def _add_tau_trigger_scale_factors(
     mt_trigger_tauleg_eff_data_parameters = _get_updated_dict(
         mt_trigger_tauleg_sf_parameters,
         {
-            "mt_trigger_leg2_flagname": "trg_eff_data_double_mu20_tau27_leg2",
+            "mt_trigger_leg2_flagname": "trg_eff_data_mu20_tau27_leg2",
             "mt_trigger_leg2_correction_type": "eff_data",
             "mt_trigger_leg2_variation": "nom",
         },
@@ -1605,7 +1605,7 @@ def _add_tau_trigger_scale_factors(
     mt_trigger_tauleg_eff_mc_parameters = _get_updated_dict(
         mt_trigger_tauleg_sf_parameters,
         {
-            "mt_trigger_leg2_flagname": "trg_eff_mc_double_mu20_tau27_leg2",
+            "mt_trigger_leg2_flagname": "trg_eff_mc_mu20_tau27_leg2",
             "mt_trigger_leg2_correction_type": "eff_mc",
             "mt_trigger_leg2_variation": "nom",
         },
@@ -1671,7 +1671,7 @@ def _add_tau_trigger_scale_factors(
                 "tt_trigger_flag": f"trg_{trigger}",
                 f"tt_trigger_leg{i}_flagname": f"trg_wgt_{trigger}_leg{i}",
                 f"tt_trigger_leg{i}_sf_name": trigger_type,
-                f"tt_trigger_leg{i}_sf_correction_type": "sf",
+                f"tt_trigger_leg{i}_correction_type": "sf",
                 f"tt_trigger_leg{i}_variation": "nom",
             }
             leg_trigger_list.append(sf_parameters)
@@ -1682,7 +1682,7 @@ def _add_tau_trigger_scale_factors(
                     sf_parameters,
                     {
                         f"tt_trigger_leg{i}_flagname": f"trg_eff_data_{trigger}_leg{i}",
-                        f"tt_trigger_leg{i}_sf_correction_type": "eff_data",
+                        f"tt_trigger_leg{i}_correction_type": "eff_data",
                     },
                 ),
             )
@@ -1693,7 +1693,7 @@ def _add_tau_trigger_scale_factors(
                     sf_parameters,
                     {
                         f"tt_trigger_leg{i}_flagname": f"trg_eff_mc_{trigger}_leg{i}",
-                        f"tt_trigger_leg{i}_sf_correction_type": "eff_mc",
+                        f"tt_trigger_leg{i}_correction_type": "eff_mc",
                     },
                 ),
             )
@@ -1780,7 +1780,7 @@ def _add_jet_trigger_scale_factors(
         parameters = {
             "ttj_trigger_flag": f"trg_{trigger}",
             "ttj_trigger_leg3_variation": "nom",
-            "ttj_trigger_leg3_sf_correction_type": "sf",
+            "ttj_trigger_leg3_correction_type": "sf",
         }
 
         # Data efficiency parameters
@@ -1789,7 +1789,7 @@ def _add_jet_trigger_scale_factors(
                 parameters,
                 {
                     "ttj_trigger_leg3_flagname": f"trg_eff_data_{trigger}_leg3",
-                    "ttj_trigger_leg3_sf_correction_type": "data",
+                    "ttj_trigger_leg3_correction_type": "data",
                 },
             ),
         )
@@ -1799,8 +1799,8 @@ def _add_jet_trigger_scale_factors(
             _get_updated_dict(
                 parameters,
                 {
-                    "tt_trigger_leg3_flagname": f"trg_eff_mc_{trigger}_leg3",
-                    "tt_trigger_leg3_sf_correction_type": "mc",
+                    "ttj_trigger_leg3_flagname": f"trg_eff_mc_{trigger}_leg3",
+                    "ttj_trigger_leg3_correction_type": "mc",
                 },
             ),
         )

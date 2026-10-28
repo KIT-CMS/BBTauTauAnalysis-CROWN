@@ -590,7 +590,7 @@ TauTauTriggerLeg1SF = ExtendedVectorProducer(
 # Scale factor for the second tau leg of the di-tau trigger
 TauTauTriggerLeg2SF = ExtendedVectorProducer(
     name="DoubleTauTauTriggerLeg2SF",
-    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg2_sf_name}", "Medium", "{tt_trigger_leg1_correction_type}", "{tt_trigger_leg2_variation}")',
+    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg2_sf_name}", "Medium", "{tt_trigger_leg2_correction_type}", "{tt_trigger_leg2_variation}")',
     input=[
         q.pt_2,
         q.tau_decaymode_2,
@@ -616,7 +616,7 @@ TauTauJetTriggerLeg1SF = ExtendedVectorProducer(
 # Scale factor for the second tau leg of the di-tau+jet trigger
 TauTauJetTriggerLeg2SF = ExtendedVectorProducer(
     name="DoubleTauTauJetTriggerLeg2SF",
-    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg2_sf_name}", "Medium", "{tt_trigger_leg1_correction_type}", "{tt_trigger_leg2_variation}")',
+    call='physicsobject::tau::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{tt_trigger_flag}", "{tau_trigger_sf_file}", "tau_trigger", "{tt_trigger_leg2_sf_name}", "Medium", "{tt_trigger_leg2_correction_type}", "{tt_trigger_leg2_variation}")',
     input=[
         q.pt_2,
         q.tau_decaymode_2,
