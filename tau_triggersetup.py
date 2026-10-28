@@ -1372,7 +1372,6 @@ def _add_electron_trigger_scale_factors(
         "et_trigger_leg1_variation": "sf",
     }
 
-
     # Parameters for the electron-tau cross trigger efficiency on data
     et_trigger_eleg_eff_data_parameters = _get_updated_dict(
         et_trigger_eleg_sf_parameters,
