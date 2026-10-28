@@ -1428,7 +1428,7 @@ def _add_muon_trigger_scale_factors(
     muon_trigger_sf_parameters = {
         "m_trigger_flagname": "trg_wgt_single_mu24",
         "m_trigger_flag": "trg_single_mu24",
-        "m_trigger_sf_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
+        "m_trigger_sf_cset_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
         "m_trigger_variation": "nominal",
     }
 
@@ -1470,7 +1470,7 @@ def _add_muon_trigger_scale_factors(
     mt_trigger_muleg_sf_parameters = {
         "mt_trigger_leg1_flagname": "trg_wgt_mu20_tau27_leg1",
         "mt_trigger_flag": "trg_mu20_tau27",
-        "mt_trigger_leg1_sf_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
+        "mt_trigger_leg1_sf_cset_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight",
         "mt_trigger_leg1_variation": "nominal",
     }
 
@@ -1479,7 +1479,7 @@ def _add_muon_trigger_scale_factors(
         mt_trigger_muleg_sf_parameters,
         {
             "mt_trigger_leg1_flagname": "trg_eff_data_mu20_tau27_leg1",
-            "mt_trigger_leg1_variation": "nominal_DATAeff",
+            "mt_trigger_leg1_sf_cset_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight_DATAeff",
         }
     )
 
@@ -1488,7 +1488,7 @@ def _add_muon_trigger_scale_factors(
         mt_trigger_muleg_sf_parameters,
         {
             "mt_trigger_leg1_flagname": "trg_eff_mc_mu20_tau27_leg1",
-            "mt_trigger_leg1_variation": "nominal_MCeff",
+            "mt_trigger_leg1_sf_cset_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight_MCeff",
         }
     )
 
@@ -1499,21 +1499,7 @@ def _add_muon_trigger_scale_factors(
     configuration.add_config_parameters(
         MT_SCOPES,
         {
-            "mt_trigger_muleg_sf_file": EraModifier(
-                {
-                    **{
-                        _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
-                        for _era in ERAS_RUN2
-                    },
-                    **{
-                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
-                        for _era in ERAS_RUN3
-                    },
-                    # TODO update to 2025 correction as soon as it is available
-                    "2025": "data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json",
-                },
-            ),
-            "double_mutau_trigger_leg1_sf": [
+            "mutau_trigger_leg1_sf": [
                 mt_trigger_muleg_sf_parameters,
                 mt_trigger_muleg_eff_data_parameters,
                 mt_trigger_muleg_eff_mc_parameters,
