@@ -644,6 +644,95 @@ def _add_muon_triggers(
     )
 
 
+def _add_muon_tau_triggers(
+    configuration: Configuration,
+):
+    """
+    Add configuration of muon-tau cross-trigger trigger producers. The
+    configuration adds muon-tau triggers to the `mt` scope.
+
+    The use of the following isolated electron triggers is recommended by the
+    EGM POG:
+
+    - 2016, 2017, 2018: TODO
+    - 2022, 2023: `HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1`
+    - 2024, 2025, 2026: ``
+
+    The muon-tau trigger recommendations can be found at the following
+    EGM POG TWiki page: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
+    """
+
+    ## Muon-tau cross triggers
+
+    # TODO Add Run 2 triggers
+
+    # HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1 parameters
+    mu_20_tau_27_deeptau_parameters = {
+        "flagname": "trg_mu20_tau27_deeptau",
+        "hlt_path": "HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1",
+        "p1_min_pt": 20.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 1,
+        "p1_particle_id": 13,
+        "p2_min_pt": 27.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": [3, 9],
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1 parameters
+    mu_20_tau_27_pnet_parameters = {
+        "flagname": "trg_mu20_tau27_pnet",
+        "hlt_path": "HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1",
+        "p1_min_pt": 20.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 1,
+        "p1_particle_id": 13,
+        "p2_min_pt": 27.,
+        "p2_max_abs_eta": 2.3,
+        "p2_filter_bit": [0, 4, 13],
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # Add triggers to the configuration
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "mutau_trigger": EraModifier(
+                {
+                    **{
+                        _era: [
+                            # trigger:            HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1
+                            # final mu filter:    hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered*
+                            # mu filter bit:      1
+                            # final tau filter:   hltHpsOverlapFilterIsoMu20LooseMuTauWPPNetPFJet27
+                            # tau filter bits:    0, 4, 13
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2024
+                            mu_20_tau_27_pnet_parameters,
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
+                    **{
+                        _era: [
+                            # trigger:            HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
+                            # final mu filter:    hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered*
+                            # mu filter bit:      1
+                            # final tau filter:   hltHpsOverlapFilterIsoMu20LooseMuTauWPDeepTauPFTau27L1Seeded
+                            # tau filter bits:    3, 9
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2022
+                            mu_20_tau_27_deeptau_parameters,
+                        ]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                },
+                default=[],
+            ),
+        },
+    )
+
+
 def _add_tautau_triggers(
     configuration: Configuration,
 ):
