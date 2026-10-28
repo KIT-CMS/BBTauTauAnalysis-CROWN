@@ -1616,7 +1616,7 @@ def _add_tau_trigger_scale_factors(
     configuration.add_config_parameters(
         MT_SCOPES,
         {
-            "double_mutau_trigger_leg2_sf": EraModifier(
+            "mutau_trigger_leg2_sf": EraModifier(
                 {
                     # TODO fill Run 2
                     "2016preVFP": [],
