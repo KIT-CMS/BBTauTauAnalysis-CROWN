@@ -2894,7 +2894,7 @@ def build_config(
             TT_SCOPES,
             [
                 triggers.TauTauJetTriggerFlags,
-                triggers.TauTauJetTriggerSF,
+                scalefactors.TauTauJetTriggerSF,
             ]
         )
 
@@ -3746,7 +3746,7 @@ def build_config(
                 triggers.TauTauJetTriggerFlags.output_group,
             ] + [
                 o
-                for o in triggers.TauTauJetTriggerSF.get_outputs("tt")
+                for o in scalefactors.TauTauJetTriggerSF.get_outputs("tt")
             ],
         )
 
