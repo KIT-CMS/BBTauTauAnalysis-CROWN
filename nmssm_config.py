@@ -1644,8 +1644,14 @@ def add_ak4jet_config(configuration: Configuration):
             ),
             "tautaujet_jetleg_trigger_cset_name": EraModifier(
                 {
-                    "2024": "jetleg60",
-                    "2025": "jetleg60",
+                    **{
+                        _era: "jetlegSFs"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        _era: "jetleg60"
+                        for _era in ["2024", "2025"]
+                    },
                 },
             ),
             "tautaujet_jetleg_trigger_jec_variation": "leading_jet_pt_nom",
@@ -2907,7 +2913,7 @@ def build_config(
             ET_SCOPES,
             [
                 triggers.EleTauTriggerFlags,
-                # scalefactors.DoubleEleTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
+                scalefactors.EleTauTriggerSF,
             ],
         )
 
@@ -2940,7 +2946,7 @@ def build_config(
             MT_SCOPES,
             [
                 triggers.MuTauTriggerFlags,
-                # scalefactors.DoubleMuTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
+                scalefactors.MuTauTriggerSF,
             ],
         )
 
@@ -2969,7 +2975,7 @@ def build_config(
             TT_SCOPES,
             [
                 triggers.TauTauJetTriggerFlags,
-                # tautaujet_trigger_producers,
+                triggers.TauTauJetTriggerSF,
             ]
         )
 
@@ -3132,7 +3138,8 @@ def build_config(
         ),
     )
 
-    # Remove trigger scale factor producers from data and embedding samples in mt scope
+    # Remove electron/electron-tau trigger scale factor producers from data and
+    # embedding
     configuration.add_modification_rule(
         ELECTRON_SCOPES,
         RemoveProducer(
@@ -3142,6 +3149,17 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         ),
     )
+    if era in ERAS_RUN3:
+        configuration.add_modification_rule(
+            ELECTRON_SCOPES,
+            RemoveProducer(
+                producers=[
+                    scalefactors.EleTauTriggerSF,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            ),
+        )
+
     # TODO fix for Run 2, SF seem to not be available
     # configuration.add_modification_rule(
     #     ET_SCOPES,
@@ -3154,7 +3172,8 @@ def build_config(
     # )
 
 
-    # Remove trigger scale factor producers from data and embedding samples in mt scope
+    # Remove muon/muon-tau trigger scale factor producers from data and
+    # embedding
     configuration.add_modification_rule(
         MUON_SCOPES,
         RemoveProducer(
@@ -3164,16 +3183,16 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         )
     )
-    # TODO fix for Run 2, SF seem to not be available
-    # configuration.add_modification_rule(
-    #     MT_SCOPES,
-    #     RemoveProducer(
-    #         producers=[
-    #             scalefactors.DoubleMuTauTriggerSF,
-    #         ],
-    #         samples=["data", "embedding", "embedding_mc"],
-    #     )
-    # )
+    if era in ERAS_RUN3:
+        configuration.add_modification_rule(
+            MT_SCOPES,
+            RemoveProducer(
+                producers=[
+                    scalefactors.MuTauTriggerSF,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            )
+        )
 
     # Remove muon ID and isolation scale factor producers from data and embedding samples in mt scope
     configuration.add_modification_rule(
@@ -3186,7 +3205,8 @@ def build_config(
         )
     )
 
-    # Remove trigger scale factor producers from data and embedding samples in tt scope
+    # Remove tautau/tautaujet trigger scale factor producers from data and
+    # embedding
     configuration.add_modification_rule(
         TT_SCOPES,
         RemoveProducer(
@@ -3196,8 +3216,18 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         ),
     )
+    if era in ERAS_RUN3:
+        configuration.add_modification_rule(
+            TT_SCOPES,
+            RemoveProducer(
+                producers=[
+                    scalefactors.TauTauJetTriggerSF,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            ),
+        )
 
-    # TODO re-include
+    # TODO re-include if needed
     #configuration.add_modification_rule(
     #    ["et", "mt", "tt"],
     #    AppendProducer(
@@ -3463,18 +3493,6 @@ def build_config(
             samples=["data"],
         ),
     )
-
-    # Append scale factor producers
-    #configuration.add_modification_rule(
-    #    MUON_SCOPES,
-    #    AppendProducer(
-    #        producers=[
-    #            scalefactors.MuonIDIso_SF,
-    #            scalefactors.SingleMuTriggerSF,
-    #        ],
-    #        exclude_samples=["data", "embedding", "embedding_mc"],
-    #    ),
-    #)
 
     # Output columns for all scopes
     configuration.add_outputs(
@@ -3767,10 +3785,9 @@ def build_config(
             MT_SCOPES,
             [
                 triggers.MuTauTriggerFlags.output_group,
-                # [
-                #     p
-                #     for p in scalefactors.DoubleMuTauTriggerSF.get_outputs("mt")  # TODO fix for Run 2, SF seem to not be available
-                # ]
+            ] + [
+                o
+                for o in scalefactors.MuTauTriggerSF.get_outputs("mt")
             ],
         )
 
@@ -3802,10 +3819,9 @@ def build_config(
             ET_SCOPES,
             [
                 triggers.EleTauTriggerFlags.output_group,
-                # [
-                #     p
-                #     for p in scalefactors.DoubleEleTauTriggerSF.get_outputs("et")  # TODO fix for Run 2, SF seem to not be available
-                # ]
+            ] + [
+                o
+                for o in scalefactors.EleTauTriggerSF.get_outputs("et")
             ],
         )
 
@@ -3836,10 +3852,9 @@ def build_config(
             TT_SCOPES,
             [
                 triggers.TauTauJetTriggerFlags.output_group,
-                # [
-                #     producer.output_group
-                #     for producer in tautaujet_trigger_producers
-                # ]
+            ] + [
+                o
+                for o in triggers.TauTauJetTriggerSF.get_outputs("tt")
             ],
         )
 
@@ -4174,6 +4189,8 @@ def build_config(
         [scalefactors.TauTauTriggerSF],
         "tt",
     )
+
+    # TODO add electron-tau, muon-tau and tau-tau-jet trigger systematics
 
     #endregion
 
