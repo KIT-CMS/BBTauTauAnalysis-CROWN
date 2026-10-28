@@ -1280,11 +1280,15 @@ def _add_electron_trigger_scale_factors(
 ):
     """
     Add trigger scale factor and efficiency configuration for single-electron
-    triggers.
+    triggers and the electron leg of electron-tau cross triggers.
 
     Efficiencies on data and MC are needed if this trigger is combined with
     other ones to calculate the scale factors "on-the-fly".
     """
+
+    # -------------------------------------------------------------------------
+    # Single-electron trigger
+    # -------------------------------------------------------------------------
 
     # Parameters for the single-electron trigger SF
     ele_trigger_sf_parameters = {
@@ -1329,7 +1333,10 @@ def _add_electron_trigger_scale_factors(
         }
     )
 
-    # Add configuration for trigger scale factors and efficiencies
+    # Add configuration for single-electron trigger scale factors and
+    # efficiencies
+    # TODO update scale factors for 2025 as soon as dedicated corrections are
+    # available
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
         {
@@ -1352,6 +1359,82 @@ def _add_electron_trigger_scale_factors(
                 ele_trigger_sf_parameters,
                 ele_trigger_eff_data_parameters,
                 ele_trigger_eff_mc_parameters,
+            ],
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Electron leg of electron-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the electron-tau cross trigger scale factors
+    et_trigger_eleg_sf_parameters = {
+        "et_trigger_flag": "trg_double_ele24tau30",
+        "et_trigger_leg1_flagname": "trg_wgt_double_ele24tau30_leg1",
+        "et_trigger_leg1_era": EraModifier(
+            {
+                **{
+                    _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras as correctionlib
+                    for _era in ERAS_RUN2
+                },
+                "2022preEE": "2022Re-recoBCD",
+                "2022postEE": "2022Re-recoE+PromptFG",
+                "2023preBPix": "2023PromptC",
+                "2023postBPix": "2023PromptD",
+                "2024": "2024Prompt",
+                "2025": "2024Prompt",
+            }
+        ),
+        "et_trigger_leg1_sf_name": "Electron-HLT-SF",
+        "et_trigger_leg1_path_id_name": "HLT_SF_Ele24_TightID",
+        "et_trigger_leg1_variation": "sf",
+    }
+
+
+    # Parameters for the electron-tau cross trigger efficiency on data
+    et_trigger_eleg_eff_data_parameters = _get_updated_dict(
+        et_trigger_eleg_sf_parameters,
+        {
+            "et_trigger_leg1_flagname": "trg_eff_data_ele24_tau30_leg1",
+            "et_trigger_leg1_sf_name": "Electron-HLT-DataEff",
+            "et_trigger_leg1_variation": "nom",
+        },
+    )
+
+    # Parameters for the electron-tau cross trigger efficiency on MC
+    et_trigger_eleg_eff_mc_parameters = _get_updated_dict(
+        et_trigger_eleg_sf_parameters,
+        {
+            "et_trigger_leg1_flagname": "trg_eff_mc_ele24_tau30_leg1",
+            "et_trigger_leg1_sf_name": "Electron-HLT-McEff",
+            "et_trigger_leg1_variation": "nom",
+        },
+    )
+
+    # Add configuration for electron leg of electron-tau cross trigger scale
+    # factors and efficiencies
+    # TODO update scale factors for 2025 as soon as dedicated corrections are
+    # available
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "et_trigger_electron_leg_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",  # TODO update
+                },
+            ),
+            "double_eletau_trigger_leg1_sf": [
+                et_trigger_eleg_sf_parameters,
+                et_trigger_eleg_eff_data_parameters,
+                et_trigger_eleg_eff_mc_parameters,
             ],
         },
     )
@@ -1379,57 +1462,16 @@ def add_diTauTriggerSetup(configuration: Configuration):
     # single electron trigger scale factors
     _add_electron_trigger_scale_factors(configuration)
 
-    # double electron-tau trigger scale factors
-    # TODO update scale factors for 2025 as soon as dedicated corrections are available
-    configuration.add_config_parameters(
-        ET_SCOPES,
-        {
-            "double_eletau_trigger_leg1_sf": [
-                {
-                    "et_trigger_flag": "trg_double_ele24tau30",
-                    "et_trigger_leg1_flagname": "trg_wgt_double_ele24tau30_leg1",
-                    "et_trigger_leg1_sf_file": EraModifier(
-                        {
-                            **{
-                                _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
-                                for _era in ERAS_RUN2
-                            },
-                            **{
-                                _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
-                                for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
-                            },
-                            "2025": "data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",
-                        }
-                    ),
-                    "et_trigger_leg1_era": EraModifier(
-                        {
-                            **{
-                                _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras as correctionlib
-                                for _era in ERAS_RUN2
-                            },
-                            "2022preEE": "2022Re-recoBCD",
-                            "2022postEE": "2022Re-recoE+PromptFG",
-                            "2023preBPix": "2023PromptC",
-                            "2023postBPix": "2023PromptD",
-                            "2024": "2024Prompt",
-                            "2025": "2024Prompt",
-                        }
-                    ),
-                    "et_trigger_leg1_sf_name": "Electron-HLT-SF",
-                    "et_trigger_leg1_path_id_name": "HLT_SF_Ele24_TightID",
-                    "et_trigger_leg1_variation": "sf",
-                },
-            ],
-            "double_eletau_trigger_leg2_sf": [
-                {
-                    "et_trigger_leg2_flagname": "trg_wgt_double_ele24tau30_leg2",
-                    "et_trigger_flag": "trg_double_ele24tau30",
-                    "et_trigger_leg2_sf_name": "etau",
-                    "et_trigger_leg2_variation": "nom",
-                },
-            ]
-        },
-    )
+
+    # TODO add back to config
+            # "double_eletau_trigger_leg2_sf": [
+            #     {
+            #         "et_trigger_leg2_flagname": "trg_wgt_double_ele24tau30_leg2",
+            #         "et_trigger_flag": "trg_double_ele24tau30",
+            #         "et_trigger_leg2_sf_name": "etau",
+            #         "et_trigger_leg2_variation": "nom",
+            #     },
+            # ]
 
     # single muon trigger scale factors
     configuration.add_config_parameters(
