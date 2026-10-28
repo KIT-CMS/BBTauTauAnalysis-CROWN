@@ -1578,7 +1578,7 @@ def add_ak4jet_config(configuration: Configuration):
     configuration.add_config_parameters(
         TT_SCOPES,
         {
-            "ditaujet_jet_trigger_sf_file": EraModifier(
+            "tautaujet_jetleg_trigger_sf_file": EraModifier(
                 {
                     **{
                         _era: "DOES_NOT_EXIST" for _era in ERAS_RUN2
@@ -1590,7 +1590,13 @@ def add_ak4jet_config(configuration: Configuration):
                     "2025": "data/hleprare/TriggerScaleFactors/2024/DiTauJetHlt_JetLeg_v1.json",  # TODO update
                 },
             ),
-            "ditaujet_jet_trigger_json_name": "jetlegSFs",
+            "tautaujet_jetleg_trigger_cset_name": EraModifier(
+                {
+                    "2024": "jetleg60",
+                    "2025": "jetleg60",
+                },
+            ),
+            "tautaujet_jetleg_trigger_jec_variation": "leading_jet_pt_nom",
         },
     )
 

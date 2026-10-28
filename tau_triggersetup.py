@@ -1703,7 +1703,7 @@ def _add_tau_trigger_scale_factors(
         configuration.add_config_parameters(
             TT_SCOPES,
             {
-                f"double_tautau_trigger_leg{i}_sf": EraModifier(
+                f"tautau_trigger_leg{i}_sf": EraModifier(
                     {
                         # TODO fill 2016 and 2017
                         "2016preVFP": [],
@@ -1736,7 +1736,7 @@ def _add_tau_trigger_scale_factors(
         configuration.add_config_parameters(
             TT_SCOPES,
             {
-                f"ditaujet_trigger_leg{i}_sf": EraModifier(
+                f"tautaujet_trigger_leg{i}_sf": EraModifier(
                     {
                         **{_era: [] for _era in ERAS_RUN2},  # do not exist
                         **{
@@ -1778,9 +1778,9 @@ def _add_jet_trigger_scale_factors(
 
         # Parameter template; scale factors are not available for this trigger
         parameters = {
-            "tt_trigger_flag": f"trg_{trigger}",
-            "tt_trigger_leg3_name": "jetlegSFs",
-            "tt_trigger_leg3_variation": "nom",
+            "ttj_trigger_flag": f"trg_{trigger}",
+            "ttj_trigger_leg3_variation": "nom",
+            "ttj_trigger_leg3_sf_correction_type": "sf",
         }
 
         # Data efficiency parameters
@@ -1788,8 +1788,8 @@ def _add_jet_trigger_scale_factors(
             _get_updated_dict(
                 parameters,
                 {
-                    "tt_trigger_leg3_flagname": f"trg_eff_data_{trigger}_leg3",
-                    "tt_trigger_leg3_sf_correction_type": "data",
+                    "ttj_trigger_leg3_flagname": f"trg_eff_data_{trigger}_leg3",
+                    "ttj_trigger_leg3_sf_correction_type": "data",
                 },
             ),
         )
@@ -1809,7 +1809,7 @@ def _add_jet_trigger_scale_factors(
     configuration.add_config_parameters(
         TT_SCOPES,
         {
-            "ditaujet_trigger_leg3_sf": EraModifier(
+            "tautaujet_trigger_leg3_sf": EraModifier(
                 {
                     **{_era: [] for _era in ERAS_RUN2},  # does not exist
                     **{
