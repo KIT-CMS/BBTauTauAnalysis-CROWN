@@ -249,63 +249,58 @@ def _add_electron_tau_triggers(
     ## Electron-tau cross triggers
 
     # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1 parameters
-    ele_24_tau_30_hps_2018_parameters = {
-        "flagname": "trg_cross_ele24tau30_hps",
+    ele_24_tau_30_hps_parameters = {
+        "flagname": "trg_ele24_tau30_hps",
         "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
-        "p1_min_pt": 25.,
-        "p1_max_abs_eta": 2.5,
-        "p1_filter_bit": 1,
+        "p1_min_pt": 26.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 7,
         "p1_particle_id": 11,
-        "p2_min_pt": 32.,
+        "p2_min_pt": 35.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": -1,  # TODO switch to 4, if the bits are correct
+        "p2_filter_bit": 8,
         "p2_particle_id": 15,
         "match_max_delta_r": 0.4,
     }
 
-    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1 parameters (2018)
-    ele_24_tau_30_2018_parameters = _get_updated_dict(
-        ele_24_tau_30_hps_2018_parameters,
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1 parameters (2017, 2018)
+    ele_24_tau_30_parameters = _get_updated_dict(
+        ele_24_tau_30_hps_parameters,
         {
-            "flagname": "trg_cross_ele24tau30",
+            "flagname": "trg_ele24_tau30",
             "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-            "p2_filter_bit": 4,
-        },
-    )
-
-    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1 parameters (2017)
-    ele_24_tau_30_2017_parameters = _get_updated_dict(
-        ele_24_tau_30_2018_parameters,
-        {
-            "p1_max_abs_eta": 2.1,
-            "p2_min_pt": 35.,
         },
     )
 
     # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1 parameters
-    ele_24_tau_20_singlel1_2016_parameters = _get_updated_dict(
-        ele_24_tau_30_2017_parameters,
-        {
-            "flagname": "trg_cross_ele24tau20",
-            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
-            "p2_min_pt": 25.,
-        },
-    )
+    ele_24_tau_20_singlel1_parameters = {
+        "flagname": "trg_ele24_tau20_singlel1",
+        "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
+        "p1_min_pt": 26.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 3,
+        "p1_particle_id": 11,
+        "p2_min_pt": 25.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": [0, 6],
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
 
     # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20 parameters
-    ele_24_tau_20_2016_parameters = _get_updated_dict(
-        ele_24_tau_20_singlel1_2016_parameters,
+    ele_24_tau_20_parameters = _get_updated_dict(
+        ele_24_tau_20_singlel1_parameters,
         {
-            "flagname": "trg_cross_ele24tau20_crossL1",
+            "flagname": "trg_ele24_tau20",
             "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
         },
     )
 
     # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30 parameters
     ele_24_tau_30_2016_parameters = _get_updated_dict(
-        ele_24_tau_20_singlel1_2016_parameters,
+        ele_24_tau_20_singlel1_parameters,
         {
-            "flagname": "trg_cross_ele24tau30",
+            "flagname": "trg_ele24_tau30",
             "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
             "p2_min_pt": 35.,
         },
@@ -373,25 +368,58 @@ def _add_electron_tau_triggers(
                     },
                     "2018": [
                         # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1
-                        ele_24_tau_30_hps_2018_parameters,
+                        # final e filter:     hltEle24erWPTightGsfTrackIsoFilterForTau AND hltHpsOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # e filter bit:       7
+                        # final tau filter:   hltHpsSelectedPFTau30LooseChargedIsolationL1HLTMatched AND hltHpsOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # tau filter bit:     8
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        ele_24_tau_30_hps_parameters,
 
                         # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
                         # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1
-                        ele_24_tau_30_2018_parameters,
+                        # final e filter:     hltEle24erWPTightGsfTrackIsoFilterForTau AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # e filter bit:       7
+                        # final tau filter:   hltSelectedPFTau30LooseChargedIsolationL1HLTMatched AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # tau filter bit:     8
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        ele_24_tau_30_parameters,
                     ],
                     "2017": [
                         # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1
-                        ele_24_tau_30_2017_parameters,
+                        # final e filter:     hltEle24erWPTightGsfTrackIsoFilterForTau AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # e filter bit:       7
+                        # final tau filter:   hltSelectedPFTau30LooseChargedIsolationL1HLTMatched AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # tau filter bit:     8
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2017
+                        ele_24_tau_30_parameters,
                     ],
                     **{
                         _era: [
                             # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1
-                            ele_24_tau_20_singlel1_2016_parameters,
+                            # final e filter:     hltEle24WPLooseL1SingleIsoEG22erGsfTrackIsoFilter AND hltOverlapFilterSingleIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # e filter bit:       3
+                            # final tau filter:   hltPFTau20TrackLooseIso AND hltOverlapFilterSingleIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # tau filter bits:    0, 6
+                            # comment:            Run < 276215
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
+                            ele_24_tau_20_singlel1_parameters,
 
                             # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20
-                            ele_24_tau_20_2016_parameters,
+                            # final e filter:     hltEle24WPLooseL1IsoEG22erTau20erGsfTrackIsoFilter AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # e filter bit:       3
+                            # final tau filter:   hltPFTau20TrackLooseIso AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # tau filter bits:    0, 6
+                            # comment:            276215 <= Run < 278270
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
+                            ele_24_tau_20_parameters,
 
                             # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30
+                            # final e filter:     hltEle24WPLooseL1IsoEG22erIsoTau26erGsfTrackIsoFilter AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau30
+                            # e filter bit:       3
+                            # final tau filter:   hltPFTau30TrackLooseIso AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau30
+                            # tau filter bits:    0, 6
+                            # comment:            Run >= 278270
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
                             ele_24_tau_30_2016_parameters,
                         ]
                         for _era in ["2016preVFP", "2016postVFP"]
