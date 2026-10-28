@@ -1,6 +1,8 @@
+from itertools import chain
+import re
+
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier
-
 from .constants import (
     ET_SCOPES,
     MT_SCOPES,
@@ -1382,7 +1384,7 @@ def _add_electron_trigger_scale_factors(
                 "2023preBPix": "2023PromptC",
                 "2023postBPix": "2023PromptD",
                 "2024": "2024Prompt",
-                "2025": "2024Prompt",
+                "2025": "2024Prompt",  # TODO update
             }
         ),
         "et_trigger_leg1_sf_name": "Electron-HLT-SF",
@@ -1440,6 +1442,364 @@ def _add_electron_trigger_scale_factors(
     )
 
 
+def _add_muon_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Add trigger scale factor and efficiency configuration for single-muon
+    triggers and the muon leg of muon-tau cross triggers.
+
+    Efficiencies on data and MC are needed if this trigger is combined with
+    other ones to calculate the scale factors "on-the-fly".
+    """
+
+    # -------------------------------------------------------------------------
+    # Single-muon trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the single-muon trigger SF
+    muon_trigger_sf_parameters = {
+        "m_trigger_flagname": "trg_wgt_single_mu24",
+        "m_trigger_flag": "trg_single_mu24",
+        "m_trigger_sf_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
+        "m_trigger_variation": "nominal",
+    }
+
+    # Parameters for the single-muon trigger efficiency on data
+    muon_trigger_eff_data_parameters = _get_updated_dict(
+        muon_trigger_sf_parameters,
+        {
+            "m_trigger_flagname": "trg_eff_data_single_mu24",
+            "m_trigger_variation": "nominal_DATAeff",
+        }
+    )
+
+    # Parameters for the single-muon trigger efficiency on MC
+    muon_trigger_eff_mc_parameters = _get_updated_dict(
+        muon_trigger_sf_parameters,
+        {
+            "m_trigger_flagname": "trg_eff_mc_single_mu24",
+            "m_trigger_variation": "nominal_MCeff",
+        }
+    )
+
+    # Add configuration for single-muon trigger scale factors and efficiencies
+    configuration.add_config_parameters(
+        MUON_SCOPES,
+        {
+            "mu_trigger_sf": [
+                muon_trigger_sf_parameters,
+                muon_trigger_eff_data_parameters,
+                muon_trigger_eff_mc_parameters,
+            ],
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Muon leg of muon-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the muon leg of the muon-tau cross trigger trigger SF
+    mt_trigger_muleg_sf_parameters = {
+        "mt_trigger_leg1_flagname": "trg_wgt_mu20_tau27_leg1",
+        "mt_trigger_flag": "trg_mu20_tau27",
+        "mt_trigger_leg1_sf_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
+        "mt_trigger_leg1_variation": "nominal",
+    }
+
+    # Parameters for the single-muon trigger efficiency on data
+    mt_trigger_muleg_eff_data_parameters = _get_updated_dict(
+        mt_trigger_muleg_sf_parameters,
+        {
+            "mt_trigger_leg1_flagname": "trg_eff_data_mu20_tau27_leg1",
+            "mt_trigger_leg1_variation": "nominal_DATAeff",
+        }
+    )
+
+    # Parameters for the single-muon trigger efficiency on MC
+    mt_trigger_muleg_eff_mc_parameters = _get_updated_dict(
+        mt_trigger_muleg_sf_parameters,
+        {
+            "mt_trigger_leg1_flagname": "trg_eff_mc_mu20_tau27_leg1",
+            "mt_trigger_leg1_variation": "nominal_MCeff",
+        }
+    )
+
+    # Add configuration for muon leg of muon-tau cross trigger scale factors
+    # and efficiencies
+    # TODO update scale factors for 2025 as soon as dedicated corrections are
+    # available
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "mt_trigger_muleg_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
+                        for _era in ERAS_RUN3
+                    },
+                    # TODO update to 2025 correction as soon as it is available
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json",
+                },
+            ),
+            "double_mutau_trigger_leg1_sf": [
+                mt_trigger_muleg_sf_parameters,
+                mt_trigger_muleg_eff_data_parameters,
+                mt_trigger_muleg_eff_mc_parameters,
+            ],
+        },
+    )
+
+
+def _add_tau_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Configuration for trigger scale factors and efficiencies of tau legs of the
+    lepton-tau cross triggers, double-tau triggers, and double-tau-jet
+    triggers.
+    """
+
+    # -------------------------------------------------------------------------
+    # Electron-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the tau leg of the electron-tau cross trigger scale factors
+    et_trigger_tauleg_sf_parameters = {
+        "et_trigger_leg2_flagname": "trg_wgt_double_ele24_tau30_leg2",
+        "et_trigger_flag": "trg_double_ele24_tau30",
+        "et_trigger_leg2_sf_name": "etau",
+        "et_trigger_leg2_correction_type": "sf",
+        "et_trigger_leg2_variation": "nom",
+    }
+
+    # Parameters for the tau leg of the electron-tau cross trigger efficiencies
+    # on data
+    et_trigger_tauleg_eff_data_parameters = _get_updated_dict(
+        et_trigger_tauleg_sf_parameters,
+        {
+            "et_trigger_leg2_flagname": "trg_eff_data_double_ele24_tau30_leg2",
+            "et_trigger_leg2_correction_type": "eff_data",
+            "et_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Parameters for the tau leg of the electron-tau cross trigger efficiencies
+    # on MC
+    et_trigger_tauleg_eff_mc_parameters = _get_updated_dict(
+        et_trigger_tauleg_sf_parameters,
+        {
+            "et_trigger_leg2_flagname": "trg_eff_mc_double_ele24_tau30_leg2",
+            "et_trigger_leg2_correction_type": "eff_mc",
+            "et_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Add configuration parameters for tau leg of the electron-tau cross
+    # trigger to the configuration
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "double_eletau_trigger_leg2_sf": EraModifier(
+                {
+                    # TODO fill Run 2
+                    "2016preVFP": [],
+                    "2016postVFP": [],
+                    "2017": [],
+                    "2018": [],
+                    **{
+                        _era: [
+                            et_trigger_tauleg_sf_parameters,
+                            et_trigger_tauleg_eff_data_parameters,
+                            et_trigger_tauleg_eff_mc_parameters,
+                        ]
+                        for _era in ERAS_RUN3
+                    },
+                },
+            ),
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Muon-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the tau leg of the muon-tau cross trigger scale factors
+    mt_trigger_tauleg_sf_parameters = {
+        "mt_trigger_leg2_flagname": "trg_wgt_double_mu20_tau27_leg2",
+        "mt_trigger_flag": "trg_double_mu20_tau27",
+        "mt_trigger_leg2_sf_name": "mutau",
+        "mt_trigger_leg2_correction_type": "sf",
+        "mt_trigger_leg2_variation": "nom",
+    }
+
+    # Parameters for the tau leg of the muon-tau cross trigger efficiencies
+    # on data
+    mt_trigger_tauleg_eff_data_parameters = _get_updated_dict(
+        mt_trigger_tauleg_sf_parameters,
+        {
+            "mt_trigger_leg2_flagname": "trg_eff_data_double_mu20_tau27_leg2",
+            "mt_trigger_leg2_correction_type": "eff_data",
+            "mt_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Parameters for the tau leg of the muon-tau cross trigger efficiencies
+    # on MC
+    mt_trigger_tauleg_eff_mc_parameters = _get_updated_dict(
+        mt_trigger_tauleg_sf_parameters,
+        {
+            "mt_trigger_leg2_flagname": "trg_eff_mc_double_mu20_tau27_leg2",
+            "mt_trigger_leg2_correction_type": "eff_mc",
+            "mt_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Add configuration parameters for tau leg of the muon-tau cross
+    # trigger to the configuration
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "double_mutau_trigger_leg2_sf": EraModifier(
+                {
+                    # TODO fill Run 2
+                    "2016preVFP": [],
+                    "2016postVFP": [],
+                    "2017": [],
+                    "2018": [],
+                    **{
+                        _era: [
+                            mt_trigger_tauleg_sf_parameters,
+                            mt_trigger_tauleg_eff_data_parameters,
+                            mt_trigger_tauleg_eff_mc_parameters,
+                        ]
+                        for _era in ERAS_RUN3
+                    },
+                },
+            ),
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Double-tau and Double-tau+jet triggers
+    # -------------------------------------------------------------------------
+
+    # Create configuration parameters for each leg and each trigger for
+    # scale factors, as well as efficiencies on data and MC
+    tt_parameters = {}
+
+    for i in [1, 2]:
+        # Set default dictionary for legs
+        leg_dict = tt_parameters.setdefault(f"leg{i}", {})
+
+        for trigger in [
+            "double_tau35_mediumiso",                # 2018
+            "double_tau35_tightiso",                 # 2018
+            "double_tau40_mediumiso",                # 2018
+            "double_tau40_tightiso",                 # 2018
+            "double_tau35_mediumdeeptau",            # 2022/2023
+            "double_tau30_jet60_mediumdeeptau",      # 2022/2023
+            "double_tau30_mediumpnet",               # 2024/2025
+            "double_tau26_jet60_pnet",               # 2024/2025
+        ]:
+            # Set default list for trigger scale factor parameters
+            leg_trigger_list = leg_dict.setdefault(trigger, [])
+
+            # Evaluate the trigger type (ditau or ditaujet)
+            trigger_type = "ditau"
+            if re.find(r"_jet\d+_", trigger):
+                trigger_type = "ditaujet"
+
+            # Scale factor parameters
+            sf_parameters = {
+                "tt_trigger_flag": f"trg_{trigger}",
+                f"tt_trigger_leg{i}_flagname": f"trg_wgt_{trigger}_leg{i}",
+                f"tt_trigger_leg{i}_sf_name": trigger_type,
+                f"tt_trigger_leg{i}_sf_correction_type": "sf",
+                f"tt_trigger_leg{i}_variation": "nom",
+            }
+            leg_trigger_list.append(sf_parameters)
+
+            # Data efficiency parameters
+            leg_trigger_list.append(
+                _get_updated_dict(
+                    sf_parameters,
+                    {
+                        f"tt_trigger_leg{i}_flagname": f"trg_eff_data_{trigger}_leg{i}",
+                        f"tt_trigger_leg{i}_sf_correction_type": "eff_data",
+                    },
+                ),
+            )
+
+            # MC efficiency parameters
+            leg_trigger_list.append(
+                _get_updated_dict(
+                    sf_parameters,
+                    {
+                        f"tt_trigger_leg{i}_flagname": f"trg_eff_mc_{trigger}_leg{i}",
+                        f"tt_trigger_leg{i}_sf_correction_type": "eff_mc",
+                    },
+                ),
+            )
+
+    # Add configuration parameters for each tau leg of the tau tau trigger
+    for i in [1, 2]:
+        configuration.add_config_parameters(
+            TT_SCOPES,
+            {
+                f"double_tautau_trigger_leg{i}_sf": EraModifier(
+                    {
+                        # TODO fill 2016 and 2017
+                        "2016preVFP": [],
+                        "2016postVFP": [],
+                        "2017": [],
+                        "2018": list(chain(
+                            tt_parameters[i][flag]
+                            for flag in [
+                                "trg_double_tau35_mediumiso",
+                                "trg_double_tau35_tightiso",
+                                "trg_double_tau40_mediumiso",
+                                "trg_double_tau40_tightiso",
+                            ]
+                        )),
+                        **{
+                            _era: tt_parameters[i]["double_tau35_mediumdeeptau"]
+                            for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                        },
+                        **{
+                            _era: tt_parameters[i]["double_tau30_mediumpnet"]
+                            for _era in ["2024", "2025"]
+                        },
+                    },
+                ),
+            },
+        )
+
+    # Add configuration parameters for each tau leg of the tau tau + jet trigger
+    for i in [1, 2]:
+        configuration.add_config_parameters(
+            TT_SCOPES,
+            {
+                f"double_tautau_jet_trigger_leg{i}_sf": EraModifier(
+                    {
+                        **{_era: [] for _era in ERAS_RUN2},  # do not exist
+                        **{
+                            _era: tt_parameters[i]["double_tau30_jet60_mediumdeeptau"]
+                            for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                        },
+                        **{
+                            _era: tt_parameters[i]["double_tau26_jet60_pnet"]
+                            for _era in ["2024", "2025"]
+                        },
+                    },
+                ),
+            },
+        )
+
 def add_diTauTriggerSetup(configuration: Configuration):
 
     # Add isolated and non-isolated single-electron triggers to the et, em, and 
@@ -1459,167 +1819,13 @@ def add_diTauTriggerSetup(configuration: Configuration):
     # Add double-tau and double-tau + jet triggers to the tt scope
     _add_tautau_triggers(configuration)
 
-    # single electron trigger scale factors
+    # electron trigger scale factors
     _add_electron_trigger_scale_factors(configuration)
 
+    # muon trigger scale factors
+    _add_muon_trigger_scale_factors(configuration)
 
-    # TODO add back to config
-            # "double_eletau_trigger_leg2_sf": [
-            #     {
-            #         "et_trigger_leg2_flagname": "trg_wgt_double_ele24tau30_leg2",
-            #         "et_trigger_flag": "trg_double_ele24tau30",
-            #         "et_trigger_leg2_sf_name": "etau",
-            #         "et_trigger_leg2_variation": "nom",
-            #     },
-            # ]
-
-    # single muon trigger scale factors
-    configuration.add_config_parameters(
-        MUON_SCOPES,
-        {
-            "mu_trigger_sf": [
-                {
-                    "m_trigger_flagname": "trg_wgt_single_mu24",
-                    "m_trigger_flag": "trg_single_mu24",
-                    "m_trigger_sf_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
-                    "m_trigger_variation": "nominal",
-                },
-            ],
-        },
-    )
-
-    # double muon-tau trigger scale factors
-    # TODO update scale factors for 2025 as soon as dedicated corrections are available
-    configuration.add_config_parameters(
-        MT_SCOPES,
-        {
-            "double_mutau_trigger_leg1_sf": [
-                {
-                    "mt_trigger_leg1_sf_file": EraModifier(
-                        {
-                            # TODO clarify if we can actually just use the muon trigger SFs
-                            "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2017-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2018-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            **{
-                                _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
-                                for _era in ERAS_RUN3
-                            },
-                            # TODO update to 2025 correction as soon as it is available
-                            "2025": "data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json"
-                        }
-                    ),
-                    "mt_trigger_leg1_flagname": "trg_wgt_double_mu20tau27_leg1",
-                    "mt_trigger_flag": "trg_double_mu20tau27",
-                    "mt_trigger_leg1_sf_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight",
-                    "mt_trigger_leg1_variation": "nominal",
-                },
-            ],
-            "double_mutau_trigger_leg2_sf": [
-                {
-                    "mt_trigger_leg2_flagname": "trg_wgt_double_mu20tau27_leg2",
-                    "mt_trigger_flag": "trg_double_mu20tau27",
-                    "mt_trigger_leg2_sf_name": "mutau",
-                    "mt_trigger_leg2_variation": "nom",
-                },
-            ],
-        },
-    )
-
-    # double tau-tau trigger scale factors
-    common_double_tautau_trigger_args = {
-        "tt_trigger_leg1_sf_name": "ditau",
-        "tt_trigger_leg1_variation": "nom",
-        "tt_trigger_leg2_sf_name": "ditau",
-        "tt_trigger_leg2_variation": "nom",
-    }
-    configuration.add_config_parameters(
-        TT_SCOPES,
-        {
-            "double_tautau_trigger_leg1_sf": EraModifier(
-                {
-                    # TODO fill 2016 and 2017
-                    "2016preVFP": [],
-                    "2016postVFP": [],
-                    "2017": [],
-                    "2018": [
-                        {
-                            "tt_trigger_leg1_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg1",
-                            "tt_trigger_flag": flag,
-                            **common_double_tautau_trigger_args,
-                        }
-                        for flag in [
-                            "trg_double_tau35_mediumiso",
-                            "trg_double_tau35_tightiso",
-                            "trg_double_tau40_mediumiso",
-                            "trg_double_tau40_tightiso",
-                        ]
-                    ],
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg1_flagname": "trg_wgt_double_tau35_mediumdeeptau_leg1",
-                                "tt_trigger_flag": "trg_double_tau35_mediumdeeptau",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg1_flagname": "trg_wgt_double_tau30_mediumpnet_leg1",
-                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2024", "2025"]
-                    },
-                },
-            ),
-            "double_tautau_trigger_leg2_sf": EraModifier(
-                {
-                    # TODO fill 2016 and 2017
-                    "2016preVFP": [],
-                    "2016postVFP": [],
-                    "2017": [],
-                    "2018": [
-                        {
-                            "tt_trigger_leg2_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg2",
-                            "tt_trigger_flag": flag,
-                            **common_double_tautau_trigger_args,
-                        }
-                        for flag in [
-                            "trg_double_tau35_mediumiso",
-                            "trg_double_tau35_tightiso",
-                            "trg_double_tau40_mediumiso",
-                            "trg_double_tau40_tightiso",
-                        ]
-                    ],
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau35_mediumdeeptau_leg2",
-                                "tt_trigger_flag": "trg_double_tau35_mediumdeeptau",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau30_mediumpnet_leg2",
-                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2024", "2025"]
-                    },
-                },
-            ),
-        },
-    )
+    # tau trigger scale factors
+    _add_tau_trigger_scale_factors(configuration)
 
     return configuration
