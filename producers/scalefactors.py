@@ -633,11 +633,40 @@ TauTauJetTriggerLeg3SF = ExtendedVectorProducer(
     vec_config="tautaujet_trigger_leg3_sf",
 )
 
+
+# -----------------------------------------------------------------------------
+# Producer groups for trigger scale factors with multiple legs
+# -----------------------------------------------------------------------------
+
+# Producer group for both legs of the muon-tau cross trigger
+EleTauTriggerSF = ProducerGroup(
+    name="EleTauTriggerSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=ET_SCOPES,
+    subproducers=[
+        EleTauTriggerLeg1SF,
+        EleTauTriggerLeg2SF,
+    ],
 )
 
-# producer group containing the scale factors for both legs of the double electron-tau trigger
+# Producer group for both legs of the muon-tau cross trigger
+MuTauTriggerSF = ProducerGroup(
+    name="MuTauTriggerSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=MT_SCOPES,
+    subproducers=[
+        MuTauTriggerLeg1SF,
+        MuTauTriggerLeg2SF,
+    ],
+)
+
+# Producer group for both legs of the tau-tau trigger
 TauTauTriggerSF = ProducerGroup(
-    name="DoubleTauTauTriggerSF",
+    name="TauTauTriggerSF",
     call=None,
     input=None,
     output=None,
@@ -648,6 +677,19 @@ TauTauTriggerSF = ProducerGroup(
     ],
 )
 
+# Producer group for both legs of the tau-tau-jet trigger
+TauTauJetTriggerSF = ProducerGroup(
+    name="TauTauJetTriggerSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=TT_SCOPES,
+    subproducers=[
+        TauTauJetTriggerLeg1SF,
+        TauTauJetTriggerLeg2SF,
+        TauTauJetTriggerLeg3SF,
+    ],
+)
 
 BoostedMTGenerateSingleMuonTriggerSF_MC = ExtendedVectorProducer(
     name="BoostedMTGenerateSingleMuonTriggerSF_MC",
