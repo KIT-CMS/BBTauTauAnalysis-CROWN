@@ -479,6 +479,60 @@ def add_electron_config(configuration: Configuration):
         },
     )
 
+    # Electron trigger scale factor, general settings (more granular
+    # configuration is part of tau_triggersetup.py)
+    # TODO Corrections for 2025 are not available yet, include them as soon as
+    # they have been published
+    configuration.add_config_parameters(
+        ELECTRON_SCOPES,
+        {
+            "ele_trigger_sf_file": EraModifier(
+                {  # TODO clarify if we can actually just use the electron trigger SFs
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2017-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",  # TODO update
+                }
+            ),
+            "ele_trigger_sf_era": EraModifier(
+                {
+                    **{
+                        _era: _era
+                        for _era in ERAS_RUN2
+                    },
+                    "2022preEE": "2022Re-recoBCD",
+                    "2022postEE": "2022Re-recoE+PromptFG",
+                    "2023preBPix": "2023PromptC",
+                    "2023postBPix": "2023PromptD",
+                    "2024": "2024Prompt",
+                    "2025": "2024Prompt",  # TODO update as soon as dedicated corrections are available for 2025
+                }
+            ),
+        }
+    )
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "eletau_eleg_trigger_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",  # TODO update
+                },
+            ),
+
     # Electron identification and isolation corrections for mu -> tau-embedded events
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
@@ -2725,12 +2779,7 @@ def build_config(
             genparticles.ETGenDiTauPairQuantities,
             scalefactors.EleID_SF,
             triggers.SingleEleTriggerFlags,
-            triggers.DoubleEleTauTriggerFlags,
             scalefactors.SingleEleTriggerSF,
-            # scalefactors.DoubleEleTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
-            # TODO rework trigger setup before enabling this
-            # triggers.ETGenerateCrossTriggerFlags,
-            # triggers.GenerateSingleTrailingTauTriggerFlags,
         ]
     )
 

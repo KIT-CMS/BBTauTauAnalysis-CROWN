@@ -469,11 +469,14 @@ TauIDSF = ProducerGroup(
 )
 
 
+# -----------------------------------------------------------------------------
+# Electron trigger scale factors
+# -----------------------------------------------------------------------------
 
-# single electron trigger scale factor
+# Single-electron trigger scale factor
 SingleEleTriggerSF = ExtendedVectorProducer(
     name="SingleEleTriggerSF",
-    call='physicsobject::electron::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{e_trigger_flag}", "{e_trigger_era}", "{e_trigger_path_id_name}", "{e_trigger_sf_file}", "{e_trigger_sf_name}", "{e_trigger_variation}")',
+    call='physicsobject::electron::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{e_trigger_flag}", "{ele_trigger_sf_era}", "{e_trigger_path_id_name}", "{ele_trigger_sf_file}", "{e_trigger_sf_cset_name}", "{e_trigger_variation}")',
     input=[
         q.pt_1,
         q.eta_1,
@@ -483,6 +486,18 @@ SingleEleTriggerSF = ExtendedVectorProducer(
     vec_config="ele_trigger_sf",
 )
 
+# Scale factor for the electron leg of the electron-tau cross trigger
+EleTauTriggerLeg1SF = ExtendedVectorProducer(
+    name="SingleEleTriggerSF",
+    call='physicsobject::electron::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{et_trigger_flag}", "{ele_trigger_sf_era}", "{et_trigger_leg1_path_id_name}", "{eletau_eleg_trigger_sf_file}", "{et_trigger_leg1_sf_cset_name}", "{et_trigger_leg1_variation}")',
+    input=[
+        q.pt_1,
+        q.eta_1,
+    ],
+    output="et_trigger_leg1_flagname",
+    scopes=ET_SCOPES,
+    vec_config="eletau_trigger_leg1_sf",
+)
 
 #
 # SINGLE MUON TRIGGER SCALE FACTORS
