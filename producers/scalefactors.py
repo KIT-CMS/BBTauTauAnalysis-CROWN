@@ -532,7 +532,7 @@ SingleMuTriggerSF = ExtendedVectorProducer(
 # Scale factor for the muon leg of the muon-tau cross trigger
 MuTauTriggerLeg1SF = ExtendedVectorProducer(
     name="MuTauTriggerLeg1SF",
-    call='physicsobject::muon::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{mt_trigger_leg1_flag}", "{mutau_muleg_trigger_sf_file}", "{mt_trigger_leg1_sf_cset_name}", "{mt_trigger_leg1_variation}")',
+    call='physicsobject::muon::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{mt_trigger_flag}", "{mutau_muleg_trigger_sf_file}", "{mt_trigger_leg1_sf_cset_name}", "{mt_trigger_leg1_variation}")',
     input={
         "mt": [q.pt_1, q.eta_1],
         "mm": [q.pt_1, q.eta_1],
