@@ -1059,12 +1059,16 @@ def _add_tautau_triggers(
         "hlt_path": "HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60",
         "p1_min_pt": 35.,
         "p1_max_abs_eta": 2.1,
-        "p1_filter_bit": 14,
+        "p1_filter_bit": [3, 14],
         "p1_particle_id": 15,
         "p2_min_pt": 35.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": 14,
+        "p2_filter_bit": [3, 14],
         "p2_particle_id": 15,
+        "p3_min_pt": 65.0,
+        "p3_max_abs_eta": 4.7,
+        "p3_filter_bit": 17,
+        "p3_particle_id": 1,
         "match_max_delta_r": 0.4,
     }
 
@@ -1074,6 +1078,7 @@ def _add_tautau_triggers(
         {
             "flagname": "trg_double_tau30_jet75_mediumdeeptau",
             "hlt_path": "HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet75",
+            "p3_min_pt": 80.0,
         },
     )
 
@@ -1085,8 +1090,10 @@ def _add_tautau_triggers(
             "hlt_path": "HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60",
             "p1_min_pt": 30.,
             "p1_max_abs_eta": 2.3,
+            "p1_filter_bit": [4, 14],
             "p2_min_pt": 30.,
             "p2_max_abs_eta": 2.3,
+            "p2_filter_bit": [4, 14],
         },
     )
 
@@ -1096,6 +1103,7 @@ def _add_tautau_triggers(
         {
             "flagname": "trg_double_tau26_jet75_pnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75",
+            "p3_min_pt": 80.0,
         },
     )
 
@@ -1108,38 +1116,50 @@ def _add_tautau_triggers(
                     "2025": [
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_60_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_75_parameters,
                     ],
                     "2024": [
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60
                         # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
-                        # tau filter bit:   14
+                        # tau filter bit:   3, 14
+                        # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_medium_deeptau_30_eta2p1_jet_60_parameters,
 
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet75
                         # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet75
-                        # tau filter bit:   14
+                        # tau filter bit:   3, 14
+                        # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_medium_deeptau_30_eta2p1_jet_75_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_60_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_75_parameters,
                     ],
@@ -1147,7 +1167,9 @@ def _add_tautau_triggers(
                         _era: [
                             # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet75
                             # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet75
-                            # tau filter bit:   14
+                            # tau filter bit:   3, 14
+                            # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet75
+                            # jet filter bit:   17
                             # documentation:    - https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2022
                             #                   - https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2023
                             double_medium_deeptau_30_eta2p1_jet_75_parameters,
@@ -1784,7 +1806,7 @@ def _add_tau_trigger_scale_factors(
         configuration.add_config_parameters(
             TT_SCOPES,
             {
-                f"double_tautau_jet_trigger_leg{i}_sf": EraModifier(
+                f"ditaujet_trigger_leg{i}_sf": EraModifier(
                     {
                         **{_era: [] for _era in ERAS_RUN2},  # do not exist
                         **{
@@ -1799,6 +1821,80 @@ def _add_tau_trigger_scale_factors(
                 ),
             },
         )
+
+
+def _add_jet_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Configuration for trigger scale factors and efficiencies of jet legs of the
+    double-tau-jet triggers.
+    """
+
+    # -------------------------------------------------------------------------
+    # Double-tau and Double-tau+jet triggers
+    # -------------------------------------------------------------------------
+
+    # Create configuration parameters for each leg and each trigger for
+    # scale factors, as well as efficiencies on data and MC
+    ttj_parameters = {}
+
+    for trigger in [
+        "double_tau30_jet60_mediumdeeptau",      # 2022/2023
+        "double_tau26_jet60_pnet",               # 2024/2025
+    ]:
+        # Set default list for trigger scale factor parameters
+        trigger_list = ttj_parameters.setdefault(trigger, [])
+
+        # Parameter template; scale factors are not available for this trigger
+        parameters = {
+            "tt_trigger_flag": f"trg_{trigger}",
+            "tt_trigger_leg3_name": "jetlegSFs",
+            "tt_trigger_leg3_variation": "nom",
+        }
+
+        # Data efficiency parameters
+        trigger_list.append(
+            _get_updated_dict(
+                parameters,
+                {
+                    "tt_trigger_leg3_flagname": f"trg_eff_data_{trigger}_leg3",
+                    "tt_trigger_leg3_sf_correction_type": "data",
+                },
+            ),
+        )
+
+        # MC efficiency parameters
+        trigger_list.append(
+            _get_updated_dict(
+                parameters,
+                {
+                    "tt_trigger_leg3_flagname": f"trg_eff_mc_{trigger}_leg3",
+                    "tt_trigger_leg3_sf_correction_type": "mc",
+                },
+            ),
+        )
+
+    # Add configuration parameters for jet leg of the tau tau + jet trigger
+    configuration.add_config_parameters(
+        TT_SCOPES,
+        {
+            "ditaujet_trigger_leg3_sf": EraModifier(
+                {
+                    **{_era: [] for _era in ERAS_RUN2},  # does not exist
+                    **{
+                        _era: ttj_parameters["double_tau30_jet60_mediumdeeptau"]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        _era: ttj_parameters["double_tau26_jet60_mediumpnet"]
+                        for _era in ["2024", "2025"]
+                    },
+                },
+            ),
+        },
+    )
+
 
 def add_diTauTriggerSetup(configuration: Configuration):
 
@@ -1827,5 +1923,8 @@ def add_diTauTriggerSetup(configuration: Configuration):
 
     # tau trigger scale factors
     _add_tau_trigger_scale_factors(configuration)
+
+    # jet trigger scale factors
+    _add_jet_trigger_scale_factors(configuration)
 
     return configuration
