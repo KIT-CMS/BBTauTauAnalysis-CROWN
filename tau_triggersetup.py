@@ -310,8 +310,133 @@ def _add_electron_tau_triggers(
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
-                },
-                default=[],
+                    "2018": [
+                        {
+                            "flagname": "trg_cross_ele24tau30_hps",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 2.5,
+                            "p1_filter_bit": 1,
+                            "p1_particle_id": 11,
+                            "p2_min_pt": 32,
+                            "p2_max_abs_eta": 2.1,
+                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
+                        {
+                            "flagname": "trg_cross_ele24tau30",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 2.5,
+                            "p1_filter_bit": 1,
+                            "p1_particle_id": 11,
+                            "p2_min_pt": 32,
+                            "p2_max_abs_eta": 2.1,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                    ],
+                    "2017": [
+                        {
+                            "flagname": "trg_cross_ele24tau30",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 35,
+                            "p1_filter_bit": 2.1,
+                            "p1_particle_id": 2.1,
+                            "p2_min_pt": 1,
+                            "p2_max_abs_eta": 11,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                    ],
+                    "2016postVFP": [
+                        {
+                            "flagname": "trg_cross_ele24tau20",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 25,
+                            "p1_filter_bit": 2.1,
+                            "p1_particle_id": 2.1,
+                            "p2_min_pt": 1,
+                            "p2_max_abs_eta": 11,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                        {
+                            "flagname": "trg_cross_ele24tau20_crossL1",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 25,
+                            "p1_filter_bit": 2.1,
+                            "p1_particle_id": 2.1,
+                            "p2_min_pt": 1,
+                            "p2_max_abs_eta": 11,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                        {
+                            "flagname": "trg_cross_ele24tau30",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 35,
+                            "p1_filter_bit": 2.1,
+                            "p1_particle_id": 2.1,
+                            "p2_min_pt": 1,
+                            "p2_max_abs_eta": 11,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                    ],
+                    "2016preVFP": [
+                        {
+                            "flagname": "trg_cross_ele24tau20",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 32,
+                            "p1_filter_bit": 2.5,
+                            "p1_particle_id": 2.1,
+                            "p2_min_pt": 1,
+                            "p2_max_abs_eta": 11,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                        {
+                            "flagname": "trg_cross_ele24tau20_crossL1",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 25,
+                            "p1_filter_bit": 2.1,
+                            "p1_particle_id": 2.1,
+                            "p2_min_pt": 1,
+                            "p2_max_abs_eta": 11,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                        {
+                            "flagname": "trg_cross_ele24tau30",
+                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
+                            "p1_min_pt": 25,
+                            "p1_max_abs_eta": 35,
+                            "p1_filter_bit": 2.1,
+                            "p1_particle_id": 2.1,
+                            "p2_min_pt": 1,
+                            "p2_max_abs_eta": 11,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                    ],
+                }
             ),
         },
     )
@@ -726,8 +851,81 @@ def _add_muon_tau_triggers(
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
+                    "2018": [
+                        {
+                            "flagname": "trg_cross_mu20tau27_hps",
+                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1",
+                            "p1_min_pt": 21,
+                            "p1_max_abs_eta": 2.1,
+                            "p1_filter_bit": 3,
+                            "p1_particle_id": 13,
+                            "p2_min_pt": 32,
+                            "p2_max_abs_eta": 2.1,
+                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
+                        {
+                            "flagname": "trg_cross_mu20tau27",
+                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
+                            "p1_min_pt": 21,
+                            "p1_max_abs_eta": 2.1,
+                            "p1_filter_bit": 3,
+                            "p1_particle_id": 13,
+                            "p2_min_pt": 32,
+                            "p2_max_abs_eta": 2.1,
+                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        },
+                    ],
+                    "2017": [
+                        {
+                            "flagname": "trg_cross_mu20tau27",
+                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
+                            "p1_min_pt": 21,
+                            "p1_max_abs_eta": 2.1,
+                            "p1_filter_bit": 3,
+                            "p1_particle_id": 13,
+                            "p2_min_pt": 32,
+                            "p2_max_abs_eta": 2.1,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        }
+                    ],
+                    "2016postVFP": [
+                        {
+                            "flagname": "trg_cross_mu19tau20",
+                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
+                            "p1_min_pt": 20,
+                            "p1_max_abs_eta": 2.1,
+                            "p1_filter_bit": 3,
+                            "p1_particle_id": 13,
+                            "p2_min_pt": 22,
+                            "p2_max_abs_eta": 2.1,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        }
+                    ],
+                    "2016preVFP": [
+                        {
+                            "flagname": "trg_cross_mu19tau20",
+                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
+                            "p1_min_pt": 20,
+                            "p1_max_abs_eta": 2.1,
+                            "p1_filter_bit": 3,
+                            "p1_particle_id": 13,
+                            "p2_min_pt": 22,
+                            "p2_max_abs_eta": 2.1,
+                            "p2_filter_bit": 4,
+                            "p2_particle_id": 15,
+                            "match_max_delta_r": 0.4,
+                        }
+                    ],
                 },
-                default=[],
             ),
         },
     )
@@ -1095,308 +1293,18 @@ def add_diTauTriggerSetup(configuration: Configuration):
     # ee scopes
     _add_electron_triggers(configuration)
 
+    # Add electron-tau cross triggers to the et scope
+    _add_electron_tau_triggers(configuration)
+
     # Add isolated and non-isolated single-muon triggers to the mt, em, and mm
     # scopes
     _add_muon_triggers(configuration)
 
+    # Add muon-tau cross triggers to the mt scope
+    _add_muon_tau_triggers(configuration)
+
     # Add double-tau and double-tau + jet triggers to the tt scope
     _add_tautau_triggers(configuration)
-
-    # mu-tau trigger
-    configuration.add_config_parameters(
-        MT_SCOPES,
-        {
-            "double_mutau_trigger": EraModifier(
-                {
-                    **{
-                        _era: [
-                            # trigger:            HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
-                            # final filter muon:  hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered
-                            # filter bit muon:    1
-                            # final filter tau:   hltHpsOverlapFilterIsoMu20LooseMuTauWPDeepTauPFTau27L1Seeded
-                            # filter bit tau:     0, 4, 13  TODO implement matching to multiple filters
-                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
-                            {
-                                "flagname": "trg_double_mu20tau27",
-                                "hlt_path": "HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1",
-                                "p1_min_pt": 22.,
-                                "p1_max_abs_eta": 2.1,
-                                "p1_particle_id": 13,
-                                "p1_filter_bit": 1,
-                                "p2_min_pt": 29.,
-                                "p2_max_abs_eta": 2.1,
-                                "p2_particle_id": 15,
-                                "p2_filter_bit": 13,
-                                "match_max_delta_r": 0.4,
-                            }
-                        ]
-                        for _era in ["2024", "2025"]
-                    },
-                    **{
-                        _era: [
-                            # trigger:            HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
-                            # final filter muon:  hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered
-                            # filter bit muon:    1
-                            # final filter tau:   hltHpsOverlapFilterIsoMu20LooseMuTauWPDeepTauPFTau27L1Seeded
-                            # filter bit tau:     3, 9  TODO implement matching to multiple filters
-                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2022
-                            #                     https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2023
-                            {
-                                "flagname": "trg_double_mu20tau27",
-                                "hlt_path": "HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1",
-                                "p1_min_pt": 22.,
-                                "p1_max_abs_eta": 2.1,
-                                "p1_particle_id": 13,
-                                "p1_filter_bit": 1,
-                                "p2_min_pt": 29.,
-                                "p2_max_abs_eta": 2.1,
-                                "p2_particle_id": 15,
-                                "p2_filter_bit": 9,
-                                "match_max_delta_r": 0.4,
-                            }
-                        ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2018": [
-                        {
-                            "flagname": "trg_cross_mu20tau27_hps",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
-                        {
-                            "flagname": "trg_cross_mu20tau27",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2017": [
-                        {
-                            "flagname": "trg_cross_mu20tau27",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
-                    "2016postVFP": [
-                        {
-                            "flagname": "trg_cross_mu19tau20",
-                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 20,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 22,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
-                    "2016preVFP": [
-                        {
-                            "flagname": "trg_cross_mu19tau20",
-                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 20,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 22,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
-                }
-            ),
-        },
-    )
-
-    # e-tau trigger
-    configuration.add_config_parameters(
-        ET_SCOPES,
-        {
-            "double_eletau_trigger": EraModifier(
-                {
-                    **{
-                        _era: [
-                            # TODO check: do the trigger flags make sense for this trigger?
-                            # trigger:            HLT_Ele30_WPTight_Gsf
-                            # final filter ele:   hltOverlapFilterIsoEle24IsoTau30WPTightGsfCaloJet5
-                            # filter bit ele:     2  TODO
-                            # final filter tau:   hltHpsOverlapFilterIsoEle24WPTightGsfLooseETauWPDeepTauPFTau30
-                            # filter bit tau:     3, 8  TODO
-                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger#Trigger_Table_for_2022
-                            {
-                                "flagname": "trg_double_ele24tau30",
-                                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1",
-                                "p1_min_pt": 26.,
-                                "p1_max_abs_eta": 2.1,
-                                "p1_filter_bit": -1,
-                                "p1_particle_id": 11,
-                                "p2_min_pt": 32.,
-                                "p2_max_abs_eta": 2.1,
-                                "p2_filter_bit": -1,
-                                "p2_particle_id": 15,
-                                "match_max_delta_r": 0.4,
-                            }
-                        ]
-                        for _era in ERAS_RUN3
-                    },
-                    "2018": [
-                        {
-                            "flagname": "trg_cross_ele24tau30_hps",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 2.5,
-                            "p1_filter_bit": 1,
-                            "p1_particle_id": 11,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 2.5,
-                            "p1_filter_bit": 1,
-                            "p1_particle_id": 11,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2017": [
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2016postVFP": [
-                        {
-                            "flagname": "trg_cross_ele24tau20",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau20_crossL1",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2016preVFP": [
-                        {
-                            "flagname": "trg_cross_ele24tau20",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 32,
-                            "p1_filter_bit": 2.5,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau20_crossL1",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                }
-            ),
-        },
-    )
 
     # single electron trigger scale factors
     configuration.add_config_parameters(
