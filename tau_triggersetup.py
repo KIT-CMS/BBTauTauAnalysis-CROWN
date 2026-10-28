@@ -778,45 +778,39 @@ def _add_muon_tau_triggers(
     ## Muon-tau cross triggers
 
     # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1 parameters
-    mu_20_tau_27_hps_2018_parameters = {
+    mu_20_tau_27_hps_parameters = {
         "flagname": "trg_cross_mu20tau27_hps",
         "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1",
-        "p1_min_pt": 21.,
+        "p1_min_pt": 22.,
         "p1_max_abs_eta": 2.1,
-        "p1_filter_bit": 3,
+        "p1_filter_bit": 6,
         "p1_particle_id": 13,
         "p2_min_pt": 32.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": -1,  # TODO switch to 4, if the bits are correct
+        "p2_filter_bit": 9,
         "p2_particle_id": 15,
         "match_max_delta_r": 0.4,
     }
 
-    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1 parameters (2018)
-    mu_20_tau_27_2018_parameters = _get_updated_dict(
-        mu_20_tau_27_hps_2018_parameters,
+    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1 parameters (2017, 2018)
+    mu_20_tau_27_parameters = _get_updated_dict(
+        mu_20_tau_27_hps_parameters,
         {
             "flagname": "trg_cross_mu20tau27",
             "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
         },
     )
 
-    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1 parameters (2017)
-    mu_20_tau_27_2017_parameters = _get_updated_dict(
-        mu_20_tau_27_2018_parameters,
-        {
-            "p2_filter_bit": 4,
-        },
-    )
-
     # HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1 parameters
-    mu_19_tau_20_2016_parameters = _get_updated_dict(
-        mu_20_tau_27_2017_parameters,
+    mu_19_tau_20_parameters = _get_updated_dict(
+        mu_20_tau_27_parameters,
         {
             "flagname": "trg_cross_mu19tau20",
             "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
-            "p1_min_pt": 20.,
-            "p2_min_pt": 22.,
+            "p1_min_pt": 21.,
+            "p2_min_pt": 25.,
+            "p1_filter_bit": 5,
+            "p2_filter_bit": [0, 5],
         },
     )
 
@@ -882,20 +876,40 @@ def _add_muon_tau_triggers(
                     },
                     "2018": [
                         # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1
-                        mu_20_tau_27_hps_2018_parameters,
+                        # final mu filter:    hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered0p07 AND hltHpsOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # mu filter bit:      6
+                        # final tau filter:   hltHpsSelectedPFTau27LooseChargedIsolationAgainstMuonL1HLTMatched AND hltHpsOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # tau filter bit:     9
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        mu_20_tau_27_hps_parameters,
 
                         # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
                         # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1
-                        mu_20_tau_27_2018_parameters,
+                        # final mu filter:    hltL3crIsoL1sMu18erTau24erIorMu20erTau24erL1f0L2f10QL3f20QL3trkIsoFiltered0p07 AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # mu filter bit:      6
+                        # final tau filter:   hltSelectedPFTau27LooseChargedIsolationAgainstMuonL1HLTMatched AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # tau filter bit:     9
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        mu_20_tau_27_parameters,
                     ],
                     "2017": [
                         # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1
-                        mu_20_tau_27_2017_parameters,
+                        # final mu filter:    hltL3crIsoL1sMu18erTau24erIorMu20erTau24erL1f0L2f10QL3f20QL3trkIsoFiltered0p07 AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # mu filter bit:      6
+                        # final tau filter:   hltSelectedPFTau27LooseChargedIsolationAgainstMuonL1HLTMatched AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # tau filter bit:     9
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2017
+                        mu_20_tau_27_parameters,
                     ],
                     **{
                         _era: [
                             # trigger:            HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1
-                            mu_19_tau_20_2016_parameters,
+                            # final mu filter:    hltL3crIsoL1sSingleMu18erIorSingleMu20erL1f0L2f10QL3f19QL3trkIsoFiltered0p09 AND hltOverlapFilterSingleIsoMu19LooseIsoPFTau20
+                            # mu filter bit:      5
+                            # final tau filter:   hltPFTau20TrackLooseIsoAgainstMuon AND hltOverlapFilterSingleIsoMu19LooseIsoPFTau20
+                            # tau filter bits:    0, 5
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
+                            mu_19_tau_20_parameters,
                         ]
                         for _era in ["2016preVFP", "2016postVFP"]
                     },
