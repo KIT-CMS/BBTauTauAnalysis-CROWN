@@ -284,7 +284,7 @@ def _add_electron_tau_triggers(
         "p1_particle_id": 11,
         "p2_min_pt": 25.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": [0, 6],
+        "p2_filter_bit": "0, 6",
         "p2_particle_id": 15,
         "match_max_delta_r": 0.4,
     }
@@ -318,7 +318,7 @@ def _add_electron_tau_triggers(
         "p1_particle_id": 11,
         "p2_min_pt": 35.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": [3, 8],
+        "p2_filter_bit": "3, 8",
         "p2_particle_id": 15,
         "match_max_delta_r": 0.4,
     }
@@ -333,7 +333,7 @@ def _add_electron_tau_triggers(
         "p1_particle_id": 11,
         "p2_min_pt": 35.,
         "p2_max_abs_eta": 2.3,
-        "p2_filter_bit": [0, 4, 12],
+        "p2_filter_bit": "0, 4, 12",
         "p2_particle_id": 15,
         "match_max_delta_r": 0.4,
     }
@@ -812,7 +812,7 @@ def _add_muon_tau_triggers(
             "p1_min_pt": 21.,
             "p2_min_pt": 25.,
             "p1_filter_bit": 5,
-            "p2_filter_bit": [0, 5],
+            "p2_filter_bit": "0, 5",
         },
     )
 
@@ -826,7 +826,7 @@ def _add_muon_tau_triggers(
         "p1_particle_id": 13,
         "p2_min_pt": 32.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": [3, 9],
+        "p2_filter_bit": "3, 9",
         "p2_particle_id": 15,
         "match_max_delta_r": 0.4,
     }
@@ -841,7 +841,7 @@ def _add_muon_tau_triggers(
         "p1_particle_id": 13,
         "p2_min_pt": 32.,
         "p2_max_abs_eta": 2.3,
-        "p2_filter_bit": [0, 4, 13],
+        "p2_filter_bit": "0, 4, 13",
         "p2_particle_id": 15,
         "match_max_delta_r": 0.4,
     }
@@ -971,7 +971,7 @@ def _add_tautau_triggers(
     double_medium_pnet_30_eta_2p3_parameters = _get_updated_dict(
         double_medium_deeptau_35_eta_2p1_2024_parameters,
         {
-            "flagname": "trg_double_tau30_mediumpnet",
+            "flagname": "trg_double_tau30_pnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3",
             "p1_min_pt": 35.,
             "p2_min_pt": 35.,
@@ -1059,11 +1059,11 @@ def _add_tautau_triggers(
         "hlt_path": "HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60",
         "p1_min_pt": 35.,
         "p1_max_abs_eta": 2.1,
-        "p1_filter_bit": [3, 14],
+        "p1_filter_bit": "3, 14",
         "p1_particle_id": 15,
         "p2_min_pt": 35.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": [3, 14],
+        "p2_filter_bit": "3, 14",
         "p2_particle_id": 15,
         "p3_min_pt": 65.0,
         "p3_max_abs_eta": 4.7,
@@ -1090,10 +1090,10 @@ def _add_tautau_triggers(
             "hlt_path": "HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60",
             "p1_min_pt": 30.,
             "p1_max_abs_eta": 2.3,
-            "p1_filter_bit": [4, 14],
+            "p1_filter_bit": "4, 14",
             "p2_min_pt": 30.,
             "p2_max_abs_eta": 2.3,
-            "p2_filter_bit": [4, 14],
+            "p2_filter_bit": "4, 14",
         },
     )
 
@@ -1646,7 +1646,7 @@ def _add_tau_trigger_scale_factors(
 
     for i in [1, 2]:
         # Set default dictionary for legs
-        leg_dict = tt_parameters.setdefault(f"leg{i}", {})
+        leg_dict = tt_parameters.setdefault(i, {})
 
         for trigger in [
             "double_tau35_mediumiso",                # 2018
@@ -1655,7 +1655,7 @@ def _add_tau_trigger_scale_factors(
             "double_tau40_tightiso",                 # 2018
             "double_tau35_mediumdeeptau",            # 2022/2023
             "double_tau30_jet60_mediumdeeptau",      # 2022/2023
-            "double_tau30_mediumpnet",               # 2024/2025
+            "double_tau30_pnet",                     # 2024/2025
             "double_tau26_jet60_pnet",               # 2024/2025
         ]:
             # Set default list for trigger scale factor parameters
@@ -1663,7 +1663,7 @@ def _add_tau_trigger_scale_factors(
 
             # Evaluate the trigger type (ditau or ditaujet)
             trigger_type = "ditau"
-            if re.find(r"_jet\d+_", trigger):
+            if re.search(r"_jet\d+_", trigger) is not None:
                 trigger_type = "ditaujet"
 
             # Scale factor parameters
@@ -1712,10 +1712,10 @@ def _add_tau_trigger_scale_factors(
                         "2018": list(chain(
                             tt_parameters[i][flag]
                             for flag in [
-                                "trg_double_tau35_mediumiso",
-                                "trg_double_tau35_tightiso",
-                                "trg_double_tau40_mediumiso",
-                                "trg_double_tau40_tightiso",
+                                "double_tau35_mediumiso",
+                                "double_tau35_tightiso",
+                                "double_tau40_mediumiso",
+                                "double_tau40_tightiso",
                             ]
                         )),
                         **{
@@ -1723,7 +1723,7 @@ def _add_tau_trigger_scale_factors(
                             for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                         },
                         **{
-                            _era: tt_parameters[i]["double_tau30_mediumpnet"]
+                            _era: tt_parameters[i]["double_tau30_pnet"]
                             for _era in ["2024", "2025"]
                         },
                     },
@@ -1817,7 +1817,7 @@ def _add_jet_trigger_scale_factors(
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     **{
-                        _era: ttj_parameters["double_tau26_jet60_mediumpnet"]
+                        _era: ttj_parameters["double_tau26_jet60_pnet"]
                         for _era in ["2024", "2025"]
                     },
                 },
