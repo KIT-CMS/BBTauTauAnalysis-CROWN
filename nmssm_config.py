@@ -2734,6 +2734,16 @@ def build_config(
         ]
     )
 
+    # Add electron-tau cross trigger in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_producers(
+            ET_SCOPES,
+            [
+                triggers.EleTauTriggerFlags,
+                # scalefactors.DoubleEleTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
+            ],
+        )
+
     # Producers for quantities in the mt scope
     configuration.add_producers(
         MT_SCOPES,
@@ -2752,14 +2762,20 @@ def build_config(
             pairquantities.MTDiTauPairQuantities,
             genparticles.MTGenDiTauPairQuantities,
             triggers.SingleMuTriggerFlags,
-            triggers.DoubleMuTauTriggerFlags,
             scalefactors.MuonIDIso_SF,
             scalefactors.SingleMuTriggerSF,
-            # scalefactors.DoubleMuTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
-            # TODO rework trigger setup before enabling this
-            # triggers.GenerateSingleTrailingTauTriggerFlags,
         ]
     )
+
+    # Add muon-tau cross triggers in run 3
+    if era in ERAS_RUN3:
+        configuration.add_producers(
+            MT_SCOPES,
+            [
+                triggers.MuTauTriggerFlags,
+                # scalefactors.DoubleMuTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
+            ],
+        )
 
     # Producers for quantities in the tt scope
     configuration.add_producers(
@@ -2777,12 +2793,18 @@ def build_config(
             genparticles.TTGenDiTauPairQuantities,
             triggers.TauTauTriggerFlags,
             scalefactors.TauTauTriggerSF,
-            # TODO rework trigger setup before enabling this
-            # triggers.GenerateSingleTrailingTauTriggerFlags,
-            # triggers.GenerateSingleLeadingTauTriggerFlags,
         ]
-        + tautaujet_trigger_producers
     )
+
+    # Add di-tau+jet trigger in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_producers(
+            TT_SCOPES,
+            [
+                triggers.TauTauJetTriggerFlags,
+                # tautaujet_trigger_producers,
+            ]
+        )
 
     # Producers for quantities in the et scope
     configuration.add_producers(
@@ -3537,15 +3559,6 @@ def build_config(
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.SingleMuTriggerFlags.output_group,
             scalefactors.SingleMuTriggerSF.output_group,
-            # triggers.DoubleMuTauTriggerFlags.output_group,  # TODO fix for Run 2, SF seem to not be available
-            # [
-            #     p
-            #     for p in scalefactors.DoubleMuTauTriggerSF.get_outputs("mt")  # TODO fix for Run 2, SF seem to not be available
-            # ]
-            # triggers.MTGenerateCrossTriggerFlags.output_group,
-            # triggers.GenerateSingleTrailingTauTriggerFlags.output_group,
-            # q.taujet_pt_2,
-            # q.gen_taujet_pt_2,
             q.tau_decaymode_1,
             q.tau_decaymode_2,
             q.electron_veto_flag,
@@ -3553,6 +3566,19 @@ def build_config(
             q.dilepton_veto,
         ],
     )
+
+    # Add muon-tau cross trigger only in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_outputs(
+            MT_SCOPES,
+            [
+                triggers.MuTauTriggerFlags.output_group,
+                # [
+                #     p
+                #     for p in scalefactors.DoubleMuTauTriggerSF.get_outputs("mt")  # TODO fix for Run 2, SF seem to not be available
+                # ]
+            ],
+        )
 
     configuration.add_outputs(
         "et",
@@ -3564,11 +3590,6 @@ def build_config(
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.SingleEleTriggerFlags.output_group,
             scalefactors.SingleEleTriggerSF.output_group,
-            # triggers.DoubleEleTauTriggerFlags.output_group,
-            # [
-            #     p
-            #     for p in scalefactors.DoubleEleTauTriggerSF.get_outputs("et")  # TODO fix for Run 2, SF seem to not be available
-            # ]
             # q.taujet_pt_2,
             # q.gen_taujet_pt_2,
             q.tau_decaymode_1,
@@ -3580,6 +3601,19 @@ def build_config(
             # q.id_wgt_ele_wp80nonIso_1,
         ],
     )
+
+    # Add electron-tau cross triggers in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_outputs(
+            ET_SCOPES,
+            [
+                triggers.EleTauTriggerFlags.output_group,
+                # [
+                #     p
+                #     for p in scalefactors.DoubleEleTauTriggerSF.get_outputs("et")  # TODO fix for Run 2, SF seem to not be available
+                # ]
+            ],
+        )
 
     configuration.add_outputs(
         "tt",
@@ -3595,20 +3629,25 @@ def build_config(
             ] + [
                 o for o in scalefactors.TauTauTriggerSF.get_outputs("tt")
             ] + [
-                producer.output_group
-                for producer in tautaujet_trigger_producers
-            ] + [
-            # q.taujet_pt_1,
-            # q.taujet_pt_2,
-            # q.gen_taujet_pt_2,
             q.tau_decaymode_1,
             q.tau_decaymode_2,
             q.electron_veto_flag,
             q.muon_veto_flag,
-            # q.fj_leading_pt,
-            # q.fj_leading_msoftdrop,
         ],
     )
+
+    # Add di-tau+jet trigger in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_outputs(
+            TT_SCOPES,
+            [
+                triggers.TauTauJetTriggerFlags.output_group,
+                # [
+                #     producer.output_group
+                #     for producer in tautaujet_trigger_producers
+                # ]
+            ],
+        )
 
     if "data" not in sample:
         configuration.add_outputs(
