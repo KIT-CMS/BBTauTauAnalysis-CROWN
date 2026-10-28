@@ -499,15 +499,15 @@ EleTauTriggerLeg1SF = ExtendedVectorProducer(
     vec_config="eletau_trigger_leg1_sf",
 )
 
-#
-# SINGLE MUON TRIGGER SCALE FACTORS
-#
 
+# -----------------------------------------------------------------------------
+# Muon trigger scale factors
+# -----------------------------------------------------------------------------
 
-# single muon trigger scale factor
+# Single-muon trigger scale factor
 SingleMuTriggerSF = ExtendedVectorProducer(
     name="SingleMuTriggerSF",
-    call='physicsobject::muon::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{m_trigger_flag}", "{muon_sf_file}", "{m_trigger_sf_name}", "{m_trigger_variation}")',
+    call='physicsobject::muon::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{m_trigger_flag}", "{muon_sf_file}", "{m_trigger_sf_cset_name}", "{m_trigger_variation}")',
     input={
         "mt": [q.pt_1, q.eta_1],
         "mm": [q.pt_1, q.eta_1],
@@ -516,6 +516,20 @@ SingleMuTriggerSF = ExtendedVectorProducer(
     output="m_trigger_flagname",
     scopes=MUON_SCOPES,
     vec_config="mu_trigger_sf",
+)
+
+# Scale factor for the muon leg of the muon-tau cross trigger
+MuTauTriggerLeg1SF = ExtendedVectorProducer(
+    name="SingleMuTriggerSF",
+    call='physicsobject::muon::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{mt_trigger_leg1_flag}", "{mutau_muleg_trigger_sf_file}", "{mt_trigger_leg1_sf_cset_name}", "{mt_trigger_leg1_variation}")',
+    input={
+        "mt": [q.pt_1, q.eta_1],
+        "mm": [q.pt_1, q.eta_1],
+        "em": [q.pt_2, q.eta_2],
+    },
+    output="mt_trigger_leg1_flagname",
+    scopes=MUON_SCOPES,
+    vec_config="mutau_trigger_leg1_sf",
 )
 
 

@@ -762,6 +762,29 @@ def add_muon_config(configuration: Configuration):
         },
     )
 
+    # Muon-tau trigger scale factor (muon leg), general settings
+    # (more granular configuration is part of tau_triggersetup.py)
+    # TODO Corrections for 2025 are not available yet, include them as soon as
+    # they have been published
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "mutau_muleg_trigger_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
+                        for _era in ERAS_RUN3
+                    },
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json",  # TODO update
+                },
+            ),
+        },
+    )
+
     # Muon identification and isolation corrections for mu -> tau-embedded events
     configuration.add_config_parameters(
         MUON_SCOPES,
