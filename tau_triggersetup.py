@@ -238,7 +238,7 @@ def _add_electron_tau_triggers(
     The use of the following isolated electron triggers is recommended by the
     EGM POG:
 
-    - 2016, 2017, 2018: TODO
+    - 2016, 2017, 2018: see definitions below
     - 2022, 2023: `HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1`
     - 2024, 2025, 2026: `HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1`
 
@@ -248,7 +248,68 @@ def _add_electron_tau_triggers(
 
     ## Electron-tau cross triggers
 
-    # TODO Add Run 2 triggers
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1 parameters
+    ele_24_tau_30_hps_2018_parameters = {
+        "flagname": "trg_cross_ele24tau30_hps",
+        "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
+        "p1_min_pt": 25.,
+        "p1_max_abs_eta": 2.5,
+        "p1_filter_bit": 1,
+        "p1_particle_id": 11,
+        "p2_min_pt": 32.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": -1,  # TODO switch to 4, if the bits are correct
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1 parameters (2018)
+    ele_24_tau_30_2018_parameters = _get_updated_dict(
+        ele_24_tau_30_hps_2018_parameters,
+        {
+            "flagname": "trg_cross_ele24tau30",
+            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
+            "p2_filter_bit": 4,
+        },
+    )
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1 parameters (2017)
+    ele_24_tau_30_2017_parameters = _get_updated_dict(
+        ele_24_tau_30_2018_parameters,
+        {
+            "p1_max_abs_eta": 2.1,
+            "p2_min_pt": 35.,
+        },
+    )
+
+    # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1 parameters
+    ele_24_tau_20_singlel1_2016_parameters = _get_updated_dict(
+        ele_24_tau_30_2017_parameters,
+        {
+            "flagname": "trg_cross_ele24tau20",
+            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
+            "p2_min_pt": 25.,
+        },
+    )
+
+    # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20 parameters
+    ele_24_tau_20_2016_parameters = _get_updated_dict(
+        ele_24_tau_20_singlel1_2016_parameters,
+        {
+            "flagname": "trg_cross_ele24tau20_crossL1",
+            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
+        },
+    )
+
+    # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30 parameters
+    ele_24_tau_30_2016_parameters = _get_updated_dict(
+        ele_24_tau_20_singlel1_2016_parameters,
+        {
+            "flagname": "trg_cross_ele24tau30",
+            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
+            "p2_min_pt": 35.,
+        },
+    )
 
     # HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1 parameters
     ele_24_tau_30_deeptau_parameters = {
@@ -311,131 +372,30 @@ def _add_electron_tau_triggers(
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2018": [
-                        {
-                            "flagname": "trg_cross_ele24tau30_hps",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 2.5,
-                            "p1_filter_bit": 1,
-                            "p1_particle_id": 11,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
+                        # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1
+                        ele_24_tau_30_hps_2018_parameters,
+
                         # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 2.5,
-                            "p1_filter_bit": 1,
-                            "p1_particle_id": 11,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
+                        # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1
+                        ele_24_tau_30_2018_parameters,
                     ],
                     "2017": [
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
+                        # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1
+                        ele_24_tau_30_2017_parameters,
                     ],
-                    "2016postVFP": [
-                        {
-                            "flagname": "trg_cross_ele24tau20",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau20_crossL1",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2016preVFP": [
-                        {
-                            "flagname": "trg_cross_ele24tau20",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 32,
-                            "p1_filter_bit": 2.5,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau20_crossL1",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
+                    **{
+                        _era: [
+                            # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1
+                            ele_24_tau_20_singlel1_2016_parameters,
+
+                            # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20
+                            ele_24_tau_20_2016_parameters,
+
+                            # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30
+                            ele_24_tau_30_2016_parameters,
+                        ]
+                        for _era in ["2016preVFP", "2016postVFP"]
+                    },
                 }
             ),
         },
