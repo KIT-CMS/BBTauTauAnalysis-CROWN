@@ -6,7 +6,7 @@ from code_generation.quantity import Quantity
 from code_generation.producer import Producer, ProducerGroup
 from code_generation.producer import ExtendedVectorProducer
 
-from ..constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, HAD_TAU_SCOPES, SCOPES
+from ..constants import ET_SCOPES, MT_SCOPES, TT_SCOPES, EE_SCOPES, MM_SCOPES, EM_SCOPES, ELECTRON_SCOPES, MUON_SCOPES, HAD_TAU_SCOPES, SCOPES
 
 
 # -----------------------------------------------------------------------------
@@ -488,7 +488,7 @@ SingleEleTriggerSF = ExtendedVectorProducer(
 
 # Scale factor for the electron leg of the electron-tau cross trigger
 EleTauTriggerLeg1SF = ExtendedVectorProducer(
-    name="SingleEleTriggerSF",
+    name="EleTauTriggerLeg1SF",
     call='physicsobject::electron::scalefactor::Trigger({df}, correctionManager, {output}, {input}, "{et_trigger_flag}", "{ele_trigger_sf_era}", "{et_trigger_leg1_path_id_name}", "{eletau_eleg_trigger_sf_file}", "{et_trigger_leg1_sf_cset_name}", "{et_trigger_leg1_variation}")',
     input=[
         q.pt_1,

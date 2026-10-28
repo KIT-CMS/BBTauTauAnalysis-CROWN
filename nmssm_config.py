@@ -479,7 +479,7 @@ def add_electron_config(configuration: Configuration):
         },
     )
 
-    # Electron trigger scale factor, general settings (more granular
+    # Single-electron trigger scale factor, general settings (more granular
     # configuration is part of tau_triggersetup.py)
     # TODO Corrections for 2025 are not available yet, include them as soon as
     # they have been published
@@ -516,6 +516,12 @@ def add_electron_config(configuration: Configuration):
             ),
         }
     )
+
+
+    # Electron-tau trigger scale factor (electron leg), general settings
+    # (more granular configuration is part of tau_triggersetup.py)
+    # TODO Corrections for 2025 are not available yet, include them as soon as
+    # they have been published
     configuration.add_config_parameters(
         ET_SCOPES,
         {
@@ -532,6 +538,8 @@ def add_electron_config(configuration: Configuration):
                     "2025": "data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",  # TODO update
                 },
             ),
+        },
+    )
 
     # Electron identification and isolation corrections for mu -> tau-embedded events
     configuration.add_config_parameters(
