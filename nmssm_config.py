@@ -1488,6 +1488,27 @@ def add_ak4jet_config(configuration: Configuration):
         }
     )
 
+    # Trigger scale factors for di-tau+jet trigger, jet leg
+    # TODO 2025 corrections have not arrived yet, update as soon as possible
+    configuration.add_config_parameters(
+        TT_SCOPES,
+        {
+            "ditaujet_jet_trigger_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST" for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/DiTauJetHlt_JetLeg_v1.json"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/DiTauJetHlt_JetLeg_v1.json",  # TODO update
+                },
+            ),
+            "ditaujet_jet_trigger_json_name": "jetlegSFs",
+        },
+    )
+
 
 def add_ak8jet_config(configuration: Configuration):
     """
