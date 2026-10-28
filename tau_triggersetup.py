@@ -739,7 +739,7 @@ def _add_muon_tau_triggers(
     The use of the following isolated electron triggers is recommended by the
     EGM POG:
 
-    - 2016, 2017, 2018: TODO
+    - 2016, 2017, 2018: see definitions below
     - 2022, 2023: `HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1`
     - 2024, 2025, 2026: ``
 
@@ -749,7 +749,48 @@ def _add_muon_tau_triggers(
 
     ## Muon-tau cross triggers
 
-    # TODO Add Run 2 triggers
+    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1 parameters
+    mu_20_tau_27_hps_2018_parameters = {
+        "flagname": "trg_cross_mu20tau27_hps",
+        "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1",
+        "p1_min_pt": 21.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 3,
+        "p1_particle_id": 13,
+        "p2_min_pt": 32.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": -1,  # TODO switch to 4, if the bits are correct
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1 parameters (2018)
+    mu_20_tau_27_2018_parameters = _get_updated_dict(
+        mu_20_tau_27_hps_2018_parameters,
+        {
+            "flagname": "trg_cross_mu20tau27",
+            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
+        },
+    )
+
+    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1 parameters (2017)
+    mu_20_tau_27_2017_parameters = _get_updated_dict(
+        mu_20_tau_27_2018_parameters,
+        {
+            "p2_filter_bit": 4,
+        },
+    )
+
+    # HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1 parameters
+    mu_19_tau_20_2016_parameters = _get_updated_dict(
+        mu_20_tau_27_2017_parameters,
+        {
+            "flagname": "trg_cross_mu19tau20",
+            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
+            "p1_min_pt": 20.,
+            "p2_min_pt": 22.,
+        },
+    )
 
     # HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1 parameters
     mu_20_tau_27_deeptau_parameters = {
@@ -812,79 +853,24 @@ def _add_muon_tau_triggers(
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
                     "2018": [
-                        {
-                            "flagname": "trg_cross_mu20tau27_hps",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
+                        # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1
+                        mu_20_tau_27_hps_2018_parameters,
+
                         # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
-                        {
-                            "flagname": "trg_cross_mu20tau27",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
+                        # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1
+                        mu_20_tau_27_2018_parameters,
                     ],
                     "2017": [
-                        {
-                            "flagname": "trg_cross_mu20tau27",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
+                        # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1
+                        mu_20_tau_27_2017_parameters,
                     ],
-                    "2016postVFP": [
-                        {
-                            "flagname": "trg_cross_mu19tau20",
-                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 20,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 22,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
-                    "2016preVFP": [
-                        {
-                            "flagname": "trg_cross_mu19tau20",
-                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 20,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 22,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
+                    **{
+                        _era: [
+                            # trigger:            HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1
+                            mu_19_tau_20_2016_parameters,
+                        ]
+                        for _era in ["2016preVFP", "2016postVFP"]
+                    },
                 },
             ),
         },
