@@ -3056,7 +3056,7 @@ def build_config(
     )
     if era in ERAS_RUN3:
         configuration.add_modification_rule(
-            ELECTRON_SCOPES,
+            ET_SCOPES,
             RemoveProducer(
                 producers=[
                     scalefactors.EleTauTriggerSF,
@@ -3064,18 +3064,6 @@ def build_config(
                 samples=["data", "embedding", "embedding_mc"],
             ),
         )
-
-    # TODO fix for Run 2, SF seem to not be available
-    # configuration.add_modification_rule(
-    #     ET_SCOPES,
-    #     RemoveProducer(
-    #         producers=[
-    #             scalefactors.DoubleEleTauTriggerSF,
-    #         ],
-    #         samples=["data", "embedding", "embedding_mc"],
-    #     ),
-    # )
-
 
     # Remove muon/muon-tau trigger scale factor producers from data and
     # embedding
