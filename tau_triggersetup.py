@@ -1094,6 +1094,7 @@ def _add_tautau_triggers(
             "p2_min_pt": 30.,
             "p2_max_abs_eta": 2.3,
             "p2_filter_bit": "4, 14",
+            "p3_min_pt": 65.0,
         },
     )
 
@@ -1166,13 +1167,13 @@ def _add_tautau_triggers(
                     **{
                         _era: [
                             # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet75
-                            # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet75
+                            # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
                             # tau filter bit:   3, 14
-                            # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet75
+                            # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
                             # jet filter bit:   17
                             # documentation:    - https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2022
                             #                   - https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2023
-                            double_medium_deeptau_30_eta2p1_jet_75_parameters,
+                            double_medium_deeptau_30_eta2p1_jet_60_parameters,
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
