@@ -2694,20 +2694,6 @@ def build_config(
     #     era,
     # )
 
-    # Di-tau + jet trigger
-    # - In Run 2, di-tau + jet triggers did not exist, so no producer is added.
-    # - In Run 3, di-tau + jet triggers are available and the corresponding trigger flag producers
-    #   are added to the tt scope.
-    tautaujet_trigger_producers = get_for_era(
-        {
-            tuple(ERAS_RUN3): [
-                triggers.TauTauJetTriggerFlags,
-            ],
-        },
-        era,
-        default=[],
-    )
-
     # For 2024, replace the nBHadrons and nCHadrons producers, as they are not
     # stored in the jet collection, but must be accessed via the associated
     # GenJetAK8 collection
