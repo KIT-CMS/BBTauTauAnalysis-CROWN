@@ -310,7 +310,7 @@ def _add_electron_tau_triggers(
 
     # HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1 parameters
     ele_24_tau_30_deeptau_parameters = {
-        "flagname": "trg_ele24_tau30_deeptau",
+        "flagname": "trg_ele24_tau30",
         "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1",
         "p1_min_pt": 26.,
         "p1_max_abs_eta": 2.1,
@@ -325,7 +325,7 @@ def _add_electron_tau_triggers(
 
     # HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1 parameters
     ele_24_tau_30_pnet_parameters = {
-        "flagname": "trg_ele24_tau30_pnet",
+        "flagname": "trg_ele24_tau30",
         "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1",
         "p1_min_pt": 26.,
         "p1_max_abs_eta": 2.1,
@@ -1365,8 +1365,8 @@ def _add_electron_trigger_scale_factors(
 
     # Parameters for the electron-tau cross trigger scale factors
     et_trigger_eleg_sf_parameters = {
-        "et_trigger_flag": "trg_double_ele24tau30",
-        "et_trigger_leg1_flagname": "trg_wgt_double_ele24tau30_leg1",
+        "et_trigger_flag": "trg_ele24_tau30",
+        "et_trigger_leg1_flagname": "trg_wgt_ele24_tau30_leg1",
         "et_trigger_leg1_sf_cset_name": "Electron-HLT-SF",
         "et_trigger_leg1_path_id_name": "HLT_SF_Ele24_TightID",
         "et_trigger_leg1_variation": "sf",
@@ -1378,7 +1378,6 @@ def _add_electron_trigger_scale_factors(
         {
             "et_trigger_leg1_flagname": "trg_eff_data_ele24_tau30_leg1",
             "et_trigger_leg1_sf_name": "Electron-HLT-DataEff",
-            "et_trigger_leg1_variation": "nom",
         },
     )
 
@@ -1388,7 +1387,6 @@ def _add_electron_trigger_scale_factors(
         {
             "et_trigger_leg1_flagname": "trg_eff_mc_ele24_tau30_leg1",
             "et_trigger_leg1_sf_name": "Electron-HLT-McEff",
-            "et_trigger_leg1_variation": "nom",
         },
     )
 
@@ -1522,8 +1520,8 @@ def _add_tau_trigger_scale_factors(
 
     # Parameters for the tau leg of the electron-tau cross trigger scale factors
     et_trigger_tauleg_sf_parameters = {
-        "et_trigger_leg2_flagname": "trg_wgt_double_ele24_tau30_leg2",
-        "et_trigger_flag": "trg_double_ele24_tau30",
+        "et_trigger_leg2_flagname": "trg_wgt_ele24_tau30_leg2",
+        "et_trigger_flag": "trg_ele24_tau30",
         "et_trigger_leg2_sf_name": "etau",
         "et_trigger_leg2_correction_type": "sf",
         "et_trigger_leg2_variation": "nom",
@@ -1534,7 +1532,7 @@ def _add_tau_trigger_scale_factors(
     et_trigger_tauleg_eff_data_parameters = _get_updated_dict(
         et_trigger_tauleg_sf_parameters,
         {
-            "et_trigger_leg2_flagname": "trg_eff_data_double_ele24_tau30_leg2",
+            "et_trigger_leg2_flagname": "trg_eff_data_ele24_tau30_leg2",
             "et_trigger_leg2_correction_type": "eff_data",
             "et_trigger_leg2_variation": "nom",
         },
@@ -1545,7 +1543,7 @@ def _add_tau_trigger_scale_factors(
     et_trigger_tauleg_eff_mc_parameters = _get_updated_dict(
         et_trigger_tauleg_sf_parameters,
         {
-            "et_trigger_leg2_flagname": "trg_eff_mc_double_ele24_tau30_leg2",
+            "et_trigger_leg2_flagname": "trg_eff_mc_ele24_tau30_leg2",
             "et_trigger_leg2_correction_type": "eff_mc",
             "et_trigger_leg2_variation": "nom",
         },
