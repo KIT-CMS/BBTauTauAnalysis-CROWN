@@ -1,6 +1,8 @@
+from itertools import chain
+import re
+
 from code_generation.configuration import Configuration
 from code_generation.modifiers import EraModifier
-
 from .constants import (
     ET_SCOPES,
     MT_SCOPES,
@@ -223,6 +225,208 @@ def _add_electron_triggers(
                         for _era in ["2016preVFP", "2016postVFP"]
                     },
                 },
+            ),
+        },
+    )
+
+
+def _add_electron_tau_triggers(
+    configuration: Configuration,
+):
+    """
+    Add configuration of electron-tau cross-trigger trigger producers. The
+    configuration adds electron-tau triggers to the `et` scope.
+
+    The use of the following isolated electron triggers is recommended by the
+    EGM POG:
+
+    - 2016, 2017, 2018: see definitions below
+    - 2022, 2023: `HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1`
+    - 2024, 2025, 2026: `HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1`
+
+    The electron-tau trigger recommendations can be found at the following
+    EGM POG TWiki page: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
+    """
+
+    ## Electron-tau cross triggers
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1 parameters
+    ele_24_tau_30_hps_parameters = {
+        "flagname": "trg_ele24_tau30_hps",
+        "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
+        "p1_min_pt": 26.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 7,
+        "p1_particle_id": 11,
+        "p2_min_pt": 35.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": 8,
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1 parameters (2017, 2018)
+    ele_24_tau_30_parameters = _get_updated_dict(
+        ele_24_tau_30_hps_parameters,
+        {
+            "flagname": "trg_ele24_tau30",
+            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
+        },
+    )
+
+    # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1 parameters
+    ele_24_tau_20_singlel1_parameters = {
+        "flagname": "trg_ele24_tau20_singlel1",
+        "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
+        "p1_min_pt": 26.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 3,
+        "p1_particle_id": 11,
+        "p2_min_pt": 25.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": "0, 6",
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20 parameters
+    ele_24_tau_20_parameters = _get_updated_dict(
+        ele_24_tau_20_singlel1_parameters,
+        {
+            "flagname": "trg_ele24_tau20",
+            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
+        },
+    )
+
+    # HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30 parameters
+    ele_24_tau_30_2016_parameters = _get_updated_dict(
+        ele_24_tau_20_singlel1_parameters,
+        {
+            "flagname": "trg_ele24_tau30",
+            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
+            "p2_min_pt": 35.,
+        },
+    )
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1 parameters
+    ele_24_tau_30_deeptau_parameters = {
+        "flagname": "trg_ele24_tau30",
+        "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1",
+        "p1_min_pt": 26.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 3,
+        "p1_particle_id": 11,
+        "p2_min_pt": 35.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": "3, 8",
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1 parameters
+    ele_24_tau_30_pnet_parameters = {
+        "flagname": "trg_ele24_tau30",
+        "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1",
+        "p1_min_pt": 26.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 3,
+        "p1_particle_id": 11,
+        "p2_min_pt": 35.,
+        "p2_max_abs_eta": 2.3,
+        "p2_filter_bit": "0, 4, 12",
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # Add triggers to the configuration
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "eletau_trigger": EraModifier(
+                {
+                    **{
+                        _era: [
+                            # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_PNetTauhPFJet30_Loose_eta2p3_CrossL1
+                            # final e filter:     hltOverlapFilterIsoEle24IsoTau30WPTightGsfCaloJet5
+                            # e filter bit:       3
+                            # final tau filter:   hltHpsOverlapFilterIsoEle24WPTightGsfLooseETauWPPNetPFTau30L1Seeded
+                            # tau filter bits:    0, 4, 12
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2024
+                            ele_24_tau_30_pnet_parameters,
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
+                    **{
+                        _era: [
+                            # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1
+                            # final e filter:     hltOverlapFilterIsoEle24IsoTau30WPTightGsfCaloJet5
+                            # e filter bit:       3
+                            # final tau filter:   hltHpsOverlapFilterIsoEle24WPTightGsfLooseETauWPDeepTauPFTau30
+                            # tau filter bits:    3, 8
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2022
+                            ele_24_tau_30_deeptau_parameters,
+                        ]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    "2018": [
+                        # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1
+                        # final e filter:     hltEle24erWPTightGsfTrackIsoFilterForTau AND hltHpsOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # e filter bit:       7
+                        # final tau filter:   hltHpsSelectedPFTau30LooseChargedIsolationL1HLTMatched AND hltHpsOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # tau filter bit:     8
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        ele_24_tau_30_hps_parameters,
+
+                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
+                        # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1
+                        # final e filter:     hltEle24erWPTightGsfTrackIsoFilterForTau AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # e filter bit:       7
+                        # final tau filter:   hltSelectedPFTau30LooseChargedIsolationL1HLTMatched AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # tau filter bit:     8
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        ele_24_tau_30_parameters,
+                    ],
+                    "2017": [
+                        # trigger:            HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1
+                        # final e filter:     hltEle24erWPTightGsfTrackIsoFilterForTau AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # e filter bit:       7
+                        # final tau filter:   hltSelectedPFTau30LooseChargedIsolationL1HLTMatched AND hltOverlapFilterIsoEle24WPTightGsfLooseIsoPFTau30
+                        # tau filter bit:     8
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2017
+                        ele_24_tau_30_parameters,
+                    ],
+                    **{
+                        _era: [
+                            # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1
+                            # final e filter:     hltEle24WPLooseL1SingleIsoEG22erGsfTrackIsoFilter AND hltOverlapFilterSingleIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # e filter bit:       3
+                            # final tau filter:   hltPFTau20TrackLooseIso AND hltOverlapFilterSingleIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # tau filter bits:    0, 6
+                            # comment:            Run < 276215
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
+                            ele_24_tau_20_singlel1_parameters,
+
+                            # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20
+                            # final e filter:     hltEle24WPLooseL1IsoEG22erTau20erGsfTrackIsoFilter AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # e filter bit:       3
+                            # final tau filter:   hltPFTau20TrackLooseIso AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau20
+                            # tau filter bits:    0, 6
+                            # comment:            276215 <= Run < 278270
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
+                            ele_24_tau_20_parameters,
+
+                            # trigger:            HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30
+                            # final e filter:     hltEle24WPLooseL1IsoEG22erIsoTau26erGsfTrackIsoFilter AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau30
+                            # e filter bit:       3
+                            # final tau filter:   hltPFTau30TrackLooseIso AND hltOverlapFilterIsoEle24WPLooseGsfLooseIsoPFTau30
+                            # tau filter bits:    0, 6
+                            # comment:            Run >= 278270
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
+                            ele_24_tau_30_2016_parameters,
+                        ]
+                        for _era in ["2016preVFP", "2016postVFP"]
+                    },
+                }
             ),
         },
     )
@@ -555,6 +759,168 @@ def _add_muon_triggers(
     )
 
 
+def _add_muon_tau_triggers(
+    configuration: Configuration,
+):
+    """
+    Add configuration of muon-tau cross-trigger trigger producers. The
+    configuration adds muon-tau triggers to the `mt` scope.
+
+    The use of the following isolated electron triggers is recommended by the
+    EGM POG:
+
+    - 2016, 2017, 2018: see definitions below
+    - 2022, 2023: `HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1`
+    - 2024, 2025, 2026: ``
+
+    The muon-tau trigger recommendations can be found at the following
+    EGM POG TWiki page: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
+    """
+
+    ## Muon-tau cross triggers
+
+    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1 parameters
+    mu_20_tau_27_hps_parameters = {
+        "flagname": "trg_cross_mu20tau27_hps",
+        "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1",
+        "p1_min_pt": 22.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 6,
+        "p1_particle_id": 13,
+        "p2_min_pt": 32.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": 9,
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1 parameters (2017, 2018)
+    mu_20_tau_27_parameters = _get_updated_dict(
+        mu_20_tau_27_hps_parameters,
+        {
+            "flagname": "trg_cross_mu20tau27",
+            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
+        },
+    )
+
+    # HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1 parameters
+    mu_19_tau_20_parameters = _get_updated_dict(
+        mu_20_tau_27_parameters,
+        {
+            "flagname": "trg_cross_mu19tau20",
+            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
+            "p1_min_pt": 21.,
+            "p2_min_pt": 25.,
+            "p1_filter_bit": 5,
+            "p2_filter_bit": "0, 5",
+        },
+    )
+
+    # HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1 parameters
+    mu_20_tau_27_deeptau_parameters = {
+        "flagname": "trg_mu20_tau27",
+        "hlt_path": "HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1",
+        "p1_min_pt": 22.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 1,
+        "p1_particle_id": 13,
+        "p2_min_pt": 32.,
+        "p2_max_abs_eta": 2.1,
+        "p2_filter_bit": "3, 9",
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1 parameters
+    mu_20_tau_27_pnet_parameters = {
+        "flagname": "trg_mu20_tau27",
+        "hlt_path": "HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1",
+        "p1_min_pt": 22.,
+        "p1_max_abs_eta": 2.1,
+        "p1_filter_bit": 1,
+        "p1_particle_id": 13,
+        "p2_min_pt": 32.,
+        "p2_max_abs_eta": 2.3,
+        "p2_filter_bit": "0, 4, 13",
+        "p2_particle_id": 15,
+        "match_max_delta_r": 0.4,
+    }
+
+    # Add triggers to the configuration
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "mutau_trigger": EraModifier(
+                {
+                    **{
+                        _era: [
+                            # trigger:            HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1
+                            # final mu filter:    hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered*
+                            # mu filter bit:      1
+                            # final tau filter:   hltHpsOverlapFilterIsoMu20LooseMuTauWPPNetPFJet27
+                            # tau filter bits:    0, 4, 13
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2024
+                            mu_20_tau_27_pnet_parameters,
+                        ]
+                        for _era in ["2024", "2025"]
+                    },
+                    **{
+                        _era: [
+                            # trigger:            HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
+                            # final mu filter:    hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered*
+                            # mu filter bit:      1
+                            # final tau filter:   hltHpsOverlapFilterIsoMu20LooseMuTauWPDeepTauPFTau27L1Seeded
+                            # tau filter bits:    3, 9
+                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger?extralog=-%20caching%20topic#Trigger_Table_for_2022
+                            mu_20_tau_27_deeptau_parameters,
+                        ]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    "2018": [
+                        # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1
+                        # final mu filter:    hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered0p07 AND hltHpsOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # mu filter bit:      6
+                        # final tau filter:   hltHpsSelectedPFTau27LooseChargedIsolationAgainstMuonL1HLTMatched AND hltHpsOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # tau filter bit:     9
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        mu_20_tau_27_hps_parameters,
+
+                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
+                        # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1
+                        # final mu filter:    hltL3crIsoL1sMu18erTau24erIorMu20erTau24erL1f0L2f10QL3f20QL3trkIsoFiltered0p07 AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # mu filter bit:      6
+                        # final tau filter:   hltSelectedPFTau27LooseChargedIsolationAgainstMuonL1HLTMatched AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # tau filter bit:     9
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2018
+                        mu_20_tau_27_parameters,
+                    ],
+                    "2017": [
+                        # trigger:            HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1
+                        # final mu filter:    hltL3crIsoL1sMu18erTau24erIorMu20erTau24erL1f0L2f10QL3f20QL3trkIsoFiltered0p07 AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # mu filter bit:      6
+                        # final tau filter:   hltSelectedPFTau27LooseChargedIsolationAgainstMuonL1HLTMatched AND hltOverlapFilterIsoMu20LooseChargedIsoPFTau27L1Seeded
+                        # tau filter bit:     9
+                        # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2017
+                        mu_20_tau_27_parameters,
+                    ],
+                    **{
+                        _era: [
+                            # trigger:            HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1
+                            # final mu filter:    hltL3crIsoL1sSingleMu18erIorSingleMu20erL1f0L2f10QL3f19QL3trkIsoFiltered0p09 AND hltOverlapFilterSingleIsoMu19LooseIsoPFTau20
+                            # mu filter bit:      5
+                            # final tau filter:   hltPFTau20TrackLooseIsoAgainstMuon AND hltOverlapFilterSingleIsoMu19LooseIsoPFTau20
+                            # tau filter bits:    0, 5
+                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2016
+                            mu_19_tau_20_parameters,
+                        ]
+                        for _era in ["2016preVFP", "2016postVFP"]
+                    },
+                },
+            ),
+        },
+    )
+
+
 def _add_tautau_triggers(
     configuration: Configuration,
 ):
@@ -605,7 +971,7 @@ def _add_tautau_triggers(
     double_medium_pnet_30_eta_2p3_parameters = _get_updated_dict(
         double_medium_deeptau_35_eta_2p1_2024_parameters,
         {
-            "flagname": "trg_double_tau30_mediumpnet",
+            "flagname": "trg_double_tau30_pnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet30_Medium_L2NN_eta2p3",
             "p1_min_pt": 35.,
             "p2_min_pt": 35.,
@@ -693,12 +1059,16 @@ def _add_tautau_triggers(
         "hlt_path": "HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60",
         "p1_min_pt": 35.,
         "p1_max_abs_eta": 2.1,
-        "p1_filter_bit": 14,
+        "p1_filter_bit": "3, 14",
         "p1_particle_id": 15,
         "p2_min_pt": 35.,
         "p2_max_abs_eta": 2.1,
-        "p2_filter_bit": 14,
+        "p2_filter_bit": "3, 14",
         "p2_particle_id": 15,
+        "p3_min_pt": 65.0,
+        "p3_max_abs_eta": 4.7,
+        "p3_filter_bit": 17,
+        "p3_particle_id": 1,
         "match_max_delta_r": 0.4,
     }
 
@@ -708,6 +1078,7 @@ def _add_tautau_triggers(
         {
             "flagname": "trg_double_tau30_jet75_mediumdeeptau",
             "hlt_path": "HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet75",
+            "p3_min_pt": 80.0,
         },
     )
 
@@ -719,8 +1090,11 @@ def _add_tautau_triggers(
             "hlt_path": "HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60",
             "p1_min_pt": 30.,
             "p1_max_abs_eta": 2.3,
+            "p1_filter_bit": "4, 14",
             "p2_min_pt": 30.,
             "p2_max_abs_eta": 2.3,
+            "p2_filter_bit": "4, 14",
+            "p3_min_pt": 65.0,
         },
     )
 
@@ -730,6 +1104,7 @@ def _add_tautau_triggers(
         {
             "flagname": "trg_double_tau26_jet75_pnet",
             "hlt_path": "HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75",
+            "p3_min_pt": 80.0,
         },
     )
 
@@ -742,49 +1117,63 @@ def _add_tautau_triggers(
                     "2025": [
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_60_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_75_parameters,
                     ],
                     "2024": [
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60
                         # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
-                        # tau filter bit:   14
+                        # tau filter bit:   3, 14
+                        # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_medium_deeptau_30_eta2p1_jet_60_parameters,
 
                         # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet75
                         # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet75
-                        # tau filter bit:   14
+                        # tau filter bit:   3, 14
+                        # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_medium_deeptau_30_eta2p1_jet_75_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet60
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet60
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_60_parameters,
 
                         # trigger:          HLT_DoublePNetTauhPFJet26_L2NN_eta2p3_PFJet75
                         # final tau filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
-                        # tau filter bit:   14
+                        # tau filter bit:   4, 14
+                        # final jet filter: hltHpsOverlapFilterDoublePNetTauh26PFJet75
+                        # jet filter bit:   17
                         # documentation:    https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
                         double_pnet_26_eta2p3_jet_75_parameters,
                     ],
                     **{
                         _era: [
                             # trigger:          HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet75
-                            # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet75
-                            # tau filter bit:   14
+                            # final tau filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
+                            # tau filter bit:   3, 14
+                            # final jet filter: hltHpsOverlapFilterDeepTauDoublePFTau30PFJet60
+                            # jet filter bit:   17
                             # documentation:    - https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2022
                             #                   - https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2023
-                            double_medium_deeptau_30_eta2p1_jet_75_parameters,
+                            double_medium_deeptau_30_eta2p1_jet_60_parameters,
                         ]
                         for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
                     },
@@ -911,559 +1300,560 @@ def _add_tautau_triggers(
     )
 
 
+def _add_electron_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Add trigger scale factor and efficiency configuration for single-electron
+    triggers and the electron leg of electron-tau cross triggers.
+
+    Efficiencies on data and MC are needed if this trigger is combined with
+    other ones to calculate the scale factors "on-the-fly".
+    """
+
+    # -------------------------------------------------------------------------
+    # Single-electron trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the single-electron trigger SF
+    ele_trigger_sf_parameters = {
+        "e_trigger_flagname": "trg_wgt_single_ele30",
+        "e_trigger_flag": "trg_single_ele30",
+        "e_trigger_sf_cset_name": "Electron-HLT-SF",
+        "e_trigger_path_id_name": "HLT_SF_Ele30_MVAiso90ID",
+        "e_trigger_variation": "sf",
+    }
+
+    # Parameters for the single-electron trigger efficiency on data
+    ele_trigger_eff_data_parameters = _get_updated_dict(
+        ele_trigger_sf_parameters,
+        {
+            "e_trigger_flagname": "trg_eff_data_single_ele30",
+            "e_trigger_sf_cset_name": "Electron-HLT-DataEff",
+            "e_trigger_variation": "nom",
+        }
+    )
+
+    # Parameters for the single-electron trigger efficiency on MC
+    ele_trigger_eff_mc_parameters = _get_updated_dict(
+        ele_trigger_sf_parameters,
+        {
+            "e_trigger_flagname": "trg_eff_mc_single_ele30",
+            "e_trigger_sf_cset_name": "Electron-HLT-McEff",
+            "e_trigger_variation": "nom",
+        }
+    )
+
+    # Add configuration for single-electron trigger scale factors and
+    # efficiencies
+    # TODO update scale factors for 2025 as soon as dedicated corrections are
+    # available
+    configuration.add_config_parameters(
+        ELECTRON_SCOPES,
+        {
+            # TODO Update 2025 corrections as soon as dedicated corrections are available
+            "ele_trigger_sf": [
+                ele_trigger_sf_parameters,
+                ele_trigger_eff_data_parameters,
+                ele_trigger_eff_mc_parameters,
+            ],
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Electron leg of electron-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the electron-tau cross trigger scale factors
+    et_trigger_eleg_sf_parameters = {
+        "et_trigger_flag": "trg_ele24_tau30",
+        "et_trigger_leg1_flagname": "trg_wgt_ele24_tau30_leg1",
+        "et_trigger_leg1_sf_cset_name": "Electron-HLT-SF",
+        "et_trigger_leg1_path_id_name": "HLT_SF_Ele24_TightID",
+        "et_trigger_leg1_variation": "sf",
+    }
+
+    # Parameters for the electron-tau cross trigger efficiency on data
+    et_trigger_eleg_eff_data_parameters = _get_updated_dict(
+        et_trigger_eleg_sf_parameters,
+        {
+            "et_trigger_leg1_flagname": "trg_eff_data_ele24_tau30_leg1",
+            "et_trigger_leg1_sf_name": "Electron-HLT-DataEff",
+        },
+    )
+
+    # Parameters for the electron-tau cross trigger efficiency on MC
+    et_trigger_eleg_eff_mc_parameters = _get_updated_dict(
+        et_trigger_eleg_sf_parameters,
+        {
+            "et_trigger_leg1_flagname": "trg_eff_mc_ele24_tau30_leg1",
+            "et_trigger_leg1_sf_name": "Electron-HLT-McEff",
+        },
+    )
+
+    # Add configuration for electron leg of electron-tau cross trigger scale
+    # factors and efficiencies
+    # TODO update scale factors for 2025 as soon as dedicated corrections are
+    # available
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "eletau_trigger_leg1_sf": [
+                et_trigger_eleg_sf_parameters,
+                et_trigger_eleg_eff_data_parameters,
+                et_trigger_eleg_eff_mc_parameters,
+            ],
+        },
+    )
+
+
+def _add_muon_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Add trigger scale factor and efficiency configuration for single-muon
+    triggers and the muon leg of muon-tau cross triggers.
+
+    Efficiencies on data and MC are needed if this trigger is combined with
+    other ones to calculate the scale factors "on-the-fly".
+    """
+
+    # -------------------------------------------------------------------------
+    # Single-muon trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the single-muon trigger SF
+    muon_trigger_sf_parameters = {
+        "m_trigger_flagname": "trg_wgt_single_mu24",
+        "m_trigger_flag": "trg_single_mu24",
+        "m_trigger_sf_cset_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
+        "m_trigger_variation": "nominal",
+    }
+
+    # Parameters for the single-muon trigger efficiency on data
+    muon_trigger_eff_data_parameters = _get_updated_dict(
+        muon_trigger_sf_parameters,
+        {
+            "m_trigger_flagname": "trg_eff_data_single_mu24",
+            "m_trigger_variation": "nominal_DATAeff",
+        }
+    )
+
+    # Parameters for the single-muon trigger efficiency on MC
+    muon_trigger_eff_mc_parameters = _get_updated_dict(
+        muon_trigger_sf_parameters,
+        {
+            "m_trigger_flagname": "trg_eff_mc_single_mu24",
+            "m_trigger_variation": "nominal_MCeff",
+        }
+    )
+
+    # Add configuration for single-muon trigger scale factors and efficiencies
+    configuration.add_config_parameters(
+        MUON_SCOPES,
+        {
+            "mu_trigger_sf": [
+                muon_trigger_sf_parameters,
+                muon_trigger_eff_data_parameters,
+                muon_trigger_eff_mc_parameters,
+            ],
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Muon leg of muon-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the muon leg of the muon-tau cross trigger trigger SF
+    mt_trigger_muleg_sf_parameters = {
+        "mt_trigger_leg1_flagname": "trg_wgt_mu20_tau27_leg1",
+        "mt_trigger_flag": "trg_mu20_tau27",
+        "mt_trigger_leg1_sf_cset_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight",
+        "mt_trigger_leg1_variation": "nominal",
+    }
+
+    # Parameters for the single-muon trigger efficiency on data
+    mt_trigger_muleg_eff_data_parameters = _get_updated_dict(
+        mt_trigger_muleg_sf_parameters,
+        {
+            "mt_trigger_leg1_flagname": "trg_eff_data_mu20_tau27_leg1",
+            "mt_trigger_leg1_sf_cset_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight_DATAeff",
+        }
+    )
+
+    # Parameters for the single-muon trigger efficiency on MC
+    mt_trigger_muleg_eff_mc_parameters = _get_updated_dict(
+        mt_trigger_muleg_sf_parameters,
+        {
+            "mt_trigger_leg1_flagname": "trg_eff_mc_mu20_tau27_leg1",
+            "mt_trigger_leg1_sf_cset_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight_MCeff",
+        }
+    )
+
+    # Add configuration for muon leg of muon-tau cross trigger scale factors
+    # and efficiencies
+    # TODO update scale factors for 2025 as soon as dedicated corrections are
+    # available
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "mutau_trigger_leg1_sf": [
+                mt_trigger_muleg_sf_parameters,
+                mt_trigger_muleg_eff_data_parameters,
+                mt_trigger_muleg_eff_mc_parameters,
+            ],
+        },
+    )
+
+
+def _add_tau_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Configuration for trigger scale factors and efficiencies of tau legs of the
+    lepton-tau cross triggers, double-tau triggers, and double-tau-jet
+    triggers.
+    """
+
+    # -------------------------------------------------------------------------
+    # Electron-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the tau leg of the electron-tau cross trigger scale factors
+    et_trigger_tauleg_sf_parameters = {
+        "et_trigger_leg2_flagname": "trg_wgt_ele24_tau30_leg2",
+        "et_trigger_flag": "trg_ele24_tau30",
+        "et_trigger_leg2_sf_name": "etau",
+        "et_trigger_leg2_correction_type": "sf",
+        "et_trigger_leg2_variation": "nom",
+    }
+
+    # Parameters for the tau leg of the electron-tau cross trigger efficiencies
+    # on data
+    et_trigger_tauleg_eff_data_parameters = _get_updated_dict(
+        et_trigger_tauleg_sf_parameters,
+        {
+            "et_trigger_leg2_flagname": "trg_eff_data_ele24_tau30_leg2",
+            "et_trigger_leg2_correction_type": "eff_data",
+            "et_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Parameters for the tau leg of the electron-tau cross trigger efficiencies
+    # on MC
+    et_trigger_tauleg_eff_mc_parameters = _get_updated_dict(
+        et_trigger_tauleg_sf_parameters,
+        {
+            "et_trigger_leg2_flagname": "trg_eff_mc_ele24_tau30_leg2",
+            "et_trigger_leg2_correction_type": "eff_mc",
+            "et_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Add configuration parameters for tau leg of the electron-tau cross
+    # trigger to the configuration
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "eletau_trigger_leg2_sf": EraModifier(
+                {
+                    # TODO fill Run 2
+                    "2016preVFP": [],
+                    "2016postVFP": [],
+                    "2017": [],
+                    "2018": [],
+                    **{
+                        _era: [
+                            et_trigger_tauleg_sf_parameters,
+                            et_trigger_tauleg_eff_data_parameters,
+                            et_trigger_tauleg_eff_mc_parameters,
+                        ]
+                        for _era in ERAS_RUN3
+                    },
+                },
+            ),
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Muon-tau cross trigger
+    # -------------------------------------------------------------------------
+
+    # Parameters for the tau leg of the muon-tau cross trigger scale factors
+    mt_trigger_tauleg_sf_parameters = {
+        "mt_trigger_leg2_flagname": "trg_wgt_mu20_tau27_leg2",
+        "mt_trigger_flag": "trg_mu20_tau27",
+        "mt_trigger_leg2_sf_name": "mutau",
+        "mt_trigger_leg2_correction_type": "sf",
+        "mt_trigger_leg2_variation": "nom",
+    }
+
+    # Parameters for the tau leg of the muon-tau cross trigger efficiencies
+    # on data
+    mt_trigger_tauleg_eff_data_parameters = _get_updated_dict(
+        mt_trigger_tauleg_sf_parameters,
+        {
+            "mt_trigger_leg2_flagname": "trg_eff_data_mu20_tau27_leg2",
+            "mt_trigger_leg2_correction_type": "eff_data",
+            "mt_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Parameters for the tau leg of the muon-tau cross trigger efficiencies
+    # on MC
+    mt_trigger_tauleg_eff_mc_parameters = _get_updated_dict(
+        mt_trigger_tauleg_sf_parameters,
+        {
+            "mt_trigger_leg2_flagname": "trg_eff_mc_mu20_tau27_leg2",
+            "mt_trigger_leg2_correction_type": "eff_mc",
+            "mt_trigger_leg2_variation": "nom",
+        },
+    )
+
+    # Add configuration parameters for tau leg of the muon-tau cross
+    # trigger to the configuration
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "mutau_trigger_leg2_sf": EraModifier(
+                {
+                    # TODO fill Run 2
+                    "2016preVFP": [],
+                    "2016postVFP": [],
+                    "2017": [],
+                    "2018": [],
+                    **{
+                        _era: [
+                            mt_trigger_tauleg_sf_parameters,
+                            mt_trigger_tauleg_eff_data_parameters,
+                            mt_trigger_tauleg_eff_mc_parameters,
+                        ]
+                        for _era in ERAS_RUN3
+                    },
+                },
+            ),
+        },
+    )
+
+    # -------------------------------------------------------------------------
+    # Double-tau and Double-tau+jet triggers
+    # -------------------------------------------------------------------------
+
+    # Create configuration parameters for each leg and each trigger for
+    # scale factors, as well as efficiencies on data and MC
+    tt_parameters = {}
+
+    for i in [1, 2]:
+        # Set default dictionary for legs
+        leg_dict = tt_parameters.setdefault(i, {})
+
+        for trigger in [
+            "double_tau35_mediumiso",                # 2018
+            "double_tau35_tightiso",                 # 2018
+            "double_tau40_mediumiso",                # 2018
+            "double_tau40_tightiso",                 # 2018
+            "double_tau35_mediumdeeptau",            # 2022/2023
+            "double_tau30_jet60_mediumdeeptau",      # 2022/2023
+            "double_tau30_pnet",                     # 2024/2025
+            "double_tau26_jet60_pnet",               # 2024/2025
+        ]:
+            # Set default list for trigger scale factor parameters
+            leg_trigger_list = leg_dict.setdefault(trigger, [])
+
+            # Evaluate the trigger type (ditau or ditaujet)
+            trigger_type = "ditau"
+            if re.search(r"_jet\d+_", trigger) is not None:
+                trigger_type = "ditaujet"
+
+            # Scale factor parameters
+            sf_parameters = {
+                "tt_trigger_flag": f"trg_{trigger}",
+                f"tt_trigger_leg{i}_flagname": f"trg_wgt_{trigger}_leg{i}",
+                f"tt_trigger_leg{i}_sf_name": trigger_type,
+                f"tt_trigger_leg{i}_correction_type": "sf",
+                f"tt_trigger_leg{i}_variation": "nom",
+            }
+            leg_trigger_list.append(sf_parameters)
+
+            # Data efficiency parameters
+            leg_trigger_list.append(
+                _get_updated_dict(
+                    sf_parameters,
+                    {
+                        f"tt_trigger_leg{i}_flagname": f"trg_eff_data_{trigger}_leg{i}",
+                        f"tt_trigger_leg{i}_correction_type": "eff_data",
+                    },
+                ),
+            )
+
+            # MC efficiency parameters
+            leg_trigger_list.append(
+                _get_updated_dict(
+                    sf_parameters,
+                    {
+                        f"tt_trigger_leg{i}_flagname": f"trg_eff_mc_{trigger}_leg{i}",
+                        f"tt_trigger_leg{i}_correction_type": "eff_mc",
+                    },
+                ),
+            )
+
+    # Add configuration parameters for each tau leg of the tau tau trigger
+    for i in [1, 2]:
+        configuration.add_config_parameters(
+            TT_SCOPES,
+            {
+                f"tautau_trigger_leg{i}_sf": EraModifier(
+                    {
+                        # TODO fill 2016 and 2017
+                        "2016preVFP": [],
+                        "2016postVFP": [],
+                        "2017": [],
+                        "2018": list(chain(
+                            tt_parameters[i][flag]
+                            for flag in [
+                                "double_tau35_mediumiso",
+                                "double_tau35_tightiso",
+                                "double_tau40_mediumiso",
+                                "double_tau40_tightiso",
+                            ]
+                        )),
+                        **{
+                            _era: tt_parameters[i]["double_tau35_mediumdeeptau"]
+                            for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                        },
+                        **{
+                            _era: tt_parameters[i]["double_tau30_pnet"]
+                            for _era in ["2024", "2025"]
+                        },
+                    },
+                ),
+            },
+        )
+
+    # Add configuration parameters for each tau leg of the tau tau + jet trigger
+    for i in [1, 2]:
+        configuration.add_config_parameters(
+            TT_SCOPES,
+            {
+                f"tautaujet_trigger_leg{i}_sf": EraModifier(
+                    {
+                        **{_era: [] for _era in ERAS_RUN2},  # do not exist
+                        **{
+                            _era: tt_parameters[i]["double_tau30_jet60_mediumdeeptau"]
+                            for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                        },
+                        **{
+                            _era: tt_parameters[i]["double_tau26_jet60_pnet"]
+                            for _era in ["2024", "2025"]
+                        },
+                    },
+                ),
+            },
+        )
+
+
+def _add_jet_trigger_scale_factors(
+    configuration: Configuration,
+):
+    """
+    Configuration for trigger scale factors and efficiencies of jet legs of the
+    double-tau-jet triggers.
+    """
+
+    # -------------------------------------------------------------------------
+    # Double-tau and Double-tau+jet triggers
+    # -------------------------------------------------------------------------
+
+    # Create configuration parameters for each leg and each trigger for
+    # scale factors, as well as efficiencies on data and MC
+    ttj_parameters = {}
+
+    for trigger in [
+        "double_tau30_jet60_mediumdeeptau",      # 2022/2023
+        "double_tau26_jet60_pnet",               # 2024/2025
+    ]:
+        # Set default list for trigger scale factor parameters
+        trigger_list = ttj_parameters.setdefault(trigger, [])
+
+        # Parameter template; scale factors are not available for this trigger
+        parameters = {
+            "ttj_trigger_flag": f"trg_{trigger}",
+            "ttj_trigger_leg3_variation": "nom",
+            "ttj_trigger_leg3_correction_type": "sf",
+        }
+
+        # Data efficiency parameters
+        trigger_list.append(
+            _get_updated_dict(
+                parameters,
+                {
+                    "ttj_trigger_leg3_flagname": f"trg_eff_data_{trigger}_leg3",
+                    "ttj_trigger_leg3_correction_type": "data",
+                },
+            ),
+        )
+
+        # MC efficiency parameters
+        trigger_list.append(
+            _get_updated_dict(
+                parameters,
+                {
+                    "ttj_trigger_leg3_flagname": f"trg_eff_mc_{trigger}_leg3",
+                    "ttj_trigger_leg3_correction_type": "mc",
+                },
+            ),
+        )
+
+    # Add configuration parameters for jet leg of the tau tau + jet trigger
+    configuration.add_config_parameters(
+        TT_SCOPES,
+        {
+            "tautaujet_trigger_leg3_sf": EraModifier(
+                {
+                    **{_era: [] for _era in ERAS_RUN2},  # does not exist
+                    **{
+                        _era: ttj_parameters["double_tau30_jet60_mediumdeeptau"]
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        _era: ttj_parameters["double_tau26_jet60_pnet"]
+                        for _era in ["2024", "2025"]
+                    },
+                },
+            ),
+        },
+    )
+
+
 def add_diTauTriggerSetup(configuration: Configuration):
 
     # Add isolated and non-isolated single-electron triggers to the et, em, and 
     # ee scopes
     _add_electron_triggers(configuration)
 
+    # Add electron-tau cross triggers to the et scope
+    _add_electron_tau_triggers(configuration)
+
     # Add isolated and non-isolated single-muon triggers to the mt, em, and mm
     # scopes
     _add_muon_triggers(configuration)
 
+    # Add muon-tau cross triggers to the mt scope
+    _add_muon_tau_triggers(configuration)
+
     # Add double-tau and double-tau + jet triggers to the tt scope
     _add_tautau_triggers(configuration)
 
-    # mu-tau trigger
-    configuration.add_config_parameters(
-        MT_SCOPES,
-        {
-            "double_mutau_trigger": EraModifier(
-                {
-                    **{
-                        _era: [
-                            # trigger:            HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
-                            # final filter muon:  hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered
-                            # filter bit muon:    1
-                            # final filter tau:   hltHpsOverlapFilterIsoMu20LooseMuTauWPDeepTauPFTau27L1Seeded
-                            # filter bit tau:     0, 4, 13  TODO implement matching to multiple filters
-                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2024
-                            {
-                                "flagname": "trg_double_mu20tau27",
-                                "hlt_path": "HLT_IsoMu20_eta2p1_PNetTauhPFJet27_Loose_eta2p3_CrossL1",
-                                "p1_min_pt": 22.,
-                                "p1_max_abs_eta": 2.1,
-                                "p1_particle_id": 13,
-                                "p1_filter_bit": 1,
-                                "p2_min_pt": 29.,
-                                "p2_max_abs_eta": 2.1,
-                                "p2_particle_id": 15,
-                                "p2_filter_bit": 13,
-                                "match_max_delta_r": 0.4,
-                            }
-                        ]
-                        for _era in ["2024", "2025"]
-                    },
-                    **{
-                        _era: [
-                            # trigger:            HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1
-                            # final filter muon:  hltL3crIsoBigORMu18erTauXXer2p1L1f0L2f10QL3f20QL3trkIsoFiltered
-                            # filter bit muon:    1
-                            # final filter tau:   hltHpsOverlapFilterIsoMu20LooseMuTauWPDeepTauPFTau27L1Seeded
-                            # filter bit tau:     3, 9  TODO implement matching to multiple filters
-                            # documentation:      https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2022
-                            #                     https://twiki.cern.ch/twiki/bin/view/CMS/TauTrigger#Trigger_Table_for_2023
-                            {
-                                "flagname": "trg_double_mu20tau27",
-                                "hlt_path": "HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1",
-                                "p1_min_pt": 22.,
-                                "p1_max_abs_eta": 2.1,
-                                "p1_particle_id": 13,
-                                "p1_filter_bit": 1,
-                                "p2_min_pt": 29.,
-                                "p2_max_abs_eta": 2.1,
-                                "p2_particle_id": 15,
-                                "p2_filter_bit": 9,
-                                "match_max_delta_r": 0.4,
-                            }
-                        ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    "2018": [
-                        {
-                            "flagname": "trg_cross_mu20tau27_hps",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTauHPS27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
-                        {
-                            "flagname": "trg_cross_mu20tau27",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2017": [
-                        {
-                            "flagname": "trg_cross_mu20tau27",
-                            "hlt_path": "HLT_IsoMu20_eta2p1_LooseChargedIsoPFTau27_eta2p1_CrossL1",
-                            "p1_min_pt": 21,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
-                    "2016postVFP": [
-                        {
-                            "flagname": "trg_cross_mu19tau20",
-                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 20,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 22,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
-                    "2016preVFP": [
-                        {
-                            "flagname": "trg_cross_mu19tau20",
-                            "hlt_path": "HLT_IsoMu19_eta2p1_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 20,
-                            "p1_max_abs_eta": 2.1,
-                            "p1_filter_bit": 3,
-                            "p1_particle_id": 13,
-                            "p2_min_pt": 22,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        }
-                    ],
-                }
-            ),
-        },
-    )
+    # electron trigger scale factors
+    _add_electron_trigger_scale_factors(configuration)
 
-    # e-tau trigger
-    configuration.add_config_parameters(
-        ET_SCOPES,
-        {
-            "double_eletau_trigger": EraModifier(
-                {
-                    **{
-                        _era: [
-                            # TODO check: do the trigger flags make sense for this trigger?
-                            # trigger:            HLT_Ele30_WPTight_Gsf
-                            # final filter ele:   hltOverlapFilterIsoEle24IsoTau30WPTightGsfCaloJet5
-                            # filter bit ele:     2  TODO
-                            # final filter tau:   hltHpsOverlapFilterIsoEle24WPTightGsfLooseETauWPDeepTauPFTau30
-                            # filter bit tau:     3, 8  TODO
-                            # documentation:      https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger#Trigger_Table_for_2022
-                            {
-                                "flagname": "trg_double_ele24tau30",
-                                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1",
-                                "p1_min_pt": 26.,
-                                "p1_max_abs_eta": 2.1,
-                                "p1_filter_bit": -1,
-                                "p1_particle_id": 11,
-                                "p2_min_pt": 32.,
-                                "p2_max_abs_eta": 2.1,
-                                "p2_filter_bit": -1,
-                                "p2_particle_id": 15,
-                                "match_max_delta_r": 0.4,
-                            }
-                        ]
-                        for _era in ERAS_RUN3
-                    },
-                    "2018": [
-                        {
-                            "flagname": "trg_cross_ele24tau30_hps",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 2.5,
-                            "p1_filter_bit": 1,
-                            "p1_particle_id": 11,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": -1,  # TODO switch to "p2_filterbit": 4, if the bits are correct
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        # the non HPS version exists for data only, but add it anyway to have the flag in the ntuple
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 2.5,
-                            "p1_filter_bit": 1,
-                            "p1_particle_id": 11,
-                            "p2_min_pt": 32,
-                            "p2_max_abs_eta": 2.1,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2017": [
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2016postVFP": [
-                        {
-                            "flagname": "trg_cross_ele24tau20",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau20_crossL1",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                    "2016preVFP": [
-                        {
-                            "flagname": "trg_cross_ele24tau20",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20_SingleL1",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 32,
-                            "p1_filter_bit": 2.5,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau20_crossL1",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau20",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 25,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                        {
-                            "flagname": "trg_cross_ele24tau30",
-                            "hlt_path": "HLT_Ele24_eta2p1_WPLoose_Gsf_LooseIsoPFTau30",
-                            "p1_min_pt": 25,
-                            "p1_max_abs_eta": 35,
-                            "p1_filter_bit": 2.1,
-                            "p1_particle_id": 2.1,
-                            "p2_min_pt": 1,
-                            "p2_max_abs_eta": 11,
-                            "p2_filter_bit": 4,
-                            "p2_particle_id": 15,
-                            "match_max_delta_r": 0.4,
-                        },
-                    ],
-                }
-            ),
-        },
-    )
+    # muon trigger scale factors
+    _add_muon_trigger_scale_factors(configuration)
 
-    # single electron trigger scale factors
-    configuration.add_config_parameters(
-        ELECTRON_SCOPES,
-        {
-            # TODO Update 2025 corrections as soon as dedicated corrections are available
-            "e_trigger_sf_file": EraModifier(
-                {  # TODO clarify if we can actually just use the electron trigger SFs
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2017-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv9/2024-07-02/electron.json.gz",
-                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronHlt.json.gz",
-                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
-                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
-                }
-            ),
-            "ele_trigger_sf": [
-                {
-                    "e_trigger_flagname": "trg_wgt_single_ele30",
-                    "e_trigger_flag": "trg_single_ele30",
-                    "e_trigger_era": EraModifier(
-                        {
-                            **{
-                                _era: _era
-                                for _era in ERAS_RUN2
-                            },
-                            "2022preEE": "2022Re-recoBCD",
-                            "2022postEE": "2022Re-recoE+PromptFG",
-                            "2023preBPix": "2023PromptC",
-                            "2023postBPix": "2023PromptD",
-                            "2024": "2024Prompt",
-                            "2025": "2024Prompt",  # TODO update as soon as dedicated corrections are available for 2025
-                        }
-                    ),
-                    "e_trigger_sf_name": "Electron-HLT-SF",
-                    "e_trigger_path_id_name": "HLT_SF_Ele30_MVAiso90ID",
-                    "e_trigger_variation": "sf",
-                },
-            ],
-        },
-    )
+    # tau trigger scale factors
+    _add_tau_trigger_scale_factors(configuration)
 
-    # double electron-tau trigger scale factors
-    # TODO update scale factors for 2025 as soon as dedicated corrections are available
-    configuration.add_config_parameters(
-        ET_SCOPES,
-        {
-            "double_eletau_trigger_leg1_sf": [
-                {
-                    "et_trigger_flag": "trg_double_ele24tau30",
-                    "et_trigger_leg1_flagname": "trg_wgt_double_ele24tau30_leg1",
-                    "et_trigger_leg1_sf_file": EraModifier(
-                        {
-                            **{
-                                _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
-                                for _era in ERAS_RUN2
-                            },
-                            **{
-                                _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
-                                for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
-                            },
-                            "2025": f"data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",
-                        }
-                    ),
-                    "et_trigger_leg1_era": EraModifier(
-                        {
-                            **{
-                                _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras as correctionlib
-                                for _era in ERAS_RUN2
-                            },
-                            "2022preEE": "2022Re-recoBCD",
-                            "2022postEE": "2022Re-recoE+PromptFG",
-                            "2023preBPix": "2023PromptC",
-                            "2023postBPix": "2023PromptD",
-                            "2024": "2024Prompt",
-                            "2025": "2024Prompt",
-                        }
-                    ),
-                    "et_trigger_leg1_sf_name": "Electron-HLT-SF",
-                    "et_trigger_leg1_path_id_name": "HLT_SF_Ele24_TightID",
-                    "et_trigger_leg1_variation": "sf",
-                },
-            ],
-            "double_eletau_trigger_leg2_sf": [
-                {
-                    "et_trigger_leg2_flagname": "trg_wgt_double_ele24tau30_leg2",
-                    "et_trigger_flag": "trg_double_ele24tau30",
-                    "et_trigger_leg2_sf_name": "etau",
-                    "et_trigger_leg2_variation": "nom",
-                },
-            ]
-        },
-    )
-
-    # single muon trigger scale factors
-    configuration.add_config_parameters(
-        MUON_SCOPES,
-        {
-            "mu_trigger_sf": [
-                {
-                    "m_trigger_flagname": "trg_wgt_single_mu24",
-                    "m_trigger_flag": "trg_single_mu24",
-                    "m_trigger_sf_name": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
-                    "m_trigger_variation": "nominal",
-                },
-            ],
-        },
-    )
-
-    # double muon-tau trigger scale factors
-    # TODO update scale factors for 2025 as soon as dedicated corrections are available
-    configuration.add_config_parameters(
-        MT_SCOPES,
-        {
-            "double_mutau_trigger_leg1_sf": [
-                {
-                    "mt_trigger_leg1_sf_file": EraModifier(
-                        {
-                            # TODO clarify if we can actually just use the muon trigger SFs
-                            "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2017-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/Run2-2018-UL-NanoAODv9/2024-07-02/muon_Z.json.gz",
-                            **{
-                                _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
-                                for _era in ERAS_RUN3
-                            },
-                            # TODO update to 2025 correction as soon as it is available
-                            "2025": "data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json"
-                        }
-                    ),
-                    "mt_trigger_leg1_flagname": "trg_wgt_double_mu20tau27_leg1",
-                    "mt_trigger_flag": "trg_double_mu20tau27",
-                    "mt_trigger_leg1_sf_name": "NUM_IsoMu20_DEN_CutBasedIdTight_and_PFIsoTight",
-                    "mt_trigger_leg1_variation": "nominal",
-                },
-            ],
-            "double_mutau_trigger_leg2_sf": [
-                {
-                    "mt_trigger_leg2_flagname": "trg_wgt_double_mu20tau27_leg2",
-                    "mt_trigger_flag": "trg_double_mu20tau27",
-                    "mt_trigger_leg2_sf_name": "mutau",
-                    "mt_trigger_leg2_variation": "nom",
-                },
-            ],
-        },
-    )
-
-    # double tau-tau trigger scale factors
-    common_double_tautau_trigger_args = {
-        "tt_trigger_leg1_sf_name": "ditau",
-        "tt_trigger_leg1_variation": "nom",
-        "tt_trigger_leg2_sf_name": "ditau",
-        "tt_trigger_leg2_variation": "nom",
-    }
-    configuration.add_config_parameters(
-        TT_SCOPES,
-        {
-            "double_tautau_trigger_leg1_sf": EraModifier(
-                {
-                    # TODO fill 2016 and 2017
-                    "2016preVFP": [],
-                    "2016postVFP": [],
-                    "2017": [],
-                    "2018": [
-                        {
-                            "tt_trigger_leg1_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg1",
-                            "tt_trigger_flag": flag,
-                            **common_double_tautau_trigger_args,
-                        }
-                        for flag in [
-                            "trg_double_tau35_mediumiso",
-                            "trg_double_tau35_tightiso",
-                            "trg_double_tau40_mediumiso",
-                            "trg_double_tau40_tightiso",
-                        ]
-                    ],
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg1_flagname": "trg_wgt_double_tau35_mediumdeeptau_leg1",
-                                "tt_trigger_flag": "trg_double_tau35_mediumdeeptau",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg1_flagname": "trg_wgt_double_tau30_mediumpnet_leg1",
-                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2024", "2025"]
-                    },
-                },
-            ),
-            "double_tautau_trigger_leg2_sf": EraModifier(
-                {
-                    # TODO fill 2016 and 2017
-                    "2016preVFP": [],
-                    "2016postVFP": [],
-                    "2017": [],
-                    "2018": [
-                        {
-                            "tt_trigger_leg2_flagname": f"{flag.replace('trg_', 'trg_wgt')}_leg2",
-                            "tt_trigger_flag": flag,
-                            **common_double_tautau_trigger_args,
-                        }
-                        for flag in [
-                            "trg_double_tau35_mediumiso",
-                            "trg_double_tau35_tightiso",
-                            "trg_double_tau40_mediumiso",
-                            "trg_double_tau40_tightiso",
-                        ]
-                    ],
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau35_mediumdeeptau_leg2",
-                                "tt_trigger_flag": "trg_double_tau35_mediumdeeptau",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
-                    },
-                    **{
-                        _era: [
-                            {
-                                "tt_trigger_leg2_flagname": "trg_wgt_double_tau30_mediumpnet_leg2",
-                                "tt_trigger_flag": "trg_double_tau30_mediumpnet",
-                                **common_double_tautau_trigger_args,
-                            },
-                        ]
-                        for _era in ["2024", "2025"]
-                    },
-                },
-            ),
-        },
-    )
+    # jet trigger scale factors
+    _add_jet_trigger_scale_factors(configuration)
 
     return configuration

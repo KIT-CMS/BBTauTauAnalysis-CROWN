@@ -479,6 +479,68 @@ def add_electron_config(configuration: Configuration):
         },
     )
 
+    # Single-electron trigger scale factor, general settings (more granular
+    # configuration is part of tau_triggersetup.py)
+    # TODO Corrections for 2025 are not available yet, include them as soon as
+    # they have been published
+    configuration.add_config_parameters(
+        ELECTRON_SCOPES,
+        {
+            "ele_trigger_sf_file": EraModifier(
+                {  # TODO clarify if we can actually just use the electron trigger SFs
+                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016preVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2016postVFP-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2017-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run2-2018-UL-NanoAODv9/2024-07-02/electron.json.gz",
+                    "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22CDSep23-Summer22-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-22EFGSep23-Summer22EE-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23CSep23-Summer23-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2023postBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-23DSep23-Summer23BPix-NanoAODv12/2025-12-15/electronHlt.json.gz",
+                    "2024": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",
+                    "2025": "/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15/2025-12-15/electronHlt.json.gz",  # TODO update
+                }
+            ),
+            "ele_trigger_sf_era": EraModifier(
+                {
+                    **{
+                        _era: _era
+                        for _era in ERAS_RUN2
+                    },
+                    "2022preEE": "2022Re-recoBCD",
+                    "2022postEE": "2022Re-recoE+PromptFG",
+                    "2023preBPix": "2023PromptC",
+                    "2023postBPix": "2023PromptD",
+                    "2024": "2024Prompt",
+                    "2025": "2024Prompt",  # TODO update as soon as dedicated corrections are available for 2025
+                }
+            ),
+        }
+    )
+
+
+    # Electron-tau trigger scale factor (electron leg), general settings
+    # (more granular configuration is part of tau_triggersetup.py)
+    # TODO Corrections for 2025 are not available yet, include them as soon as
+    # they have been published
+    configuration.add_config_parameters(
+        ET_SCOPES,
+        {
+            "eletau_eleg_trigger_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossEleTauHlt_EleLeg_v1.json"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/CrossEleTauHlt_EleLeg_v1.json",  # TODO update
+                },
+            ),
+        },
+    )
+
     # Electron identification and isolation corrections for mu -> tau-embedded events
     configuration.add_config_parameters(
         ELECTRON_SCOPES,
@@ -705,6 +767,29 @@ def add_muon_config(configuration: Configuration):
                 },
             ),
             "muon_es_variation": "nom",
+        },
+    )
+
+    # Muon-tau trigger scale factor (muon leg), general settings
+    # (more granular configuration is part of tau_triggersetup.py)
+    # TODO Corrections for 2025 are not available yet, include them as soon as
+    # they have been published
+    configuration.add_config_parameters(
+        MT_SCOPES,
+        {
+            "mutau_muleg_trigger_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST"  # TODO does not exist for Run2 eras
+                        for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/CrossMuTauHlt_MuLeg_v1.json"
+                        for _era in ERAS_RUN3
+                    },
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/CrossMuTauHlt_MuLeg_v1.json",  # TODO update
+                },
+            ),
         },
     )
 
@@ -1486,6 +1571,39 @@ def add_ak4jet_config(configuration: Configuration):
             "jet_veto_max_em_frac": 0.9,
             "jet_veto_min_delta_r_jet_muon": 0.2,
         }
+    )
+
+    # Trigger scale factors for di-tau+jet trigger, jet leg
+    # TODO 2025 corrections have not arrived yet, update as soon as possible
+    configuration.add_config_parameters(
+        TT_SCOPES,
+        {
+            "tautaujet_jetleg_trigger_sf_file": EraModifier(
+                {
+                    **{
+                        _era: "DOES_NOT_EXIST" for _era in ERAS_RUN2
+                    },
+                    **{
+                        _era: f"data/hleprare/TriggerScaleFactors/{_era}/DiTauJetHlt_JetLeg_v1.json"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": "data/hleprare/TriggerScaleFactors/2024/DiTauJetHlt_JetLeg_v1.json",  # TODO update
+                },
+            ),
+            "tautaujet_jetleg_trigger_cset_name": EraModifier(
+                {
+                    **{
+                        _era: "jetlegSFs"
+                        for _era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]
+                    },
+                    **{
+                        _era: "jetleg60"
+                        for _era in ["2024", "2025"]
+                    },
+                },
+            ),
+            "tautaujet_jetleg_trigger_jec_variation": "leading_jet_pt_nom",
+        },
     )
 
 
@@ -2576,20 +2694,6 @@ def build_config(
     #     era,
     # )
 
-    # Di-tau + jet trigger
-    # - In Run 2, di-tau + jet triggers did not exist, so no producer is added.
-    # - In Run 3, di-tau + jet triggers are available and the corresponding trigger flag producers
-    #   are added to the tt scope.
-    tautaujet_trigger_producers = get_for_era(
-        {
-            tuple(ERAS_RUN3): [
-                triggers.TauTauJetTriggerFlags,
-            ],
-        },
-        era,
-        default=[],
-    )
-
     # For 2024, replace the nBHadrons and nCHadrons producers, as they are not
     # stored in the jet collection, but must be accessed via the associated
     # GenJetAK8 collection
@@ -2704,14 +2808,19 @@ def build_config(
             genparticles.ETGenDiTauPairQuantities,
             scalefactors.EleID_SF,
             triggers.SingleEleTriggerFlags,
-            triggers.DoubleEleTauTriggerFlags,
             scalefactors.SingleEleTriggerSF,
-            # scalefactors.DoubleEleTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
-            # TODO rework trigger setup before enabling this
-            # triggers.ETGenerateCrossTriggerFlags,
-            # triggers.GenerateSingleTrailingTauTriggerFlags,
         ]
     )
+
+    # Add electron-tau cross trigger in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_producers(
+            ET_SCOPES,
+            [
+                triggers.EleTauTriggerFlags,
+                scalefactors.EleTauTriggerSF,
+            ],
+        )
 
     # Producers for quantities in the mt scope
     configuration.add_producers(
@@ -2731,14 +2840,20 @@ def build_config(
             pairquantities.MTDiTauPairQuantities,
             genparticles.MTGenDiTauPairQuantities,
             triggers.SingleMuTriggerFlags,
-            triggers.DoubleMuTauTriggerFlags,
             scalefactors.MuonIDIso_SF,
             scalefactors.SingleMuTriggerSF,
-            # scalefactors.DoubleMuTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
-            # TODO rework trigger setup before enabling this
-            # triggers.GenerateSingleTrailingTauTriggerFlags,
         ]
     )
+
+    # Add muon-tau cross triggers in run 3
+    if era in ERAS_RUN3:
+        configuration.add_producers(
+            MT_SCOPES,
+            [
+                triggers.MuTauTriggerFlags,
+                scalefactors.MuTauTriggerSF,
+            ],
+        )
 
     # Producers for quantities in the tt scope
     configuration.add_producers(
@@ -2756,12 +2871,18 @@ def build_config(
             genparticles.TTGenDiTauPairQuantities,
             triggers.TauTauTriggerFlags,
             scalefactors.TauTauTriggerSF,
-            # TODO rework trigger setup before enabling this
-            # triggers.GenerateSingleTrailingTauTriggerFlags,
-            # triggers.GenerateSingleLeadingTauTriggerFlags,
         ]
-        + tautaujet_trigger_producers
     )
+
+    # Add di-tau+jet trigger in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_producers(
+            TT_SCOPES,
+            [
+                triggers.TauTauJetTriggerFlags,
+                scalefactors.TauTauJetTriggerSF,
+            ]
+        )
 
     # Producers for quantities in the et scope
     configuration.add_producers(
@@ -2908,7 +3029,8 @@ def build_config(
         ),
     )
 
-    # Remove trigger scale factor producers from data and embedding samples in mt scope
+    # Remove electron/electron-tau trigger scale factor producers from data and
+    # embedding
     configuration.add_modification_rule(
         ELECTRON_SCOPES,
         RemoveProducer(
@@ -2918,19 +3040,19 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         ),
     )
-    # TODO fix for Run 2, SF seem to not be available
-    # configuration.add_modification_rule(
-    #     ET_SCOPES,
-    #     RemoveProducer(
-    #         producers=[
-    #             scalefactors.DoubleEleTauTriggerSF,
-    #         ],
-    #         samples=["data", "embedding", "embedding_mc"],
-    #     ),
-    # )
+    if era in ERAS_RUN3:
+        configuration.add_modification_rule(
+            ET_SCOPES,
+            RemoveProducer(
+                producers=[
+                    scalefactors.EleTauTriggerSF,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            ),
+        )
 
-
-    # Remove trigger scale factor producers from data and embedding samples in mt scope
+    # Remove muon/muon-tau trigger scale factor producers from data and
+    # embedding
     configuration.add_modification_rule(
         MUON_SCOPES,
         RemoveProducer(
@@ -2940,16 +3062,16 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         )
     )
-    # TODO fix for Run 2, SF seem to not be available
-    # configuration.add_modification_rule(
-    #     MT_SCOPES,
-    #     RemoveProducer(
-    #         producers=[
-    #             scalefactors.DoubleMuTauTriggerSF,
-    #         ],
-    #         samples=["data", "embedding", "embedding_mc"],
-    #     )
-    # )
+    if era in ERAS_RUN3:
+        configuration.add_modification_rule(
+            MT_SCOPES,
+            RemoveProducer(
+                producers=[
+                    scalefactors.MuTauTriggerSF,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            )
+        )
 
     # Remove muon ID and isolation scale factor producers from data and embedding samples in mt scope
     configuration.add_modification_rule(
@@ -2962,7 +3084,8 @@ def build_config(
         )
     )
 
-    # Remove trigger scale factor producers from data and embedding samples in tt scope
+    # Remove tautau/tautaujet trigger scale factor producers from data and
+    # embedding
     configuration.add_modification_rule(
         TT_SCOPES,
         RemoveProducer(
@@ -2972,8 +3095,18 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         ),
     )
+    if era in ERAS_RUN3:
+        configuration.add_modification_rule(
+            TT_SCOPES,
+            RemoveProducer(
+                producers=[
+                    scalefactors.TauTauJetTriggerSF,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            ),
+        )
 
-    # TODO re-include
+    # TODO re-include if needed
     #configuration.add_modification_rule(
     #    ["et", "mt", "tt"],
     #    AppendProducer(
@@ -3240,18 +3373,6 @@ def build_config(
         ),
     )
 
-    # Append scale factor producers
-    #configuration.add_modification_rule(
-    #    MUON_SCOPES,
-    #    AppendProducer(
-    #        producers=[
-    #            scalefactors.MuonIDIso_SF,
-    #            scalefactors.SingleMuTriggerSF,
-    #        ],
-    #        exclude_samples=["data", "embedding", "embedding_mc"],
-    #    ),
-    #)
-
     # Output columns for all scopes
     configuration.add_outputs(
         SCOPES,
@@ -3516,15 +3637,6 @@ def build_config(
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.SingleMuTriggerFlags.output_group,
             scalefactors.SingleMuTriggerSF.output_group,
-            # triggers.DoubleMuTauTriggerFlags.output_group,  # TODO fix for Run 2, SF seem to not be available
-            # [
-            #     p
-            #     for p in scalefactors.DoubleMuTauTriggerSF.get_outputs("mt")  # TODO fix for Run 2, SF seem to not be available
-            # ]
-            # triggers.MTGenerateCrossTriggerFlags.output_group,
-            # triggers.GenerateSingleTrailingTauTriggerFlags.output_group,
-            # q.taujet_pt_2,
-            # q.gen_taujet_pt_2,
             q.tau_decaymode_1,
             q.tau_decaymode_2,
             q.electron_veto_flag,
@@ -3532,6 +3644,18 @@ def build_config(
             q.dilepton_veto,
         ],
     )
+
+    # Add muon-tau cross trigger only in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_outputs(
+            MT_SCOPES,
+            [
+                triggers.MuTauTriggerFlags.output_group,
+            ] + [
+                o
+                for o in scalefactors.MuTauTriggerSF.get_outputs("mt")
+            ],
+        )
 
     configuration.add_outputs(
         "et",
@@ -3543,11 +3667,6 @@ def build_config(
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.SingleEleTriggerFlags.output_group,
             scalefactors.SingleEleTriggerSF.output_group,
-            # triggers.DoubleEleTauTriggerFlags.output_group,
-            # [
-            #     p
-            #     for p in scalefactors.DoubleEleTauTriggerSF.get_outputs("et")  # TODO fix for Run 2, SF seem to not be available
-            # ]
             # q.taujet_pt_2,
             # q.gen_taujet_pt_2,
             q.tau_decaymode_1,
@@ -3559,6 +3678,18 @@ def build_config(
             # q.id_wgt_ele_wp80nonIso_1,
         ],
     )
+
+    # Add electron-tau cross triggers in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_outputs(
+            ET_SCOPES,
+            [
+                triggers.EleTauTriggerFlags.output_group,
+            ] + [
+                o
+                for o in scalefactors.EleTauTriggerSF.get_outputs("et")
+            ],
+        )
 
     configuration.add_outputs(
         "tt",
@@ -3574,20 +3705,24 @@ def build_config(
             ] + [
                 o for o in scalefactors.TauTauTriggerSF.get_outputs("tt")
             ] + [
-                producer.output_group
-                for producer in tautaujet_trigger_producers
-            ] + [
-            # q.taujet_pt_1,
-            # q.taujet_pt_2,
-            # q.gen_taujet_pt_2,
             q.tau_decaymode_1,
             q.tau_decaymode_2,
             q.electron_veto_flag,
             q.muon_veto_flag,
-            # q.fj_leading_pt,
-            # q.fj_leading_msoftdrop,
         ],
     )
+
+    # Add di-tau+jet trigger in Run 3
+    if era in ERAS_RUN3:
+        configuration.add_outputs(
+            TT_SCOPES,
+            [
+                triggers.TauTauJetTriggerFlags.output_group,
+            ] + [
+                o
+                for o in scalefactors.TauTauJetTriggerSF.get_outputs("tt")
+            ],
+        )
 
     if "data" not in sample:
         configuration.add_outputs(
@@ -3920,6 +4055,8 @@ def build_config(
         [scalefactors.TauTauTriggerSF],
         "tt",
     )
+
+    # TODO add electron-tau, muon-tau and tau-tau-jet trigger systematics
 
     #endregion
 
