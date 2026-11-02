@@ -104,6 +104,24 @@ npartons = Producer(
     scopes=["global"],
 )
 
+# Pileup proxies: number of good primary vertices and the median energy
+# density rho
+npv_good = Producer(
+    name="npv_good",
+    call="event::quantity::Rename<UChar_t>({df}, {output}, {input})",
+    input=[nanoAOD.PV_npvsGood],
+    output=[q.npv_good],
+    scopes=["global"],
+)
+
+rho = Producer(
+    name="rho",
+    call="event::quantity::Rename<float>({df}, {output}, {input})",
+    input=[nanoAOD.Rho_fixedGridRhoFastjetAll],
+    output=[q.rho],
+    scopes=["global"],
+)
+
 PUweights = Producer(
     name="PUweights",
     call="""event::reweighting::Pileup(
@@ -176,6 +194,41 @@ JetVetoMapVeto = Producer(
         nanoAOD.Jet_neEmEF,
     ],
     output=[q.jet_vetomap_veto],
+    scopes=["global"],
+)
+
+# 2018 HEM 15/16 event flag (JME recipe for UL, v7 spec E29): a loose jet of the
+# re-calibrated, not yet lepton-cleaned collection in the region of the failed
+# HCAL endcap modules, in the affected period (data and embedding by run, MC by
+# the luminosity fraction of that period); ShapeSmith vetoes the flagged events.
+HemVetoFlag = Producer(
+    name="HemVetoFlag",
+    call="""
+    xyh::vetoes::hem_veto(
+        {df},
+        {output},
+        {input},
+        {hem_veto_by_run},
+        {hem_veto_jet_min_pt},
+        {hem_veto_jet_id_wp},
+        {hem_veto_min_eta},
+        {hem_veto_max_eta},
+        {hem_veto_min_phi},
+        {hem_veto_max_phi},
+        {hem_veto_first_run},
+        {hem_veto_affected_fraction}
+    )
+    """,
+    input=[
+        q.Jet_correctedPt,
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.Jet_ID,
+        nanoAOD.run,
+        nanoAOD.luminosityBlock,
+        nanoAOD.event,
+    ],
+    output=[q.hem_veto],
     scopes=["global"],
 )
 

@@ -2,7 +2,12 @@
 #include "../../../../include/utility/Logger.hxx"
 #include "ROOT/RDataFrame.hxx"
 #include "correction.h"
+#include <algorithm>
+#include <functional>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 #include <spdlog/fmt/ranges.h>
 
 
@@ -102,267 +107,141 @@ std::string join(const std::vector<correction::Variable::Type> &vector) {
 namespace xyh {
 
 // ----------------------------------------------------------------------------
-// Fake factor evaluation in the semileptonic channels
+// Fake factor of one tau leg, summed over the processes of the payload
 // ----------------------------------------------------------------------------
 
-ROOT::RDF::RNode RawFakeFactorSemileptonic(
+ROOT::RDF::RNode FakeFactor(
     ROOT::RDF::RNode df,
     correctionManager::CorrectionManager &correctionManager,
-    const std::string &outputname, const std::string &qcd_inputs,
-    const std::string &tt_inputs, const std::string &fraction_inputs,
-    const std::string &ff_file, const std::string &ff_qcd_name,
-    const std::string &ff_tt_name, const std::string &ff_fraction_name,
-    const std::string &ff_qcd_variation, const std::string &ff_tt_variation,
-    const std::string &ff_fraction_variation) {
-    // Define logger name and print general debug information
-    auto logger_name = "fakefactors::xyh::RawFakeFactorSemileptonic";
+    const std::string &outputname, const std::vector<std::string> &inputs,
+    const std::vector<std::string> &processes, const std::string &ff_file,
+    const std::vector<std::string> &ff_names, const std::string &fraction_name,
+    const std::string &corr_file, const std::vector<std::string> &corr_names,
+    const std::vector<std::string> &corr_processes,
+    const std::vector<int> &corr_compound,
+    const std::vector<std::string> &ff_variations,
+    const std::string &fraction_variation,
+    const std::vector<std::string> &corr_variations) {
+    const std::string logger_name = "fakefactors::xyh::FakeFactor";
+    const std::size_t n_processes = processes.size();
+    const std::size_t n_corrections = corr_names.size();
 
-    // Load the correction sets with fake factors and process fractions
+    // The layout: one fake factor per process, one process per correction,
+    // and the inputs of the fractions, the fake factors and the corrections.
+    if (n_processes == 0 || ff_names.size() != n_processes ||
+        ff_variations.size() != n_processes) {
+        throw std::invalid_argument(
+            logger_name + ": " + outputname + " needs one fake factor and one "
+            "variation per process, got " + std::to_string(n_processes) +
+            " processes, " + std::to_string(ff_names.size()) +
+            " fake factors and " + std::to_string(ff_variations.size()) +
+            " variations");
+    }
+    if (corr_processes.size() != n_corrections ||
+        corr_compound.size() != n_corrections ||
+        corr_variations.size() != n_corrections) {
+        throw std::invalid_argument(
+            logger_name + ": " + outputname + " needs a process, a kind and a "
+            "variation for each of its " + std::to_string(n_corrections) +
+            " corrections");
+    }
+    if (inputs.size() != 1 + n_processes + n_corrections) {
+        throw std::invalid_argument(
+            logger_name + ": " + outputname + " needs " +
+            std::to_string(1 + n_processes + n_corrections) +
+            " input columns, got " + std::to_string(inputs.size()));
+    }
+    std::vector<std::size_t> corr_process_index;
+    for (const auto &process : corr_processes) {
+        const auto found =
+            std::find(processes.begin(), processes.end(), process);
+        if (found == processes.end()) {
+            throw std::invalid_argument(logger_name + ": a correction of " +
+                                        outputname + " belongs to process " +
+                                        process + ", which is not summed");
+        }
+        corr_process_index.push_back(found - processes.begin());
+    }
+
+    // Load the correction sets once
     Logger::get(logger_name)
-        ->debug("Loading correction sets for raw fake factor evaluation");
-    auto qcd_cset = correctionManager.loadCorrection(ff_file, ff_qcd_name);
-    auto tt_cset = correctionManager.loadCorrection(ff_file, ff_tt_name);
+        ->debug("Loading the fake factors of {} and {} corrections for {}",
+                fmt::join(processes, ", "), n_corrections, outputname);
     auto fractions_cset =
-        correctionManager.loadCorrection(ff_file, ff_fraction_name);
+        correctionManager.loadCorrection(ff_file, fraction_name);
+    std::vector<const correction::Correction *> ff_csets;
+    for (const auto &name : ff_names) {
+        ff_csets.push_back(correctionManager.loadCorrection(ff_file, name));
+    }
+    using Inputs = std::vector<correction::Variable::Type>;
+    std::vector<std::function<double(const Inputs &)>> corr_evaluators;
+    for (std::size_t c = 0; c < n_corrections; ++c) {
+        if (corr_compound.at(c)) {
+            auto cset = correctionManager.loadCompoundCorrection(
+                corr_file, corr_names.at(c));
+            corr_evaluators.push_back(
+                [cset](const Inputs &values) { return cset->evaluate(values); });
+        } else {
+            auto cset =
+                correctionManager.loadCorrection(corr_file, corr_names.at(c));
+            corr_evaluators.push_back(
+                [cset](const Inputs &values) { return cset->evaluate(values); });
+        }
+    }
 
-    auto raw_ff_semileptonic = [logger_name, qcd_cset, tt_cset, fractions_cset,
-                                ff_qcd_name, ff_tt_name, ff_fraction_name,
-                                ff_qcd_variation, ff_tt_variation,
-                                ff_fraction_variation](
-                                   const std::vector<float> &qcd_inputs,
-                                   const std::vector<float> &tt_inputs,
-                                   const std::vector<float> &fraction_inputs) {
-        // Initial debug message at the start of the function
-        Logger::get(logger_name)->debug("Run raw fake factor evaluation");
+    // All input vectors in one column, in the order of `inputs`
+    using Packed = std::vector<std::vector<float>>;
+    std::string packed = outputname + "_ff_inputs_0";
+    auto df1 = df.Define(
+        packed, [](const std::vector<float> &values) { return Packed{values}; },
+        {inputs.at(0)});
+    for (std::size_t i = 1; i < inputs.size(); ++i) {
+        const std::string next = outputname + "_ff_inputs_" + std::to_string(i);
+        df1 = df1.Define(
+            next,
+            [](const Packed &previous, const std::vector<float> &values) {
+                Packed result = previous;
+                result.push_back(values);
+                return result;
+            },
+            {packed, inputs.at(i)});
+        packed = next;
+    }
 
-        // Debug messages for the systematic variations being applied
-        Logger::get(logger_name)->debug("Variations for fake factors:");
-        Logger::get(logger_name)
-            ->debug("    {}: {}", ff_qcd_name, ff_qcd_variation);
-        Logger::get(logger_name)
-            ->debug("    {}: {}", ff_tt_name, ff_tt_variation);
-        Logger::get(logger_name)
-            ->debug("    {}: {}", ff_fraction_name, ff_fraction_variation);
-
-        // Prepare the inputs for the correction set evaluation
-        auto _qcd_inputs =
-            fakefactors::util::prepare_ff_input(qcd_inputs, ff_qcd_variation);
-        auto _tt_inputs =
-            fakefactors::util::prepare_ff_input(tt_inputs, ff_tt_variation);
-        auto _fraction_inputs_qcd = fakefactors::util::prepare_fractions_input(
-            fraction_inputs, "QCD", ff_fraction_variation);
-        auto _fraction_inputs_tt = fakefactors::util::prepare_fractions_input(
-            fraction_inputs, "ttbar", ff_fraction_variation);
-
-        // Debug messages for inputs to correction sets
-        Logger::get(logger_name)
-            ->debug("Evaluating fake factors and process fractions with "
-                    "the following input vectors");
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_qcd_name,
-                    fakefactors::util::join(_qcd_inputs));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_tt_name,
-                    fakefactors::util::join(_tt_inputs));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name,
-                    fakefactors::util::join(_fraction_inputs_qcd));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name,
-                    fakefactors::util::join(_fraction_inputs_tt));
-
-        // Get the fake factors and process fractions from the
-        // correction sets
-        float ff_qcd = qcd_cset->evaluate(_qcd_inputs);
-        float ff_tt = tt_cset->evaluate(_tt_inputs);
-        float frac_qcd = fractions_cset->evaluate(_fraction_inputs_qcd);
-        float frac_tt = fractions_cset->evaluate(_fraction_inputs_tt);
-
-        // Debug messages for fake factors and process fractions
-        Logger::get(logger_name)->debug("Got results");
-        Logger::get(logger_name)->debug("    cset {}: {}", ff_qcd_name, ff_qcd);
-        Logger::get(logger_name)->debug("    cset {}: {}", ff_tt_name, ff_tt);
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name, frac_qcd);
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name, frac_tt);
-
-        // Calculate the raw fake factor
-        float ff =
-            frac_qcd * std::max(ff_qcd, 0.f) + frac_tt * std::max(ff_tt, 0.f);
-        Logger::get(logger_name)->debug("Calculated raw fake factor {}", ff);
-
+    auto fake_factor = [logger_name, processes, fractions_cset, ff_csets,
+                        corr_evaluators, corr_process_index, ff_variations,
+                        fraction_variation, corr_variations, n_processes,
+                        n_corrections](const Packed &values) {
+        // fake factor of each process times its corrections, in float as the
+        // former two-process function
+        std::vector<float> products(n_processes);
+        for (std::size_t p = 0; p < n_processes; ++p) {
+            products[p] = ff_csets[p]->evaluate(fakefactors::util::prepare_ff_input(
+                values[1 + p], ff_variations[p]));
+        }
+        for (std::size_t c = 0; c < n_corrections; ++c) {
+            const float correction =
+                corr_evaluators[c](fakefactors::util::prepare_ff_input(
+                    values[1 + n_processes + c], corr_variations[c]));
+            products[corr_process_index[c]] *= correction;
+        }
+        // sum over the processes, weighted with their fractions
+        float ff = 0.f;
+        for (std::size_t p = 0; p < n_processes; ++p) {
+            const float fraction = fractions_cset->evaluate(
+                fakefactors::util::prepare_fractions_input(
+                    values[0], processes[p], fraction_variation));
+            const float term = fraction * std::max(products[p], 0.f);
+            Logger::get(logger_name)
+                ->debug("    {}: fraction {}, fake factor {}", processes[p],
+                        fraction, products[p]);
+            ff = p == 0 ? term : ff + term;
+        }
+        Logger::get(logger_name)->debug("Calculated fake factor {}", ff);
         return ff;
     };
 
-    return df.Define(outputname, raw_ff_semileptonic,
-                     {qcd_inputs, tt_inputs, fraction_inputs});
-}
-
-ROOT::RDF::RNode FakeFactorSemileptonic(
-    ROOT::RDF::RNode df,
-    correctionManager::CorrectionManager &correctionManager,
-    const std::string &outputname, const std::string &qcd_inputs,
-    const std::string &tt_inputs, const std::string &fraction_inputs,
-    const std::string &qcd_corr_dr_sr_inputs,
-    const std::string &qcd_corr_closure_inputs,
-    const std::string &tt_corr_closure_inputs, const std::string &ff_file,
-    const std::string &ff_qcd_name, const std::string &ff_tt_name,
-    const std::string &ff_fraction_name, const std::string &corr_file,
-    const std::string &corr_qcd_dr_sr_name,
-    const std::string &corr_qcd_closure_name,
-    const std::string &corr_tt_closure_name,
-    const std::string &ff_qcd_variation, const std::string &ff_tt_variation,
-    const std::string &ff_fraction_variation,
-    const std::string &qcd_corr_dr_sr_variation,
-    const std::string &qcd_corr_closure_variation,
-    const std::string &tt_corr_closure_variation) {
-    // Define logger name and print general debug information
-    auto logger_name = "fakefactors::xyh::FakeFactorSemileptonic";
-
-    // Load the correction sets with fake factors and process fractions, as
-    // well as the compound fake factor corrections
-    Logger::get(logger_name)
-        ->debug("Loading correction sets for fake factor evaluation with "
-                "corrections");
-    auto qcd_cset = correctionManager.loadCorrection(ff_file, ff_qcd_name);
-    auto tt_cset = correctionManager.loadCorrection(ff_file, ff_tt_name);
-    auto fractions_cset =
-        correctionManager.loadCorrection(ff_file, ff_fraction_name);
-    auto qcd_corr_dr_sr_cset =
-        correctionManager.loadCorrection(corr_file, corr_qcd_dr_sr_name);
-    auto qcd_corr_closure_cset = correctionManager.loadCompoundCorrection(
-        corr_file, corr_qcd_closure_name);
-    auto tt_corr_closure_cset = correctionManager.loadCompoundCorrection(
-        corr_file, corr_tt_closure_name);
-
-    auto ff_semileptonic = [qcd_cset, tt_cset, fractions_cset,
-                            qcd_corr_dr_sr_cset, qcd_corr_closure_cset,
-                            tt_corr_closure_cset, logger_name, ff_qcd_name,
-                            ff_tt_name, ff_fraction_name, corr_qcd_dr_sr_name,
-                            corr_qcd_closure_name, corr_tt_closure_name,
-                            ff_qcd_variation, ff_tt_variation,
-                            ff_fraction_variation, qcd_corr_dr_sr_variation,
-                            qcd_corr_closure_variation,
-                            tt_corr_closure_variation](
-                               const std::vector<float> &qcd_inputs,
-                               const std::vector<float> &tt_inputs,
-                               const std::vector<float> &fraction_inputs,
-                               const std::vector<float> &qcd_corr_dr_sr_inputs,
-                               const std::vector<float>
-                                   &qcd_corr_closure_inputs,
-                               const std::vector<float>
-                                   &tt_corr_closure_inputs) {
-        // Initial debug message at the start of the function
-        Logger::get(logger_name)
-            ->debug("Run fake factor evaluation with corrections");
-
-        Logger::get(logger_name)->debug("Variations for fake factors:");
-        Logger::get(logger_name)
-            ->debug("    {}: {}", ff_qcd_name, ff_qcd_variation);
-        Logger::get(logger_name)
-            ->debug("    {}: {}", ff_tt_name, ff_tt_variation);
-        Logger::get(logger_name)
-            ->debug("    {}: {}", ff_fraction_name, ff_fraction_variation);
-        Logger::get(logger_name)
-            ->debug("    {}: {}", corr_qcd_dr_sr_name,
-                    qcd_corr_dr_sr_variation);
-        Logger::get(logger_name)
-            ->debug("    {}: {}", corr_qcd_closure_name,
-                    qcd_corr_closure_variation);
-        Logger::get(logger_name)
-            ->debug("    {}: {}", corr_tt_closure_name,
-                    tt_corr_closure_variation);
-
-        // Prepare inputs
-        auto _qcd_inputs =
-            fakefactors::util::prepare_ff_input(qcd_inputs, ff_qcd_variation);
-        auto _tt_inputs =
-            fakefactors::util::prepare_ff_input(tt_inputs, ff_tt_variation);
-        auto _fraction_inputs_qcd = fakefactors::util::prepare_fractions_input(
-            fraction_inputs, "QCD", ff_fraction_variation);
-        auto _fraction_inputs_tt = fakefactors::util::prepare_fractions_input(
-            fraction_inputs, "ttbar", ff_fraction_variation);
-        auto _qcd_corr_dr_sr_inputs = fakefactors::util::prepare_ff_input(
-            qcd_corr_dr_sr_inputs, qcd_corr_dr_sr_variation);
-        auto _qcd_corr_closure_inputs = fakefactors::util::prepare_ff_input(
-            qcd_corr_closure_inputs, qcd_corr_closure_variation);
-        auto _tt_corr_closure_inputs = fakefactors::util::prepare_ff_input(
-            tt_corr_closure_inputs, tt_corr_closure_variation);
-
-        // Debug messages for inputs to correction sets
-        Logger::get(logger_name)
-            ->debug("Evaluating fake factors and process "
-                    "fractions with "
-                    "the following input vectors");
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_qcd_name,
-                    fakefactors::util::join(_qcd_inputs));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_tt_name,
-                    fakefactors::util::join(_tt_inputs));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name,
-                    fakefactors::util::join(_fraction_inputs_qcd));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name,
-                    fakefactors::util::join(_fraction_inputs_tt));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", corr_qcd_dr_sr_name,
-                    fakefactors::util::join(_qcd_corr_dr_sr_inputs));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", corr_qcd_closure_name,
-                    fakefactors::util::join(_qcd_corr_closure_inputs));
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", corr_tt_closure_name,
-                    fakefactors::util::join(_tt_corr_closure_inputs));
-
-        // Get the fake factors and process fractions from the
-        // correction sets
-        float ff_qcd = qcd_cset->evaluate(_qcd_inputs);
-        float ff_tt = tt_cset->evaluate(_tt_inputs);
-        float frac_qcd = fractions_cset->evaluate(_fraction_inputs_qcd);
-        float frac_tt = fractions_cset->evaluate(_fraction_inputs_tt);
-
-        // Get the corrections for the fake factors
-        float corr_qcd_dr_sr =
-            qcd_corr_dr_sr_cset->evaluate(_qcd_corr_dr_sr_inputs);
-        float corr_qcd_closure =
-            qcd_corr_closure_cset->evaluate(_qcd_corr_closure_inputs);
-        float corr_tt_closure =
-            tt_corr_closure_cset->evaluate(_tt_corr_closure_inputs);
-
-        // Debug messages for fake factors, process fractions,
-        // and corrections
-        Logger::get(logger_name)->debug("Got results");
-        Logger::get(logger_name)->debug("    cset {}: {}", ff_qcd_name, ff_qcd);
-        Logger::get(logger_name)->debug("    cset {}: {}", ff_tt_name, ff_tt);
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name, frac_qcd);
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", ff_fraction_name, frac_tt);
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", corr_qcd_dr_sr_name, corr_qcd_dr_sr);
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", corr_qcd_closure_name, corr_qcd_closure);
-        Logger::get(logger_name)
-            ->debug("    cset {}: {}", corr_tt_closure_name, corr_tt_closure);
-
-        // Calculate the raw fake factor
-        float ff =
-            frac_qcd *
-                std::max(ff_qcd * corr_qcd_dr_sr * corr_qcd_closure, 0.f) +
-            frac_tt * std::max(ff_tt * corr_tt_closure, 0.f);
-        Logger::get(logger_name)
-            ->debug("Calculated fake factor with corrections {}", ff);
-
-        return ff;
-    };
-
-    return df.Define(outputname, ff_semileptonic,
-                     {qcd_inputs, tt_inputs, fraction_inputs,
-                      qcd_corr_dr_sr_inputs, qcd_corr_closure_inputs,
-                      tt_corr_closure_inputs});
+    return df1.Define(outputname, fake_factor, {packed});
 }
 
 } // namespace xyh

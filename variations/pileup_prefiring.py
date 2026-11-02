@@ -1,5 +1,6 @@
 from code_generation.configuration import Configuration
 from code_generation.producer import Producer, ProducerGroup
+from code_generation.systematics import SystematicShiftByQuantity
 from ..quantities import nanoAOD_run2
 
 from ._util import add_systematic_shift, KeyValueShift
@@ -38,17 +39,28 @@ def add_pileup_shifts(
         )
 
 
+# The eras in which build_config weights every sample of the legacy profiles
+# with the L1 prefiring weight (event.PrefireWeight) and gives the prefiring
+# shifts. Profiles with prefiring_weight_columns weight MC of every Run-2 era
+# without shifts (2018: the muon prefiring, v7 spec E11, C11); the tau-ID
+# measurement adds the shifts there.
+COMMON_PREFIRING_ERAS = ("2016preVFP", "2016postVFP", "2017")
+
+
 def add_prefiring_shifts(
     configuration: Configuration,
     era: str,
 ):
     """
-    Add L1 ECAL trigger prefiring shifts for the given era.
+    Add L1 trigger prefiring shifts for the given era: the NanoAOD weight
+    L1PreFiringWeight (ECAL and muon prefiring; in 2018 the muon part only)
+    varied by its Up/Dn columns, named CMS_ecal_prefiring_<year> after the
+    datacard name of the ECAL issue.
     """
 
-    # Raise exception if this function is called for an era that does not have
-    # the prefiring issue
-    if era not in ["2016preVFP", "2016postVFP", "2017"]:
+    # Raise exception if this function is called for an era without the
+    # prefiring weight
+    if era not in ["2016preVFP", "2016postVFP", "2017", "2018"]:
         raise ValueError(
             f"Prefiring shifts are not applicable for era '{era}'."
         )
@@ -60,16 +72,19 @@ def add_prefiring_shifts(
     # Extract the year from the era string (e.g., "2016preVFP" -> "2016")
     year = era[:4]
 
-    # Add up and down variation for each shift
-    for direction in ["up", "down"]:
+    # Add up and down variation for each shift, the NanoAOD branches carry the
+    # suffixes "Up" and "Dn"
+    for direction, suffix in [("up", "Up"), ("down", "Dn")]:
         configuration.add_shift(
-            name=f"CMS_ecal_prefiring_{year}{direction.capitalize()}",
-            quantity_change={
-                nanoAOD_run2.L1PreFiringWeight_Nom: getattr(
-                    nanoAOD_run2,
-                    f"L1PreFiringWeight_{direction.capitalize()}",
-                ),
-            },
-            scopes=["global"],
+            SystematicShiftByQuantity(
+                name=f"CMS_ecal_prefiring_{year}{direction.capitalize()}",
+                quantity_change={
+                    nanoAOD_run2.L1PreFiringWeight_Nom: getattr(
+                        nanoAOD_run2,
+                        f"L1PreFiringWeight_{suffix}",
+                    ),
+                },
+                scopes=["global"],
+            ),
             exclude_samples=exclude_samples,
         )

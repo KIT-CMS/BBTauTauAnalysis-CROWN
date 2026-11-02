@@ -99,6 +99,30 @@ YHKinFit = ProducerGroup(
     subproducers=[YHKinFit_YToBB, YHKinFit_YToTauTau],
 )
 
+SMHHKinFit = Producer(
+    name="SMHHKinFit",
+    call="hhkinfit::sm_hh_kinfit({df}, {output_vec}, {input})",
+    input=[
+        q.p4_1,
+        q.p4_2,
+        q.bpair_p4_1,
+        q.bpair_reg_res_1,
+        q.bpair_p4_2,
+        q.bpair_reg_res_2,
+        q.met_p4_recoilcorrected,
+        q.metcov00,
+        q.metcov01,
+        q.metcov11,
+    ],
+    output=[
+        q.kinfit_convergence,
+        q.kinfit_chi2,
+        q.kinfit_prob,
+        q.kinfit_mHH,
+    ],
+    scopes=["mt", "et", "tt"],
+)
+
 YHKinFit_YToBB_boosted = Producer(
     name="YHKinFit_YToBB_boosted",
     call='hhkinfit::YHKinFit({df}, {output}, {input}, "YToBB")',

@@ -1,142 +1,209 @@
+"""Surfaces of the Run-2 NanoAOD-v15 adaption that fail silently when they drift."""
+
+import gzip
+import json
 from pathlib import Path
-import unittest
+import re
 
-from analysis_configurations.bbtautau.producers import taus
-from analysis_configurations.bbtautau.tau_triggersetup import add_diTauTriggerSetup
+import pytest
 
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, ERAS_RUN3
+from analysis_configurations.bbtautau.producers import scalefactors, taus
+from analysis_configurations.bbtautau.tests.helpers import build
 
 CROWN_ROOT = Path(__file__).resolve().parents[3]
 ANALYSIS_ROOT = CROWN_ROOT / "analysis_configurations" / "bbtautau"
-BUILD_SCRIPTS = [
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2018.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2022preEE.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2022postEE.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2023preBPix.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2023postBPix.sh",
-    ANALYSIS_ROOT / "build_scripts" / "test_build_2024.sh",
-]
+BUILD_SCRIPTS = sorted((ANALYSIS_ROOT / "build_scripts").glob("test_build_*.sh"))
 
 
-class CaptureConfiguration:
-    def __init__(self):
-        self.calls = []
+def test_analysis_identity_is_bbtautau():
+    """Folder, generators, build scripts and init.sh agree on the analysis name."""
+    generate = (ANALYSIS_ROOT / "generate.py").read_text()
+    generate_friends = (ANALYSIS_ROOT / "generate_friends.py").read_text()
+    init_script = (CROWN_ROOT / "init.sh").read_text()
+    scripts = [script.read_text() for script in BUILD_SCRIPTS]
+    assert BUILD_SCRIPTS
+    assert (
+        'analysis_name = "bbtautau"' in generate
+        and 'analysis_name = "bbtautau"' in generate_friends
+    )
+    assert all('local analysis="bbtautau"' in script for script in scripts)
+    assert (
+        "bbtautau)" in init_script
+        and 'REPO="git@github.com:KIT-CMS/BBTauTauAnalysis-CROWN.git"' in init_script
+    )
+    assert "xyh_bbtautau" not in "\n".join(
+        [generate, generate_friends, init_script, *scripts]
+    )
 
-    def add_config_parameters(self, scopes, parameters):
-        self.calls.append((scopes, parameters))
+
+def test_tau_pt_correction_matches_current_crown_signature():
+    call = taus.TauPtCorrectionMC.call
+    assert "physicsobject::tau::experimental::PtCorrectionMC(" in call
+    ordered_arguments = [
+        '"{tau_vsjet_es_sf_file}"',
+        '"{tau_ES_json_name}"',
+        '"{tau_id_algorithm}"',
+        '"{tau_ides_sf_vsjet_wp}"',
+        '"{tau_ides_sf_vsele_wp}"',
+        '"{tau_es_variation}"',
+    ]
+    positions = [call.index(argument) for argument in ordered_arguments]
+    assert positions == sorted(positions)
 
 
-def get_double_eletau_trigger_modifier():
-    configuration = CaptureConfiguration()
-    add_diTauTriggerSetup(configuration)
-    for _, parameters in configuration.calls:
-        if "double_eletau_trigger" in parameters:
-            return parameters["double_eletau_trigger"]
-    raise AssertionError("double_eletau_trigger was not configured")
+# Core declarations the tau producers call, read from the header of the CROWN tree
+# the tests run in, so that a core pin with another signature fails here and not
+# only in the compilation of the generated code (core 14f82c1 added id_vsmu_wp to
+# experimental::Id_vsJet, which no generate.py run notices).
+TAUS_HEADER = CROWN_ROOT / "include/taus.hxx"
 
 
-class Run2NanoAODv15ConfigurationTest(unittest.TestCase):
-    def test_analysis_identity_is_bbtautau(self):
-        generate = (ANALYSIS_ROOT / "generate.py").read_text()
-        generate_friends = (ANALYSIS_ROOT / "generate_friends.py").read_text()
-        init_script = (CROWN_ROOT / "init.sh").read_text()
+def _strip_comments(text):
+    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    return re.sub(r"//[^\n]*", " ", text)
 
-        self.assertIn('analysis_name = "bbtautau"', generate)
-        self.assertIn('analysis_name = "bbtautau"', generate_friends)
-        for script in BUILD_SCRIPTS:
-            self.assertIn('local analysis="bbtautau"', script.read_text())
-        self.assertIn('bbtautau)', init_script)
-        self.assertIn(
-            'REPO="git@github.com:KIT-CMS/BBTauTauAnalysis-CROWN.git"',
-            init_script,
-        )
 
-        checked_text = "\n".join(
-            [generate, generate_friends, init_script]
-            + [script.read_text() for script in BUILD_SCRIPTS]
-        )
-        self.assertNotIn("xyh_bbtautau", checked_text)
+def _split_top_level(text):
+    """Split at the commas outside (), <> and {}."""
+    parts, depth, current = [], 0, ""
+    for char in text:
+        if char in "(<{":
+            depth += 1
+        elif char in ")>}":
+            depth -= 1
+        if char == "," and depth == 0:
+            parts.append(current.strip())
+            current = ""
+        else:
+            current += char
+    if current.strip():
+        parts.append(current.strip())
+    return parts
 
-    def test_tau_pt_correction_matches_current_crown_signature(self):
-        call = taus.TauPtCorrectionMC.call
-        ordered_arguments = [
-            '"{tau_id_algorithm}"',
-            '"{tau_ides_sf_vsjet_wp}"',
-            '"{tau_ides_sf_vsele_wp}"',
-            "{vec_open}{tight_tau_decay_modes}{vec_close}",
-            '"{tau_elefake_es_DM0_barrel}"',
-            '"{tau_elefake_es_DM1_barrel}"',
-            '"{tau_elefake_es_DM0_endcap}"',
-            '"{tau_elefake_es_DM1_endcap}"',
-            '"{tau_mufake_es}"',
-            '"{tau_ES_shift_DM0}"',
-            '"{tau_ES_shift_DM1}"',
-            '"{tau_ES_shift_DM10}"',
-            '"{tau_ES_shift_DM11}"',
-        ]
-        for argument in ordered_arguments:
-            self.assertIn(argument, call)
-        positions = [call.index(argument) for argument in ordered_arguments]
-        self.assertEqual(positions, sorted(positions))
 
-    def test_2018_double_eletau_trigger_arguments_are_mapped_correctly(self):
-        modifier = get_double_eletau_trigger_modifier()
-        expected = [
+def core_declarations(header, qualified_name):
+    """Parameter-name lists of every declaration of ``qualified_name`` in ``header``."""
+    *namespaces, function = qualified_name.split("::")
+    text = _strip_comments(header.read_text())
+    token = re.compile(r"namespace\s+(\w+)\s*\{|\{|\}|\b(\w+)\s*\(")
+    stack, found, position = [], [], 0
+    while True:
+        match = token.search(text, position)
+        if match is None:
+            return found
+        position = match.end()
+        if match.group(1):
+            stack.append(match.group(1))
+        elif match.group(0) == "{":
+            stack.append(None)
+        elif match.group(0) == "}":
+            stack.pop()
+        elif match.group(2) == function and [n for n in stack if n] == namespaces:
+            depth, end = 1, position
+            while depth:
+                depth += {"(": 1, ")": -1}.get(text[end], 0)
+                end += 1
+            parameters = _split_top_level(text[position : end - 1])
+            found.append([re.findall(r"\w+", p.split("=")[0])[-1] for p in parameters])
+            position = end
+
+
+def call_arguments(producer, scope):
+    """Arguments of ``producer``'s call with ``{input}`` expanded to its columns."""
+    call = " ".join(producer.call.split())
+    arguments = _split_top_level(call[call.index("(") + 1 : call.rindex(")")])
+    columns = [f"column:{q.name}" for q in producer.input[scope]]
+    expanded = []
+    for argument in arguments:
+        expanded.extend(columns if argument == "{input}" else [argument])
+    return expanded
+
+
+@pytest.mark.parametrize(
+    "producer, function, scope, expected",
+    [
+        (
+            scalefactors.TauIDVsJetSF2,
+            "physicsobject::tau::scalefactor::experimental::Id_vsJet",
+            "mt",
             {
-                "flagname": "trg_cross_ele24tau30_hps",
-                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTauHPS30_eta2p1_CrossL1",
-                "p1_min_pt": 25,
-                "p1_max_abs_eta": 2.5,
-                "p1_filter_bit": 1,
-                "p1_particle_id": 11,
-                "p2_min_pt": 32,
-                "p2_max_abs_eta": 2.1,
-                "p2_filter_bit": -1,
-                "p2_particle_id": 15,
-                "match_max_delta_r": 0.4,
+                "sf_file": '"{tau_vsjet_es_sf_file}"',
+                "sf_name": '"{discriminator}"',
+                "id_vsjet_wp": '"{vsjet_wp}"',
+                "id_vse_wp": '"{tau_ides_sf_vsele_wp}"',
+                "id_vsmu_wp": "{tau_ides_sf_vsmu_wp}",  # a C++ literal
+                "sf_dependence": '"{tau_id_sf_vsjet_sf_dependence}"',
+                "variation": '"{tau_id_sf_vsjet_variation}"',
             },
+        ),
+        (
+            scalefactors.TauIDVsEleSF2,
+            "physicsobject::tau::scalefactor::experimental::Id_vsEle",
+            "mt",
+            {"sf_file": '"{tau_ides_sf_file}"', "id_vse_wp": '"{vsele_wp}"', "era": '"{era}"'},
+        ),
+        (
+            scalefactors.TauIDVsMuSF2,
+            "physicsobject::tau::scalefactor::experimental::Id_vsMu",
+            "mt",
             {
-                "flagname": "trg_cross_ele24tau30",
-                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseChargedIsoPFTau30_eta2p1_CrossL1",
-                "p1_min_pt": 25,
-                "p1_max_abs_eta": 2.5,
-                "p1_filter_bit": 1,
-                "p1_particle_id": 11,
-                "p2_min_pt": 32,
-                "p2_max_abs_eta": 2.1,
-                "p2_filter_bit": 4,
-                "p2_particle_id": 15,
-                "match_max_delta_r": 0.4,
+                "id_vsmu_wp": '"{vsmu_wp}"',
+                "id_vse_wp": '"{vsmu_vsele_wp}"',
+                "id_vsjet_wp": '"{vsmu_vsjet_wp}"',
             },
-        ]
-        self.assertEqual(modifier.modifier_dict["2018"], expected)
-
-    def test_run3_double_eletau_trigger_arguments_are_preserved(self):
-        modifier = get_double_eletau_trigger_modifier()
-        expected = [
+        ),
+        (
+            taus.TauPtCorrectionMC,
+            "physicsobject::tau::experimental::PtCorrectionMC",
+            "mt",
             {
-                "flagname": "trg_double_ele24tau30",
-                "hlt_path": "HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1",
-                "p1_min_pt": 26.0,
-                "p1_max_abs_eta": 2.1,
-                "p1_filter_bit": -1,
-                "p1_particle_id": 11,
-                "p2_min_pt": 32.0,
-                "p2_max_abs_eta": 2.1,
-                "p2_filter_bit": -1,
-                "p2_particle_id": 15,
-                "match_max_delta_r": 0.4,
-            }
-        ]
-        # 2024 is excluded because its trigger uses PNet instead of DeepTau for
-        # trigger-level tau tagging.
-        for era in [
-            "2022preEE",
-            "2022postEE",
-            "2023preBPix",
-            "2023postBPix",
-        ]:
-            self.assertEqual(modifier.modifier_dict[era], expected)
+                "sf_file": '"{tau_vsjet_es_sf_file}"',
+                "id_vsjet_wp": '"{tau_ides_sf_vsjet_wp}"',
+                "id_vse_wp": '"{tau_ides_sf_vsele_wp}"',
+                "variation": '"{tau_es_variation}"',
+            },
+        ),
+    ],
+    ids=["Id_vsJet", "Id_vsEle", "Id_vsMu", "PtCorrectionMC"],
+)
+def test_tau_producers_match_the_core_signature(producer, function, scope, expected):
+    """One argument per parameter of the core declaration, the named ones in place."""
+    (parameters,) = core_declarations(TAUS_HEADER, function)
+    assert function + "(" in " ".join(producer.call.split()).replace("( ", "(")
+    arguments = call_arguments(producer, scope)
+    assert len(arguments) == len(parameters), dict(zip(parameters, arguments))
+    bound = dict(zip(parameters, arguments))
+    assert {name: bound[name] for name in expected} == expected
 
 
-if __name__ == "__main__":
-    unittest.main()
+def _vsjet_inputs(path, name):
+    opener = gzip.open if str(path).endswith(".gz") else open
+    with opener(path, "rt") as handle:
+        (correction,) = [c for c in json.load(handle)["corrections"] if c["name"] == name]
+    return [i["name"] for i in correction["inputs"]]
+
+
+@pytest.mark.parametrize(
+    "module,sample,era",
+    [("sm_config", "ttbar", era) for era in ERAS_RUN2]
+    + [("sm_config", "embedding", "2018")]  # the only embedding tau payload so far (5.4)
+    + [("nmssm_config", "ttbar", era) for era in ERAS_RUN3],
+)
+def test_vsjet_sf_vsmu_wp_matches_the_payload_inputs(module, sample, era):
+    """An empty vsMu WP evaluates the payload with 7 inputs, a set one with 8; the
+    payload of the era must have exactly that wp_VSmu input or the evaluation throws."""
+    config = build(module, sample, era=era, scopes=("et", "mt", "tt"))
+    for scope in ("et", "mt", "tt"):
+        params = config.config_parameters[scope]["nominal"]
+        path = Path(params["tau_vsjet_es_sf_file"])
+        path = path if path.is_absolute() else ANALYSIS_ROOT / path
+        if not path.is_file():
+            pytest.skip("TAU payloads require CVMFS")
+        literal = params["tau_ides_sf_vsmu_wp"]
+        assert re.fullmatch(r'"\w*"', literal), literal  # the call does not quote it
+        vsmu_wp = literal.strip('"')
+        for entry in params["vsjet_tau_id_sf"]:
+            inputs = _vsjet_inputs(path, entry["discriminator"])
+            assert ("wp_VSmu" in inputs) == bool(vsmu_wp), (scope, inputs)
+            assert len(inputs) == (8 if vsmu_wp else 7), (scope, inputs)

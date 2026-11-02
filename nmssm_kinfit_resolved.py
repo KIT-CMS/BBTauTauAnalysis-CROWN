@@ -1,42 +1,14 @@
-from __future__ import annotations  # needed for type annotations in > python 3.7
-from typing import List, Union
-from .producers import pairquantities as pairquantities
-from .producers import hhkinfit as hhkinfit
+"""NMSSM HH/YH kinematic-fit friend-tree entry point (resolved, Y-mass scan)."""
+from code_generation.friend_trees import FriendTreeConfiguration  # noqa: F401  (dispatcher check)
+
+from .friend_common import build_friend_config
+from .producers import hhkinfit
 from .quantities import output as q
-from code_generation.friend_trees import FriendTreeConfiguration
 
 
-def build_config(
-    era: str,
-    sample: str,
-    scopes: List[str],
-    shifts: List[str],
-    available_sample_types: List[str],
-    available_eras: List[str],
-    available_scopes: List[str],
-    quantities_map: Union[str, None] = None,
-):
-
-    configuration = FriendTreeConfiguration(
-        era,
-        sample,
-        scopes,
-        shifts,
-        available_sample_types,
-        available_eras,
-        available_scopes,
-        quantities_map,
-    )
-
-    configuration.add_producers(
-        ["mt", "et", "tt"],
-        [
-            hhkinfit.YHKinFit,
-        ],
-    )
-
-    configuration.add_outputs(
-        ["mt", "et", "tt"],
+def build_config(*args, **kwargs):
+    return build_friend_config(
+        [hhkinfit.YHKinFit],
         [
             q.kinfit_convergence_YToBB,
             q.kinfit_mX_YToBB,
@@ -57,12 +29,6 @@ def build_config(
             q.kinfit_chi2,
             q.kinfit_prob,
         ],
+        *args,
+        **kwargs,
     )
-
-    #########################
-    # Finalize and validate the configuration
-    #########################
-    configuration.optimize()
-    configuration.validate()
-    configuration.report()
-    return configuration.expanded_configuration()

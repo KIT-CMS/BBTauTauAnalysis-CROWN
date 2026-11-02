@@ -6,7 +6,7 @@ from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from code_generation.producer import Producer
 
-from ..constants import MM_SCOPES, MT_SCOPES, MUON_SCOPES, GLOBAL_SCOPES, SCOPES
+from ..constants import ERAS_RUN2, ERAS_RUN3, MM_SCOPES, MT_SCOPES, MUON_SCOPES, GLOBAL_SCOPES, SCOPES
 
 
 
@@ -14,22 +14,32 @@ from ..constants import MM_SCOPES, MT_SCOPES, MUON_SCOPES, GLOBAL_SCOPES, SCOPES
 # ENERGY SCALE CORRECTIONS
 #
 
-# electron scale correction for data in Run 3
-MuonPtCorrection = Producer(
-    name="MuonPtCorrection",
-    call='physicsobject::muon::PtCorrection({df}, correctionManager, {output}, {input}, 20.0, "{muon_es_file}", "{muon_es_variation}", {is_data})',
-    input=[
-        nanoAOD.Muon_pt,
-        nanoAOD.Muon_eta,
-        nanoAOD.Muon_phi,
-        nanoAOD.Muon_charge,
-        nanoAOD.Muon_nTrackerLayers,
-        nanoAOD.luminosityBlock,
-        nanoAOD.event,
-    ],
-    output=[q.Muon_pt_corrected],
-    scopes=GLOBAL_SCOPES,
-)
+# Muon pt correction on data and MC events
+MuonPtCorrection = {
+    # The Run 2 payloads provide no muon scale and resolution correction
+    tuple(ERAS_RUN2): Producer(
+        name="MuonPtCorrection",
+        call="event::quantity::Rename<ROOT::RVec<float>>({df}, {output}, {input})",
+        input=[nanoAOD.Muon_pt],
+        output=[q.Muon_pt_corrected],
+        scopes=GLOBAL_SCOPES,
+    ),
+    tuple(ERAS_RUN3): Producer(
+        name="MuonPtCorrection",
+        call='physicsobject::muon::PtCorrection({df}, correctionManager, {output}, {input}, 20.0, "{muon_es_file}", "{muon_es_variation}", {is_data})',
+        input=[
+            nanoAOD.Muon_pt,
+            nanoAOD.Muon_eta,
+            nanoAOD.Muon_phi,
+            nanoAOD.Muon_charge,
+            nanoAOD.Muon_nTrackerLayers,
+            nanoAOD.luminosityBlock,
+            nanoAOD.event,
+        ],
+        output=[q.Muon_pt_corrected],
+        scopes=GLOBAL_SCOPES,
+    ),
+}
 
 
 #
