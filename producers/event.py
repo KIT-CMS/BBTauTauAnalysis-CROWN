@@ -28,10 +28,18 @@ EventHashForSampleSplit = Producer(
     scopes=["global"],
 )
 
-SampleSplitHashFilter = BaseFilter(
-    name="SampleSplitHashFilter",
-    call="event::filter::HashFilter({df}, \"SampleSplitFilter\", {input}, {sample_split_u_min}, {sample_split_u_max})",
+SampleSplitHashFlag = Producer(
+    name="SampleSplitHashFlag",
+    call="event::quantity::HashFlag({df}, {output}, {input}, {sample_split_u_min}, {sample_split_u_max})",
     input=[q.event_hash_split],
+    output=[q.sample_split_flag],
+    scopes=["global"],
+)
+
+SampleSplitFlagFilter = BaseFilter(
+    name="SampleSplitFlagFilter",
+    call='event::filter::Flag({df}, "SampleSplitFilter", {input})',
+    input=[q.sample_split_flag],
     scopes=["global"],
 )
 
@@ -43,13 +51,14 @@ SampleSplitFilter = ProducerGroup(
     scopes=["global"],
     subproducers=[
         EventHashForSampleSplit,
-        SampleSplitHashFilter,
+        SampleSplitHashFlag,
+        SampleSplitFlagFilter,
     ],
 )
 
 SampleSplitWeight = Producer(
     name="SampleSplitWeight",
-    call="event::quantity::SampleSplitWeight({df}, {output}, {sample_split_u_min}, {sample_split_u_max})",
+    call="event::quantity::HashSplitWeight({df}, {output}, {sample_split_u_min}, {sample_split_u_max})",
     input=[],
     output=[q.wgt_sample_split],
     scopes=["global"],
@@ -222,7 +231,7 @@ JetVetoMapVeto = Producer(
 
 GGH_NNLO_Reweighting = Producer(
     name="GGH_NNLO_Reweighting",
-    call='htxs::ggHNNLOWeights({df}, {output}, "{ggHNNLOweightsRootfile}", "{ggH_generator}", {input})',
+    call='stxs::ggHNNLOWeights({df}, {output}, "{ggHNNLOweightsRootfile}", "{ggH_generator}", {input})',
     input=[nanoAOD.HTXS_Higgs_pt, nanoAOD.HTXS_njets30],
     output=[q.ggh_NNLO_weight],
     scopes=["global", "em", "et", "mt", "tt", "mm", "ee"],
@@ -230,7 +239,7 @@ GGH_NNLO_Reweighting = Producer(
 
 GGH_WG1_Uncertainties = Producer(
     name="GGH_WG1_Uncertainties",
-    call="htxs::ggH_WG1_uncertainties({df}, {output_vec}, {input})",
+    call="stxs::ggH_WG1_uncertainties({df}, {output_vec}, {input})",
     input=[
         nanoAOD.HTXS_stage_1_pTjet30,
         nanoAOD.HTXS_Higgs_pt,
@@ -252,7 +261,7 @@ GGH_WG1_Uncertainties = Producer(
 
 QQH_WG1_Uncertainties = Producer(
     name="QQH_WG1_Uncertainties",
-    call="htxs::qqH_WG1_uncertainties({df}, {output_vec}, {input})",
+    call="stxs::qqH_WG1_uncertainties({df}, {output_vec}, {input})",
     input=[
         nanoAOD.HTXS_stage1_1_fine_cat_pTjet30GeV
     ],  # using fine stage1.1 flag required by the used macro
