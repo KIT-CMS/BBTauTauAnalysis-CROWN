@@ -1274,6 +1274,30 @@ JetHadronFlavours = ProducerGroup(
     ],
 )
 
+# UParTAK4 charm scores (CvB, CvL) of the b-pair jets, for both pair selections
+BPairUParTCharmScores = ProducerGroup(
+    name="BPairUParTCharmScores",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        Producer(
+            name=f"bpair_btag_{tag}_{suffix}{index + 1}",
+            call=f"event::quantity::Get<float>({{df}}, {{output}}, {{input}}, {index})",
+            input=[score, pair],
+            output=[getattr(q, f"bpair_btag_{tag}_{suffix}{index + 1}")],
+            scopes=SCOPES,
+        )
+        for tag, score in [
+            ("cvb", nanoAOD.Jet_btagUParTAK4CvB),
+            ("cvl", nanoAOD.Jet_btagUParTAK4CvL),
+        ]
+        for suffix, pair in [("", q.dibjetpair), ("regressed_", q.dibjetpair_regressed)]
+        for index in [0, 1]
+    ],
+)
+
 ##########################
 # Basic b-Jet Quantities
 # nbtag, pt, eta, phi, b-tag value

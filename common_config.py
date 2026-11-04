@@ -2779,6 +2779,10 @@ def build_config(
     # flavour of the two leading jets and of the b-pair jets
     pileup_producers = [event.npv_good, event.rho] if use_run2_v15_inputs else []
     jet_flavour_producers = [jets.JetHadronFlavours] if use_run2_v15_inputs else []
+    # UParTAK4 CvB/CvL scores of the b-pair jets (v15 inputs, UParT branches)
+    bjet_charm_score_producers = (
+        [jets.BPairUParTCharmScores] if use_run2_v15_inputs else []
+    )
 
     # MET scope quantities producer
     # For a detailed description, see producers/met.py. With the v15 inputs, the
@@ -3001,7 +3005,7 @@ def build_config(
         met.MetQuantities,
         pairquantities.DiTauPairMETQuantities,
         genparticles.GenMatching,
-    ] + jet_flavour_producers
+    ] + jet_flavour_producers + bjet_charm_score_producers
     # + xbb_sf_producers
     # + fj_genjet_producers
     if strip_analysis_bjets:
@@ -3012,6 +3016,7 @@ def build_config(
             pairquantities_bbpair.AllBBPairProducers,
             genparticles.GenDiBjetPairQuantities,
             jets.JetHadronFlavours,
+            jets.BPairUParTCharmScores,
             bjet_id_sf_producer,
         ]
         scope_producers = [
@@ -3851,6 +3856,14 @@ def build_config(
             q.jet_hadronFlavour_2,
             q.bpair_hadronFlavour_1,
             q.bpair_hadronFlavour_2,
+            q.bpair_btag_cvb_1,
+            q.bpair_btag_cvb_2,
+            q.bpair_btag_cvl_1,
+            q.bpair_btag_cvl_2,
+            q.bpair_btag_cvb_regressed_1,
+            q.bpair_btag_cvb_regressed_2,
+            q.bpair_btag_cvl_regressed_1,
+            q.bpair_btag_cvl_regressed_2,
         ]
     if strip_analysis_bjets:
         # probe-jet profile: drop the selected-bb-pair layer and the b-tag SF weight
@@ -3898,6 +3911,14 @@ def build_config(
             q.jet_hadronFlavour_2,
             q.bpair_hadronFlavour_1,
             q.bpair_hadronFlavour_2,
+            q.bpair_btag_cvb_1,
+            q.bpair_btag_cvb_2,
+            q.bpair_btag_cvl_1,
+            q.bpair_btag_cvl_2,
+            q.bpair_btag_cvb_regressed_1,
+            q.bpair_btag_cvb_regressed_2,
+            q.bpair_btag_cvl_regressed_1,
+            q.bpair_btag_cvl_regressed_2,
             q.n_bjets,
             q.id_wgt_bjet,
             q.pt_tautaubb,
