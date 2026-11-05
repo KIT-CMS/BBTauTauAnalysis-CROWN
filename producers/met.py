@@ -360,16 +360,30 @@ RenameMet = Producer(
 )
 
 # MET functions running in the scopes
-MetScopes = era_producer_groups(
-    "MetScopes",
-    [
+# MetScopes = era_producer_groups(
+#     "MetScopes",
+#     [
+#         # TODO Do not use recoil corrections in this production, add them back
+#         # later
+#         MetLeptonCorrection,
+#         RenameMet,
+#         # MetRecoilCorrection,
+#     ],
+#     SCOPES,
+# )
+MetScopes = ProducerGroup(
+    name="MetScopes",
+    call=None,
+    input=None,
+    output=None,
+    subproducers=[
         # TODO Do not use recoil corrections in this production, add them back
         # later
         MetLeptonCorrection,
         RenameMet,
         # MetRecoilCorrection,
     ],
-    SCOPES,
+    scopes=SCOPES,
 )
 
 # Final MET pt

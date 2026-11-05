@@ -2539,7 +2539,7 @@ def build_config(
 
     # MET scope quantities producer
     # For a detailed description, see producers/met.py
-    MetScopes = get_for_era(met.MetScopes, era)
+    MetScopes = met.MetScopes  # get_for_era(met.MetScopes, era)
 
     # Base jet selection
     # - In Run 2, the CHS collection is used and pileup ID is applied.
