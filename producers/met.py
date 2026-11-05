@@ -343,16 +343,6 @@ MetRecoilCorrection = {
     ),
 }
 
-# MET functions running in the scopes
-MetScopes = era_producer_groups(
-    "MetScopes",
-    [
-        MetLeptonCorrection,
-        MetRecoilCorrection,
-    ],
-    SCOPES,
-)
-
 # Dummy producer to rename the MET if recoil corrections are applied to the
 # sample
 RenameMet = Producer(
@@ -367,6 +357,19 @@ RenameMet = Producer(
     input=[q.met_p4_leptoncorrected],
     output=[q.met_p4_recoilcorrected],
     scopes=SCOPES,
+)
+
+# MET functions running in the scopes
+MetScopes = era_producer_groups(
+    "MetScopes",
+    [
+        # TODO Do not use recoil corrections in this production, add them back
+        # later
+        MetLeptonCorrection,
+        RenameMet,
+        # MetRecoilCorrection,
+    ],
+    SCOPES,
 )
 
 # Final MET pt

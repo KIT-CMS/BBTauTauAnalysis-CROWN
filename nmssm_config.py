@@ -2936,21 +2936,22 @@ def build_config(
 
     # For all samples that are not DY and W, replace recoil corrections with
     # renaming operation
-    configuration.add_modification_rule(
-        SCOPES,
-        ReplaceProducer(
-            producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
-            exclude_samples=[
-                "dyjets_madgraph",
-                "dyjets_amcatnlo",
-                "dyjets_amcatnlo_ll",
-                "dyjets_amcatnlo_tt",
-                "dyjets_powheg",
-                "wjets_madgraph",
-                "wjets_amcatnlo",
-            ],
-        ),
-    )
+    # TODO not used in this production, add recoil corrections back later
+    # configuration.add_modification_rule(
+    #     SCOPES,
+    #     ReplaceProducer(
+    #         producers=[get_for_era(met.MetRecoilCorrection, era), met.RenameMet],
+    #         exclude_samples=[
+    #             "dyjets_madgraph",
+    #             "dyjets_amcatnlo",
+    #             "dyjets_amcatnlo_ll",
+    #             "dyjets_amcatnlo_tt",
+    #             "dyjets_powheg",
+    #             "wjets_madgraph",
+    #             "wjets_amcatnlo",
+    #         ],
+    #     ),
+    # )
 
     # Remove DeepTau ID scale factor producers from data samples
     configuration.add_modification_rule(
