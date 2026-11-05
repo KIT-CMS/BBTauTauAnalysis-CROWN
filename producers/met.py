@@ -364,7 +364,7 @@ RenameMet = Producer(
         {input}
     )
     """,
-    input=[q.met_p4_jetcorrected],
+    input=[q.met_p4_leptoncorrected],
     output=[q.met_p4_recoilcorrected],
     scopes=SCOPES,
 )

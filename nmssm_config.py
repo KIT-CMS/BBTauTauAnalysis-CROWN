@@ -380,7 +380,7 @@ def add_electron_config(configuration: Configuration):
             "loose_electron_max_abs_dxy": 0.045,
             "loose_electron_max_abs_dz": 0.2,
             "loose_electron_max_iso": 10000.0,
-            "loose_electron_id": "Electron_mvaIso_WP80",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90
+            "loose_electron_id": "Electron_mvaIso_WP90",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90
         },
     )
 
@@ -407,7 +407,7 @@ def add_electron_config(configuration: Configuration):
             "tight_electron_max_abs_dxy": 0.045,
             "tight_electron_max_abs_dz": 0.2,
             "tight_electron_max_iso": 10000.0,
-            "tight_electron_id": "Electron_mvaIso_WP80",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90,
+            "tight_electron_id": "Electron_mvaIso_WP90",  # NanoAOD v9: Electron_mvaFall17V2noIso_WP90,
         },
     )
 
@@ -592,7 +592,7 @@ def add_muon_config(configuration: Configuration):
             "tight_muon_max_abs_dxy": 0.045,
             "tight_muon_max_abs_dz": 0.2,
             "tight_muon_max_iso": 0.4,
-            "tight_muon_id": "Muon_tightId",
+            "tight_muon_id": "Muon_mediumId",
         },
     )
 
@@ -665,16 +665,16 @@ def add_muon_config(configuration: Configuration):
                     }
                 }
             ),
-            "muon_id_sf_name": "NUM_TightID_DEN_TrackerMuons",  # correction for mediumId WP
-            "muon_id_lowpt_sf_name": "NUM_TightID_DEN_TrackerMuons",  # correction for mediumId WP
+            "muon_id_sf_name": "NUM_MediumID_DEN_TrackerMuons",  # correction for mediumId WP
+            "muon_id_lowpt_sf_name": "NUM_MediumID_DEN_TrackerMuons",  # correction for mediumId WP
             "muon_iso_sf_name": EraModifier(  # correction for TightPFIso WP (PF isolation < 0.15)
                 {
                     **{
-                        _era: "NUM_TightRelIso_DEN_TightID"
+                        _era: "NUM_TightRelIso_DEN_MediumID"
                         for _era in ERAS_RUN2
                     },
                     **{
-                        _era: "NUM_TightPFIso_DEN_TightID"
+                        _era: "NUM_TightPFIso_DEN_MediumID"
                         for _era in ERAS_RUN3
                     },
                 },
@@ -3006,7 +3006,7 @@ def build_config(
 
     # Remove muon ID and isolation scale factor producers from data and embedding samples in mt scope
     configuration.add_modification_rule(
-        MT_SCOPES,
+        MUON_SCOPES,
         RemoveProducer(
             producers=[
                 scalefactors.MuonIDIso_SF,
