@@ -473,7 +473,7 @@ def add_electron_config(configuration: Configuration):
                 }
             ),
             # "ele_reco_sf_name": "RecoAbove20",  # TODO needs to be modified for 2022 and 2023
-            "ele_id_sf_name": "wp80iso",
+            "ele_id_sf_name": "wp90iso",
             "ele_reco_sf_variation": "sf",  # "sf" is nominal, "sfup"/"sfdown" are up/down variations
             "ele_id_sf_variation": "sf",  # "sf" is nominal, "sfup"/"sfdown" are up/down variations
         },
@@ -2685,7 +2685,7 @@ def build_config(
 
     # MET scope quantities producer
     # For a detailed description, see producers/met.py
-    MetScopes = get_for_era(met.MetScopes, era)
+    MetScopes = met.MetScopes  # get_for_era(met.MetScopes, era)
 
     # Base jet selection
     # - In Run 2, the CHS collection is used and pileup ID is applied.

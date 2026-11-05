@@ -125,13 +125,13 @@ ElectronPtCorrectionData = {
 # selection mask for loose electrons (mainly used to evaluate veto masks)
 BaseElectrons = Producer(
     name="BaseElectrons",
-    call="xyh::object_selection::electron({df}, {output}, {input}, \"{loose_electron_id}\", {loose_electron_min_pt}, {loose_electron_max_abs_eta}, {loose_electron_max_abs_dxy}, {loose_electron_max_abs_dz}, {loose_electron_max_iso})",
+    call="xyh::object_selection::electron({df}, {output}, {input}, \"{loose_electron_id}\", {loose_electron_min_pt}, {loose_electron_max_abs_eta}, {loose_electron_max_iso}, {loose_electron_max_abs_dxy}, {loose_electron_max_abs_dz})",
     input=[
         q.Electron_pt_corrected,
         nanoAOD.Electron_eta,
+        nanoAOD.Electron_pfRelIso03_all,
         nanoAOD.Electron_dxy,
         nanoAOD.Electron_dz,
-        nanoAOD.Electron_pfRelIso03_all,
     ],
     output=[q.base_electrons_mask],
     scopes=GLOBAL_SCOPES,
@@ -140,13 +140,13 @@ BaseElectrons = Producer(
 # selection mask for tight electrons (final state tau candidates)
 GoodElectrons = Producer(
     name="GoodElectrons",
-    call="xyh::object_selection::electron({df}, {output}, {input}, \"{tight_electron_id}\", {tight_electron_min_pt}, {tight_electron_max_abs_eta}, {tight_electron_max_abs_dxy}, {tight_electron_max_abs_dz}, {tight_electron_max_iso})",
+    call="xyh::object_selection::electron({df}, {output}, {input}, \"{tight_electron_id}\", {tight_electron_min_pt}, {tight_electron_max_abs_eta}, {tight_electron_max_iso}, {tight_electron_max_abs_dxy}, {tight_electron_max_abs_dz})",
     input=[
         q.Electron_pt_corrected,
         nanoAOD.Electron_eta,
+        nanoAOD.Electron_pfRelIso03_all,
         nanoAOD.Electron_dxy,
         nanoAOD.Electron_dz,
-        nanoAOD.Electron_pfRelIso03_all,
     ],
     output=[q.good_electrons_mask],
     scopes=ELECTRON_SCOPES,
