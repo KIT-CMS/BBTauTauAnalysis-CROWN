@@ -473,7 +473,7 @@ def add_electron_config(configuration: Configuration):
                 }
             ),
             # "ele_reco_sf_name": "RecoAbove20",  # TODO needs to be modified for 2022 and 2023
-            "ele_id_sf_name": "wp80iso",
+            "ele_id_sf_name": "wp90iso",
             "ele_reco_sf_variation": "sf",  # "sf" is nominal, "sfup"/"sfdown" are up/down variations
             "ele_id_sf_variation": "sf",  # "sf" is nominal, "sfup"/"sfdown" are up/down variations
         },
