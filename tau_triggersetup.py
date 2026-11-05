@@ -1379,6 +1379,7 @@ def _add_electron_trigger_scale_factors(
         {
             "et_trigger_leg1_flagname": "trg_eff_data_ele24_tau30_leg1",
             "et_trigger_leg1_sf_cset_name": "Electron-HLT-DataEff",
+            "et_trigger_leg1_variation": "nom",
         },
     )
 
@@ -1388,6 +1389,7 @@ def _add_electron_trigger_scale_factors(
         {
             "et_trigger_leg1_flagname": "trg_eff_mc_ele24_tau30_leg1",
             "et_trigger_leg1_sf_cset_name": "Electron-HLT-McEff",
+            "et_trigger_leg1_variation": "nom",
         },
     )
 
