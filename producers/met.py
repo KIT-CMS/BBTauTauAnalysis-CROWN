@@ -224,7 +224,7 @@ MetJetCorrection = {
     tuple(ERAS_RUN3): Producer(
         name="MetJetCorrection",
         call="""
-        met::Type1Correction(
+        met::METType1Correction(
             {df},
             {output},
             {input},
@@ -240,6 +240,7 @@ MetJetCorrection = {
             q.Type1Jet_eta,
             q.Type1Jet_phi,
             q.Type1Jet_EmEF,
+            q.Type1Jet_muonSubtrDeltaPhi,
         ],
         output=[q.met_p4_jetcorrected],
         scopes=GLOBAL_SCOPES,
@@ -386,6 +387,42 @@ MetPhi = Producer(
     scopes=SCOPES,
 )
 
+# Jet-corrected MET pt
+MetPtJetCorrected = Producer(
+    name="MetPtJetCorrected",
+    call="lorentzvector::GetPt({df}, {output}, {input})",
+    input=[q.met_p4_jetcorrected],
+    output=[q.met_jetcorrected],
+    scopes=SCOPES,
+)
+
+# Jet-corrected MET phi
+MetPhiJetCorrected = Producer(
+    name="MetPhiJetCorrected",
+    call="lorentzvector::GetPhi({df}, {output}, {input})",
+    input=[q.met_p4_jetcorrected],
+    output=[q.metphi_jetcorrected],
+    scopes=SCOPES,
+)
+
+# Lepton-corrected MET pt
+MetPtLeptonCorrected = Producer(
+    name="MetPtLeptonCorrected",
+    call="lorentzvector::GetPt({df}, {output}, {input})",
+    input=[q.met_p4_leptoncorrected],
+    output=[q.met_leptoncorrected],
+    scopes=SCOPES,
+)
+
+# Lepton-corrected MET phi
+MetPhiLeptonCorrected = Producer(
+    name="MetPhiLeptonCorrected",
+    call="lorentzvector::GetPhi({df}, {output}, {input})",
+    input=[q.met_p4_leptoncorrected],
+    output=[q.metphi_leptoncorrected],
+    scopes=SCOPES,
+)
+
 # Producer group for final MET quantities
 MetQuantities = ProducerGroup(
     name="MetQuantities",
@@ -396,6 +433,10 @@ MetQuantities = ProducerGroup(
     subproducers=[
         MetPt,
         MetPhi,
+        MetPtJetCorrected,
+        MetPhiJetCorrected,
+        MetPtLeptonCorrected,
+        MetPhiLeptonCorrected,
     ],
 )
 

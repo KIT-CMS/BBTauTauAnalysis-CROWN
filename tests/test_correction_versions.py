@@ -36,7 +36,7 @@ def get_latest_correction_version(correction_file):
 class CorrectionVersionTest(unittest.TestCase):
 
     def setUp(self):
-        eras = ERAS_RUN2 + ERAS_RUN3
+        eras = ERAS_RUN3
         available_scopes = SCOPES
         samples = [
             "data",

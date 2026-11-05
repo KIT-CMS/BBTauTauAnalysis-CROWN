@@ -75,8 +75,8 @@ electron(ROOT::RDF::RNode df, const std::string &output_mask,
 
         // create the selection mask
         auto mask =
-            ((pt > min_pt) && (abs(eta) < abs_max_eta) && (iso < max_iso) &&
-             (abs(dxy) < max_dxy) && (abs(dz) < max_dz) && (id));
+            ((pt > min_pt) && (ROOT::VecOps::abs(eta) < abs_max_eta) && (iso < max_iso) &&
+             (ROOT::VecOps::abs(dxy) < max_dxy) && (abs(dz) < max_dz) && (id));
 
         // debug output for the final selection mask
         Logger::get("xyh::object_selection::electron")
@@ -146,8 +146,8 @@ ROOT::RDF::RNode muon(ROOT::RDF::RNode df, const std::string &output_mask,
 
         // create the selection mask
         auto mask =
-            ((pt > min_pt) && (abs(eta) < abs_max_eta) && (iso < max_iso) &&
-             (abs(dxy) < max_dxy) && (abs(dz) < max_dz) && (id));
+            ((pt > min_pt) && (ROOT::VecOps::abs(eta) < abs_max_eta) && (iso < max_iso) &&
+             (ROOT::VecOps::abs(dxy) < max_dxy) && (ROOT::VecOps::abs(dz) < max_dz) && (id));
 
         // debug output for the final selection mask
         Logger::get("xyh::object_selection::muon")
@@ -245,7 +245,7 @@ tau(ROOT::RDF::RNode df, const std::string &output_mask,
 
         // create the selection mask
         auto mask =
-            ((pt > min_pt) && (abs(eta) < abs_max_eta) && (abs(dz) < max_dz) &&
+            ((pt > min_pt) && (ROOT::VecOps::abs(eta) < abs_max_eta) && (ROOT::VecOps::abs(dz) < max_dz) &&
              decay_mode_mask && (id_vs_jet >= id_vs_jet_wp) &&
              (id_vs_electron >= id_vs_electron_wp) &&
              (id_vs_muon >= id_vs_muon_wp));

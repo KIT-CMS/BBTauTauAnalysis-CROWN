@@ -8,6 +8,7 @@
 #include "ROOT/RDataFrame.hxx"
 #include "ROOT/RVec.hxx"
 #include <vector>
+#include <cmath>
 
 // namespace xyh
 namespace xyh {
@@ -91,8 +92,8 @@ dielectron(ROOT::RDF::RNode df, const std::string &output_mask,
 
         // create the index list of selected electron candidates
         auto object_index = ROOT::VecOps::Nonzero(
-            (pt > min_pt) && (abs(eta) < abs_max_eta) && (iso < max_iso) &&
-            (abs(dxy) < max_dxy) && (abs(dz) < max_dz) && (id >= id_wp));
+            (pt > min_pt) && (ROOT::VecOps::abs(eta) < abs_max_eta) && (iso < max_iso) &&
+            (ROOT::VecOps::abs(dxy) < max_dxy) && (ROOT::VecOps::abs(dz) < max_dz) && (id >= id_wp));
 
         // evaluate conditions for di-electron veto
         auto has_dielectron =
@@ -190,8 +191,8 @@ dimuon(ROOT::RDF::RNode df, const std::string &output_mask,
 
         // create the index list of selected muon candidates
         auto object_index = ROOT::VecOps::Nonzero(
-            (pt > min_pt) && (abs(eta) < abs_max_eta) && (iso < max_iso) &&
-            (abs(dxy) < max_dxy) && (abs(dz) < max_dz) &&
+            (pt > min_pt) && (ROOT::VecOps::abs(eta) < abs_max_eta) && (iso < max_iso) &&
+            (ROOT::VecOps::abs(dxy) < max_dxy) && (ROOT::VecOps::abs(dz) < max_dz) &&
             (is_pf_cand && is_tracker && is_global));
 
         // evaluate conditions for di-muon veto
