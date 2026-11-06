@@ -1454,11 +1454,19 @@ def _add_muon_trigger_scale_factors(
     configuration.add_config_parameters(
         MUON_SCOPES,
         {
-            "mu_trigger_sf": [
-                muon_trigger_sf_parameters,
-                muon_trigger_eff_data_parameters,
-                muon_trigger_eff_mc_parameters,
-            ],
+            "mu_trigger_sf": EraModifier(
+                {
+                    **{
+                        _era: [
+                            muon_trigger_sf_parameters,
+                            muon_trigger_eff_data_parameters,
+                            muon_trigger_eff_mc_parameters,
+                        ]
+                        for _era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": [muon_trigger_sf_parameters],  # TODO efficiencies do not exist in 2025 SF files
+                },
+            ),
         },
     )
 
@@ -1499,12 +1507,20 @@ def _add_muon_trigger_scale_factors(
     configuration.add_config_parameters(
         MT_SCOPES,
         {
-            "mutau_trigger_leg1_sf": [
-                mt_trigger_muleg_sf_parameters,
-                mt_trigger_muleg_eff_data_parameters,
-                mt_trigger_muleg_eff_mc_parameters,
-            ],
-        },
+            "mutau_trigger_leg1_sf": EraModifier(
+                {
+                    **{
+                        _era: [
+                            mt_trigger_muleg_sf_parameters,
+                            mt_trigger_muleg_eff_data_parameters,
+                            mt_trigger_muleg_eff_mc_parameters,
+                        ]
+                        for _era in ERAS_RUN2 + ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]
+                    },
+                    "2025": [mt_trigger_muleg_sf_parameters],  # TODO efficiencies do not exist in 2025 SF files
+                },
+            ),
+        }
     )
 
 
