@@ -2927,7 +2927,7 @@ def build_config(
     )
 
     # Add muon-tau cross triggers in run 3
-    if era in ERAS_RUN3:
+    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]:
         configuration.add_producers(
             MT_SCOPES,
             [
@@ -3157,7 +3157,7 @@ def build_config(
             samples=["data", "embedding", "embedding_mc"],
         )
     )
-    if era in ERAS_RUN3:
+    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]:
         configuration.add_modification_rule(
             MT_SCOPES,
             RemoveProducer(
@@ -3754,7 +3754,7 @@ def build_config(
     )
 
     # Add muon-tau cross trigger only in Run 3
-    if era in ERAS_RUN3:
+    if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix", "2024"]:
         configuration.add_outputs(
             MT_SCOPES,
             [
