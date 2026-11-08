@@ -65,6 +65,7 @@ class CorrectionVersionTest(unittest.TestCase):
             "ttbar",
             "rem_ttbar",
             "diboson",
+            "triboson",
             "dyjets",
             "dyjets_madgraph",
             "dyjets_amcatnlo",
