@@ -2056,6 +2056,7 @@ def add_bjet_config(configuration: Configuration, sample_types: list[str]):
                         sample_type: "diboson"
                         for sample_type in [
                             "diboson",
+                            "triboson",
                         ]
                     },
                     **{
