@@ -40,13 +40,13 @@ MuonPtCorrection = Producer(
 # loose muons (mainly used to evaluate veto masks)
 BaseMuons = Producer(
     name="BaseMuons",
-    call="xyh::object_selection::muon({df}, {output}, {input}, \"{loose_muon_id}\", {loose_muon_min_pt}, {loose_muon_max_abs_eta}, {loose_muon_max_abs_dxy}, {loose_muon_max_abs_dz}, {loose_muon_max_iso})",
+    call="xyh::object_selection::muon({df}, {output}, {input}, \"{loose_muon_id}\", {loose_muon_min_pt}, {loose_muon_max_abs_eta}, {loose_muon_max_iso}, {loose_muon_max_abs_dxy}, {loose_muon_max_abs_dz})",
     input=[
         q.Muon_pt_corrected,
         nanoAOD.Muon_eta,
+        nanoAOD.Muon_pfRelIso04_all,
         nanoAOD.Muon_dxy,
         nanoAOD.Muon_dz,
-        nanoAOD.Muon_pfRelIso04_all,
     ],
     output=[q.base_muons_mask],
     scopes=GLOBAL_SCOPES,
@@ -55,13 +55,13 @@ BaseMuons = Producer(
 # tight muons (final state tau candidates)
 GoodMuons = Producer(
     name="GoodMuons",
-    call="xyh::object_selection::muon({df}, {output}, {input}, \"{tight_muon_id}\", {tight_muon_min_pt}, {tight_muon_max_abs_eta}, {tight_muon_max_abs_dxy}, {tight_muon_max_abs_dz}, {tight_muon_max_iso})",
+    call="xyh::object_selection::muon({df}, {output}, {input}, \"{tight_muon_id}\", {tight_muon_min_pt}, {tight_muon_max_abs_eta}, {tight_muon_max_iso}, {tight_muon_max_abs_dxy}, {tight_muon_max_abs_dz})",
     input=[
         q.Muon_pt_corrected,
         nanoAOD.Muon_eta,
+        nanoAOD.Muon_pfRelIso04_all,
         nanoAOD.Muon_dxy,
         nanoAOD.Muon_dz,
-        nanoAOD.Muon_pfRelIso04_all,
     ],
     output=[q.good_muons_mask],
     scopes=MUON_SCOPES,
