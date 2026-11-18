@@ -386,7 +386,7 @@ ROOT::RDF::RNode BestYHKinFit(
  * the scanned mass and the engine's hard-coded 125 GeV the tautau side).
  * `kinfit_mHH` is the invariant mass of the fitted four-object system (the
  * engine's `mX`). The b-jet resolutions are the relative regression
- * resolutions, passed through unconverted as in `YHKinFit`.
+ * resolutions and are converted to absolute pT resolutions for the fit.
  *
  * @param df the input dataframe
  * @param outputs names of the four output columns, in order:
@@ -448,8 +448,8 @@ sm_hh_kinfit(ROOT::RDF::RNode df, const std::vector<std::string> &outputs,
             std::vector<int> hypo_mY = {125};
 
             YHKinFitMaster kinFits = YHKinFitMaster(
-                b_1, b_reso_1, b_2, b_reso_2, tau_1, tau_2, met_LV, met_cov,
-                /*Ytautau=*/false);
+                b_1, b_1.Pt() * b_reso_1, b_2, b_2.Pt() * b_reso_2,
+                tau_1, tau_2, met_LV, met_cov, /*Ytautau=*/false);
             kinFits.addMhHypothesis(hypo_mh);
             kinFits.addMYHypothesis(hypo_mY);
 

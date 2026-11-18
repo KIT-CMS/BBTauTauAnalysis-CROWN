@@ -104,9 +104,8 @@ The build needs a quantities map that lists every input column of the scope. A m
 column fails at configuration time; a shifted variant is used where the map has it, otherwise the
 input stays nominal under that shift (info log only).
 
-Payloads: the NMSSM Run-3 ones stay at `payloads/fake_factors/<version>/<era>/` (2022 and 2023:
-`fake-factors-2026-06-10`, 2024 and 2025: `fake-factors-2026-09-26`, which has no 2024 tt payload), new ones go to
-`payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payloads are
+The NMSSM Run-3 friend reads `payloads/fake_factors/fake-factors-2026-10-25/<era>/` for et, mt and tt in all six eras.
+New analysis-specific payloads go to `payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payloads are
 `payloads/fake_factors/sm/fake-factors-2026-10-19/<era>/` (QCD + ttbar) and
 `payloads/fake_factors/sm/fake-factors-2026-10-19-w/<era>/` (QCD + W + ttbar) for the payload eras 2016, 2017 and
 2018, measured with ShapeSmith on the v7b production (data `smrun2_binned_v7`, MC and embedding

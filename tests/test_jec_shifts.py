@@ -122,6 +122,9 @@ def test_jes_sources_exist_in_the_era_payload(module, era):
     ).config_parameters["global"]
     nominal = parameters["nominal"]
     corrections = jec_payload(nominal)
+    if era in ERAS_RUN2:
+        assert nominal["ak4regjet_jec_file"] == nominal["ak4jet_jec_file"]
+        assert nominal["ak4regjet_jec_algo"] == nominal["ak4jet_jec_algo"]
     names = set(corrections.keys())
     tag, algo = nominal["ak4jet_jes_tag_mc"], nominal["ak4jet_jec_algo"]
     assert nominal["ak4jet_jes_tag_data"] == tag
@@ -140,12 +143,9 @@ def test_jes_sources_exist_in_the_era_payload(module, era):
     assert not missing, sorted(missing)
 
 
-@pytest.mark.parametrize(
-    "module,era", [(module, era) for module, era in JEC_CASES if era in ERAS_RUN2]
-)
+@pytest.mark.parametrize("module,era", JEC_CASES)
 def test_jer_tag_exists_in_the_era_payload(module, era):
-    """The JER smearing reads the resolution, the scale factor and its uncertainty.
-    Run 2 only: the 2023 JER tags (JRV2) are not in the pinned 2023 payloads (JRV3)."""
+    """The configured payload contains the JER resolution, scale factor and uncertainty."""
     nominal = build(module, "ttbar", era=era).config_parameters["global"]["nominal"]
     names = set(jec_payload(nominal).keys())
     tag, algo = nominal["ak4jet_jer_tag"], nominal["ak4jet_jec_algo"]

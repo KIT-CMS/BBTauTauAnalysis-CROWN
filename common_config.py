@@ -977,13 +977,6 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
         HAD_TAU_SCOPES,
         {
             "tau_ides_sf_vsjet_wp": "Medium",
-            # vsMu WP of the vsJet SF, as a C++ string literal (CROWN drops empty
-            # parameters). The DeepTau2018v2p5VSjet corrections of every pinned TAU
-            # payload and of the embedding payloads take pt, dm, genmatch, wp,
-            # wp_VSe, syst, flag; the empty WP selects that 7-input evaluation in
-            # the core's experimental::Id_vsJet. Set a WP ('"Tight"') only for a
-            # payload with a wp_VSmu input (tests/test_run2_v15_configuration.py).
-            "tau_ides_sf_vsmu_wp": '""',
         }
     )
     configuration.add_config_parameters(
@@ -998,6 +991,8 @@ def add_hadronic_tau_config(configuration: Configuration, era: str):
             "tau_ides_sf_vsele_wp": "Tight",
         }
     )
+    # Only the 2025 vsJet SF takes the vsMu WP. Keep the C++ string literal
+    # for the empty argument in the other payloads.
     configuration.add_config_parameters(
         ET_SCOPES + TT_SCOPES,
         {
@@ -1466,6 +1461,12 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
         "2025": "Summer24Prompt25_V3",
     }
 
+    # Run 2 uses the same AK4 PUPPI calibration for standard and regressed jets.
+    run2_jec_files = {
+        year: f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-{year}-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz"
+        for year in ERAS_RUN2
+    }
+
     # AK4 jet energy calibration and resolution corrections
     # JEC recommendations: https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
     configuration.add_config_parameters(
@@ -1478,10 +1479,7 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
             "ak4jet_jer_shift": "nom",  # or "up", "down" (the producer call adds the quotes)
             "ak4jet_jec_file": EraModifier(
                 {
-                    "2016preVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
-                    "2016postVFP": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
-                    "2017": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
-                    "2018": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/2026-06-05/jet_jerc.json.gz",
+                    **run2_jec_files,
                     "2022preEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22CDSep23-Summer22-NanoAODv12/2026-06-05/jet_jerc.json.gz",
                     "2022postEE": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-22EFGSep23-Summer22EE-NanoAODv12/2026-06-05/jet_jerc.json.gz",
                     "2023preBPix": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run3-23CSep23-Summer23-NanoAODv12/2026-07-15/jet_jerc.json.gz",
@@ -1492,10 +1490,7 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
             ),
             "ak4regjet_jec_file": EraModifier(
                 {
-                    "2016preVFP": "DOES_NOT_EXIST",
-                    "2016postVFP": "DOES_NOT_EXIST",
-                    "2017": "DOES_NOT_EXIST",
-                    "2018": "DOES_NOT_EXIST",
+                    **run2_jec_files,
                     "2022preEE": "payloads/jerc_regression/2022preEE/regJet_jerc.json.gz",
                     "2022postEE": "payloads/jerc_regression/2022postEE/regJet_jerc.json.gz",
                     "2023preBPix": "payloads/jerc_regression/2023preBPix/regJet_jerc.json.gz",
@@ -1524,7 +1519,7 @@ def add_ak4jet_config(configuration: Configuration, era: str, profile):
             "ak4regjet_jec_algo": EraModifier(
                 {
                     **{
-                        _era: "DOES_NOT_EXIST"
+                        _era: "AK4PFPuppi"
                         for _era in ERAS_RUN2
                     },
                     **{

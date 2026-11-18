@@ -10,6 +10,8 @@
             "bpair_pt_1", "bpair_eta_1", "bpair_phi_1", "bpair_mass_1", "bpair_reg_res_1",
             "bpair_pt_2", "bpair_eta_2", "bpair_phi_2", "bpair_mass_2", "bpair_reg_res_2",
             "bpair_p4_1", "bpair_p4_2",
+            "bpair_pt_regressed_1", "bpair_pt_regressed_2",
+            "bpair_pt_resolution_regressed_1", "bpair_pt_resolution_regressed_2",
             "met", "metphi", "met_p4_recoilcorrected",
             "metcov00", "metcov01", "metcov10", "metcov11"
           ]

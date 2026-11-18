@@ -180,10 +180,10 @@ def test_sm_tau_channels_keep_the_lepton_isolation_sideband(scope, parameter, nm
         (
             "nmssm_config",
             "2018",
-            "Electron_mvaIso_WP80",
-            "wp80iso",
-            "Muon_tightId",
-            ("NUM_TightID_DEN_TrackerMuons", "NUM_TightRelIso_DEN_TightID"),
+            "Electron_mvaIso_WP90",
+            "wp90iso",
+            "Muon_mediumId",
+            ("NUM_MediumID_DEN_TrackerMuons", "NUM_TightRelIso_DEN_MediumID"),
         ),
     ],
 )

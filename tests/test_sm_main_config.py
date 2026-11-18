@@ -354,7 +354,7 @@ def test_sm_recoil_corrected_met_follows_the_jes_and_recoil_shifts(era):
 def test_sm_recoil_correction_counts_the_recipe_jets(era):
     """The v15 recoil correction counts the jets of the HTT recipe (pT > 30 GeV,
     |eta| < 4.7, jet ID, DeltaR > 0.5 to both pair objects), not all NanoAOD jets;
-    NMSSM keeps all jets."""
+    the NMSSM production uses the lepton-corrected MET directly."""
     config = build("sm_config", "dyjets", era=era)
 
     def inputs(name):
@@ -374,11 +374,10 @@ def test_sm_recoil_correction_counts_the_recipe_jets(era):
         params["global"]["nominal"]["recoil_jet_max_abs_eta"],
         params["mt"]["nominal"]["recoil_jet_veto_min_delta_r"],
     ) == (30.0, 4.7, 0.5)
-    nmssm = build("nmssm_config", "dyjets_amcatnlo", era="2018")
-    recoil = find_producer(nmssm, "mt", "RecoilCorrectionMet")
-    assert [q.name for q in recoil.get_inputs("mt")] == [
-        "met_p4_leptoncorrected", "gen_boson_p4", "gen_vis_boson_p4", "Jet_correctedPt",
-    ]
+    nmssm = build("nmssm_config", "dyjets_amcatnlo", era="2018", shifts=("all",))
+    rename = find_producer(nmssm, "mt", "RenameMet")
+    assert [q.name for q in rename.get_inputs("mt")] == ["met_p4_leptoncorrected"]
+    assert not any("recoil" in name.lower() for name in nmssm.shifts["mt"])
 
 
 @pytest.mark.parametrize("era", RECOIL_ERAS)

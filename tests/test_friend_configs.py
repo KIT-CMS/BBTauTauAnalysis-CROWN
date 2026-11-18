@@ -295,18 +295,15 @@ def test_nmssm_fake_factor_shifts_follow_the_payload():
     assert_shifts_set_payload_keys(config, "mt")
     config = build_all_shifts(fake_factors_friend_config, "2023postBPix", "mt", MAP_FF_2023)
     assert_shifts_set_payload_keys(config, "mt")
-    # the 06-10 payload holds the hardwired set before the payload-driven friend,
-    # with the payload's fracTTbarUnc spelling (fracTTBarUnc evaluated nominal
-    # silently)
+    # Directional nuisances of the 2026-10-25 Run-3 payload.
     expected = {
         f"__{value}{direction}"
         for value in [
-            "QCDFFunc", "QCDFFmcSubUnc", "ttbarFFunc",
-            "process_fractionsfracQCDUnc", "process_fractionsfracTTbarUnc",
+            "process_fractionsfrac_QCD", "process_fractionsfrac_ttbar_J",
             *[
-                f"{prefix}_Corr{kind}"
-                for prefix in ["QCD_DR_SR", "QCD_non_closure", "ttbar_non_closure"]
-                for kind in ["Stat1Sigma", "SystMCShift", "SystBandAsym"]
+                f"{prefix}{kind}"
+                for prefix in ["QCD", "ttbar", "QCD_DR_SR_Corr", "QCD_non_closure_Corr", "ttbar_non_closure_Corr"]
+                for kind in ["StatShift", "SystMCShift", "SystBandAsym"]
             ],
         ]
         for direction in ["Up", "Down"]
