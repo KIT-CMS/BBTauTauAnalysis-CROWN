@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from .jets import BaseBJetsWithVetoMask
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from code_generation.quantity import Quantity
@@ -1341,18 +1342,6 @@ BJetWPUParT_SF = Producer(
 # (v7 spec C14), visible on the nominal tree (with -DSHIFTS=none).
 ##############################################################################
 
-# Kinematic b-jet acceptance (pt > 20, |eta| < 2.4, jet ID) BEFORE the b-tag WP
-# cut, cleaned of lepton overlaps -- the exact jet set the fixed-WP event
-# reweighting runs over, and already inside the [0, 2.4) eta support the strict
-# consumer requires.
-StrictUParTBtagMask = Producer(
-    name="StrictUParTBtagMask",
-    call='physicsobject::CombineMasks({df}, {output}, {input}, "all_of")',
-    input=[q.base_bjets_mask, q.jet_overlap_veto_mask],
-    output=[q.base_bjets_with_veto_mask],
-    scopes=SCOPES,
-)
-
 # The fixed-WP nuisances (v7 spec C14, E14): b/c and light jets, each correlated
 # between the eras and uncorrelated; one flavour varied, the other at central.
 UPART_FLAVOUR_CORRECTIONS = {"bc": "UParTAK4_comb", "light": "UParTAK4_light"}
@@ -1440,7 +1429,7 @@ def build_strict_upart_btag_weight(variations):
     entries = [{"suffix": None, "variation_comb": "central", "variation_light": "central"}]
     entries += upart_variation_dispatch(variations)
 
-    subproducers = [StrictUParTBtagMask]
+    subproducers = [BaseBJetsWithVetoMask]
     output_quantities = []
     for entry in entries:
         if entry["suffix"] is None:

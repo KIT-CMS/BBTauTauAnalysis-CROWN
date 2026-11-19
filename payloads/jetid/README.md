@@ -6,7 +6,7 @@ layout of the JME POG Run 3 `jetid.json.gz` files: corrections
 `AK4PUPPI_Tight`, `AK4PUPPI_TightLeptonVeto`, `AK8PUPPI_Tight`,
 `AK8PUPPI_TightLeptonVeto`, nine inputs (`eta`, `chHEF`, `neHEF`, `chEmEF`,
 `neEmEF`, `muEF`, `chMultiplicity`, `neMultiplicity`, `multiplicity`), output
-1 or 0. It is consumed by `producers/jets.py:JetIDFromCorrectionlib` through
+1 or 0. It is consumed by `producers/jets.py:JetID.v15` through
 `ak4jet_id_file` on the Run-2 NanoAOD-v15 input path (one campaign directory
 per era), yielding the usual 0/2/6 jet ID.
 

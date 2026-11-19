@@ -2,7 +2,7 @@ from os import path
 import importlib
 from code_generation.code_generation import CodeGenerator
 
-from .constants import ERAS, SCOPES, LEGACY_AVAILABLE_SAMPLES
+from .constants import ERAS, SCOPES, ALL_SAMPLES
 
 
 def run(args):
@@ -20,12 +20,9 @@ def run(args):
         f"analysis_configurations.{analysis_name}.{configname}"
     )
 
-    ## a config module may restrict the eras and samples it accepts via
-    ## AVAILABLE_ERAS / AVAILABLE_SAMPLES; the configuration itself is always
-    ## built against the full legacy sample surface
+    # Entry points may restrict accepted inputs. Rules are built against all sample types.
     available_eras = getattr(config, "AVAILABLE_ERAS", ERAS)
-    accepted_samples = getattr(config, "AVAILABLE_SAMPLES", LEGACY_AVAILABLE_SAMPLES)
-    available_samples = LEGACY_AVAILABLE_SAMPLES
+    accepted_samples = getattr(config, "AVAILABLE_SAMPLES", ALL_SAMPLES)
     available_scopes = SCOPES
     if era not in available_eras:
         raise ValueError(
@@ -49,7 +46,7 @@ def run(args):
         sample_group,
         scopes,
         shifts,
-        available_samples,
+        ALL_SAMPLES,
         available_eras,
         available_scopes,
     )

@@ -18,7 +18,7 @@ import pytest
 
 from analysis_configurations.bbtautau import common_config, embedding_run2_v15
 from analysis_configurations.bbtautau.analysis_profiles import NMSSM_PROFILE, SM_PROFILE
-from analysis_configurations.bbtautau.constants import ERAS_RUN2, LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, ALL_SAMPLES, SCOPES
 from analysis_configurations.bbtautau.tau_triggersetup import (
     KIT_SINGLE_ELECTRON_TRIGGER_SFS,
     KIT_SINGLE_MUON_TRIGGER_SFS,
@@ -103,7 +103,7 @@ def build_profile(profile, scopes, shifts=("none",), era="2018"):
             "embedding",
             list(scopes),
             set(shifts),
-            LEGACY_AVAILABLE_SAMPLES,
+            ALL_SAMPLES,
             list(ERAS_RUN2),
             SCOPES,
         )

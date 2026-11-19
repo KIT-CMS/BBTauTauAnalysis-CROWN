@@ -34,7 +34,7 @@ from analysis_configurations.bbtautau import (
 from analysis_configurations.bbtautau.constants import (
     ERAS,
     ERAS_RUN2,
-    LEGACY_AVAILABLE_SAMPLES,
+    ALL_SAMPLES,
     SCOPES,
 )
 from analysis_configurations.bbtautau.nn_payloads import NNModel
@@ -131,7 +131,7 @@ def test_friend_output_contracts(module, scope, quantities_map, expected):
         "ttbar",
         [scope],
         {"none"},
-        LEGACY_AVAILABLE_SAMPLES,
+        ALL_SAMPLES,
         list(getattr(module, "AVAILABLE_ERAS", ERAS)),
         SCOPES,
         quantities_map,
@@ -166,7 +166,7 @@ def test_sm_friends_build_in_every_run2_era(module, quantities_map, expected, er
         "ttbar",
         ["mt"],
         {"none"},
-        LEGACY_AVAILABLE_SAMPLES,
+        ALL_SAMPLES,
         module.AVAILABLE_ERAS,
         SCOPES,
         relabelled_map(quantities_map, era, tmp_path),
@@ -207,7 +207,7 @@ def build_all_shifts(module, era, scope, quantities_map):
     logging.disable(logging.CRITICAL)
     try:
         return module.build_config(
-            era, "ttbar", [scope], {"all"}, LEGACY_AVAILABLE_SAMPLES,
+            era, "ttbar", [scope], {"all"}, ALL_SAMPLES,
             module.AVAILABLE_ERAS, SCOPES, quantities_map,
         )
     finally:
@@ -283,7 +283,7 @@ def test_sm_fake_factors_build_on_embedding(scope, tmp_path):
     path = tmp_path / "quantities_map.json"
     path.write_text(json.dumps(quantities_map))
     config = sm_fake_factors.build_config(
-        "2018", "embedding", [scope], {"all"}, LEGACY_AVAILABLE_SAMPLES,
+        "2018", "embedding", [scope], {"all"}, ALL_SAMPLES,
         sm_fake_factors.AVAILABLE_ERAS, SCOPES, str(path),
     )
     assert "__CMS_scale_t_emb_DeepTau2018v2p5_DM10_2018Up" in config.shifts[scope]
@@ -335,7 +335,7 @@ def build_wjets_friend(payload, scope, shifts=("all",)):
     logging.disable(logging.CRITICAL)
     try:
         return build_fake_factor_friend(
-            str(payload), "2018", "ttbar", [scope], set(shifts), LEGACY_AVAILABLE_SAMPLES,
+            str(payload), "2018", "ttbar", [scope], set(shifts), ALL_SAMPLES,
             sm_fake_factors.AVAILABLE_ERAS, SCOPES, MAP_FF_2018,
         )
     finally:
@@ -391,12 +391,12 @@ def test_two_process_friend_sums_qcd_and_ttbar(scope):
 _GENERATE_FRIEND = """
 import json, logging, sys
 from analysis_configurations.bbtautau import {module}
-from analysis_configurations.bbtautau.constants import LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.constants import ALL_SAMPLES, SCOPES
 from code_generation.code_generation import CodeGenerator
 payload, scope, quantities_map, directory = json.loads(sys.argv[1])
 {module}.SM_PAYLOAD_DIRS["2018"] = payload
 logging.disable(logging.CRITICAL)
-config = {module}.build_config("2018", "ttbar", [scope], {{"none"}}, LEGACY_AVAILABLE_SAMPLES,
+config = {module}.build_config("2018", "ttbar", [scope], {{"none"}}, ALL_SAMPLES,
                                ["2018"], SCOPES, quantities_map)
 generator = CodeGenerator("code_generation/analysis_template_friends.cxx",
                           "code_generation/subset_template.cxx", config, "bbtautau",
@@ -493,7 +493,7 @@ def test_both_fake_factor_friends_build_in_every_run2_era_and_sample_kind(module
         built = {}
         for sample in ("data", "ttbar", "embedding"):
             config = module.build_config(
-                era, sample, [scope], {"all"}, LEGACY_AVAILABLE_SAMPLES,
+                era, sample, [scope], {"all"}, ALL_SAMPLES,
                 module.AVAILABLE_ERAS, SCOPES, relabelled_ff_map(era, sample, tmp_path),
             )
             nominal = config.config_parameters[scope]["nominal"]
@@ -546,7 +546,7 @@ def build_nn_friend(models, era, scope, maps, shifts=("none",)):
     try:
         with mock.patch.object(sm_nn_classifier, "MODELS", models):
             return sm_nn_classifier.build_config(
-                era, "ttbar", [scope], set(shifts), LEGACY_AVAILABLE_SAMPLES,
+                era, "ttbar", [scope], set(shifts), ALL_SAMPLES,
                 sm_nn_classifier.AVAILABLE_ERAS, SCOPES, maps,
             )
     finally:
@@ -618,13 +618,13 @@ def test_nn_classifier_friend_shifts_the_gate_and_the_scores(nn_models, tmp_path
 _GENERATE_NN_FRIEND = """
 import json, logging, sys
 from analysis_configurations.bbtautau import sm_nn_classifier
-from analysis_configurations.bbtautau.constants import LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.constants import ALL_SAMPLES, SCOPES
 from analysis_configurations.bbtautau.nn_payloads import NNModel
 from code_generation.code_generation import CodeGenerator
 models, era, scope, maps, directory = json.loads(sys.argv[1])
 sm_nn_classifier.MODELS = tuple(NNModel(*model) for model in models)
 logging.disable(logging.CRITICAL)
-config = sm_nn_classifier.build_config(era, "ttbar", [scope], {"none"}, LEGACY_AVAILABLE_SAMPLES,
+config = sm_nn_classifier.build_config(era, "ttbar", [scope], {"none"}, ALL_SAMPLES,
                                        sm_nn_classifier.AVAILABLE_ERAS, SCOPES, maps)
 generator = CodeGenerator("code_generation/analysis_template_friends.cxx",
                           "code_generation/subset_template.cxx", config, "bbtautau",

@@ -361,7 +361,8 @@ def test_sm_recoil_correction_counts_the_recipe_jets(era):
         return [q.name for q in find_producer(config, "mt", name).get_inputs("mt")]
 
     assert inputs("RecoilCorrectionMet")[-1] == "Jet_recoilPt"
-    assert inputs("RecoilJetPt") == ["Jet_correctedPt", "recoil_jets_mask"]
+    assert inputs("RecoilJetPt") == ["Jet_correctedPt", "recoil_jet_indices"]
+    assert inputs("RecoilJetIndices") == ["recoil_jets_mask"]
     assert inputs("RecoilJetsMask") == [
         "good_recoil_jets_mask",
         "recoil_jet_overlap_veto_mask",

@@ -1,7 +1,7 @@
 """Shared build and generation helpers, fake CLI args and configuration accessors.
 
 Not a test module. ``build()`` mirrors ``generate.py`` -- gate on the module's
-``AVAILABLE_ERAS``, but always construct against ``LEGACY_AVAILABLE_SAMPLES`` --
+``AVAILABLE_ERAS``, but always construct against ``ALL_SAMPLES`` --
 and caches, so each (module, sample, era, scopes, shifts) surface is built once
 per session. ``generate_code()`` emits the C++ code of a surface, also once per session.
 The accessors keep the producer-group traversal in one place.
@@ -21,7 +21,7 @@ from typing import NamedTuple
 
 import pytest
 
-from analysis_configurations.bbtautau.constants import ERAS, ERAS_RUN2, LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.constants import ERAS, ERAS_RUN2, ALL_SAMPLES, SCOPES
 from code_generation.quantity import NanoAODQuantity
 
 # The branches of one v15 embedding file (mutau 2018A nano_1)
@@ -115,7 +115,7 @@ def build(module_name, sample, era, scopes=("mt",), shifts=("none",)):
     try:
         return module.build_config(
             era, sample, list(scopes), {s.lower() for s in shifts},
-            LEGACY_AVAILABLE_SAMPLES,
+            ALL_SAMPLES,
             list(getattr(module, "AVAILABLE_ERAS", ERAS)), SCOPES,
         )
     finally:

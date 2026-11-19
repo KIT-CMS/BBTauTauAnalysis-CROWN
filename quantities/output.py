@@ -570,6 +570,7 @@ met_p4_recoilcorrected = Quantity("met_p4_recoilcorrected")
 good_recoil_jets_mask = Quantity("good_recoil_jets_mask")
 recoil_jet_overlap_veto_mask = Quantity("recoil_jet_overlap_veto_mask")
 recoil_jets_mask = Quantity("recoil_jets_mask")
+recoil_jet_indices = Quantity("recoil_jet_indices")
 Jet_recoilPt = Quantity("Jet_recoilPt")
 # the recoil correction on the PuppiMET with propagated leptons, before the jet
 # energy scale is propagated (Run-2 NanoAOD-v15 inputs, recoil-correction eras)
@@ -874,9 +875,8 @@ Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
 # ------------------------------------------------------------------------------
 # Payload-independent UParT probe-jet collection (sm_btag_efficiency_config)
 # ------------------------------------------------------------------------------
-# Per-jet probe mask (1 = probe) and the four equal-length exported vectors
-# it selects: corrected pt, eta, hadron flavour (int), and UParTAK4 B score.
-btag_probe_jet_mask = Quantity("btag_probe_jet_mask")
+btag_probe_jet_indices = Quantity("btag_probe_jet_indices")
+jet_hadron_flavour_int = Quantity("jet_hadron_flavour_int")
 btag_probe_jet_pt = Quantity("btag_probe_jet_pt")
 btag_probe_jet_eta = Quantity("btag_probe_jet_eta")
 btag_probe_jet_hadron_flavour = Quantity("btag_probe_jet_hadron_flavour")

@@ -2826,19 +2826,8 @@ def build_config(
         electrons.ElectronPtCorrectionData[tuple(ERAS_RUN3)], electrons.ElectronPtCorrectionData
     )
 
-    # Jet ID producer (first member of the auxiliary `Jet` group, see
-    # producers/jets.py). v15 drops the precomputed Jet_jetId branch, so the v15
-    # path evaluates the ID with the correctionlib producer 2024/2025 use.
-    jet_id_overrides = (
-        {_era: jets.JetIDFromCorrectionlib for _era in ERAS_RUN2}
-        if use_run2_v15_inputs
-        else {}
-    )
-
-    # Producers of auxiliary jet collection quantities (mainly used for
-    # selection and JEC). For a detailed description, see producers/jets.py
-    AuxJetCollectionQuantities = get_for_era(
-        jets.aux_jet_collection_quantities(jet_id_overrides), era
+    AuxJetCollectionQuantities = jets.aux_jet_collection_quantities(
+        era, version="v15" if use_run2_v15_inputs else None
     )
     AuxCorrT1METJetCollectionQuantities = get_for_era(jets.AuxCorrT1METJetCollectionQuantities, era)
 

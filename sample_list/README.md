@@ -142,5 +142,5 @@ embedding rule and the phase-space rules below. Beyond that:
 ## Known gaps
 
 `ttHToTauTau` has no v15 sample in any era (`ttHToNonbb` covers it), and VBF HH is missing in UL18, so
-neither is listed. `ggZZ` and `triboson` are absent from `constants.LEGACY_AVAILABLE_SAMPLES`, so a
+neither is listed. `ggZZ` and `triboson` are absent from the SM profiles’ `AVAILABLE_SAMPLES`, so a
 nick of either type fails in `generate.py` before `build_config` is reached.

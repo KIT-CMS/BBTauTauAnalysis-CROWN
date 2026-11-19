@@ -19,6 +19,7 @@ __all__ = [
     "HAD_TAU_SCOPES",
     "SCOPES",
     "ERAS",
+    "ALL_SAMPLES",
     "LEGACY_AVAILABLE_SAMPLES",
 ]
 
@@ -338,9 +339,8 @@ XYH_MASS_POINTS = [
     (4000, 3500),
 ]
 
-# legacy sample surface (verbatim, formerly generate.py:11-43); the fallback
-# also the sample surface every Configuration is built against
-LEGACY_AVAILABLE_SAMPLES = [
+# Sample types known to the analysis. Each entry point may accept a subset.
+ALL_SAMPLES = [
     "ggh_htautau",
     "ggh_hbb",
     "vbf_htautau",
@@ -375,3 +375,6 @@ LEGACY_AVAILABLE_SAMPLES = [
     "nmssm_Ybb",
     "nmssm_Ytautau",
 ]
+
+# Compatibility for configs importing the original public name.
+LEGACY_AVAILABLE_SAMPLES = ALL_SAMPLES

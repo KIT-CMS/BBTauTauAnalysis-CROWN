@@ -1,3 +1,4 @@
+from ..constants import SCOPES
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from code_generation.producer import Producer, ProducerGroup, ExtendedVectorProducer
@@ -876,7 +877,7 @@ DiTauPairMETQuantities = ProducerGroup(
     call=None,
     input=None,
     output=None,
-    scopes=["mt", "et", "tt", "em", "ee", "mm"],
+    scopes=SCOPES,
     subproducers=_DITAU_MET_QUANTITIES,
 )
 
@@ -887,7 +888,7 @@ DiTauPairMETQuantitiesNoBB = ProducerGroup(
     call=None,
     input=None,
     output=None,
-    scopes=["mt", "et", "tt", "em", "ee", "mm"],
+    scopes=SCOPES,
     subproducers=[
         p for p in _DITAU_MET_QUANTITIES
         if p not in (p4_tautaubb, pt_tautaubb, mass_tautaubb)

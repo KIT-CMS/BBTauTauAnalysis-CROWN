@@ -8,12 +8,12 @@ import re
 import pytest
 
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, ERAS_RUN3
-from analysis_configurations.bbtautau.producers import scalefactors, taus
+from analysis_configurations.bbtautau.producers import jets, scalefactors, taus
 from analysis_configurations.bbtautau.tests.helpers import build
 
 CROWN_ROOT = Path(__file__).resolve().parents[3]
 ANALYSIS_ROOT = CROWN_ROOT / "analysis_configurations" / "bbtautau"
-BUILD_SCRIPTS = sorted((ANALYSIS_ROOT / "build_scripts").glob("test_build_*.sh"))
+BUILD_SCRIPTS = ANALYSIS_ROOT / "build_scripts"
 
 
 def test_analysis_identity_is_bbtautau():
@@ -21,20 +21,33 @@ def test_analysis_identity_is_bbtautau():
     generate = (ANALYSIS_ROOT / "generate.py").read_text()
     generate_friends = (ANALYSIS_ROOT / "generate_friends.py").read_text()
     init_script = (CROWN_ROOT / "init.sh").read_text()
-    scripts = [script.read_text() for script in BUILD_SCRIPTS]
-    assert BUILD_SCRIPTS
+    driver = (BUILD_SCRIPTS / "test_build.sh").read_text()
     assert (
         'analysis_name = "bbtautau"' in generate
         and 'analysis_name = "bbtautau"' in generate_friends
     )
-    assert all('local analysis="bbtautau"' in script for script in scripts)
+    assert "-DANALYSIS=bbtautau" in driver
     assert (
         "bbtautau)" in init_script
         and 'REPO="git@github.com:KIT-CMS/BBTauTauAnalysis-CROWN.git"' in init_script
     )
     assert "xyh_bbtautau" not in "\n".join(
-        [generate, generate_friends, init_script, *scripts]
+        [generate, generate_friends, init_script, driver]
     )
+
+
+@pytest.mark.parametrize("era,version,expected_call", [
+    ("2018", None, "event::quantity::Rename"),
+    ("2018", "v15", "physicsobject::jet::quantity::ID"),
+    ("2022preEE", None, "CorrectJetIDRun3NanoV12"),
+    ("2023postBPix", None, "CorrectJetIDRun3NanoV12"),
+    ("2024", None, "physicsobject::jet::quantity::ID"),
+    ("2025", None, "physicsobject::jet::quantity::ID"),
+])
+def test_aux_jet_collection_selects_one_jet_id(era, version, expected_call):
+    group = jets.aux_jet_collection_quantities(era, version)
+    jet_id, = (p for p in group.producers["global"] if p.name == "JetID")
+    assert expected_call in jet_id.call
 
 
 def test_tau_pt_correction_matches_current_crown_signature():

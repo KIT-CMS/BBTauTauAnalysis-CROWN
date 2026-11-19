@@ -67,19 +67,7 @@ TauEmbeddingIsTightTrailingMuon = Producer(
     output=[q.emb_isTightTrailingMuon],
     scopes=["et", "mt", "tt", "em", "mm", "ee"],
 )
-# TauEmbeddingnInitialPairCandidates / TauEmbeddingSelectionOldMass /
-# TauEmbeddingSelectionNewMass are intentionally NOT defined here (unlike the
-# reference `unittest` analysis config): they read
-# nanoAOD.TauEmbedding_nInitialPairCandidates / TauEmbedding_SelectionOldMass /
-# TauEmbedding_SelectionNewMass, none of which exist in the NanoAOD v15 Run 3
-# schema this analysis's `nanoAOD` alias resolves to
-# (analysis_configurations/quantities/nanoAODv15_run3.py) -- only in the
-# legacy v9 Run 2 schema. Defining them would raise AttributeError at import
-# time for every build (not just embedding samples), since this module is
-# imported unconditionally by tau_embedding_settings.py. Re-add them (with
-# their emb_InitialPairCandidates / emb_SelectionOldMass / emb_SelectionNewMass
-# outputs, currently unused) once/if those branches are added to the v15
-# schema.
+# NanoAOD v15 omits the legacy initial-pair count and old/new selection masses.
 
 EmbeddingQuantities = ProducerGroup(
     name="EmbeddingQuantities",

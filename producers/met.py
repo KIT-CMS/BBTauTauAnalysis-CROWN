@@ -364,10 +364,18 @@ RecoilJetsMask = Producer(
     scopes=SCOPES,
 )
 
+RecoilJetIndices = Producer(
+    name="RecoilJetIndices",
+    call="physicsobject::GetIndices({df}, {output}, {input})",
+    input=[q.recoil_jets_mask],
+    output=[q.recoil_jet_indices],
+    scopes=SCOPES,
+)
+
 RecoilJetPt = Producer(
     name="RecoilJetPt",
-    call="xyh::btag_probe::masked_vector<float>({df}, {output}, {input})",
-    input=[q.Jet_correctedPt, q.recoil_jets_mask],
+    call="event::quantity::Take<float>({df}, {output}, {input})",
+    input=[q.Jet_correctedPt, q.recoil_jet_indices],
     output=[q.Jet_recoilPt],
     scopes=SCOPES,
 )
@@ -450,6 +458,7 @@ MetScopesWithRecoilJets = ProducerGroup(
     subproducers=[
         VetoOverlappingRecoilJets,
         RecoilJetsMask,
+        RecoilJetIndices,
         RecoilJetPt,
         MetLeptonCorrection,
         MetRecoilCorrectionWithRecoilJets,
@@ -537,6 +546,7 @@ MetScopesWithRecoilBeforeJets = ProducerGroup(
     subproducers=[
         VetoOverlappingRecoilJets,
         RecoilJetsMask,
+        RecoilJetIndices,
         RecoilJetPt,
         MetLeptonCorrection,
         MetLeptonCorrectionOnPuppiMet,

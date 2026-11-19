@@ -20,7 +20,7 @@ from unittest import mock
 import pytest
 
 from analysis_configurations.bbtautau import friend_common, nn_gate, nn_payloads, sm_nn_classifier
-from analysis_configurations.bbtautau.constants import ERAS_RUN2, LEGACY_AVAILABLE_SAMPLES, SCOPES
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, ALL_SAMPLES, SCOPES
 from analysis_configurations.bbtautau.nn_payloads import NNModel
 from analysis_configurations.bbtautau.tests.helpers import find_producer, nn_classifier_maps, nn_classifier_payload
 from code_generation.exceptions import InvalidInputError
@@ -36,7 +36,7 @@ def build(models, tmp_path, era="2018", scope="mt", analysis_dir=None):
             friend_common, "ANALYSIS_DIR", analysis_dir or friend_common.ANALYSIS_DIR
         ):
             return sm_nn_classifier.build_config(
-                era, "ttbar", [scope], {"none"}, LEGACY_AVAILABLE_SAMPLES, sm_nn_classifier.AVAILABLE_ERAS, SCOPES,
+                era, "ttbar", [scope], {"none"}, ALL_SAMPLES, sm_nn_classifier.AVAILABLE_ERAS, SCOPES,
                 nn_classifier_maps(era, tmp_path),
             )
     finally:
