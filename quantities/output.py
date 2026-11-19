@@ -45,6 +45,8 @@ kinfit_prob = Quantity("kinfit_prob")
 kinfit_pull1 = Quantity("kinfit_pull1")
 kinfit_pull2 = Quantity("kinfit_pull2")
 kinfit_pullBalance = Quantity("kinfit_pullBalance")
+# SM fixed-mass (m(H->bb)=125, m(H->tautau)=125) HH kinematic fit output
+kinfit_mHH = Quantity("kinfit_mHH")
 kinfit_convergence_YToBB_boosted = Quantity("kinfit_convergence_YToBB_boosted")
 kinfit_mX_YToBB_boosted = Quantity("kinfit_mX_YToBB_boosted")
 kinfit_mY_YToBB_boosted = Quantity("kinfit_mY_YToBB_boosted")
@@ -100,6 +102,9 @@ good_jets_with_veto_mask_boosted = Quantity("good_jets_with_veto_mask")
 base_bjets_mask = Quantity("base_bjets_mask")
 good_bjets_mask = Quantity("good_bjets_mask")
 good_bjets_with_veto_mask = Quantity("good_bjets_with_veto_mask")
+# Kinematic b-jet acceptance (before the b-tag WP cut) cleaned of lepton
+# overlaps: the jet set the strict UParTAK4 multi-WP event weight reweights.
+base_bjets_with_veto_mask = Quantity("base_bjets_with_veto_mask")
 base_photons_mask = Quantity("base_photons_mask")
 Tau_pt_ele_corrected = Quantity("Tau_pt_ele_corrected")
 Tau_pt_ele_mu_corrected = Quantity("Tau_pt_mu_corrected")
@@ -204,6 +209,9 @@ p4_2 = Quantity("p4_2")
 p4_2_uncorrected = Quantity("p4_2_uncorrected")
 pt_2 = Quantity("pt_2")
 eta_2 = Quantity("eta_2")
+# supercluster eta of the electrons, eta + deltaEtaSC (v7 spec K7, C22)
+sc_eta_1 = Quantity("sc_eta_1")
+sc_eta_2 = Quantity("sc_eta_2")
 phi_2 = Quantity("phi_2")
 mass_1 = Quantity("mass_1")
 mass_2 = Quantity("mass_2")
@@ -259,6 +267,7 @@ bpair_eta_1 = Quantity("bpair_eta_1")
 bpair_phi_1 = Quantity("bpair_phi_1")
 bpair_mass_1 = Quantity("bpair_mass_1")
 bpair_btag_value_1 = Quantity("bpair_btag_value_1")
+bpair_hadronFlavour_1 = Quantity("bpair_hadronFlavour_1")
 bpair_reg_res_1 = Quantity("bpair_reg_res_1")
 bpair_p4_regressed_1 = Quantity("bpair_p4_regressed_1")
 bpair_pt_regressed_1 = Quantity("bpair_pt_regressed_1")
@@ -272,6 +281,7 @@ bpair_eta_2 = Quantity("bpair_eta_2")
 bpair_phi_2 = Quantity("bpair_phi_2")
 bpair_mass_2 = Quantity("bpair_mass_2")
 bpair_btag_value_2 = Quantity("bpair_btag_value_2")
+bpair_hadronFlavour_2 = Quantity("bpair_hadronFlavour_2")
 bpair_reg_res_2 = Quantity("bpair_reg_res_2")
 bpair_p4_regressed_2 = Quantity("bpair_p4_regressed_2")
 bpair_pt_regressed_2 = Quantity("bpair_pt_regressed_2")
@@ -390,6 +400,7 @@ jpt_regressed_resolution_1 = Quantity("jpt_regressed_resolution_1")
 jeta_1 = Quantity("jeta_1")
 jphi_1 = Quantity("jphi_1")
 jtag_value_1 = Quantity("jtag_value_1")
+jet_hadronFlavour_1 = Quantity("jet_hadronFlavour_1")
 jet_p4_2 = Quantity("jet_p4_2")
 jet_p4_regressed_2 = Quantity("jet_p4_regressed_2")
 jpt_2 = Quantity("jpt_2")
@@ -403,6 +414,7 @@ jpt_regressed_resolution_2 = Quantity("jpt_regressed_resolution_2")
 jeta_2 = Quantity("jeta_2")
 jphi_2 = Quantity("jphi_2")
 jtag_value_2 = Quantity("jtag_value_2")
+jet_hadronFlavour_2 = Quantity("jet_hadronFlavour_2")
 mjj = Quantity("mjj")
 bjet_p4_1 = Quantity("bjet_p4_1")
 bpt_1 = Quantity("bpt_1")
@@ -499,6 +511,8 @@ dielectron_veto = Quantity("dielectron_veto")
 dimuon_veto = Quantity("dimuon_veto")
 dilepton_veto = Quantity("dilepton_veto")
 jet_vetomap_veto = Quantity("jet_vetomap_veto")
+# 2018 HEM 15/16 event flag (v7 spec E29, C20)
+hem_veto = Quantity("hem_veto")
 
 ## Gen Quantities
 gen_p4_1 = Quantity("gen_p4_1")
@@ -552,6 +566,16 @@ met_p4_jetcorrected = Quantity("met_p4_jetcorrected")
 met_jetcorrected = Quantity("met_jetcorrected")
 metphi_jetcorrected = Quantity("metphi_jetcorrected")
 met_p4_recoilcorrected = Quantity("met_p4_recoilcorrected")
+# jets counted by the Run-2 recoil correction (Run-2 NanoAOD-v15 inputs)
+good_recoil_jets_mask = Quantity("good_recoil_jets_mask")
+recoil_jet_overlap_veto_mask = Quantity("recoil_jet_overlap_veto_mask")
+recoil_jets_mask = Quantity("recoil_jets_mask")
+recoil_jet_indices = Quantity("recoil_jet_indices")
+Jet_recoilPt = Quantity("Jet_recoilPt")
+# the recoil correction on the PuppiMET with propagated leptons, before the jet
+# energy scale is propagated (Run-2 NanoAOD-v15 inputs, recoil-correction eras)
+met_p4_recoil_input = Quantity("met_p4_recoil_input")
+met_p4_recoil_nojets = Quantity("met_p4_recoil_nojets")
 gen_boson_p4 = Quantity("gen_boson_p4")
 gen_vis_boson_p4 = Quantity("gen_vis_boson_p4")
 gen_boson_pt = Quantity("gen_boson_pt")
@@ -560,6 +584,8 @@ recoil_genboson_p4 = Quantity("recoil_genboson_p4")
 recoil_vis_genboson_p4 = Quantity("recoil_vis_genboson_p4")
 genbosonmass = Quantity("genbosonmass")
 npartons = Quantity("npartons")
+npv_good = Quantity("npv_good")
+rho = Quantity("rho")
 met = Quantity("met")
 metphi = Quantity("metphi")
 metSumEt = Quantity("metSumEt")
@@ -567,6 +593,7 @@ metcov00 = Quantity("metcov00")
 metcov01 = Quantity("metcov01")
 metcov10 = Quantity("metcov10")
 metcov11 = Quantity("metcov11")
+metcov_source = Quantity("metcov_source")
 met_uncorrected = Quantity("met_uncorrected")
 metphi_uncorrected = Quantity("metphi_uncorrected")
 met_p4_raw = Quantity("met_p4_raw")
@@ -649,11 +676,23 @@ emb_iso_wgt_mu_boosted_1 = Quantity("emb_iso_wgt_mu_boosted_1")
 # btag weight
 btag_weight = Quantity("btag_weight")
 btag_weight_boosted = Quantity("btag_weight_boosted")
+# Strict UParTAK4 multi-WP b-tag event weight (UParT b-tag path). The nominal
+# column and the number of its intermediate factors set to 1 (K1); the eight
+# variation columns btag_weight_upart_<direction>_<flavour>_<correlation> and
+# their counts btag_unity_jets_upart_<...> are created at config time by
+# producers.scalefactors.build_strict_upart_btag_weight.
+btag_weight_upart = Quantity("btag_weight_upart")
+btag_unity_jets_upart = Quantity("btag_unity_jets_upart")
 # ditau trigger weights
 trg_wgt_double_tau_1 = Quantity("trg_wgt_double_tau_1")
 trg_wgt_double_tau_2 = Quantity("trg_wgt_double_tau_2")
 trg_wgt_fatjet = Quantity("trg_wgt_fatjet")
 id_wgt_bjet = Quantity("id_wgt_bjet")
+# the trigger object matched to the tau leg of the mu-tau monitoring paths (tau-ID
+# measurement, tt trigger efficiency): its pT, L1 pT and L1 isolation, -1 without match
+trgobj_pt_2 = Quantity("trgobj_pt_2")
+trgobj_l1pt_2 = Quantity("trgobj_l1pt_2")
+trgobj_l1iso_2 = Quantity("trgobj_l1iso_2")
 
 # ML variables
 transformed_njets = Quantity("transformed_njets")
@@ -780,6 +819,8 @@ Jet_l2relPt = Quantity("Jet_l2relPt")
 Jet_l2l3resPt = Quantity("Jet_l2l3resPt")
 Jet_correctedPt = Quantity("Jet_correctedPt")
 Jet_correctedMass = Quantity("Jet_correctedMass")
+# jet pt after the jet energy scale and its shift, before the JER smearing
+Jet_scaledPt = Quantity("Jet_scaledPt")
 
 # Outputs of the jet energy calibration including UParT/PNet jet pt regression
 Jet_jecResultRegressed = Quantity("Jet_jecResultRegressed")
@@ -832,6 +873,16 @@ Type1Jet_correctedPt = Quantity("Type1Jet_correctedPt")
 # endregion
 
 # ------------------------------------------------------------------------------
+# Payload-independent UParT probe-jet collection (sm_btag_efficiency_config)
+# ------------------------------------------------------------------------------
+btag_probe_jet_indices = Quantity("btag_probe_jet_indices")
+jet_hadron_flavour_int = Quantity("jet_hadron_flavour_int")
+btag_probe_jet_pt = Quantity("btag_probe_jet_pt")
+btag_probe_jet_eta = Quantity("btag_probe_jet_eta")
+btag_probe_jet_hadron_flavour = Quantity("btag_probe_jet_hadron_flavour")
+btag_probe_jet_upart = Quantity("btag_probe_jet_upart")
+
+# ------------------------------------------------------------------------------
 # Fake factor quantities
 # ------------------------------------------------------------------------------
 
@@ -842,6 +893,10 @@ ff_input_fraction = Quantity("ff_input_fraction")
 ff_corr_dr_sr_input_qcd = Quantity("ff_corr_dr_sr_input_qcd")
 ff_corr_closure_input_qcd = Quantity("ff_corr_closure_input_qcd")
 ff_corr_closure_input_tt = Quantity("ff_corr_closure_input_tt")
+# W+jets fake factors (v7 spec C15, payloads with QCD + W + ttbar)
+ff_input_wjets = Quantity("ff_input_wjets")
+ff_corr_dr_sr_input_wjets = Quantity("ff_corr_dr_sr_input_wjets")
+ff_corr_closure_input_wjets = Quantity("ff_corr_closure_input_wjets")
 fake_factor_raw = Quantity("fake_factor_raw")
 fake_factor = Quantity("fake_factor")
 
@@ -852,6 +907,10 @@ ff_1_input_fraction = Quantity("ff_1_input_fraction")
 ff_1_corr_dr_sr_input_qcd = Quantity("ff_1_corr_dr_sr_input_qcd")
 ff_1_corr_closure_input_qcd = Quantity("ff_1_corr_closure_input_qcd")
 ff_1_corr_closure_input_tt = Quantity("ff_1_corr_closure_input_tt")
+# W+jets fake factors (v7 spec C15, payloads with QCD + W + ttbar)
+ff_1_input_wjets = Quantity("ff_1_input_wjets")
+ff_1_corr_dr_sr_input_wjets = Quantity("ff_1_corr_dr_sr_input_wjets")
+ff_1_corr_closure_input_wjets = Quantity("ff_1_corr_closure_input_wjets")
 fake_factor_1_raw = Quantity("fake_factor_1_raw")
 fake_factor_1 = Quantity("fake_factor_1")
 ff_2_input_qcd = Quantity("ff_2_input_qcd")
@@ -860,8 +919,51 @@ ff_2_input_fraction = Quantity("ff_2_input_fraction")
 ff_2_corr_dr_sr_input_qcd = Quantity("ff_2_corr_dr_sr_input_qcd")
 ff_2_corr_closure_input_qcd = Quantity("ff_2_corr_closure_input_qcd")
 ff_2_corr_closure_input_tt = Quantity("ff_2_corr_closure_input_tt")
+# W+jets fake factors (v7 spec C15, payloads with QCD + W + ttbar)
+ff_2_input_wjets = Quantity("ff_2_input_wjets")
+ff_2_corr_dr_sr_input_wjets = Quantity("ff_2_corr_dr_sr_input_wjets")
+ff_2_corr_closure_input_wjets = Quantity("ff_2_corr_closure_input_wjets")
 fake_factor_2_raw = Quantity("fake_factor_2_raw")
 fake_factor_2 = Quantity("fake_factor_2")
+
+# NN classifier friend (sm_nn_classifier, nn spec 3.4): the gate flag, and per model with column prefix p the input
+# vector p + "inputs", the scores p + "scores" and the outputs p + "predicted_class", p + "predicted_max_value",
+# p + "nn_score_<class>" for every class and, with a binary head, p + "binary_score". These names follow the models
+# of a production and the classes of their manifests, so classifier_quantity makes them when the friend is
+# configured.
+nn_gate = Quantity("nn_gate")
+
+
+def classifier_quantity(name):
+    """The NN classifier friend quantity ``name``, added to this module the first time."""
+    quantity = getattr(this_module, name, None)
+    if quantity is None:
+        quantity = Quantity(name)
+        setattr(this_module, name, quantity)
+    elif not isinstance(quantity, Quantity) or quantity.name != name:
+        raise ValueError(f"'{name}' is taken in quantities/output.py by {quantity!r}")
+    return quantity
+
+
+_ntuple_columns = {}
+
+
+def ntuple_column(name):
+    """The quantity of the n-tuple column ``name`` a friend reads: the quantity of this module whose branch is
+    ``name``, else one of its own (the outputs of ExtendedVectorProducers, such as the trigger and tau ID flags,
+    have none here)."""
+    matches = {
+        id(value): value
+        for value in vars(this_module).values()
+        if isinstance(value, Quantity) and value.name == name
+    }
+    if len(matches) > 1:
+        raise ValueError(f"column '{name}' matches {len(matches)} quantities in quantities/output.py")
+    if matches:
+        return next(iter(matches.values()))
+    if name not in _ntuple_columns:
+        _ntuple_columns[name] = Quantity(name)
+    return _ntuple_columns[name]
 
 
 pnn_reco_inputs = Quantity("pnn_reco_inputs")

@@ -1,3 +1,4 @@
+from ..constants import SCOPES
 from ..quantities import output as q
 from ..quantities import nanoAOD as nanoAOD
 from code_generation.producer import Producer, ProducerGroup, ExtendedVectorProducer
@@ -178,6 +179,34 @@ electron_dxy_2 = Producer(
     input=[nanoAOD.Electron_dxy, q.dileptonpair],
     output=[q.dxy_2],
     scopes=["ee"],
+)
+# Supercluster eta of the electrons, at which the EGM ID and reconstruction SFs
+# are evaluated (v7 spec K7, C22)
+electron_sc_eta_1 = Producer(
+    name="electron_sc_eta_1",
+    call="xyh::electron::supercluster_eta({df}, {output}, {input}, 0)",
+    input=[nanoAOD.Electron_eta, nanoAOD.Electron_deltaEtaSC, q.dileptonpair],
+    output=[q.sc_eta_1],
+    scopes=["et", "ee", "em"],
+)
+electron_sc_eta_2 = Producer(
+    name="electron_sc_eta_2",
+    call="xyh::electron::supercluster_eta({df}, {output}, {input}, 1)",
+    input=[nanoAOD.Electron_eta, nanoAOD.Electron_deltaEtaSC, q.dileptonpair],
+    output=[q.sc_eta_2],
+    scopes=["ee"],
+)
+ElectronSuperclusterEta = ProducerGroup(
+    name="ElectronSuperclusterEta",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["et", "ee", "em"],
+    subproducers={
+        "et": [electron_sc_eta_1],
+        "em": [electron_sc_eta_1],
+        "ee": [electron_sc_eta_1, electron_sc_eta_2],
+    },
 )
 tau_dxy_1 = Producer(
     name="tau_dxy_1",
@@ -818,34 +847,51 @@ jet_hemisphere = Producer(
     scopes=["mt", "et", "tt", "em", "ee", "mm"],
 )
 
+_DITAU_MET_QUANTITIES = [
+    Pzetamissvis,
+    mTdileptonMET,
+    mt_1,
+    mt_2,
+    p4_tautau,
+    pt_tautau,
+    pt_ttjj,
+    p4_tautaubb,
+    pt_tautaubb,
+    mass_tautaubb,
+    mt_tot,
+    #Pzetamissvis_pf,
+    #mTdileptonMET_pf,
+    #mt_1_pf,
+    #mt_2_pf,
+    #pt_tt_pf,
+    #pt_ttjj_pf,
+    #pt_ttbb_pf,
+    #mt_tot_pf,
+    pt_dijet,
+    jet_hemisphere,
+
+]
+
 DiTauPairMETQuantities = ProducerGroup(
     name="DiTauPairMETQuantities",
     call=None,
     input=None,
     output=None,
-    scopes=["mt", "et", "tt", "em", "ee", "mm"],
+    scopes=SCOPES,
+    subproducers=_DITAU_MET_QUANTITIES,
+)
+
+# Without the tautau+bb combination, for the b-tag efficiency profile that
+# builds no selected bb pair.
+DiTauPairMETQuantitiesNoBB = ProducerGroup(
+    name="DiTauPairMETQuantitiesNoBB",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
     subproducers=[
-        Pzetamissvis,
-        mTdileptonMET,
-        mt_1,
-        mt_2,
-        p4_tautau,
-        pt_tautau,
-        pt_ttjj,
-        p4_tautaubb,
-        pt_tautaubb,
-        mass_tautaubb,
-        mt_tot,
-        #Pzetamissvis_pf,
-        #mTdileptonMET_pf,
-        #mt_1_pf,
-        #mt_2_pf,
-        #pt_tt_pf,
-        #pt_ttjj_pf,
-        #pt_ttbb_pf,
-        #mt_tot_pf,
-        pt_dijet,
-        jet_hemisphere,
+        p for p in _DITAU_MET_QUANTITIES
+        if p not in (p4_tautaubb, pt_tautaubb, mass_tautaubb)
     ],
 )
 

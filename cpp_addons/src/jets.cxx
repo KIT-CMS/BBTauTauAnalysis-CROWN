@@ -12,6 +12,7 @@
 #include <Math/VectorUtil.h>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace physicsobject {
 
@@ -108,7 +109,7 @@ float apply_jes_shifts(
         // manually scaled in a specific phase space region.
         float sf = 1.0;
         if (jes_shift_factor == -1 && jet_pt > 15.0 && jet_phi > -1.57 &&
-            jet_phi < -0.87 && jet_id == 2) {
+            jet_phi < -0.87 && (jet_id & 2)) { // passes the tight jet ID
             if (jet_eta > -2.5 && jet_eta < -1.3) {
                 sf = 0.8;
             } else if (jet_eta > -3.0 && jet_eta <= -2.5) {
@@ -144,10 +145,27 @@ float apply_jer(
     // Get the JER MC resolution and data-MC scale factor for the smearing
     auto resol = jer_resolution_evaluator->evaluate({jet_eta, jet_pt, rho});
     auto sf = 1.0;
-    if (std::stoi(era.substr(0, 4)) <= 2018) { // with run 2 inputs
+    // The JER scale-factor payload comes in two schemas, and which one applies
+    // is a property of the payload, not of the era: the 2018-UL-NanoAODv15 SM
+    // reprocessing is a Run-2 era that nevertheless ships the modern schema.
+    //  - legacy (NanoAODv9 UL): inputs (JetEta, systematic:string); a single
+    //    ScaleFactor correction returns the nominal/up/down value selected by
+    //    the systematic string.
+    //  - modern (NanoAODv12+/v15): inputs (JetEta, JetPt) returning the nominal
+    //    SF, with the up/down uncertainty in a separate SFUncertainty
+    //    correction.
+    // Detect the schema from the correction's own declared second-input type so
+    // both the legacy AK4-CHS-v9 path and the AK4-PUPPI-v12/v15 path (including
+    // 2018-UL-v15) evaluate correctly. This is behaviour-identical to the prior
+    // era gate for every previously supported payload.
+    const auto &jer_sf_inputs = jer_scalefactor_evaluator->inputs();
+    const bool legacy_jer_sf_schema =
+        jer_sf_inputs.size() >= 2 &&
+        jer_sf_inputs.at(1).type() == correction::Variable::VarType::string;
+    if (legacy_jer_sf_schema) { // with run 2 (v9) inputs
         sf = jer_scalefactor_evaluator->evaluate({jet_eta, jer_shift});
     } else {
-        sf = jer_scalefactor_evaluator->evaluate({// with run 3 inputs
+        sf = jer_scalefactor_evaluator->evaluate({ // with modern (v12+/v15) inputs
                                                   jet_eta, jet_pt});
         if (jer_shift == "up" || jer_shift == "down") {
             auto sf_unc = jer_scalefactor_uncertainty_evaluator->evaluate(
@@ -584,7 +602,11 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                                const ROOT::RVec<float> &genjet_eta,
                                const ROOT::RVec<float> &genjet_phi,
                                const float &rho, const unsigned int &seed) {
-        // Random value generator for jet energy resolution smearing
+        // Standard-normal numbers for the stochastic jet energy resolution
+        // smearing, one per jet and drawn for every jet in collection order.
+        // A jet therefore keeps its number regardless of the matching status
+        // of the other jets, in every systematic variation and in every jet
+        // collection that starts with the same jets.
         TRandom3 randgen = TRandom3(seed);
         ROOT::RVec<float> random_normal(jet_pt_raw.size());
         for (auto &z : random_normal) {
@@ -635,8 +657,9 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                     return apply_jes_shifts_and_jer_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, rho, genjet_pt,
                         genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era, random_normal,
-                        jes_shift_evaluators, jer_resolution_evaluator,
+                        jes_shift_factor, jer_shift, jet_radius, era,
+                        random_normal, jes_shift_evaluators,
+                        jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
                         jer_scalefactor_uncertainty_evaluator);
                 });
@@ -945,6 +968,28 @@ ROOT::RDF::RNode MassCorrectionFromPt(ROOT::RDF::RNode df,
     auto df1 = df.Define(outputname, func,
                          {jet_mass_raw, jet_pt_raw, jet_pt_corrected});
     return df1;
+}
+
+/**
+ * @brief Stores the jet \f$p_T\f$ after the jet energy scale correction and
+ * its shift, before the jet energy resolution smearing (`jet_pt_syst` of the
+ * `JECResult`). In data this is the fully corrected \f$p_T\f$. It is the jet
+ * \f$p_T\f$ whose difference to the NanoAOD jet \f$p_T\f$ carries the jet
+ * energy scale, but not the resolution smearing, to the MET.
+ *
+ * @param df input dataframe
+ * @param outputname name of the output column
+ * @param jec_result name of the column with the `JECResult` of every jet
+ *
+ * @return a dataframe with the new column
+ */
+ROOT::RDF::RNode ScaledPt(ROOT::RDF::RNode df, const std::string &outputname,
+                          const std::string &jec_result) {
+    auto func = [](const ROOT::RVec<JECResult> &result) {
+        return ROOT::VecOps::Map(
+            result, [](const JECResult &jet) { return jet.jet_pt_syst; });
+    };
+    return df.Define(outputname, func, {jec_result});
 }
 
 } // end namespace jec

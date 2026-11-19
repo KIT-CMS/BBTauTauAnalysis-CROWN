@@ -2,49 +2,11 @@ from os import path
 import importlib
 from code_generation.code_generation import CodeGenerator
 
-from .constants import ERAS, SCOPES
+from .constants import ERAS, SCOPES, ALL_SAMPLES
 
 
 def run(args):
     analysis_name = "bbtautau"
-
-    available_samples = [
-        "ggh_htautau",
-        "ggh_hbb",
-        "vbf_htautau",
-        "vbf_hbb",
-        "rem_htautau",
-        "rem_hbb",
-        "rem_hww",
-        "rem_hzz",
-        "rem_higgs",
-        "higgs",
-        "hh4b",
-        "hh2b2tau",
-        "hh4v",
-        "embedding",
-        "embedding_mc",
-        "singletop",
-        "ttbar",
-        "rem_ttbar",
-        "diboson",
-        "triboson",
-        "dyjets",
-        "dyjets_madgraph",
-        "dyjets_amcatnlo",
-        "dyjets_amcatnlo_ll",
-        "dyjets_amcatnlo_tt",
-        "dyjets_powheg",
-        "wjets",
-        "wjets_madgraph",
-        "wjets_amcatnlo",
-        "data",
-        "electroweak_boson",
-        "nmssm_Ybb",
-        "nmssm_Ytautau",
-    ]
-    available_eras = ERAS
-    available_scopes = SCOPES
 
     ## setup variables
     shifts = set([shift.lower() for shift in args.shifts])
@@ -57,6 +19,22 @@ def run(args):
     config = importlib.import_module(
         f"analysis_configurations.{analysis_name}.{configname}"
     )
+
+    # Entry points may restrict accepted inputs. Rules are built against all sample types.
+    available_eras = getattr(config, "AVAILABLE_ERAS", ERAS)
+    accepted_samples = getattr(config, "AVAILABLE_SAMPLES", ALL_SAMPLES)
+    available_scopes = SCOPES
+    if era not in available_eras:
+        raise ValueError(
+            f"Config '{configname}' does not support era '{era}' "
+            f"(supported: {available_eras})."
+        )
+    if sample_group not in accepted_samples:
+        raise ValueError(
+            f"Config '{configname}' does not accept sample '{sample_group}' "
+            f"(accepted: {accepted_samples})."
+        )
+
     ## Setting up executable
     executable = f"{configname}_{sample_group}_{era}.cxx"
     args.logger.info(f"Generating code for {sample_group}...")
@@ -68,7 +46,7 @@ def run(args):
         sample_group,
         scopes,
         shifts,
-        available_samples,
+        ALL_SAMPLES,
         available_eras,
         available_scopes,
     )
