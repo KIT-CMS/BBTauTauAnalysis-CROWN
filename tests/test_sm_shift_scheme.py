@@ -20,7 +20,12 @@ from analysis_configurations.bbtautau.analysis_profiles import (
     ShiftScheme,
 )
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
-from analysis_configurations.bbtautau.tests.helpers import build, output_names, producer_names
+from analysis_configurations.bbtautau.tests.helpers import (
+    build,
+    find_producer,
+    output_names,
+    producer_names,
+)
 
 CROWN = Path(__file__).resolve().parents[3]
 TAU_SCOPES = ("et", "mt", "tt")
@@ -263,3 +268,58 @@ def test_no_qcd_scale_shift_without_the_weight_producer(module, sample, era, sco
     for scope in scopes:
         assert "lhe_scale_weight" not in output_names(config, scope)
         assert not qcd_scale(config, scope)
+
+
+# --- C36: no columns of the regressed jets -----------------------------------
+
+REGRESSED = re.compile("regress|RegPt", re.IGNORECASE)
+
+
+def all_producers(config, scope):
+    """Every producer of ``scope``, through groups."""
+
+    def walk(producer):
+        yield producer
+        members = getattr(producer, "producers", None)
+        if isinstance(members, dict):
+            members = members.get(scope, [])
+        for member in members or []:
+            yield from walk(member)
+
+    return [producer for top in config.producers[scope] for producer in walk(top)]
+
+
+def input_names(producer, scope):
+    inputs = producer.input.get(scope) if isinstance(producer.input, dict) else producer.input
+    return [quantity.name for quantity in inputs or []]
+
+
+@pytest.mark.parametrize("sample", ["ttbar", "data", "embedding"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_sm_config_has_no_regressed_jets(era, sample):
+    """Neither the 19 columns bpair_*_regressed* and jpt_regressed* nor a producer that
+    computes or reads a quantity of the regressed jets, in simulation, data and embedding."""
+    scopes = TAU_SCOPES if sample == "embedding" else tuple(SCOPES)
+    config = build("sm_config", sample, era=era, scopes=scopes, shifts=("all",))
+    for scope in ("global", *scopes):
+        if scope != "global":
+            assert not [name for name in output_names(config, scope) if REGRESSED.search(name)]
+        for producer in all_producers(config, scope):
+            assert not REGRESSED.search(producer.name), producer
+            names = [q.name for q in producer.output or []] + input_names(producer, scope)
+            assert not [name for name in names if REGRESSED.search(name)], producer
+
+
+@pytest.mark.parametrize(
+    "module,sample,era",
+    [
+        ("nmssm_config", "ttbar", "2024"),
+        ("sm_tau_id_measurement_config", "dyjets", "2018"),
+        ("sm_btag_efficiency_config", "ttbar", "2018"),
+    ],
+)
+def test_other_configurations_keep_the_regressed_jets(module, sample, era):
+    config = build(module, sample, era=era, scopes=("mt",))
+    assert {"jpt_regressed_1", "jpt_regressed_resolution_2"} <= output_names(config, "mt")
+    assert find_producer(config, "global", "JetEnergyCorrectionMCRegressedPt")
+

@@ -132,7 +132,8 @@ def test_embedding_jets_get_the_data_calibration(module, era):
     embedding = build(module, "embedding", era=era, scopes=("mt",))
     names = (
         "JetEnergyCorrectionData",
-        "JetEnergyCorrectionDataRegressed",
+        # the SM analysis has no regressed jets (v8 spec C36)
+        *(["JetEnergyCorrectionDataRegressed"] if module != "sm_config" else []),
         "Type1JetEnergyCorrectionData",
     )
     for config in (data, embedding):

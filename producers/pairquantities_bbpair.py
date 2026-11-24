@@ -481,3 +481,17 @@ AllBBPairProducers = ProducerGroup(
         BBPairQuantitiesRegressed,
     ]
 )
+
+# The same without the bb pair built from the PNet/UParT-regressed jet pt
+BBPairProducersWithoutRegression = ProducerGroup(
+    name="AllBBPairProducers",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        BBPairSelection,
+        BQuantities,
+        BBPairQuantities,
+    ]
+)

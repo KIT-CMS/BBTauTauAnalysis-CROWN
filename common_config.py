@@ -2454,6 +2454,18 @@ def build_config(
     # tautau+bb quantities). NMSSM and the SM main profile never set the flag.
     strip_analysis_bjets = profile.enable_probe_jet_collection
 
+    # The jets with the PNet/UParT pT regression: their calibration, the bb pair
+    # built from them and their columns (not in the SM analysis, v8 spec C36)
+    regressed_jets = profile.regressed_jet_columns
+    basic_jet_quantities = (
+        jets.BasicJetQuantities if regressed_jets else jets.BasicJetQuantitiesWithoutRegression
+    )
+    bb_pair_producers = (
+        pairquantities_bbpair.AllBBPairProducers
+        if regressed_jets
+        else pairquantities_bbpair.BBPairProducersWithoutRegression
+    )
+
     # Single-electron trigger SF: the EGM Electron-HLT-SF correction exists only in
     # the Run-3 payloads, so every Run-2 era evaluates the SF of the Tau Embedding
     # group (KIT) of its triggers (tau_triggersetup.KIT_SINGLE_ELECTRON_TRIGGER_SFS).
@@ -2827,7 +2839,7 @@ def build_config(
     )
 
     AuxJetCollectionQuantities = jets.aux_jet_collection_quantities(
-        era, version="v15" if use_run2_v15_inputs else None
+        era, version="v15" if use_run2_v15_inputs else None, regression=regressed_jets
     )
     AuxCorrT1METJetCollectionQuantities = get_for_era(jets.AuxCorrT1METJetCollectionQuantities, era)
 
@@ -3037,7 +3049,9 @@ def build_config(
             get_for_era(muons.MuonPtCorrection, era),
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
-            jets.JetEnergyCorrectionMCRegressed,
+        ]
+        + ([jets.JetEnergyCorrectionMCRegressed] if regressed_jets else [])
+        + [
             jets.Type1JetEnergyCorrectionMC,
             # fatjets.FatJetEnergyCorrection,
         ]
@@ -3049,9 +3063,9 @@ def build_config(
         # fatjets.FatJetCollectionWithoutVeto,
         # fatjets.BasicFatJetQuantities,
         jets.JetSelection,
-        jets.BasicJetQuantities,
+        basic_jet_quantities,
         jets.BasicBJetQuantities,
-        pairquantities_bbpair.AllBBPairProducers,
+        bb_pair_producers,
         genparticles.GenDiBjetPairQuantities,
         # fatjets.FindFatjetMatchingBjet,
         # fatjets.BasicMatchedFatJetQuantities,
@@ -3072,7 +3086,7 @@ def build_config(
         # the ditau+MET quantities without the tautau+bb combination
         analysis_bjet_layer = [
             jets.BasicBJetQuantities,
-            pairquantities_bbpair.AllBBPairProducers,
+            bb_pair_producers,
             genparticles.GenDiBjetPairQuantities,
             jets.JetHadronFlavours,
             bjet_id_sf_producer,
@@ -3549,16 +3563,17 @@ def build_config(
     )
 
     # Replace regressed jet energy correction for data and embedding
-    configuration.add_modification_rule(
-        GLOBAL_SCOPES,
-        ReplaceProducer(
-            producers=[
-                jets.JetEnergyCorrectionMCRegressed,
-                jets.JetEnergyCorrectionDataRegressed,
-            ],
-            samples=["data", "embedding", "embedding_mc"],
-        ),
-    )
+    if regressed_jets:
+        configuration.add_modification_rule(
+            GLOBAL_SCOPES,
+            ReplaceProducer(
+                producers=[
+                    jets.JetEnergyCorrectionMCRegressed,
+                    jets.JetEnergyCorrectionDataRegressed,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            ),
+        )
 
     # Replace jet energy correction for type-I correction jets for data and embedding
     configuration.add_modification_rule(
@@ -3986,6 +4001,29 @@ def build_config(
             q.mass_tautaubb,
         ]
         scope_outputs = [o for o in scope_outputs if o not in analysis_bjet_layer_outputs]
+    if not regressed_jets:
+        regressed_jet_outputs = [
+            q.bpair_pt_regressed_1,
+            q.bpair_pt_regressed_2,
+            q.bpair_eta_regressed_1,
+            q.bpair_eta_regressed_2,
+            q.bpair_phi_regressed_1,
+            q.bpair_phi_regressed_2,
+            q.bpair_mass_regressed_1,
+            q.bpair_mass_regressed_2,
+            q.bpair_btag_value_regressed_1,
+            q.bpair_btag_value_regressed_2,
+            q.bpair_pt_resolution_regressed_1,
+            q.bpair_pt_resolution_regressed_2,
+            q.bpair_m_inv_regressed,
+            q.bpair_deltaR_regressed,
+            q.bpair_pt_dijet_regressed,
+            q.jpt_regressed_1,
+            q.jpt_regressed_2,
+            q.jpt_regressed_resolution_1,
+            q.jpt_regressed_resolution_2,
+        ]
+        scope_outputs = [o for o in scope_outputs if o not in regressed_jet_outputs]
     configuration.add_outputs(SCOPES, scope_outputs)
 
     if era in ["2024", "2025"] and sample not in ["data", "embedding"]:
@@ -4431,7 +4469,7 @@ def build_config(
 
     jec_mc_producers = [
         jets.JetEnergyCorrectionMC,
-        jets.JetEnergyCorrectionMCRegressed,
+        *([jets.JetEnergyCorrectionMCRegressed] if regressed_jets else []),
         jets.Type1JetEnergyCorrectionMC,
     ]
     if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:

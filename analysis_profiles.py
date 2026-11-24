@@ -101,6 +101,11 @@ class AnalysisProfile:
     # Working points of the strict UParTAK4 b-tag event weight, tightest first
     # (v7 spec E14, C14).
     btag_sf_working_points: Tuple[str, ...] = ("T", "M")
+    # The columns of the jets with the PNet/UParT pT regression (bpair_*_regressed*,
+    # jpt_regressed*) and their producers. The Run-2 v15 path calibrates these
+    # jets with the AK4PFPuppi corrections, which JERC excludes for regressed
+    # jets, and nothing reads the columns (v8 spec C36).
+    regressed_jet_columns: bool = True
     # The systematic shifts beyond the common set.
     shifts: ShiftScheme = field(default_factory=ShiftScheme)
 
@@ -141,6 +146,7 @@ SM_PROFILE = AnalysisProfile(
     hem_veto_flag=True,
     electron_sf_supercluster_eta=True,
     btag_sf_working_points=("T", "M"),
+    regressed_jet_columns=False,
     shifts=ShiftScheme(
         tau_id_vs_jet_syst_tes=True,
         tau_es_per_decay_mode=True,
@@ -151,7 +157,8 @@ SM_PROFILE = AnalysisProfile(
 )
 
 # The surfaces of the productions smrun2_btag_eff_v1 and smrun2_tau_id_v2, which
-# the profiles below keep: diboson without the QCD scale weight.
+# the profiles below keep: diboson without the QCD scale weight, and the columns
+# of the regressed jets.
 _V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES = ("data", "embedding", "embedding_mc", "diboson")
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the
@@ -166,6 +173,7 @@ SM_BTAG_EFFICIENCY_PROFILE = replace(
     # produced without shifts (smrun2_btag_eff_v1); the surface of that production stays
     shifts=ShiftScheme(),
     lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
+    regressed_jet_columns=True,
 )
 
 # The SM selection in mt and mm with the corrections and MC shifts of the tau-ID
@@ -185,4 +193,5 @@ SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     tau_id_measurement=True,
     shifts=ShiftScheme(),
     lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
+    regressed_jet_columns=True,
 )

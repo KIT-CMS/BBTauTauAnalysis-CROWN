@@ -290,8 +290,18 @@ JetRawPtRegressedResolution = Producer(
     scopes=GLOBAL_SCOPES,
 )
 
-def aux_jet_collection_quantities(era, version=None):
-    """Build the auxiliary Jet group for the input era and NanoAOD version."""
+def aux_jet_collection_quantities(era, version=None, regression=True):
+    """Build the auxiliary Jet group for the input era and NanoAOD version;
+    without `regression` it lacks the raw pT, mass and resolution of the
+    PNet/UParT regression."""
+    regression_producers = [
+        get_for_era(JetRegPtRawCorr, era),
+        get_for_era(JetRegPtRawCorrNeutrino, era),
+        get_for_era(JetRegPtRawRes, era),
+        JetRawPtRegressed,
+        JetRawMassRegressed,
+        JetRawPtRegressedResolution,
+    ]
     return ProducerGroup(
         name="AuxJetCollectionQuantities",
         call=None,
@@ -307,13 +317,8 @@ def aux_jet_collection_quantities(era, version=None):
             JetRawMuonSubtrPt,
             JetEmEf,
             get_for_era(JetMuonSubtrDeltaPhi, era),
-            get_for_era(JetRegPtRawCorr, era),
-            get_for_era(JetRegPtRawCorrNeutrino, era),
-            get_for_era(JetRegPtRawRes, era),
-            JetRawPtRegressed,
-            JetRawMassRegressed,
-            JetRawPtRegressedResolution,
-        ],
+        ]
+        + (regression_producers if regression else []),
     )
 
 #endregion
@@ -1266,6 +1271,25 @@ BasicJetQuantities = ProducerGroup(
         jpt_regressed_2,
         jpt_regressed_resolution_2,
         mjj,
+    ],
+)
+# The same without the pT of the PNet/UParT regression
+REGRESSED_JET_QUANTITIES = [
+    jpt_regressed_1,
+    jpt_regressed_resolution_1,
+    jpt_regressed_2,
+    jpt_regressed_resolution_2,
+]
+BasicJetQuantitiesWithoutRegression = ProducerGroup(
+    name="BasicJetQuantities",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[
+        producer
+        for producer in BasicJetQuantities.producers[SCOPES[0]]
+        if producer not in REGRESSED_JET_QUANTITIES
     ],
 )
 

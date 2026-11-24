@@ -17,10 +17,10 @@ from analysis_configurations.bbtautau.constants import ERAS, ERAS_RUN2
 from analysis_configurations.bbtautau.tests.helpers import build, find_producer
 from analysis_configurations.bbtautau.variations.jec import JER_REGIONS
 
-# The MC JEC chains every jet shift reruns: standard, regressed and Type-1 MET jets
+# The MC JEC chains every jet shift reruns: standard and Type-1 MET jets (the SM
+# analysis has no regressed jets, v8 spec C36)
 JEC_MC_PRODUCERS = (
     "JetEnergyCorrectionMCPt",
-    "JetEnergyCorrectionMCRegressedPt",
     "Type1JetEnergyCorrectionMCPt",
 )
 JET_SHIFTS = ("CMS_res_j", "CMS_scale_j", "CMS_HEM")

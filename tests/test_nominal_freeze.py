@@ -15,6 +15,7 @@ shifts must reproduce every nominal column of v7b. Two comparisons guard that:
 
 import gzip
 import json
+import re
 
 import pytest
 
@@ -40,12 +41,42 @@ def diboson_gets_the_qcd_scale_weight(module, sample, era, scope, calls, outputs
     return calls, outputs
 
 
+# The calibration of the jets with the UParT pT regression, the bb pair built from them and
+# their columns: every call and column that names them
+REGRESSED_JETS = re.compile("regress|RegPt", re.IGNORECASE)
+REGRESSED_JET_COLUMNS = {
+    *[
+        f"bpair_{quantity}_regressed_{index}"
+        for quantity in ("pt", "eta", "phi", "mass", "btag_value", "pt_resolution")
+        for index in (1, 2)
+    ],
+    "bpair_m_inv_regressed",
+    "bpair_deltaR_regressed",
+    "bpair_pt_dijet_regressed",
+    "jpt_regressed_1",
+    "jpt_regressed_2",
+    "jpt_regressed_resolution_1",
+    "jpt_regressed_resolution_2",
+}
+
+
+def no_regressed_jets(module, sample, era, scope, calls, outputs):
+    """v8 spec C36: sm_config drops the 19 columns of the regressed jets and their producers."""
+    if module == "sm_config":
+        removed = {output for output in outputs if REGRESSED_JETS.search(output)}
+        assert removed == (REGRESSED_JET_COLUMNS if scope != "global" else set())
+        calls = [call for call in calls if not REGRESSED_JETS.search(call)]
+        outputs = [output for output in outputs if output not in removed]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
 # that stays.
 EXPECTED_CHANGES = [
     diboson_gets_the_qcd_scale_weight,
+    no_regressed_jets,
 ]
 
 # The columns sm_config writes that the v7b n-tuples lack: the MET before the lepton and the
@@ -56,8 +87,8 @@ COLUMNS_SINCE_V7B = {
     "met_leptoncorrected",
     "metphi_leptoncorrected",
 }
-# The columns of the v7b n-tuples sm_config no longer writes
-COLUMNS_REMOVED_SINCE_V7B = set()
+# The columns of the v7b n-tuples sm_config no longer writes (v8 spec C36)
+COLUMNS_REMOVED_SINCE_V7B = REGRESSED_JET_COLUMNS
 
 
 def frozen_surface(key):
