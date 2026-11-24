@@ -4552,20 +4552,35 @@ def build_config(
 
     #region
 
-    # Propagation of unclustered energy shift to missing transverse momentum
-    # (for the recoil-corrected DY and W before the recoil correction, see the
-    # note in variations/met.py)
-    add_unclustered_energy_shifts(configuration, era)
+    # The samples with the shifts of the recoil calibration (none for the v15
+    # eras without a recoil correction); the merged SM "wjets" joins via
+    # sm_merged_dyw (empty for NMSSM)
+    recoil_shift_samples = (
+        _get_recoil_calibration_samples() + sm_merged_dyw
+        if MetRecoilShiftProducer is not None
+        else []
+    )
 
-    # Uncertainties in the recoil calibration (none for the v15 eras without
-    # a recoil correction)
+    # Propagation of unclustered energy shift to missing transverse momentum;
+    # on the recoil-corrected samples only where the profile keeps it (it acts
+    # before the recoil correction there, see the note in variations/met.py)
+    add_unclustered_energy_shifts(
+        configuration,
+        era,
+        exclude_samples=(
+            []
+            if profile.shifts.unclustered_energy_shift_on_recoil_corrected_samples
+            else recoil_shift_samples
+        ),
+    )
+
+    # Uncertainties in the recoil calibration
     if MetRecoilShiftProducer is not None:
         add_recoil_calibration_shifts(
             configuration,
             era,
             MetRecoilShiftProducer,
-            # the merged SM "wjets" joins via sm_merged_dyw (empty for NMSSM)
-            _get_recoil_calibration_samples() + sm_merged_dyw,
+            recoil_shift_samples,
         )
 
     #endregion

@@ -35,6 +35,12 @@ class ShiftScheme:
     # events of et then read the electron pT through a producer of the scope,
     # whose nominal passes it on (C32).
     embedding_electron_es: bool = False
+    # The unclustered energy shift of the MET also on the recoil-corrected
+    # samples (DY and W of the Run-2 v15 recoil eras), where it acts before
+    # the recoil correction. Without it these samples have the recoil shifts
+    # only, every other simulated sample the unclustered energy shift only
+    # (C38).
+    unclustered_energy_shift_on_recoil_corrected_samples: bool = True
 
 
 @dataclass(frozen=True)
@@ -169,6 +175,7 @@ SM_PROFILE = AnalysisProfile(
             "em": ("etalt1p2", "eta1p2to2p1", "eta2p1to2p4"),
         },
         embedding_electron_es=True,
+        unclustered_energy_shift_on_recoil_corrected_samples=False,
     ),
 )
 

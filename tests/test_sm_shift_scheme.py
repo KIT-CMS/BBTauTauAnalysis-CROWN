@@ -554,3 +554,41 @@ def test_no_scope_level_electron_energy_scale_elsewhere(module, sample, era, sco
     for scope in scopes:
         assert "ElectronPtScale" not in {p.name for p in all_producers(config, scope)}
         assert not [name for name in config.shifts.get(scope, {}) if "_emb_" in name]
+
+
+# --- C38: no unclustered energy shift on the recoil-corrected samples ---------
+
+UNCLUSTERED = "CMS_scale_met_unclustered_energy_{era}"
+RECOIL = ("CMS_scale_met_RecoilCalibration_{era}", "CMS_res_met_RecoilCalibration_{era}")
+
+
+@pytest.mark.parametrize(
+    "sample", ["dyjets", "wjets", "ttbar", "diboson", "electroweak_boson", "hh2b2tau"]
+)
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_unclustered_energy_shift_or_recoil_shifts(era, sample):
+    """DY and W of the recoil era 2018 have the recoil shifts and no unclustered energy shift;
+    every other simulated sample, EWK W/Z without recoil correction included, and DY and W of
+    the eras without recoil correction have the unclustered energy shift only (V9)."""
+    config = build("sm_config", sample, era=era, scopes=tuple(SCOPES), shifts=("_met_",))
+    recoil_corrected = era == "2018" and sample in ("dyjets", "wjets")
+    expected = (
+        {name.format(era=era) for name in RECOIL} if recoil_corrected else {UNCLUSTERED.format(era=era)}
+    )
+    for scope in SCOPES:
+        assert pairs(shifts_of(config, scope)) == expected, scope
+
+
+def test_tau_id_measurement_keeps_the_unclustered_energy_shift_on_dy():
+    """Its production smrun2_tau_id_v2 has both the recoil and the unclustered energy shifts
+    on DY of 2018."""
+    config = build("sm_tau_id_measurement_config", "dyjets", era="2018", scopes=("mt",), shifts=("_met_",))
+    assert pairs(shifts_of(config, "mt")) == {
+        UNCLUSTERED.format(era="2018"), *(name.format(era="2018") for name in RECOIL)
+    }
+
+
+def test_nmssm_keeps_the_unclustered_energy_shift_on_dy():
+    config = build("nmssm_config", "dyjets_amcatnlo_ll", era="2022postEE", scopes=("mt",), shifts=("_met_",))
+    assert UNCLUSTERED.format(era="2022postEE") in pairs(shifts_of(config, "mt"))
+
