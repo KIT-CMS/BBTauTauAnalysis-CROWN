@@ -404,6 +404,72 @@ them for NMSSM and SM alike. The SM specifics use the same helpers:
 scope and that the nominal parameters select the nominal corrections. `-DSHIFTS` selects shifts by
 case-insensitive substring, e.g. `CMS_scale_t` for all tau energy scale shifts.
 
+### Shift scheme of the SM shift production
+
+`sm_config` differs from the common shifts where its profile says so (`AnalysisProfile.shifts`, a
+`ShiftScheme`; the items are those of the v8 spec). The NMSSM analysis, the b-tag efficiency n-tuples
+and the tau-ID measurement keep the common shifts and the surfaces of their productions.
+
+| Shifts (`Up`/`Down`) | Scopes | Samples | What changes |
+|---|---|---|---|
+| `CMS_eff_t_DeepTau2018v2p5_VSjet_dm_syst_TES_<era>_dm{0,1,10,11}` (C18) | et, mt, tt | MC | vsJet SF with the payload key `syst_TES_<era>_dm<DM>_{up,down}`; pT dependent, changes sign at 30 to 35 GeV |
+| `CMS_scale_t_DeepTau2018v2p5_DM{0,1,10,11}_genTau_<era>` (C21) | et, mt, tt | MC | energy scale of genuine taus per decay mode, without pT bins (was 3 pT bins per decay mode) |
+| `CMS_scale_t_DeepTau2018v2p5_DM{0,1,10,11}_genElectron_{barrel,endcap}_<era>` (C29) | et | MC | energy scale of e&rarr;&tau; fakes (was et, mt, tt) |
+| `CMS_scale_t_DeepTau2018v2p5_DM{0,1,10,11}_genMuon_<era>` (C21, C29) | mt | MC | energy scale of &mu;&rarr;&tau; fakes per decay mode (was 5 muon wheels in et, mt, tt) |
+| `CMS_res_j_{eta0to1p93,eta1p93to2p5,eta2p5to3_ptlt50,eta2p5to3_ptgt50,eta3to5_ptlt50,eta3to5_ptgt50}_<era>` (C33) | all | MC | JER scale factor of the jets of one JERC region (was `CMS_res_j_<era>`, their sum) |
+| `CMS_scale_m_{etalt1p2,eta1p2to2p1}_<era>`, in em also `CMS_scale_m_eta2p1to2p4_<era>` (C37) | mt, em | MC, embedding | muon pT &times; (1 &plusmn; 0.4 %, 0.9 %, 2.7 %) per \|&eta;\| region, before the selection |
+| `CMS_scale_e_{barrel,endcap}_emb_<era>` (C32) | et | embedding | electron pT &times; the relative width of `data/embedding/eleES_<era>UL.json.gz`, before the selection |
+| `CMS_eff_trigger_tt_dm{0,1,10,11}_<era>` (C39) | tt | MC | di-tau trigger SF of the taus of one decay mode, both legs (was `CMS_trig_t_ditau_Medium_eff_<era>`, coherent) |
+| `QCDscale_ren`, `QCDscale_fac` (C34) | all | MC, now with diboson | `lhe_scale_weight` |
+| `CMS_scale_met_unclustered_energy_<era>` (C38) | all | MC without DY and W of 2018 | the recoil-corrected samples have the recoil shifts only |
+
+- **JER regions.** A regional variation is the value of `ak4jet_jer_shift`, e.g.
+  `up_abseta2p5to3_pt0to50` (`physicsobject::jet::jec::parse_jer_variation`). The jets of the region get
+  the varied scale factor, all others the nominal one; the pT that decides is the nominal one, after the
+  nominal smearing, and every jet keeps its random number. The region above \|&eta;\| = 3 has no upper
+  edge. Both follow the split JER of nanoAOD-tools (`jetmetUncertainties.getJERsplitID`), and the six
+  shifts add up to the inclusive one.
+- **Lepton energy scales in single scopes.** The muon and electron pT corrections run in the global
+  scope, where a shift reaches every scope. The muon energy scale (mt, em) and the electron energy scale
+  of the embedding (et) are therefore applied by a producer of the scope
+  (`producers/lepton_energy_scale.py`, `xyh::energy_scale::ScalePt`), which the lepton selection, the
+  pair selection and the four-vector of the lepton read. Its nominal factors are 1 and return the
+  corrected pT bit for bit. The uncorrected four-vector keeps its input, so these shifts reach the MET;
+  the loose leptons of the vetoes (global scope) are not varied. Data keep the unscaled pT. The
+  uncertainties of the muon energy scale are those of the H&rarr;&tau;&tau; legacy analyses without
+  Rochester correction; mt has the first two regions only, as the analysis keeps no muon above
+  \|&eta;\| = 2.1.
+- **Embedding electron energy scale.** The embedded electrons keep the MC correction of the electron
+  pT; the payload gives only the size of the shift, up / nom and down / nom (&plusmn;0.5 % barrel,
+  &plusmn;1.26 % endcap in 2016 and 2018). The 2017 payload has nom = up = down = 1.0; 2017 takes the
+  fixed &plusmn;0.5 % and &plusmn;1.25 % (`variations.electrons.EMBEDDING_ELECTRON_ES_FIXED_WIDTHS`,
+  v8 decision V34), and the configuration stops if a payload contradicts either case.
+- **Di-tau trigger.** The payload takes the decay mode but has one up and one down variation;
+  `xyh::scalefactor::tau_trigger_per_decay_mode` evaluates the taus of one decay mode with the
+  variation and the others with `nom`. Its `nom` is the correction the core function evaluates.
+- **No regressed jets (C36).** `sm_config` has neither the 19 columns `bpair_*_regressed*` and
+  `jpt_regressed*` nor their producers (`regressed_jet_columns`). `sm_kinfit_resolved` reads
+  `bpair_pt_regressed_*` and cannot run on such n-tuples.
+- **The electron energy scale of MC does not reach the MET**: `LVEl1Uncorrected` reads the corrected
+  electron pT, so `CMS_scale_e_<era>` and `CMS_res_e_<era>` change the electron and not the MET. That
+  is the state of the v7b productions and unchanged here.
+
+`tests/test_shift_inventory.py` lists every pair per family, sample type, era and scope and compares
+it with the registered shifts and with the shifted columns of the generated code. With all shifts a
+simulated sample has 64 (et), 63 (mt), 58 (tt), 30 (em), 25 (ee) and 26 (mm) pairs, DY and W of 2018 one
+more, the embedding 10 (et), 10 (mt) and 8 (tt).
+
+### Frozen nominal
+
+The corrections and the NN of the analysis are measured on the v7b n-tuples, so the shift production
+must reproduce their nominal columns. `tests/test_nominal_freeze.py` compares the code generated without
+shifts, per scope the producer calls and the output columns, with `tests/fixtures/nominal_calls.json.gz`
+(the state the shift scheme branched from, 6e71975; `tests/fixtures/make_nominal_calls_fixture.py`
+rewrites it) for every sample type of `sm_config` in every Run-2 era and for surfaces of the other
+configurations. The intended differences are spelled out in its `EXPECTED_CHANGES`: the QCD scale
+weight of diboson, the removed regressed jets, the scope-level lepton pT scale and the di-tau trigger SF
+function. A change of the nominal fails there until it is listed.
+
 ## Tau embedding
 
 `sm_config` builds the &mu;&rarr;&tau; embedded samples of the Run-2 eras (sample type `embedding`,
@@ -469,7 +535,10 @@ used.
 Shifts (all others exclude embedding), defined in `variations/taus.py`, without channel in the name:
 
 - `CMS_scale_t_emb_DeepTau2018v2p5_DM{0,1,10,11}_2018{Up,Down}`: tau energy scale per decay mode;
-- `CMS_eff_t_emb_DeepTau2018v2p5_VSjet_DM{0,1,10,11}_2018{Up,Down}`: vsJet SF per decay mode.
+- `CMS_eff_t_emb_DeepTau2018v2p5_VSjet_DM{0,1,10,11}_2018{Up,Down}`: vsJet SF per decay mode;
+- `CMS_scale_e_{barrel,endcap}_emb_2018{Up,Down}` in et and `CMS_scale_m_{etalt1p2,eta1p2to2p1}_2018{Up,Down}`
+  in mt: energy scale of the embedded electron and muon (section "Shift scheme of the SM shift
+  production").
 
 The payload fills DM11 with the fitted 3-prong category of DM10, but a shift varies one decay mode:
 DM10 and DM11 are separate shifts, to be correlated downstream.
@@ -599,7 +668,9 @@ The C++ fixtures under `tests/cpp/` (strict UParT b-tag consumer with all five a
 working points and the K1 rule, SM HH kinematic fit, electron reconstruction weight, electron SFs at
 the supercluster eta, embedding iso-binned SF and JER smearing with the payloads of every Run-2 era,
 FastMTT decay types, matched trigger object, HEM flag, fake factor summed over the payload processes,
-checked MET covariance, POG muon trigger SF clamped into its payload range) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
+checked MET covariance, POG muon trigger SF clamped into its payload range, JER variations per region,
+the scope-level lepton pT scale with the factors of the configuration, the di-tau trigger SF per decay
+mode on the TAU payload of every Run-2 era) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
 `root-config`, `g++`, correctionlib and spdlog headers. `tests/test_run2_eras.py` checks the per-era
 inputs (MET filters, jet ID, KIT lepton and trigger SF names, POG muon trigger SF names and ranges, b-tag efficiency and embedding tau
 payloads, TAU POG placeholders), `tests/test_triggers.py` the trigger flags and SFs per era against
