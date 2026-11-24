@@ -1,6 +1,20 @@
 """Immutable analysis profiles consumed by common_config.build_config."""
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Mapping, Optional, Tuple
+
+
+@dataclass(frozen=True)
+class ShiftScheme:
+    """
+    The systematic shifts of a profile where they differ from the common set of
+    `variations/`. The defaults are the common set, which the NMSSM analysis and
+    the tau-ID measurement keep; the SM analysis sets the scheme of its shift
+    production (v8 spec section 4, the item is named at each field).
+    """
+
+    # The POG syst_TES_<era>_dm<DM> components of the vsJet SF as weight shifts
+    # per era and decay mode (C18).
+    tau_id_vs_jet_syst_tes: bool = False
 
 
 @dataclass(frozen=True)
@@ -76,6 +90,8 @@ class AnalysisProfile:
     # Working points of the strict UParTAK4 b-tag event weight, tightest first
     # (v7 spec E14, C14).
     btag_sf_working_points: Tuple[str, ...] = ("T", "M")
+    # The systematic shifts beyond the common set.
+    shifts: ShiftScheme = field(default_factory=ShiftScheme)
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -113,6 +129,9 @@ SM_PROFILE = AnalysisProfile(
     hem_veto_flag=True,
     electron_sf_supercluster_eta=True,
     btag_sf_working_points=("T", "M"),
+    shifts=ShiftScheme(
+        tau_id_vs_jet_syst_tes=True,
+    ),
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the
@@ -124,12 +143,16 @@ SM_BTAG_EFFICIENCY_PROFILE = replace(
     mc_only=True,
     enable_btag_sf=False,
     enable_probe_jet_collection=True,
+    # produced without shifts (smrun2_btag_eff_v1); the surface of that production stays
+    shifts=ShiftScheme(),
 )
 
 # The SM selection in mt and mm with the corrections and MC shifts of the tau-ID
 # SF and ES measurement, which applies no b-tag SF. The embedded taus stay
 # uncorrected and keep a lower pT threshold, so that the ES grid applied
-# downstream (up to +20 %) still finds every tau above 20 GeV.
+# downstream (up to +20 %) still finds every tau above 20 GeV. Its MC shifts are
+# those of its production smrun2_tau_id_v2, the common set (README, section
+# "Tau-ID measurement"), not the scheme of the SM shift production.
 SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     SM_PROFILE,
     name="sm_tau_id_measurement",
@@ -139,4 +162,5 @@ SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     embedding_tau_corrections=False,
     embedding_min_tau_pt=20.0 / 1.2,
     tau_id_measurement=True,
+    shifts=ShiftScheme(),
 )

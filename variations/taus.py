@@ -15,15 +15,30 @@ EXCLUDE_SAMPLES = ["data", "embedding", "embedding_mc"]
 def _get_run2_2022_2023_tau_id_vs_jet_shifts(
     era: str,
     tau_id_algorithm: str,
+    syst_tes: bool = False,
 ) -> list[KeyValueShift]:
     """
-    Shift specifications of the tau ID vs jet scale factor variations for 2022
-    and 2023.
+    Shift specifications of the tau ID vs jet scale factor variations for Run 2,
+    2022 and 2023.
 
     The correction file names the variations with the direction as suffix and
     separates the era period from the year, e.g. `syst_2022_preEE_up`.
+
+    With `syst_tes`, the uncertainty of the scale factors from the tau energy
+    scale they were measured with is added, `syst_TES_<era>_dm<DM>`, one
+    variation per era and decay mode (v8 spec C18). A variation changes the
+    scale factor of its decay mode only; it depends on the tau pT and changes
+    sign at 30 to 35 GeV.
     """
     era_token = re.sub(r"^(\d{4})(pre|post)", r"\1_\2", era)
+    syst_tes_shifts = [
+        KeyValueShift(
+            name=f"CMS_eff_t_{tau_id_algorithm}_VSjet_dm_syst_TES_{era}_dm{dm}",
+            key="tau_id_sf_vsjet_variation",
+            value=f"syst_TES_{era_token}_dm{dm}_{{direction}}",
+        )
+        for dm in [0, 1, 10, 11]
+    ]
     return [
         *[
             KeyValueShift(
@@ -44,6 +59,7 @@ def _get_run2_2022_2023_tau_id_vs_jet_shifts(
             key="tau_id_sf_vsjet_variation",
             value=f"syst_{era_token}_{{direction}}",
         ),
+        *(syst_tes_shifts if syst_tes else []),
     ]
 
 
@@ -77,6 +93,7 @@ def add_tau_id_vs_jet_shifts(
     producers: list[Producer | ProducerGroup],
     scopes: list[str],
     tau_id_algorithm: str = "DeepTau2018v2p5",
+    syst_tes: bool = False,
 ):
     """
     Add shifts for tau ID vs jet scale factors for the given era.
@@ -90,7 +107,8 @@ def add_tau_id_vs_jet_shifts(
       correction file. The uncertainties are organized into statistical
       uncertainties of the measurement and systematic uncertainties
       corresponding to different correlation schemes (uncorrelated, correlated
-      across eras, correlated across DM bins and eras, ...).
+      across eras, correlated across DM bins and eras, ...). `syst_tes` adds
+      the uncertainty from the tau energy scale per era and decay mode.
 
     - For 2024/2025, the uncertainties are decorrelated for the DM and pt bins,
       in which the measurement have been performed.
@@ -106,8 +124,14 @@ def add_tau_id_vs_jet_shifts(
         "2023preBPix",
         "2023postBPix",
     ]:
-        shifts = _get_run2_2022_2023_tau_id_vs_jet_shifts(era, tau_id_algorithm)
+        shifts = _get_run2_2022_2023_tau_id_vs_jet_shifts(
+            era, tau_id_algorithm, syst_tes=syst_tes
+        )
     elif era in ["2024", "2025"]:
+        if syst_tes:
+            raise NotImplementedError(
+                f"The vsJet SF scheme of era {era} has no syst_TES component."
+            )
         shifts = _get_2024_2025_tau_id_vs_jet_shifts(era, tau_id_algorithm)
     else:
         raise NotImplementedError(f"Shifts for era {era} are not implemented.")

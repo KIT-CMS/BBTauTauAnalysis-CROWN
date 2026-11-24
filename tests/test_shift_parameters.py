@@ -185,10 +185,13 @@ def test_tau_vs_mu_shifts_vary_the_vs_mu_sf(era):
 
 
 @pytest.mark.parametrize(
-    "module,era", [("sm_config", era) for era in ERAS_RUN2] + [("nmssm_config", "2022postEE")]
+    "module,era,expected",
+    [("sm_config", era, 28) for era in ERAS_RUN2] + [("nmssm_config", "2022postEE", 20)],
 )
-def test_tau_vs_jet_variations_exist_in_the_era_payload(module, era):
-    """The Run-2/2022/2023 vsJet variations are evaluated as given by the payload."""
+def test_tau_vs_jet_variations_exist_in_the_era_payload(module, era, expected):
+    """The Run-2/2022/2023 vsJet variations are evaluated as given by the payload: two
+    statistical components per decay mode, syst_alleras and syst_<era>, and in the SM shift
+    scheme syst_TES_<era>_dm<DM> per decay mode (v8 spec C18)."""
     config = build(module, "ttbar", era=era, scopes=("mt",), shifts=("VSjet",))
     payload = Path(config.config_parameters["mt"]["nominal"]["tau_ides_sf_file"])
     if not payload.is_file():
@@ -212,5 +215,5 @@ def test_tau_vs_jet_variations_exist_in_the_era_payload(module, era):
     variations = {
         change["tau_id_sf_vsjet_variation"] for change in config.shifts["mt"].values()
     }
-    assert len(variations) == 20, sorted(variations)
+    assert len(variations) == expected, sorted(variations)
     assert variations <= keys, sorted(variations - keys)

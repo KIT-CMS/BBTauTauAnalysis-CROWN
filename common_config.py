@@ -4363,6 +4363,7 @@ def build_config(
             era,
             [scalefactors.TauIDVsJetSF2],
             scopes=SL_SCOPES,
+            syst_tes=profile.shifts.tau_id_vs_jet_syst_tes,
         )
 
         # Add hadronic tau ID vs jet SF shifts to fullhadronic scopes
@@ -4372,6 +4373,7 @@ def build_config(
             era,
             [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
             scopes=TT_SCOPES,
+            syst_tes=profile.shifts.tau_id_vs_jet_syst_tes,
         )
 
     # Add hadronic tau ID vs electron SF shifts to semileptonic scopes (producer
