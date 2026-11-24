@@ -46,14 +46,16 @@ The friend entries are thin wrappers around the shared `FriendTreeConfiguration`
   `kinfit_convergence`, `kinfit_chi2`, `kinfit_prob`, `kinfit_mHH`.
 * `fake_factors_friend_config.py` / `sm_fake_factors.py` / `sm_fake_factors_w.py` - Fake-factor
   friends, NMSSM (Run 3, `NMSSM_PAYLOAD_DIRS`) and SM (the Run-2 eras with a payload,
-  `SM_PAYLOAD_DIRS`): `sm_fake_factors` sums QCD + ttbar (friend `ff_v7b`), `sm_fake_factors_w`
-  QCD + W + ttbar in et and mt and QCD + ttbar in tt (friend `ff_v7b_w`, v7 spec E18, P5; `SCOPE_PROCESSES`), each from its own `PAYLOADS` table with the
+  `SM_PAYLOAD_DIRS`): `sm_fake_factors` sums QCD + ttbar (friend `ff_v8`, in v7 `ff_v7b`),
+  `sm_fake_factors_w` QCD + W + ttbar in et and mt and QCD + ttbar in tt (friend `ff_v8_w`, in v7
+  `ff_v7b_w`; v7 spec E18, P5; `SCOPE_PROCESSES`), each from its own `PAYLOADS` table with the
   shared 2016 mapping, and each rejects a payload of the other variant (`PROCESSES`). See
   [Fake-factor friends](#fake-factor-friends).
 * `xyh_classifier_friend_config.py` - Produce PNN classifier friends for the NMSSM analysis.
-* `sm_nn_classifier.py` - SM HH NN classifier scores of the models of a production (`MODELS`), Run-2 eras,
-  et, mt and tt, chained on the FastMTT friend; per model `<prefix>predicted_class`,
-  `<prefix>predicted_max_value`, `<prefix>nn_score_<class>`, -1 outside the gate (nn spec 3.4). See
+* `sm_nn_classifier.py` - SM HH NN classifier scores of the models of a production (`MODELS`: M3 with
+  the prefix `nn_m3abnv1_` and the baseline AB_NV1 with `nn_m0k4abnv1_`), Run-2 eras, et, mt and tt,
+  chained on the FastMTT friend; per model `<prefix>predicted_class`, `<prefix>predicted_max_value`,
+  `<prefix>nn_score_<class>`, -1 outside the gate (nn spec 3.4). See
   [NN classifier friend](#nn-classifier-friend).
 
 ### Fake-factor friends
@@ -106,11 +108,13 @@ input stays nominal under that shift (info log only).
 
 The NMSSM Run-3 friend reads `payloads/fake_factors/fake-factors-2026-10-25/<era>/` for et, mt and tt in all six eras.
 New analysis-specific payloads go to `payloads/fake_factors/<analysis>/<version>/<era>/`. The SM payloads are
-`payloads/fake_factors/sm/fake-factors-2026-10-19/<era>/` (QCD + ttbar) and
-`payloads/fake_factors/sm/fake-factors-2026-10-19-w/<era>/` (QCD + W + ttbar) for the payload eras 2016, 2017 and
-2018, measured with ShapeSmith on the v7b production (data `smrun2_binned_v7`, MC and embedding
-`smrun2_binned_v7b`) with embedding in et, mt and tt (see their READMEs; the v6 2018 payload
-`fake-factors-2026-10-09` and the v5 payload `fake-factors-2026-10-03` stay for reference);
+`payloads/fake_factors/sm/fake-factors-2026-11-24/<era>/` (QCD + ttbar) and
+`payloads/fake_factors/sm/fake-factors-2026-11-24-w/<era>/` (QCD + W + ttbar) for the payload eras 2016, 2017 and
+2018: the measurement "v7c" of the shift production (v8 spec 5.2), measured with ShapeSmith on the v7b production
+(data `smrun2_binned_v7`, MC and embedding `smrun2_binned_v7b`) like the v7b payloads `fake-factors-2026-10-19{,-w}`,
+with data and embedding read without repeated events and the QCD isolation non-closure of mt smoothed like that of
+et (see their READMEs; the v7b payloads, the v6 2018 payload `fake-factors-2026-10-09` and the v5 payload
+`fake-factors-2026-10-03` stay for reference);
 jvoss's `fake-factors-2026-09-22` stays as the base of the edited test payloads. A new payload goes into a new
 dated directory, and only the entry in `SM_PAYLOAD_DIRS` / `NMSSM_PAYLOAD_DIRS` changes. Friend tarballs and
 outputs are keyed by production and friend tag only, and KingMaker packs the CROWN sources once per tag, so
@@ -125,7 +129,11 @@ v7b payloads).
 ### NN classifier friend
 
 `sm_nn_classifier.py` (nn spec 3.3, 3.4, N1, N21, N28) evaluates every model of `MODELS`, a tuple of
-`nn_payloads.NNModel(payload directory, column prefix)`, e.g. `NNModel("payloads/nn_classifier/m0_v1", "nn_m0_")`.
+`nn_payloads.NNModel(payload directory, column prefix)`. The shift production (v8 spec C28) has two, both trained on
+v7b and installed by `bbtautau-nn install` (`payloads/nn_classifier/README.md`): the deployed model M3,
+`NNModel("payloads/nn_classifier/m3_abnv1_20261113", "nn_m3abnv1_")`, one network for all eras and channels, and the
+baseline AB_NV1, `NNModel("payloads/nn_classifier/m0_k4_v7b5_wp_abnv1", "nn_m0k4abnv1_")`, one network per channel;
+each has four folds and the classes HH2B2Tau, tautau, Top, jetFakes and Other.
 A model is trained in n outer folds (n = 2 or 4): `<payload>/<era>/<scope>/model_k<n>_r<r>.onnx` scores the events
 with `event % n == r` on the unsigned 64-bit event number (`xyh::classifier::EvaluateFolds` in
 `cpp_addons/include/sm_classifier.hxx`, inline like `EvaluatePNN`; no conversion to float or int, unlike the thesis
@@ -421,6 +429,7 @@ and the tau-ID measurement keep the common shifts and the surfaces of their prod
 | `CMS_scale_e_{barrel,endcap}_emb_<era>` (C32) | et | embedding | electron pT &times; the relative width of `data/embedding/eleES_<era>UL.json.gz`, before the selection |
 | `CMS_eff_trigger_tt_dm{0,1,10,11}_<era>` (C39) | tt | MC | di-tau trigger SF of the taus of one decay mode, both legs (was `CMS_trig_t_ditau_Medium_eff_<era>`, coherent) |
 | `QCDscale_ren`, `QCDscale_fac` (C34) | all | MC, now with diboson | `lhe_scale_weight` |
+| `ps_isr`, `ps_fsr` (C23) | all | MC | `ps_weight`: the `PSWeight` entry of the ISR or FSR scale &times; 2 (Up) or &times; 0.5 (Down); 1 in the nominal |
 | `CMS_scale_met_unclustered_energy_<era>` (C38) | all | MC without DY and W of 2018 | the recoil-corrected samples have the recoil shifts only |
 
 - **JER regions.** A regional variation is the value of `ak4jet_jer_shift`, e.g.
@@ -448,16 +457,113 @@ and the tau-ID measurement keep the common shifts and the surfaces of their prod
   `xyh::scalefactor::tau_trigger_per_decay_mode` evaluates the taus of one decay mode with the
   variation and the others with `nom`. Its `nom` is the correction the core function evaluates.
 - **No regressed jets (C36).** `sm_config` has neither the 19 columns `bpair_*_regressed*` and
-  `jpt_regressed*` nor their producers (`regressed_jet_columns`). `sm_kinfit_resolved` reads
-  `bpair_pt_regressed_*` and cannot run on such n-tuples.
-- **The electron energy scale of MC does not reach the MET**: `LVEl1Uncorrected` reads the corrected
-  electron pT, so `CMS_scale_e_<era>` and `CMS_res_e_<era>` change the electron and not the MET. That
-  is the state of the v7b productions and unchanged here.
+  `jpt_regressed*` nor their producers (`regressed_jet_columns`).
+- **Parton shower (C23).** `ps_weight` is a column of its own, 1 in the nominal, so no nominal weight
+  changes. Under a shift it is one entry of `PSWeight` (core `event::reweighting::PartonShower`), which
+  holds four in every Run-2 v15 MC file, `[0] isr:murfac=2.0`, `[1] fsr:murfac=2.0`,
+  `[2] isr:murfac=0.5`, `[3] fsr:murfac=0.5`: `ps_isrUp` reads [0], `ps_fsrUp` [1], `ps_isrDown` [2] and
+  `ps_fsrDown` [3]. **Up is the scale up**: the renormalisation scale of the shower times 2, a smaller
+  &alpha;<sub>s</sub> and less radiation; Down is the scale times 0.5 and more radiation. The weights
+  are read through a column that checks their length (`event.PSWeightChecked`,
+  `xyh::theory_weights::CheckedSize`) and stops the job on any other length in every event; the core
+  function alone checks it only where it evaluates a variation and would write the nominal 1 from a
+  file without the variations (the embedding files carry a single entry). The weights are not
+  normalised: that is done downstream with `PSSumw` of the `Runs` tree, per process and before the
+  acceptance.
 
 `tests/test_shift_inventory.py` lists every pair per family, sample type, era and scope and compares
 it with the registered shifts and with the shifted columns of the generated code. With all shifts a
-simulated sample has 64 (et), 63 (mt), 58 (tt), 30 (em), 25 (ee) and 26 (mm) pairs, DY and W of 2018 one
+simulated sample has 66 (et), 65 (mt), 60 (tt), 32 (em), 27 (ee) and 28 (mm) pairs, DY and W of 2018 one
 more, the embedding 10 (et), 10 (mt) and 8 (tt).
+
+### Columns of the SM shift production
+
+`sm_config` writes further columns into the nominal tree (v8 spec C23-C27, C40; profile fields
+`lhe_pdf_weight_samples`, `stage_b_columns`, `tau_id_vs_jet_high_pt_columns` and
+`shifts.parton_shower`). None of them replaces or changes a column of the v7b n-tuples.
+
+| Columns | Scopes | Samples | Content |
+|---|---|---|---|
+| `ps_weight` (C23) | all | MC | parton shower weight, 1; shifted by `ps_isr`, `ps_fsr` |
+| `lhe_pdf_weight_<i>`, i = 1..100 (C24) | all | `hh2b2tau` | `LHEPdfWeight[i]`, the weights of the 100 PDF eigenvectors |
+| `jpt_<i>`, `jeta_<i>`, `jphi_<i>`, `jmass_<i>`, `jtag_value_<i>`, `jtag_cvb_<i>`, `jtag_cvl_<i>`, `jtag_qvg_<i>`, i = 1..8 (C25) | et, mt, tt | all | the jets of `n_jets` in eight slots: corrected pT, &eta;, &phi;, mass and the UParTAK4 B, CvB, CvL and QvG scores (`jpt`, `jeta`, `jphi`, `jtag_value` of the slots 1 and 2 existed, in every scope) |
+| `jet_hadronFlavour_<i>`, i = 1..8 (C25) | et, mt, tt | MC | hadron flavour of the slot (the slots 1 and 2 existed) |
+| `jet_from_hbb_<i>`, i = 1..8 (C25) | et, mt, tt | `hh2b2tau` | 1 if the jet is matched to a b quark of the H &rarr; bb decay, else 0 |
+| `rawDeepTau2018v2p5VSe_<leg>`, `rawDeepTau2018v2p5VSmu_<leg>` (C26) | et, mt (leg 2), tt (legs 1, 2) | all | raw DeepTau scores of the tau legs against electrons and muons |
+| `genTtbarId` (C27) | all | MC | the NanoAOD branch (tt + heavy flavour category) |
+| `id_wgt_tau_vsJet_Medium_highpt_<leg>`, `..._highpt_up_<leg>`, `..._highpt_down_<leg>` (C40) | et, mt (leg 2), tt (legs 1, 2) | MC | vsJet SF of the pT-binned set of the TAU payload and its total uncertainty |
+
+- **PDF weights (C24).** Only the signal has them, as plain weights without a combination per event
+  (the square sum is formed per bin downstream, normalised with `LHEPdfSumw`). The powheg samples
+  have 103 entries (LHA 325300 to 325402: the central member, 100 eigenvectors and two
+  &alpha;<sub>s</sub> members, which get no column), madgraph `node_SM` 101 (LHA 325500 to 325600,
+  without &alpha;<sub>s</sub>); the weights are read through a column that stops the job on any other
+  length (`event.LHEPdfWeightChecked`). **Entry 0, the central member, is 1** within the precision of
+  the NanoAOD branch (14 mantissa bits): exactly 1.0 in `node_SM`, and 1 &minus; 2<sup>&minus;15</sup>
+  = 0.99997 in 99.7 % of the events of a 2018 powheg file (1.0 in the rest); over the first 2000 events
+  of one file of each of the 20 signal datasets of Run 2 it lies between 0.99994 and 1.00006. It has no
+  column.
+- **Jet slots (C25).** Slot i holds the jet at position i &minus; 1 of `good_jet_collection`, the
+  collection behind `n_jets` and the columns of the two leading jets: the jets that pass the jet or the
+  b-jet selection and do not overlap with the pair, ordered in the corrected pT. The slots 3 to 8 are
+  filled by the functions that fill the slots 1 and 2, and an empty slot holds their default: &minus;10,
+  and 246 (the unsigned &minus;10) for the hadron flavour. The slots are built from the corrected jets
+  and so follow the jet energy scale and resolution shifts and every shift that changes the pair the
+  jets are cleaned against (tau, electron and muon energy scales). Events with more than eight jets
+  keep the leading eight (`n_jets` counts all). Each slot is a producer group of its own
+  (`JetSlot1` ... `JetSlot8`): the jet shifts repeat every producer about sixty times, and one generated
+  source file with all slots needed 8 GB to compile.
+- **Jets from H &rarr; bb (C25).** The configuration had no working generator matching to reuse
+  (`YbbTrueGenPair` passes its arguments in the wrong order, the function of `GenMatchingBPairFlag`
+  does not exist), so the flag is defined here (`xyh::genmatching::JetsFromBosonDecay`): the b quarks
+  are the generator particles with |pdgId| = 5 that are the last copy of a particle of the hard process
+  (status flags `isLastCopy` and `fromHardProcess`) and whose chain of b-quark mothers ends at a Higgs
+  boson; each of them flags the nearest jet of `good_jet_collection` within &Delta;R < 0.4
+  (`hbb_jet_match_delta_r`), so a quark is matched to at most one jet, and two quarks can flag the same
+  jet. Both status flags are needed because NanoAOD links a particle to its nearest stored ancestor: a
+  b quark from gluon splitting in the shower appears as a daughter of the b quark that radiated the
+  gluon, and a copy with two mothers names the partner quark. With this definition every event of
+  20 000 each of the 2018 powheg and madgraph samples has exactly two such quarks. A quark whose
+  nearest jet is beyond the eighth slot flags no slot.
+- **pT-binned vsJet SF (C40, V35).** The scale factor that is applied stays the DM-binned one,
+  `id_wgt_tau_vsJet_Medium_<leg>`, at every pT. The three columns hold the correction
+  `DeepTau2018v2p5VSjet` of the TAU payload with flag `pt` instead of `dm`, at the working points of the
+  DM-binned column (`xyh::scalefactor::tau_id_vsjet_pt_binned`): `highpt` is syst `nom`;
+  `highpt_up` and `highpt_down` are nom &plusmn; the quadrature sum of the differences to nom of the
+  four uncertainty components of the pT-binned set, each evaluated in that direction:
+  `stat_highpT_bin1` (statistical, 140 to 200 GeV), `stat_highpT_bin2` (statistical, above 200 GeV),
+  `syst_highpT` (systematic) and `syst_highpT_extrap` (extrapolation to higher pT). The payload's own
+  syst `up`/`down`, which it calls the total uncertainty, is the same sum without the extrapolation
+  component (checked to 1e-9 in every era); that component is zero at 140 GeV and grows by about 3 %
+  of the scale factor per 100 GeV up to 15 to 16 % from 700 GeV on, so the columns are wider than the
+  payload's total by 0.0003 to 0.0005 at 170 GeV, 0.003 to 0.006 at 250 GeV, 0.014 to 0.030 at 400 GeV
+  and 0.05 to 0.10 at 1 TeV (the total is 0.09 to 0.15 at 250 GeV; ranges over the eras and the two
+  vsEle working points). The TAU POG recommends this set for taus above 140 GeV. Below, the payload
+  returns the value of its lowest bin for every pT, so the columns are defined and finite at every pT
+  but meaningful above 140 GeV only; for other generator matches than a genuine hadronic tau all three
+  are 1, as for a leg without a tau. They are columns, not shifts: no weight shift changes them, and
+  under the kinematic shifts of the tau they are evaluated at the shifted pT like every other weight.
+  The embedding has none (it has its own tau-ID measurement).
+
+### Known limitations
+
+- **JER resolution of 2016.** The JER resolution of both 2016 v15 payloads is NaN for some jets with
+  pT &le; 17 GeV; such a jet gets a NaN pT, drops out of every selection and out of the propagation to
+  the MET. There is no guard, by decision (v8 spec C35): among 30 million jets of 2016 ttbar and DY no
+  jet above 20 GeV is affected; below 20 GeV the MET propagation of such jets is missing in 0.1 to
+  0.6 % of the events, 1.2 to 1.5 GeV on average. 2017 and 2018 have no NaN.
+- **The electron energy scale of MC does not reach the MET**: `LVEl1Uncorrected` reads the corrected
+  electron pT, so `CMS_scale_e_<era>` and `CMS_res_e_<era>` change the electron and not the MET. That
+  is the state of the v7b productions and unchanged here. The energy scale shift of the embedded
+  electron, `CMS_scale_e_{barrel,endcap}_emb_<era>`, does reach the MET, as do the muon energy scale
+  shifts.
+- **`sm_kinfit_resolved` cannot run on these n-tuples**: it reads `bpair_pt_regressed_*`, which
+  `sm_config` no longer writes (C36).
+- **Outside et, the electron shifts of MC move only the electron veto.** `CMS_scale_e_<era>` and
+  `CMS_res_e_<era>` are shifts of the global scope and exist in every scope; in mt and tt their only
+  shifted columns are those of the veto of further electrons. The FastMTT and fake-factor friends
+  therefore have no column for them there (their nominal columns are the right ones), while the NN
+  classifier friend has, through its gate (`tests/test_friend_shifts.py`).
 
 ### Frozen nominal
 
@@ -468,7 +574,9 @@ shifts, per scope the producer calls and the output columns, with `tests/fixture
 rewrites it) for every sample type of `sm_config` in every Run-2 era and for surfaces of the other
 configurations. The intended differences are spelled out in its `EXPECTED_CHANGES`: the QCD scale
 weight of diboson, the removed regressed jets, the scope-level lepton pT scale and the di-tau trigger SF
-function. A change of the nominal fails there until it is listed.
+function, and the calls and columns the shift production adds (`ADDITIONS`: parton shower weight, PDF
+weights, jet slots, raw tau scores, `genTtbarId`, pT-binned vsJet SF), which leave every frozen call in
+place. A change of the nominal fails there until it is listed.
 
 ## Tau embedding
 
@@ -670,14 +778,23 @@ the supercluster eta, embedding iso-binned SF and JER smearing with the payloads
 FastMTT decay types, matched trigger object, HEM flag, fake factor summed over the payload processes,
 checked MET covariance, POG muon trigger SF clamped into its payload range, JER variations per region,
 the scope-level lepton pT scale with the factors of the configuration, the di-tau trigger SF per decay
-mode on the TAU payload of every Run-2 era) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
+mode on the TAU payload of every Run-2 era, the pT-binned vsJet SF columns on the same payloads, the
+PSWeight entry of every parton shower shift and the checked length of the generator weight vectors, the
+jets from H &rarr; bb) run inside the same pytest session (`tests/test_cpp_runtime.py`) and are skipped without
 `root-config`, `g++`, correctionlib and spdlog headers. `tests/test_run2_eras.py` checks the per-era
 inputs (MET filters, jet ID, KIT lepton and trigger SF names, POG muon trigger SF names and ranges, b-tag efficiency and embedding tau
 payloads, TAU POG placeholders), `tests/test_triggers.py` the trigger flags and SFs per era against
 the HLT branches and filter-bit doc strings of the eras' v15 files (`tests/fixtures/*_hlt.txt`,
 `nanoaod_v15_trigobj_filterbits.json`, written by `tests/fixtures/make_hlt_fixtures.py`),
 `tests/test_v7_corrections.py` the prefiring columns, the MET propagation, the HEM flag and the electron
-SFs at the supercluster eta per era. Cases of an
+SFs at the supercluster eta per era, `tests/test_sm_shift_production_columns.py` the columns of the shift
+production per sample type, era and scope. `tests/test_friend_shifts.py` generates the FastMTT, both
+fake-factor and the NN classifier friends (the models of `MODELS`) with all shifts on the quantities map of
+the all-shifts code of `sm_config` in every Run-2 era (`helpers.quantities_map`, the map an executable
+writes into its files; for the NN classifier also the map of the FastMTT friend generated on top) and
+checks that every kinematic shift of the main tree has its shifted friend columns: a friend recomputes
+a producer under a shift only if an input is listed as shifted, and otherwise stays nominal without an
+error. Cases of an
 era that need a payload not measured yet are strict xfails listed in `tests.helpers.PENDING` (empty
 since the embedding tau payloads of 2016 and 2017 exist): they turn into failures once the payload
 exists, and the entry goes. `tests.helpers.generate_code` emits the C++ code of a configuration in a
@@ -691,8 +808,10 @@ Neither pytest nor a code-generation dry run compiles the generated code, so a c
 (e.g. the vsMu working point of `experimental::Id_vsJet` from core 14f82c1 on) shows only in the
 build. `scripts/compile_check.sh <build dir> [jobs]` compiles one MC configuration per production in
 every Run-2 era in the CROWN container (`sm_config` ttbar in six scopes, `sm_btag_efficiency_config`
-ttbar, `sm_tau_id_measurement_config` dyjets in mt and mm, and the `sm_config` embedding of the eras
-with an embedding tau payload); run it after every core pin change and before a production.
+ttbar, `sm_tau_id_measurement_config` dyjets in mt and mm, the `sm_config` embedding of the eras
+with an embedding tau payload, and the `sm_config` signal in et, mt and tt, the only sample type with
+the PDF weight columns and the H &rarr; bb jet flags); run it after every core pin change and before a
+production.
 
 ## 2018 control production
 
