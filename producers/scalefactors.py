@@ -891,6 +891,54 @@ TauTauTriggerSF = ProducerGroup(
     ],
 )
 
+# The same scale factors from the addon function, which also takes variations
+# of a single decay mode ("up_dm0", ...; v8 spec C39). Its "nom", "up" and
+# "down" are those of the core function above.
+_TAUTAU_TRIGGER_SF_PER_DECAY_MODE_CALL = (
+    "xyh::scalefactor::tau_trigger_per_decay_mode({{df}}, correctionManager, {{output}}, "
+    '{{input}}, "{{tt_trigger_flag}}", "{{tau_trigger_sf_file}}", "{{tau_trigger_cset_name}}", '
+    '"{{tt_trigger_leg{leg}_sf_name}}", "Medium", "sf", "{{tt_trigger_leg{leg}_variation}}")'
+)
+TauTauTriggerLeg1SFPerDecayMode = ExtendedVectorProducer(
+    name="DoubleTauTauTriggerLeg1SF",
+    call=_TAUTAU_TRIGGER_SF_PER_DECAY_MODE_CALL.format(leg=1),
+    input=[
+        q.pt_1,
+        q.tau_decaymode_1,
+    ],
+    output="tt_trigger_leg1_flagname",
+    scopes=TT_SCOPES,
+    vec_config="double_tautau_trigger_leg1_sf",
+)
+TauTauTriggerLeg2SFPerDecayMode = ExtendedVectorProducer(
+    name="DoubleTauTauTriggerLeg2SF",
+    call=_TAUTAU_TRIGGER_SF_PER_DECAY_MODE_CALL.format(leg=2),
+    input=[
+        q.pt_2,
+        q.tau_decaymode_2,
+    ],
+    output="tt_trigger_leg2_flagname",
+    scopes=TT_SCOPES,
+    vec_config="double_tautau_trigger_leg2_sf",
+)
+TauTauTriggerSFPerDecayMode = ProducerGroup(
+    name="DoubleTauTauTriggerSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=TT_SCOPES,
+    subproducers=[
+        TauTauTriggerLeg1SFPerDecayMode,
+        TauTauTriggerLeg2SFPerDecayMode,
+    ],
+)
+
+
+def tautau_trigger_sf(per_decay_mode: bool) -> ProducerGroup:
+    """The di-tau trigger SF group of tt, with variations per decay mode
+    (AnalysisProfile.shifts.ditau_trigger_per_decay_mode) or the coherent ones."""
+    return TauTauTriggerSFPerDecayMode if per_decay_mode else TauTauTriggerSF
+
 
 BoostedMTGenerateSingleMuonTriggerSF_MC = ExtendedVectorProducer(
     name="BoostedMTGenerateSingleMuonTriggerSF_MC",

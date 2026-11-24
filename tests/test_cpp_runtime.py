@@ -403,6 +403,34 @@ def test_embedding_electron_energy_scale_scales_the_electrons_of_a_region(energy
     subprocess.run([str(energy_scale_binary), *arguments], check=True)
 
 
+@pytest.fixture(scope="module")
+def tau_trigger_sf_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("tau_trigger_sf"),
+        "tau_trigger_sf",
+        [CPP / "test_tau_trigger_sf.cxx", ADDONS / "src/tau_trigger_sf.cxx", CORRECTION_MANAGER],
+        correctionlib=True,
+    )
+
+
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_tau_trigger_sf_per_decay_mode(tau_trigger_sf_binary, era):
+    """The di-tau trigger SF of the SM analysis (v8 spec C39) on the pinned TAU payload of
+    the era: "nom", "up" and "down" are the correction at the tau as the core function
+    evaluates it, and "<up|down>_dm<DM>" varies the taus of one decay mode only."""
+    nominal = build("sm_config", "ttbar", era=era, scopes=("tt",)).config_parameters["tt"]["nominal"]
+    payload = Path(nominal["tau_trigger_sf_file"])
+    if not payload.is_file():
+        pytest.skip("Pinned official TAU payload requires CVMFS")
+    triggers = {entry["tt_trigger_leg1_sf_name"] for entry in nominal["double_tautau_trigger_leg1_sf"]}
+    triggers |= {entry["tt_trigger_leg2_sf_name"] for entry in nominal["double_tautau_trigger_leg2_sf"]}
+    (trigger,) = triggers
+    subprocess.run(
+        [str(tau_trigger_sf_binary), str(payload), nominal["tau_trigger_cset_name"], trigger, "Medium"],
+        check=True,
+    )
+
+
 def test_matched_trigger_object_quantity(tmp_path):
     """trigger::MatchedObjectQuantity (trgobj_*_2 of the tau-ID measurement): the
     nearest trigger object in Delta R with the ID and all filter bits wins, -1

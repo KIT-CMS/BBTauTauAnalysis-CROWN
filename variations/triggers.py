@@ -293,10 +293,17 @@ def add_double_tautau_trigger_shifts(
     era: str,
     producers: list[Producer | ProducerGroup] | Producer | ProducerGroup,
     scope: str,
+    per_decay_mode: bool = False,
 ):
     """
     Add shifts for double-tau trigger scale factors for the given era and
     scope.
+
+    The scale factors of both legs are varied together: coherently for every
+    tau (CMS_trig_t_ditau_Medium_eff_<era>), or with `per_decay_mode` for the
+    taus of one decay mode at a time (CMS_eff_trigger_tt_dm<DM>_<era>, v8 spec
+    C39), which needs the scale factor producers with variations per decay
+    mode (scalefactors.TauTauTriggerSFPerDecayMode).
     """
 
     # If producers is a single Producer or ProducerGroup, convert it to a list
@@ -315,26 +322,34 @@ def add_double_tautau_trigger_shifts(
         configuration.config_parameters[scope]["double_tautau_trigger_leg2_sf"]
     )
 
-    for direction in ["up", "down"]:
-        # Create a new configuration for the shifted SFs
-        shifted_config_leg1 = _shifted_entries(
-            nominal_config_leg1, tt_trigger_leg1_variation=direction
-        )
-        shifted_config_leg2 = _shifted_entries(
-            nominal_config_leg2, tt_trigger_leg2_variation=direction
-        )
+    # Name of the shift and suffix of the variation of the scale factors
+    shifts = (
+        {f"CMS_eff_trigger_tt_dm{dm}_{era}": f"_dm{dm}" for dm in [0, 1, 10, 11]}
+        if per_decay_mode
+        else {f"CMS_trig_t_ditau_Medium_eff_{era}": ""}
+    )
 
-        # Add the shift to the configuration 
-        configuration.add_shift(
-            SystematicShift(
-                name=f"CMS_trig_t_ditau_Medium_eff_{era}{direction.capitalize()}",
-                shift_config={
-                    scope: {
-                        "double_tautau_trigger_leg1_sf": shifted_config_leg1,
-                        "double_tautau_trigger_leg2_sf": shifted_config_leg2,
-                    }
-                },
-                producers={scope: producers},
-            ),
-            exclude_samples=exclude_samples,
-        )
+    for name, selection in shifts.items():
+        for direction in ["up", "down"]:
+            # Create a new configuration for the shifted SFs
+            shifted_config_leg1 = _shifted_entries(
+                nominal_config_leg1, tt_trigger_leg1_variation=f"{direction}{selection}"
+            )
+            shifted_config_leg2 = _shifted_entries(
+                nominal_config_leg2, tt_trigger_leg2_variation=f"{direction}{selection}"
+            )
+
+            # Add the shift to the configuration
+            configuration.add_shift(
+                SystematicShift(
+                    name=f"{name}{direction.capitalize()}",
+                    shift_config={
+                        scope: {
+                            "double_tautau_trigger_leg1_sf": shifted_config_leg1,
+                            "double_tautau_trigger_leg2_sf": shifted_config_leg2,
+                        }
+                    },
+                    producers={scope: producers},
+                ),
+                exclude_samples=exclude_samples,
+            )

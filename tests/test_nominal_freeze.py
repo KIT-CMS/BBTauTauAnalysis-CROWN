@@ -113,6 +113,25 @@ def embedded_electron_pt_through_the_scope_level_scale(module, sample, era, scop
     return calls, outputs
 
 
+def ditau_trigger_sf_from_the_addon(module, sample, era, scope, calls, outputs):
+    """v8 spec C39: the di-tau trigger SFs of sm_config come from the addon function with
+    variations per decay mode, whose "nom" is the correction the core function evaluates
+    (tests/cpp/test_tau_trigger_sf.cxx); the arguments of the calls stay the same."""
+    core, addon = (
+        "physicsobject::tau::scalefactor::Trigger(",
+        "xyh::scalefactor::tau_trigger_per_decay_mode(",
+    )
+    # data has no trigger SF; the embedding reads the data efficiency of the di-tau leg with
+    # the core function, which stays
+    if module == "sm_config" and scope == "tt" and sample not in ("data", "embedding"):
+        readers = [call for call in calls if call.startswith(core)]
+        # both legs of every di-tau flag of the era
+        assert readers and len(readers) % 2 == 0, readers
+        assert all('"trg_wgtdouble_tau' in call and '"sf"' in call for call in readers), readers
+        calls = [addon + call[len(core):] if call.startswith(core) else call for call in calls]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
@@ -122,6 +141,7 @@ EXPECTED_CHANGES = [
     no_regressed_jets,
     muon_pt_through_the_scope_level_scale,
     embedded_electron_pt_through_the_scope_level_scale,
+    ditau_trigger_sf_from_the_addon,
 ]
 
 # The columns sm_config writes that the v7b n-tuples lack: the MET before the lepton and the

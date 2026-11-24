@@ -41,6 +41,9 @@ class ShiftScheme:
     # only, every other simulated sample the unclustered energy shift only
     # (C38).
     unclustered_energy_shift_on_recoil_corrected_samples: bool = True
+    # The di-tau trigger SF of tt varied per decay mode, four shifts per era,
+    # instead of coherently (C39).
+    ditau_trigger_per_decay_mode: bool = False
 
 
 @dataclass(frozen=True)
@@ -176,6 +179,7 @@ SM_PROFILE = AnalysisProfile(
         },
         embedding_electron_es=True,
         unclustered_energy_shift_on_recoil_corrected_samples=False,
+        ditau_trigger_per_decay_mode=True,
     ),
 )
 

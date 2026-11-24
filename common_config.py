@@ -2455,6 +2455,12 @@ def build_config(
     # tautau+bb quantities). NMSSM and the SM main profile never set the flag.
     strip_analysis_bjets = profile.enable_probe_jet_collection
 
+    # The di-tau trigger SF of tt, with variations per decay mode where the
+    # profile shifts it per decay mode (v8 spec C39)
+    tautau_trigger_sf = scalefactors.tautau_trigger_sf(
+        profile.shifts.ditau_trigger_per_decay_mode
+    )
+
     # The jets with the PNet/UParT pT regression: their calibration, the bb pair
     # built from them and their columns (not in the SM analysis, v8 spec C36)
     regressed_jets = profile.regressed_jet_columns
@@ -3201,7 +3207,7 @@ def build_config(
             pairquantities.TTDiTauPairQuantities,
             genparticles.TTGenDiTauPairQuantities,
             triggers.TauTauTriggerFlags,
-            scalefactors.TauTauTriggerSF,
+            tautau_trigger_sf,
             # TODO rework trigger setup before enabling this
             # triggers.GenerateSingleTrailingTauTriggerFlags,
             # triggers.GenerateSingleLeadingTauTriggerFlags,
@@ -3503,7 +3509,7 @@ def build_config(
         TT_SCOPES,
         RemoveProducer(
             producers=[
-                scalefactors.TauTauTriggerSF,
+                tautau_trigger_sf,
             ],
             samples=["data"],
         ),
@@ -4212,7 +4218,7 @@ def build_config(
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.TauTauTriggerFlags.output_group,
             ] + [
-                o for o in scalefactors.TauTauTriggerSF.get_outputs("tt")
+                o for o in tautau_trigger_sf.get_outputs("tt")
             ] + [
                 producer.output_group
                 for producer in tautaujet_trigger_producers
@@ -4373,7 +4379,7 @@ def build_config(
         for _scopes, _producer in [
             (ET_SCOPES, single_ele_trigger_sf),
             (MT_SCOPES, scalefactors.MuonIDIso_SF),
-            (TT_SCOPES, scalefactors.TauTauTriggerSF),
+            (TT_SCOPES, tautau_trigger_sf),
         ]:
             configuration.add_modification_rule(
                 _scopes,
@@ -4652,8 +4658,9 @@ def build_config(
     add_double_tautau_trigger_shifts(
         configuration,
         era,
-        [scalefactors.TauTauTriggerSF],
+        [tautau_trigger_sf],
         "tt",
+        per_decay_mode=profile.shifts.ditau_trigger_per_decay_mode,
     )
 
     #endregion

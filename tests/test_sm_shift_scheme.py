@@ -592,3 +592,37 @@ def test_nmssm_keeps_the_unclustered_energy_shift_on_dy():
     config = build("nmssm_config", "dyjets_amcatnlo_ll", era="2022postEE", scopes=("mt",), shifts=("_met_",))
     assert UNCLUSTERED.format(era="2022postEE") in pairs(shifts_of(config, "mt"))
 
+
+# --- C39: di-tau trigger per decay mode ---------------------------------------
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_ditau_trigger_shifts_per_decay_mode(era):
+    """Four weight pairs in tt, CMS_eff_trigger_tt_dm<DM>_<era>: both legs of every di-tau
+    flag evaluated with "<direction>_dm<DM>", read by the addon producers; no coherent pair."""
+    config = build("sm_config", "ttbar", era=era, scopes=TAU_SCOPES, shifts=("trigger_tt", "trig_t"))
+    assert not shifts_of(config, "et") and not shifts_of(config, "mt")
+    shifts = shifts_of(config, "tt")
+    assert pairs(shifts) == {f"CMS_eff_trigger_tt_dm{dm}_{era}" for dm in DECAY_MODES}
+    nominal = config.config_parameters["tt"]["nominal"]
+    for leg in (1, 2):
+        producer = find_producer(config, "tt", f"DoubleTauTauTriggerLeg{leg}SF")
+        assert producer.call.startswith("xyh::scalefactor::tau_trigger_per_decay_mode(")
+        assert f"{{tt_trigger_leg{leg}_variation}}" in producer.call
+        entries = nominal[f"double_tautau_trigger_leg{leg}_sf"]
+        assert entries and {entry[f"tt_trigger_leg{leg}_variation"] for entry in entries} == {"nom"}
+        for dm in DECAY_MODES:
+            for direction in ("up", "down"):
+                change = shifts[f"CMS_eff_trigger_tt_dm{dm}_{era}{direction.capitalize()}"]
+                assert set(change) == {"double_tautau_trigger_leg1_sf", "double_tautau_trigger_leg2_sf"}
+                shifted = change[f"double_tautau_trigger_leg{leg}_sf"]
+                assert len(shifted) == len(entries)
+                for entry, nominal_entry in zip(shifted, entries):
+                    assert entry == {**nominal_entry, f"tt_trigger_leg{leg}_variation": f"{direction}_dm{dm}"}
+
+
+def test_nmssm_keeps_the_coherent_ditau_trigger_shift():
+    config = build("nmssm_config", "ttbar", era="2022postEE", scopes=("tt",), shifts=("trigger_tt", "trig_t"))
+    assert pairs(shifts_of(config, "tt")) == {"CMS_trig_t_ditau_Medium_eff_2022postEE"}
+    producer = find_producer(config, "tt", "DoubleTauTauTriggerLeg1SF")
+    assert producer.call.startswith("physicsobject::tau::scalefactor::Trigger(")

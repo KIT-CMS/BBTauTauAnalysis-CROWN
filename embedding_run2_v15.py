@@ -184,7 +184,7 @@ def setup(configuration: Configuration, profile, era: str, scopes: list[str]):
     _add_electron_scalefactors(configuration, payloads, profile)
     if profile.shifts.embedding_electron_es:
         _add_electron_energy_scale(configuration, era)
-    _add_tautau_trigger(configuration, TT_EMBEDDING_TRIGGER_EFFICIENCIES[era])
+    _add_tautau_trigger(configuration, TT_EMBEDDING_TRIGGER_EFFICIENCIES[era], profile)
     if profile.embedding_tau_corrections:
         _add_tau_corrections(configuration, era, tau_payload)
     else:
@@ -373,7 +373,9 @@ def _add_electron_energy_scale(configuration: Configuration, era: str):
     )
 
 
-def _add_tautau_trigger(configuration: Configuration, efficiency: TtEmbeddingTriggerEfficiency):
+def _add_tautau_trigger(
+    configuration: Configuration, efficiency: TtEmbeddingTriggerEfficiency, profile
+):
     # v7 spec E33, variant A: the embedded taus fire no di-tau path, so tt embedding
     # has no trigger requirement and is weighted with the data efficiency of the
     # di-tau leg of each tau, trg_effdata_emb_<class>_<leg> for both isolation
@@ -387,7 +389,10 @@ def _add_tautau_trigger(configuration: Configuration, efficiency: TtEmbeddingTri
     configuration.add_modification_rule(
         TT_SCOPES,
         ReplaceProducer(
-            producers=[scalefactors.TauTauTriggerSF, embedding.TauTauTriggerFlagsAndEffDataEmbedding],
+            producers=[
+                scalefactors.tautau_trigger_sf(profile.shifts.ditau_trigger_per_decay_mode),
+                embedding.TauTauTriggerFlagsAndEffDataEmbedding,
+            ],
             samples="embedding",
         ),
     )
