@@ -17,6 +17,18 @@ lhe_scale_weight = Quantity("lhe_scale_weight")
 PSWeight_checked = Quantity("PSWeight_checked")
 ps_weight = Quantity("ps_weight")
 
+# Weights of the PDF eigenvectors (v8 spec C24): LHEPdfWeight with a checked
+# length and lhe_pdf_weight_<i> = LHEPdfWeight[i] for the members i = 1..100
+LHEPdfWeight_checked = Quantity("LHEPdfWeight_checked")
+LHE_PDF_MEMBERS = tuple(range(1, 101))
+for _member in LHE_PDF_MEMBERS:
+    setattr(this_module, f"lhe_pdf_weight_{_member}", Quantity(f"lhe_pdf_weight_{_member}"))
+
+
+def lhe_pdf_weight(member):
+    """The quantity lhe_pdf_weight_<member>."""
+    return getattr(this_module, f"lhe_pdf_weight_{member}")
+
 
 # Seed and random numbers for sample splitting
 event_hash_split = Quantity("event_hash_split")

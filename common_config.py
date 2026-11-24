@@ -318,6 +318,24 @@ def add_parton_shower_weight_config(configuration: Configuration):
     )
 
 
+def add_lhe_pdf_weight_config(configuration: Configuration):
+    """
+    The weights of the PDF eigenvectors as columns (v8 spec C24): the Hessian
+    sets of the signal samples have 101 entries (LHA 325500, madgraph) or 103
+    (LHA 325300, powheg, with two alpha_s members at the end); another length
+    stops the job (event.LHEPdfWeightChecked).
+
+    :param configuration: the main configuration object
+    :type configuration: Configuration
+    """
+    configuration.add_config_parameters(
+        GLOBAL_SCOPES,
+        {
+            "lhe_pdf_weight_sizes": "101, 103",
+        },
+    )
+
+
 
 
 def add_golden_json_config(configuration: Configuration):
@@ -2558,8 +2576,12 @@ def build_config(
     # simulated taus
     is_simulation = sample not in ("data", "embedding", "embedding_mc")
     parton_shower_weight = profile.shifts.parton_shower and is_simulation
+    lhe_pdf_weights = sample in profile.lhe_pdf_weight_samples
     if parton_shower_weight:
         add_parton_shower_weight_config(configuration)
+    if lhe_pdf_weights:
+        add_lhe_pdf_weight_config(configuration)
+
     # AK4 jet selection and energy/resolution corrections
     add_ak4jet_config(configuration, era, profile)
 
@@ -3096,6 +3118,7 @@ def build_config(
             # fatjets.FatJetEnergyCorrection,
         ]
         + ([event.PSWeightChecked, event.PartonShowerWeight] if parton_shower_weight else [])
+        + ([event.LHEPdfWeights] if lhe_pdf_weights else [])
     )
 
     # Producers common to all scopes with at least one hadronic tau
@@ -4113,6 +4136,9 @@ def build_config(
     # the signal (C24)
     if parton_shower_weight:
         configuration.add_outputs(SCOPES, [q.ps_weight])
+    if lhe_pdf_weights:
+        configuration.add_outputs(SCOPES, [q.lhe_pdf_weight(member) for member in q.LHE_PDF_MEMBERS])
+
     # add genWeight for everything but data
     if sample != "data":
         configuration.add_outputs(

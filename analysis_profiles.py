@@ -129,6 +129,10 @@ class AnalysisProfile:
     # jets with the AK4PFPuppi corrections, which JERC excludes for regressed
     # jets, and nothing reads the columns (v8 spec C36).
     regressed_jet_columns: bool = True
+    # The sample types with the weights of the 100 PDF eigenvectors as columns
+    # lhe_pdf_weight_<i> = LHEPdfWeight[i], i = 1..100, without a combination per
+    # event (v8 spec C24).
+    lhe_pdf_weight_samples: Tuple[str, ...] = ()
     # The systematic shifts beyond the common set.
     shifts: ShiftScheme = field(default_factory=ShiftScheme)
 
@@ -170,6 +174,7 @@ SM_PROFILE = AnalysisProfile(
     electron_sf_supercluster_eta=True,
     btag_sf_working_points=("T", "M"),
     regressed_jet_columns=False,
+    lhe_pdf_weight_samples=("hh2b2tau",),
     shifts=ShiftScheme(
         tau_id_vs_jet_syst_tes=True,
         tau_es_per_decay_mode=True,
@@ -189,9 +194,14 @@ SM_PROFILE = AnalysisProfile(
 )
 
 # The surfaces of the productions smrun2_btag_eff_v1 and smrun2_tau_id_v2, which
-# the profiles below keep: diboson without the QCD scale weight, and the columns
-# of the regressed jets.
+# the profiles below keep: diboson without the QCD scale weight, the columns of
+# the regressed jets, and none of the columns of the shift production (PDF
+# weights, NN stage B, high-pT vsJet SF).
 _V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES = ("data", "embedding", "embedding_mc", "diboson")
+_V7_COLUMNS = dict(
+    regressed_jet_columns=True,
+    lhe_pdf_weight_samples=(),
+)
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the
 # payload-independent probe-jet collection the efficiency is measured from.
@@ -205,7 +215,7 @@ SM_BTAG_EFFICIENCY_PROFILE = replace(
     # produced without shifts (smrun2_btag_eff_v1); the surface of that production stays
     shifts=ShiftScheme(),
     lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
-    regressed_jet_columns=True,
+    **_V7_COLUMNS,
 )
 
 # The SM selection in mt and mm with the corrections and MC shifts of the tau-ID
@@ -225,5 +235,5 @@ SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     tau_id_measurement=True,
     shifts=ShiftScheme(),
     lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
-    regressed_jet_columns=True,
+    **_V7_COLUMNS,
 )

@@ -125,3 +125,39 @@ def test_the_other_configurations_have_no_parton_shower_shifts(module, sample, e
         assert not [name for name in shifts_of(config, scope) if name.startswith("ps_")]
 
 
+# --- C24: PDF weights of the signal ---------------------------------------------
+
+PDF_COLUMNS = {f"lhe_pdf_weight_{member}" for member in range(1, 101)}
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_the_signal_writes_the_weights_of_the_pdf_eigenvectors(era):
+    """lhe_pdf_weight_<i> for the members 1 to 100 in every scope, read at index i from the
+    weights with a checked length (101 or 103 entries); no column for the central member 0
+    and the two alpha_s members, no combination per event and no shift."""
+    config = sm_config("hh2b2tau", era, shifts=("all",))
+    assert config.config_parameters["global"]["nominal"]["lhe_pdf_weight_sizes"] == "101, 103"
+    group = find_producer(config, "global", "LHEPdfWeights")
+    members = group.producers["global"]
+    assert [producer.name for producer in members] == ["LHEPdfWeightChecked"] + [
+        f"lhe_pdf_weight_{member}" for member in range(1, 101)
+    ]
+    for member, producer in enumerate(members[1:], start=1):
+        assert producer.call == f"event::quantity::Get<float>({{df}}, {{output}}, {{input}}, {member})"
+        assert [quantity.name for quantity in producer.input["global"]] == ["LHEPdfWeight_checked"]
+        assert [quantity.name for quantity in producer.output] == [f"lhe_pdf_weight_{member}"]
+    for scope in ALL_SCOPES:
+        columns = {name for name in output_names(config, scope) if name.startswith("lhe_pdf")}
+        assert columns == PDF_COLUMNS, scope
+        assert not any(q.lhe_pdf_weight(member).get_shifts(scope) for member in q.LHE_PDF_MEMBERS), scope
+
+
+@pytest.mark.parametrize("sample", ["ttbar", "dyjets", "diboson", "data", "embedding"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_no_other_sample_has_pdf_columns(era, sample):
+    config = sm_config(sample, era)
+    assert "LHEPdfWeights" not in producer_names(config, "global")
+    for scope in scopes_of(sample):
+        assert not [name for name in output_names(config, scope) if "pdf" in name.lower()], scope
+
+

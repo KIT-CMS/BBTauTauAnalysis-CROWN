@@ -160,6 +160,22 @@ def parton_shower_weight(module, sample, era, scope, calls, outputs):
     return calls, outputs
 
 
+def pdf_weights_of_the_signal(module, sample, era, scope, calls, outputs):
+    """v8 spec C24: the signal of sm_config writes the weights of the 100 PDF eigenvectors,
+    lhe_pdf_weight_<i> = LHEPdfWeight[i]; no other sample has a PDF column."""
+    if module == "sm_config" and sample == "hh2b2tau":
+        if scope == "global":
+            calls = calls + [
+                'xyh::theory_weights::CheckedSize(df, "LHEPdfWeight_checked", "LHEPdfWeight", {101, 103})'
+            ] + [
+                f'event::quantity::Get<float>(df, "lhe_pdf_weight_{member}", "LHEPdfWeight_checked", {member})'
+                for member in range(1, 101)
+            ]
+        else:
+            outputs = outputs + [f"lhe_pdf_weight_{member}" for member in range(1, 101)]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
@@ -171,6 +187,7 @@ EXPECTED_CHANGES = [
     embedded_electron_pt_through_the_scope_level_scale,
     ditau_trigger_sf_from_the_addon,
     parton_shower_weight,
+    pdf_weights_of_the_signal,
 ]
 # the changes that only add calls and columns: every frozen call and column is still there
 ADDITIONS = EXPECTED_CHANGES[5:]

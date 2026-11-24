@@ -361,6 +361,37 @@ PartonShowerWeight = Producer(
     scopes=["global"],
 )
 
+# Weights of the PDF eigenvectors (v8 spec C24): lhe_pdf_weight_<i> =
+# LHEPdfWeight[i] for the members i = 1..100 of a Hessian set with 101 entries
+# or 103 (two alpha_s members at the end, which get no column). Entry 0 is the
+# central member. No combination per event: the square sum is formed per bin
+# downstream.
+LHEPdfWeightChecked = Producer(
+    name="LHEPdfWeightChecked",
+    call="xyh::theory_weights::CheckedSize({df}, {output}, {input}, {vec_open}{lhe_pdf_weight_sizes}{vec_close})",
+    input=[nanoAOD.LHEPdfWeight],
+    output=[q.LHEPdfWeight_checked],
+    scopes=["global"],
+)
+LHEPdfWeights = ProducerGroup(
+    name="LHEPdfWeights",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["global"],
+    subproducers=[LHEPdfWeightChecked]
+    + [
+        Producer(
+            name=f"lhe_pdf_weight_{member}",
+            call=f"event::quantity::Get<float>({{df}}, {{output}}, {{input}}, {member})",
+            input=[q.LHEPdfWeight_checked],
+            output=[q.lhe_pdf_weight(member)],
+            scopes=["global"],
+        )
+        for member in q.LHE_PDF_MEMBERS
+    ],
+)
+
 LHEDrellYanDecayFlavor = Producer(
     name="LHEDrellYanDecayFlavor",
     call="genparticles::drell_yan::DecayFlavor({df}, {output}, {input})",

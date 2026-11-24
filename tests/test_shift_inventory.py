@@ -252,6 +252,10 @@ PAIRS = {
     "data": {scope: 0 for scope in ALL_SCOPES},
 }
 
+# Columns that are the same under every shift: generator-level weights and labels of the
+# event (v8 spec C24, C27)
+NEVER_SHIFTED = re.compile(r"lhe_pdf_weight_\d+|genTtbarId|genWeight")
+
 
 def scopes_of(sample):
     return TAU_SCOPES if sample == "embedding" else ALL_SCOPES
@@ -329,6 +333,7 @@ def test_shifted_columns(era, sample):
             for shift in both_directions(families.get(family.name, ())):
                 shifted = columns[shift]
                 assert shifted <= nominal, (scope, shift)
+                assert not [c for c in shifted if NEVER_SHIFTED.fullmatch(c)], (scope, shift)
                 if family.weights:
                     unexpected = {c for c in shifted if not re.fullmatch(family.weights, c)}
                     assert not unexpected, (scope, shift, sorted(unexpected))
