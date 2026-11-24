@@ -20,6 +20,7 @@ from analysis_configurations.bbtautau.analysis_profiles import (
     ShiftScheme,
 )
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
+from analysis_configurations.bbtautau.variations import electrons as electron_variations
 from analysis_configurations.bbtautau.variations.muons import MUON_ES_REGIONS
 from analysis_configurations.bbtautau.tests.helpers import (
     build,
@@ -429,3 +430,127 @@ def test_no_muon_energy_scale_elsewhere(module, sample, era, scopes):
         assert not [name for name in config.shifts.get(scope, {}) if "CMS_scale_m_eta" in name]
         assert "muon_es_scale_factors" not in config.config_parameters[scope]["nominal"]
 
+
+# --- C32: electron energy scale of the et embedding ---------------------------
+
+# nom, up, down of data/embedding/eleES_<era>UL.json.gz per region (v8 W0, 5.2)
+ELE_ES_PAYLOAD = {
+    "2016preVFP": {"barrel": (0.9957, 1.0007, 0.9907), "endcap": (0.9945, 1.007, 0.982)},
+    "2016postVFP": {"barrel": (0.9953, 1.0003, 0.9903), "endcap": (0.993, 1.0055, 0.9805)},
+    "2017": {"barrel": (1.0, 1.0, 1.0), "endcap": (1.0, 1.0, 1.0)},
+    "2018": {"barrel": (0.9958, 1.0008, 0.9908), "endcap": (0.9921, 1.0046, 0.9796)},
+}
+
+
+def ele_es_payload(era):
+    path = CROWN / electron_variations.EMBEDDING_ELECTRON_ES_PAYLOADS[era]
+    (correction,) = json.load(gzip.open(path))["corrections"]
+    assert correction["name"] == electron_variations.EMBEDDING_ELECTRON_ES_CORRECTION
+    return {
+        region["key"]: tuple(
+            {entry["key"]: entry["value"] for entry in region["value"]["content"]}[key]
+            for key in ("nom", "up", "down")
+        )
+        for region in correction["data"]["content"]
+    }
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_embedding_electron_energy_scale_factors(era):
+    """The size of the shift is the relative width of the payload, up / nom and down / nom:
+    +-0.5 % in the barrel and +-1.26 % in the endcap in 2016 and 2018."""
+    assert ele_es_payload(era) == ELE_ES_PAYLOAD[era]
+    factors = electron_variations.embedding_electron_es_factors(era)
+    assert set(factors) == {"barrel", "endcap"}
+    if era == "2017":
+        return
+    for region, (nominal, up, down) in ELE_ES_PAYLOAD[era].items():
+        assert factors[region] == {"up": up / nominal, "down": down / nominal}
+    assert factors["barrel"]["up"] == pytest.approx(1.005, abs=5e-5)
+    assert factors["barrel"]["down"] == pytest.approx(0.995, abs=5e-5)
+    assert factors["endcap"]["up"] == pytest.approx(1.0126, abs=5e-5)
+    assert factors["endcap"]["down"] == pytest.approx(0.9874, abs=5e-5)
+
+
+def test_embedding_electron_energy_scale_of_2017_is_the_fixed_width():
+    """V34: the 2017 payload has nom = up = down = 1.0, a shift from it would do nothing. 2017
+    takes +-0.5 % (barrel) and +-1.25 % (endcap), the widths of the other eras, as fixed
+    values of the configuration; no other era has a fixed width."""
+    assert electron_variations.EMBEDDING_ELECTRON_ES_FIXED_WIDTHS == {
+        "2017": {"barrel": 0.005, "endcap": 0.0125}
+    }
+    assert ele_es_payload("2017") == {"barrel": (1.0, 1.0, 1.0), "endcap": (1.0, 1.0, 1.0)}
+    assert electron_variations.embedding_electron_es_factors("2017") == {
+        "barrel": {"up": 1.005, "down": 0.995},
+        "endcap": {"up": 1.0125, "down": 0.9875},
+    }
+
+
+def test_embedding_electron_energy_scale_refuses_a_payload_that_contradicts_it(monkeypatch):
+    """A payload with an uncertainty where the fixed width applies, or without one elsewhere,
+    stops the configuration instead of shifting by the wrong amount."""
+    monkeypatch.setitem(
+        electron_variations.EMBEDDING_ELECTRON_ES_FIXED_WIDTHS, "2018", {"barrel": 0.005}
+    )
+    with pytest.raises(ValueError, match="fixed"):
+        electron_variations.embedding_electron_es_factors("2018")
+    monkeypatch.setattr(electron_variations, "EMBEDDING_ELECTRON_ES_FIXED_WIDTHS", {})
+    with pytest.raises(ValueError, match="no uncertainty"):
+        electron_variations.embedding_electron_es_factors("2017")
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_embedding_electron_energy_scale_shifts_in_et(era):
+    """Two pairs, barrel and endcap, in the et embedding only; the nominal factors are 1."""
+    config = build("sm_config", "embedding", era=era, scopes=TAU_SCOPES, shifts=("CMS_scale_e_",))
+    factors = electron_variations.embedding_electron_es_factors(era)
+    for scope in TAU_SCOPES:
+        shifts = shifts_of(config, scope)
+        if scope != "et":
+            assert not shifts
+            assert "electron_es_scale_factors" not in config.config_parameters[scope]["nominal"]
+            continue
+        assert pairs(shifts) == {f"CMS_scale_e_{region}_emb_{era}" for region in ("barrel", "endcap")}
+        nominal = config.config_parameters["et"]["nominal"]
+        assert numbers(nominal["electron_es_abs_eta_edges"]) == [0.0, 1.479]
+        assert numbers(nominal["electron_es_scale_factors"]) == [1.0, 1.0]
+        for index, region in enumerate(("barrel", "endcap")):
+            for direction in ("up", "down"):
+                change = shifts[f"CMS_scale_e_{region}_emb_{era}{direction.capitalize()}"]
+                assert set(change) == {"electron_es_scale_factors"}
+                expected = [1.0, 1.0]
+                expected[index] = factors[region][direction]
+                assert numbers(change["electron_es_scale_factors"]) == expected
+                assert expected[index] != 1.0
+
+
+def test_embedding_electron_energy_scale_reaches_the_selection_the_pair_and_the_met():
+    config = build("sm_config", "embedding", era="2018", scopes=("et",))
+    scale = find_producer(config, "et", "ElectronPtScale")
+    assert input_names(scale, "et") == ["Electron_pt_corrected", "Electron_eta"]
+    readers = {
+        producer.name: input_names(producer, "et") for producer in all_producers(config, "et")
+    }
+    assert {name for name, inputs in readers.items() if "Electron_pt_scaled" in inputs} == {
+        "GoodElectrons", "ETPairSelection", "LVEl1",
+    }
+    assert {name for name, inputs in readers.items() if "Electron_pt_corrected" in inputs} == {
+        "ElectronPtScale", "LVEl1Uncorrected",
+    }
+    # the nominal correction of the embedded electrons stays the MC one
+    assert find_producer(config, "global", "ElectronPtCorrectionMC")
+
+
+@pytest.mark.parametrize(
+    "module,sample,era,scopes",
+    [
+        ("sm_config", "ttbar", "2018", ("et", "em", "ee")),
+        ("sm_config", "data", "2018", ("et",)),
+        ("sm_tau_id_measurement_config", "embedding", "2018", ("mt", "mm")),
+    ],
+)
+def test_no_scope_level_electron_energy_scale_elsewhere(module, sample, era, scopes):
+    config = build(module, sample, era=era, scopes=scopes, shifts=("CMS_scale_e_",))
+    for scope in scopes:
+        assert "ElectronPtScale" not in {p.name for p in all_producers(config, scope)}
+        assert not [name for name in config.shifts.get(scope, {}) if "_emb_" in name]

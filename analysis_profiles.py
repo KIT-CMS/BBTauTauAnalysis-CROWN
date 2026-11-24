@@ -30,6 +30,11 @@ class ShiftScheme:
     # scopes read the muon pT through a producer of their own
     # (producers/lepton_energy_scale.py), whose nominal passes it on (C37).
     muon_es_regions: Mapping[str, Tuple[str, ...]] = field(default_factory=dict)
+    # The electron energy scale of the tau embedding in et, barrel and endcap
+    # (variations.electrons.add_embedding_electron_es_shifts); the embedded
+    # events of et then read the electron pT through a producer of the scope,
+    # whose nominal passes it on (C32).
+    embedding_electron_es: bool = False
 
 
 @dataclass(frozen=True)
@@ -163,6 +168,7 @@ SM_PROFILE = AnalysisProfile(
             "mt": ("etalt1p2", "eta1p2to2p1"),
             "em": ("etalt1p2", "eta1p2to2p1", "eta2p1to2p4"),
         },
+        embedding_electron_es=True,
     ),
 )
 

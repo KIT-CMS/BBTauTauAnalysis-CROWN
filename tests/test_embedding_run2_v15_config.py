@@ -356,15 +356,20 @@ def test_tt_embedding_trigger_payload_is_the_one_its_readme_records(era):
 
 
 # The shifts of the light lepton of the scope: the muon energy scale in mt (v8 spec C37)
-LEPTON_ES_PARAMETER = {"mt": "muon_es_scale_factors"}
-LEPTON_ES_READER = {"mt": "MuonPtScale"}
+# and the electron energy scale in et, barrel and endcap (C32)
+LEPTON_ES_PARAMETER = {"mt": "muon_es_scale_factors", "et": "electron_es_scale_factors"}
+LEPTON_ES_READER = {"mt": "MuonPtScale", "et": "ElectronPtScale"}
 LEPTON_ES_SHIFTS = {
     "mt": {
         f"CMS_scale_m_{region}_2018{direction}"
         for region in ("etalt1p2", "eta1p2to2p1")
         for direction in ("Up", "Down")
     },
-    "et": set(),
+    "et": {
+        f"CMS_scale_e_{region}_emb_2018{direction}"
+        for region in ("barrel", "endcap")
+        for direction in ("Up", "Down")
+    },
     "tt": set(),
 }
 

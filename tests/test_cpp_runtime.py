@@ -393,6 +393,16 @@ def test_muon_energy_scale_scales_the_muons_of_a_region(energy_scale_binary, sco
     subprocess.run([str(energy_scale_binary), *arguments], check=True)
 
 
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_embedding_electron_energy_scale_scales_the_electrons_of_a_region(energy_scale_binary, era):
+    """The scope-level electron pT scale of the et embedding (v8 spec C32) with the edges and
+    factors of the configuration: nominal bit for bit, barrel and endcap shifted alone."""
+    config = build("sm_config", "embedding", era=era, scopes=("et",), shifts=("CMS_scale_e_",))
+    arguments, shifts = scale_pt_arguments(config, "et", "electron")
+    assert shifts == 4
+    subprocess.run([str(energy_scale_binary), *arguments], check=True)
+
+
 def test_matched_trigger_object_quantity(tmp_path):
     """trigger::MatchedObjectQuantity (trgobj_*_2 of the tau-ID measurement): the
     nearest trigger object in Delta R with the ID and all filter bits wins, -1

@@ -89,6 +89,30 @@ def muon_pt_through_the_scope_level_scale(module, sample, era, scope, calls, out
     return calls, outputs
 
 
+ELECTRON_PT_SCALE = (
+    'xyh::energy_scale::ScalePt( df, "Electron_pt_scaled", "Electron_pt_corrected", '
+    '"Electron_eta", {0.0, 1.479}, {1.0, 1.0} )'
+)
+
+
+def embedded_electron_pt_through_the_scope_level_scale(module, sample, era, scope, calls, outputs):
+    """v8 spec C32: in et of the sm_config embedding the electron pT is read through
+    ElectronPtScale, whose nominal factors of 1 pass the corrected pT on unchanged. The
+    selection, the pair selection and the four-vector of the electron read the scaled pT, the
+    uncorrected four-vector of the MET propagation the unscaled one."""
+    if module == "sm_config" and sample == "embedding" and scope == "et":
+        readers = [call for call in calls if '"Electron_pt_corrected"' in call]
+        assert len(readers) == 4, readers
+        calls = [
+            call
+            if '"p4_1_uncorrected"' in call
+            else call.replace('"Electron_pt_corrected"', '"Electron_pt_scaled"')
+            for call in calls
+        ]
+        calls = calls + [ELECTRON_PT_SCALE]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
@@ -97,6 +121,7 @@ EXPECTED_CHANGES = [
     diboson_gets_the_qcd_scale_weight,
     no_regressed_jets,
     muon_pt_through_the_scope_level_scale,
+    embedded_electron_pt_through_the_scope_level_scale,
 ]
 
 # The columns sm_config writes that the v7b n-tuples lack: the MET before the lepton and the

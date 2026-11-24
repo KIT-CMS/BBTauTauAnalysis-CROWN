@@ -11,7 +11,8 @@ adds what differs from both, per concern:
 - the tt trigger: no trigger requirement, the data efficiency of the di-tau leg of
   each tau as weight (v7 spec E33); the flags matched to the embedding filter bits
   stay as diagnostics;
-- the tau energy scale and vsJet SF from the embedding tau payload, with shifts.
+- the tau energy scale and vsJet SF from the embedding tau payload, with shifts;
+- the energy scale shifts of the embedded electrons in et (v8 spec C32).
 
 The inputs of an era are the entries of KIT_EMBEDDING_PAYLOADS,
 TAU_EMBEDDING_ID_ES_PAYLOADS and TT_EMBEDDING_TRIGGER_EFFICIENCIES; nothing else
@@ -42,9 +43,20 @@ from .constants import (
     TT_SCOPES,
 )
 from .helpers import cpp_list
-from .producers import embedding, genparticles, scalefactors, taus, triggers
+from .producers import (
+    embedding,
+    genparticles,
+    lepton_energy_scale,
+    scalefactors,
+    taus,
+    triggers,
+)
 from .quantities import output as q
 from .tau_triggersetup import KIT_SINGLE_ELECTRON_TRIGGER_SFS, KIT_SINGLE_MUON_TRIGGER_SFS
+from .variations.electrons import (
+    add_embedding_electron_es_shifts,
+    embedding_electron_es_config,
+)
 from .variations.taus import (
     add_embedding_tau_es_shifts,
     add_embedding_tau_id_vs_jet_shifts,
@@ -170,6 +182,8 @@ def setup(configuration: Configuration, profile, era: str, scopes: list[str]):
     _add_generator_pair(configuration)
     _add_muon_scalefactors(configuration, payloads)
     _add_electron_scalefactors(configuration, payloads, profile)
+    if profile.shifts.embedding_electron_es:
+        _add_electron_energy_scale(configuration, era)
     _add_tautau_trigger(configuration, TT_EMBEDDING_TRIGGER_EFFICIENCIES[era])
     if profile.embedding_tau_corrections:
         _add_tau_corrections(configuration, era, tau_payload)
@@ -330,6 +344,33 @@ def _add_electron_scalefactors(
         ),
     )
     configuration.add_outputs(ET_SCOPES, [q.iso_wgt_ele_1])
+
+
+def _add_electron_energy_scale(configuration: Configuration, era: str):
+    # v8 spec C32: the embedded electrons keep the MC correction of the electron pT
+    # (no nominal embedding correction). Their energy scale uncertainty, barrel and
+    # endcap, is that of the Tau Embedding group payload; it belongs to et alone,
+    # so the selection, the pair selection and the four-vector of the electron
+    # read the pT through the scope-level scale, whose nominal factors of 1 pass it
+    # on unchanged. LVEl1Uncorrected keeps the unscaled pT: the shift reaches the
+    # MET like the tau energy scale of the embedding.
+    configuration.add_config_parameters(ET_SCOPES, embedding_electron_es_config())
+    configuration.add_modification_rule(
+        ET_SCOPES,
+        AppendProducer(
+            producers=[lepton_energy_scale.ElectronPtScale],
+            samples="embedding",
+            update_output=False,
+        ),
+    )
+    for producer, scaled in lepton_energy_scale.ELECTRON_ES_PRODUCERS.items():
+        configuration.add_modification_rule(
+            ET_SCOPES,
+            ReplaceProducer(producers=[producer, scaled], samples="embedding"),
+        )
+    add_embedding_electron_es_shifts(
+        configuration, era, lepton_energy_scale.ElectronPtScale, tuple(ET_SCOPES)
+    )
 
 
 def _add_tautau_trigger(configuration: Configuration, efficiency: TtEmbeddingTriggerEfficiency):
