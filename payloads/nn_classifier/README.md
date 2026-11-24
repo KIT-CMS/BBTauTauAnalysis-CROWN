@@ -49,5 +49,25 @@ friend tarball once per tag and production).
 
 The model README (written by `bbtautau-nn install`) records: the date, the training commit, every export with the
 sha256 of its manifest, the run configuration, the ML export (directories, profile, sha256 of `classes.json`,
-ShapeSmith commits), the inputs and constants, the sha256 of every file and the closure torch vs onnxruntime. No model
-is installed yet: none is trained on v7b (nn spec 10, AP3/AP8).
+ShapeSmith commits), the inputs and constants, the sha256 of every file and the closure torch vs onnxruntime.
+
+## Installed models
+
+The models of the shift production (v8 spec C28, V15, 5.3), `sm_nn_classifier.MODELS`; both are trained on the v7b
+n-tuples and evaluated for every Run-2 era in et, mt and tt:
+
+| Model | Directory | Column prefix | Member | Files |
+|---|---|---|---|---|
+| M3, the deployed model: one network for all eras and channels | `m3_abnv1_20261113/` | `nn_m3abnv1_` | repetition 4 (the median proxy limit) | `onnx/joint/model_k4_r{0..3}.onnx`, 7.6 MB each |
+| AB_NV1, the baseline: one network per channel | `m0_k4_v7b5_wp_abnv1/` | `nn_m0k4abnv1_` | repetition 0 | `onnx/{et,mt,tt}/model_k4_r{0..3}.onnx`, 31 kB each |
+
+The directories are byte-for-byte copies of the ones `bbtautau-nn install` wrote,
+`/ceph/sdaigler/nn/ladder/S2_M3_20261113/payload/nn_classifier/m3_abnv1_20261113` and
+`/ceph/sdaigler/nn/ladder/AB_NV1/payload/nn_classifier/m0_k4_v7b5_wp_abnv1` (installed 2026-11-18 and 2026-11-09; the
+README of each has the exports, the training commits and the sha256 of every file). The prefixes are those the
+ShapeSmith runs of the NN chain read. Both models take `m/pt/eta/phi_fastmtt`, so the friend needs the FastMTT friend
+(`sm_nn_classifier: {requires: [sm_fastmtt]}`).
+
+The payloads are committed, like the ONNX files of `payloads/xyh_classifier/` and `payloads/ml/`. KingMaker packs
+into the job tarball of a friend build only the `payloads/` paths its configuration modules name, here the two
+directories of `MODELS`; the main n-tuple build does not ship them.

@@ -1,0 +1,104 @@
+{
+ "model": "m3_abnv1_20261113",
+ "channel": "mt",
+ "era": "2016postVFP",
+ "folds": 4,
+ "files": {
+  "0": {
+   "file": "../../onnx/joint/model_k4_r0.onnx",
+   "sha256": "edeacc90c3071e0368f14fdab9f7b6fbfb0dc200137ce8fabc6dd591a3c40171"
+  },
+  "1": {
+   "file": "../../onnx/joint/model_k4_r1.onnx",
+   "sha256": "7aadd3e334a572d259d4caafaea3fb0af2033de82f9f6da0efcbd2a5130600eb"
+  },
+  "2": {
+   "file": "../../onnx/joint/model_k4_r2.onnx",
+   "sha256": "10d714201fa625299a34818597e55939614aeaa9fe0eaba4732187e9b2ea8d3c"
+  },
+  "3": {
+   "file": "../../onnx/joint/model_k4_r3.onnx",
+   "sha256": "d0e688ba0d647f444ed642363725864d5683750a034bfa6bdb6f2f768ba68428"
+  }
+ },
+ "inputs": [
+  "pt_1",
+  "eta_1",
+  "phi_1",
+  "mass_1",
+  "tau_decaymode_1",
+  "pt_2",
+  "eta_2",
+  "phi_2",
+  "tau_decaymode_2",
+  "bpair_pt_1",
+  "bpair_eta_1",
+  "bpair_phi_1",
+  "bpair_mass_1",
+  "bpair_btag_value_1",
+  "bpair_pt_2",
+  "bpair_eta_2",
+  "bpair_phi_2",
+  "bpair_mass_2",
+  "bpair_btag_value_2",
+  "jpt_1",
+  "jeta_1",
+  "jphi_1",
+  "jtag_value_1",
+  "jpt_2",
+  "jeta_2",
+  "jphi_2",
+  "jtag_value_2",
+  "met",
+  "metphi",
+  "pt_fastmtt",
+  "eta_fastmtt",
+  "phi_fastmtt",
+  "m_fastmtt",
+  "bpair_deltaR",
+  "bpair_m_inv",
+  "bpair_pt_dijet",
+  "deltaR_ditaupair",
+  "mjj",
+  "n_bjets",
+  "m_vis",
+  "mt_tot",
+  "pt_dijet",
+  "pt_vis",
+  "mt_1",
+  "mt_2",
+  "pzetamissvis",
+  "mass_tautaubb",
+  "era_index",
+  "channel_index"
+ ],
+ "classes": [
+  "HH2B2Tau",
+  "tautau",
+  "Top",
+  "jetFakes",
+  "Other"
+ ],
+ "output": "probabilities",
+ "binary_head": false,
+ "constants": {
+  "era_index": 1,
+  "channel_index": 1,
+  "tau_decaymode_1": -1.0
+ },
+ "provenance": {
+  "export": "/ceph/sdaigler/nn/ladder/S2_M3_20261113/export/rep04",
+  "export_manifest_sha256": "114065f5fd95d6b620ee1fe89f05231377536520875da60c3d9a8e22dc7f8b85",
+  "run": "m3_abnv1_20261113",
+  "repetition": 4,
+  "training": {
+   "commit": "3c999bbfde23e02b8cfd93bb9920bca2f402807b",
+   "dirty": false
+  },
+  "installed": "2026-11-18 04:54:28 UTC",
+  "installed_by": {
+   "commit": "22326e2618959ab0e72c8c9ead6781602c4af3fb",
+   "dirty": false
+  }
+ }
+}

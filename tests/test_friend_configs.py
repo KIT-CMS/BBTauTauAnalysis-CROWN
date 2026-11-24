@@ -590,7 +590,6 @@ def test_nn_classifier_friend_reads_fastmtt_from_its_friend(nn_models, tmp_path)
 
 
 def test_nn_classifier_friend_without_models_fails(tmp_path):
-    assert sm_nn_classifier.MODELS == ()  # none is trained on v7b yet
     with pytest.raises(ValueError, match="no model"):
         build_nn_friend((), "2018", "mt", nn_classifier_maps("2018", tmp_path))
 

@@ -1,0 +1,80 @@
+{
+ "model": "m0_k4_v7b5_wp_abnv1",
+ "channel": "et",
+ "era": "2016postVFP",
+ "folds": 4,
+ "files": {
+  "0": {
+   "file": "../../onnx/et/model_k4_r0.onnx",
+   "sha256": "b1e43bfb0125ed9a4c7848bc9d9395ddcb384ec001ef35d56b7dec8718639650"
+  },
+  "1": {
+   "file": "../../onnx/et/model_k4_r1.onnx",
+   "sha256": "c420208aaf9087e030eec1b9c3b8dada3c0e0f377960dda33c12982f7f125d28"
+  },
+  "2": {
+   "file": "../../onnx/et/model_k4_r2.onnx",
+   "sha256": "036b31cbb1d60cbff99198a1aaa12859835b0702f51bfcdc8cb01be9d4e3eab8"
+  },
+  "3": {
+   "file": "../../onnx/et/model_k4_r3.onnx",
+   "sha256": "23630c3e302ca06de60295d54bc71086490d12f9fccec4716062cf5bf8795785"
+  }
+ },
+ "inputs": [
+  "bpair_btag_value_1",
+  "bpair_btag_value_2",
+  "bpair_deltaR",
+  "bpair_m_inv",
+  "bpair_pt_1",
+  "bpair_pt_dijet",
+  "deltaR_ditaupair",
+  "jpt_1",
+  "m_fastmtt",
+  "mjj",
+  "n_bjets",
+  "pt_fastmtt",
+  "m_vis",
+  "mt_tot",
+  "jpt_2",
+  "pt_1",
+  "pt_dijet",
+  "pt_vis",
+  "eta_1",
+  "phi_1",
+  "mass_1",
+  "pt_2",
+  "eta_2",
+  "phi_2",
+  "met",
+  "metphi",
+  "era_index"
+ ],
+ "classes": [
+  "HH2B2Tau",
+  "tautau",
+  "Top",
+  "jetFakes",
+  "Other"
+ ],
+ "output": "probabilities",
+ "binary_head": false,
+ "constants": {
+  "era_index": 1
+ },
+ "provenance": {
+  "export": "/ceph/sdaigler/nn/ladder/AB_NV1/export/et/rep00",
+  "export_manifest_sha256": "4ab6fae582af8771c8705c5475604a86d835684b34a5fedb84d1f25ea6493ea7",
+  "run": "m0_k4_v7b5_wp_abnv1",
+  "repetition": 0,
+  "training": {
+   "commit": "90cdd5cb99a38f2ef5ff509dd630ee420d50a504",
+   "dirty": true
+  },
+  "installed": "2026-11-09 22:10:59 UTC",
+  "installed_by": {
+   "commit": "0c8a5752e96d4828233946b790e892a6fba5de40",
+   "dirty": true
+  }
+ }
+}

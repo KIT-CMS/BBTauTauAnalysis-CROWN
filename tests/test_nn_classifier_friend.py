@@ -269,10 +269,46 @@ def test_shared_files_inside_the_model_directory(tmp_path):
         nn_payloads.read_payload(str(tmp_path), relative, "2017", "mt")
 
 
+# The models of the shift production (v8 spec C28, V15, 5.3): payload directory, column prefix (the one the
+# ShapeSmith runs read), model name, deployed repetition, folders of its ONNX files and number of inputs
+PRODUCTION_MODELS = [
+    ("payloads/nn_classifier/m3_abnv1_20261113", "nn_m3abnv1_", "m3_abnv1_20261113", 4, {"joint"}, 49),
+    ("payloads/nn_classifier/m0_k4_v7b5_wp_abnv1", "nn_m0k4abnv1_", "m0_k4_v7b5_wp_abnv1", 0, {"et", "mt", "tt"}, 27),
+]
+
+
 def test_payload_readme_exists():
-    """payloads/nn_classifier holds the layout description; no model is installed before one is trained on v7b."""
+    """payloads/nn_classifier holds the layout description and the README of every installed model."""
     assert (ANALYSIS / "payloads/nn_classifier/README.md").is_file()
-    assert sm_nn_classifier.MODELS == ()
+    for model in sm_nn_classifier.MODELS:
+        assert (ANALYSIS / model.payload / "README.md").is_file(), model.payload
+
+
+def test_models_of_the_shift_production():
+    """MODELS holds M3 and the baseline AB_NV1 with the prefixes of the ShapeSmith runs; every manifest of the
+    four Run-2 eras and three tau scopes passes the checks of the configuration (files present with their
+    sha256, shapes, no raw vsJet input), names the deployed repetition and the v7b classes, and reads only columns
+    of the n-tuple, the FastMTT friend or its constants."""
+    assert list(sm_nn_classifier.MODELS) == [NNModel(payload, prefix) for payload, prefix, *_ in PRODUCTION_MODELS]
+    fastmtt = {"m_fastmtt", "pt_fastmtt", "eta_fastmtt", "phi_fastmtt"}
+    for payload, prefix, name, repetition, sources, n_inputs in PRODUCTION_MODELS:
+        files = set()
+        for era in ERAS_RUN2:
+            ntuple = json.loads((ANALYSIS / f"tests/fixtures/nn_classifier_{era}_quantities_map.json").read_text())
+            for scope in TAU_SCOPES:
+                checked = nn_payloads.read_payload(str(ANALYSIS), payload, era, scope)
+                manifest = json.loads((ANALYSIS / payload / era / scope / "manifest.json").read_text())
+                assert (checked.model, manifest["provenance"]["repetition"]) == (name, repetition), (payload, era, scope)
+                assert checked.classes == ("HH2B2Tau", "tautau", "Top", "jetFakes", "Other")
+                assert (checked.folds, checked.n_outputs, checked.softmax) == (4, 5, False)
+                assert len(checked.inputs) == n_inputs and fastmtt & set(checked.inputs) >= {"m_fastmtt", "pt_fastmtt"}
+                # every input read from a column exists in the v7b n-tuple of the era or in the FastMTT friend
+                columns = set(ntuple["quantities"][era]["ttbar"][scope][""]) | fastmtt
+                assert set(checked.columns) <= columns, sorted(set(checked.columns) - columns)
+                assert dict(checked.constants)["era_index"] == ERAS_RUN2.index(era)
+                files |= set(checked.files)
+        # the eras share the files of a source: four residues each
+        assert {Path(file).parent.name for file in files} == sources and len(files) == 4 * len(sources), payload
 
 
 # --- gate ---------------------------------------------------------------------------
