@@ -12,6 +12,12 @@ puweight = Quantity("puweight")
 prefireweight = Quantity("prefiring_wgt")
 lhe_scale_weight = Quantity("lhe_scale_weight")
 
+# Parton shower weight (v8 spec C23): PSWeight with a checked length, and the
+# weight of the ISR and FSR scale variation of a shift (1 in the nominal)
+PSWeight_checked = Quantity("PSWeight_checked")
+ps_weight = Quantity("ps_weight")
+
+
 # Seed and random numbers for sample splitting
 event_hash_split = Quantity("event_hash_split")
 wgt_sample_split = Quantity("wgt_sample_split")

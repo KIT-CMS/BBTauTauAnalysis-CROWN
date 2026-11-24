@@ -52,13 +52,19 @@ def add_parton_shower_shifts(
     producers: list[Producer | ProducerGroup],
 ):
     """
-    Add shifts of ISR/FSR tunes for Pythia.
+    Add shifts of the scale of the initial and of the final state radiation of
+    the parton shower, ps_isr and ps_fsr (v8 spec C23).
+
+    The value is the factor of the renormalization scale of the shower: Up is
+    the scale times 2, which lowers alpha_s and gives less radiation, Down the
+    scale times 0.5 with more radiation. `producers` evaluates
+    `event::reweighting::PartonShower` with the keys below.
     """
 
     # Exclude data, as well as embedding samples
     exclude_samples = ["data", "embedding", "embedding_mc"]
 
-    # List of shifts for the renormalization and factorization scales
+    # List of shifts for the scales of the parton shower
     shifts = [
         KeyValueShift(
             name="ps_isr",

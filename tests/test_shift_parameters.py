@@ -141,6 +141,9 @@ def test_tau_energy_scale_shifts_recompute_every_column_behind_the_pair(
 
 # the values that select the nominal correction, per payload convention
 NOMINAL_VARIATIONS = {"nom", "nominal", "sf", "central", False}
+# variations that are a scale factor of a scale, nominal at 1 (the ISR and FSR scale of the
+# parton shower, v8 spec C23)
+NOMINAL_SCALES = {"ps_isr_variation": 1.0, "ps_fsr_variation": 1.0}
 
 
 def _variation_parameters(parameters):
@@ -170,7 +173,7 @@ def test_nominal_parameters_select_the_nominal_corrections(module, sample, era, 
         (scope, key, value)
         for scope, parameters in config.config_parameters.items()
         for key, value in _variation_parameters(parameters["nominal"])
-        if value not in NOMINAL_VARIATIONS
+        if (value != NOMINAL_SCALES[key] if key in NOMINAL_SCALES else value not in NOMINAL_VARIATIONS)
     ]
     assert not shifted_nominal, shifted_nominal
 

@@ -431,6 +431,29 @@ def test_tau_trigger_sf_per_decay_mode(tau_trigger_sf_binary, era):
     )
 
 
+def test_parton_shower_weight_indices_and_checked_weight_length(tmp_path):
+    """The parton shower weight (v8 spec C23): the core function reads PSWeight[0, 1, 2, 3]
+    for the ISR and FSR scale times 2 and times 0.5, the order of the Run-2 v15 files, and
+    xyh::theory_weights::CheckedSize in front of it stops on every other length, in the
+    nominal as under a variation (and on PDF weight vectors that are not 101 or 103 long)."""
+    root_config = shutil.which("root-config")
+    if not root_config:
+        pytest.skip("ROOT and a C++ compiler are required")
+    binary = compile_fixture(
+        tmp_path,
+        "theory_weights",
+        [
+            CPP / "test_theory_weights.cxx",
+            ADDONS / "src/theory_weights.cxx",
+            CROWN / "src/reweighting.cxx",
+            CORRECTION_MANAGER,
+        ],
+        correctionlib=True,
+        libraries=["-lRooFit", "-lRooFitCore", "-lROOTDataFrame", "-lROOTVecOps"],
+    )
+    subprocess.run([str(binary)], check=True)
+
+
 def test_matched_trigger_object_quantity(tmp_path):
     """trigger::MatchedObjectQuantity (trgobj_*_2 of the tau-ID measurement): the
     nearest trigger object in Delta R with the ID and all filter bits wins, -1

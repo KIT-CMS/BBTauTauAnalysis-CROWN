@@ -132,6 +132,34 @@ def ditau_trigger_sf_from_the_addon(module, sample, era, scope, calls, outputs):
     return calls, outputs
 
 
+# --- The columns of the shift production (v8 spec C23-C27, C40): calls and columns that are
+# added, in sm_config only. No frozen call changes, so every column that was there keeps
+# its value.
+
+TAU_SCOPES = ("et", "mt", "tt")
+JET_SLOTS = range(1, 9)
+# the legs of a scope that are hadronic taus
+TAU_LEGS = {"et": (2,), "mt": (2,), "tt": (1, 2)}
+
+
+def is_simulation(sample):
+    return sample not in ("data", "embedding")
+
+
+def parton_shower_weight(module, sample, era, scope, calls, outputs):
+    """v8 spec C23: simulated samples of sm_config compute ps_weight from PSWeight, read
+    through a column that checks its length; 1 in the nominal."""
+    if module == "sm_config" and is_simulation(sample):
+        if scope == "global":
+            calls = calls + [
+                'xyh::theory_weights::CheckedSize(df, "PSWeight_checked", "PSWeight", {4})',
+                'event::reweighting::PartonShower(df, "ps_weight", "PSWeight_checked", 1.0, 1.0)',
+            ]
+        else:
+            outputs = outputs + ["ps_weight"]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
@@ -142,10 +170,14 @@ EXPECTED_CHANGES = [
     muon_pt_through_the_scope_level_scale,
     embedded_electron_pt_through_the_scope_level_scale,
     ditau_trigger_sf_from_the_addon,
+    parton_shower_weight,
 ]
+# the changes that only add calls and columns: every frozen call and column is still there
+ADDITIONS = EXPECTED_CHANGES[5:]
 
 # The columns sm_config writes that the v7b n-tuples lack: the MET before the lepton and the
-# recoil corrections, written since the n-tuples were produced (v8 spec 3.1)
+# recoil corrections, written since the n-tuples were produced (v8 spec 3.1); the columns of
+# the shift production are added per scope by the ADDITIONS
 COLUMNS_SINCE_V7B = {
     "met_jetcorrected",
     "metphi_jetcorrected",
@@ -200,8 +232,34 @@ def test_sm_config_writes_the_columns_of_the_v7b_ntuples(era):
     v7b = quantities_map["quantities"][era]["ttbar"]
     generated = generate_code("sm_config", "ttbar", era=era, scopes=tuple(v7b))
     for scope, shifts in v7b.items():
-        expected = (set(shifts[""]) - COLUMNS_REMOVED_SINCE_V7B) | COLUMNS_SINCE_V7B
-        assert generated.outputs[scope] == expected, (
+        kept = (set(shifts[""]) - COLUMNS_REMOVED_SINCE_V7B) | COLUMNS_SINCE_V7B
+        expected = list(kept)
+        for addition in ADDITIONS:
+            _, expected = addition("sm_config", "ttbar", era, scope, [], expected)
+        # every column of the v7b n-tuples that is kept is written, and nothing but the
+        # listed additions comes on top
+        assert kept <= generated.outputs[scope], (scope, sorted(kept - generated.outputs[scope]))
+        assert len(expected) == len(set(expected)), scope
+        assert generated.outputs[scope] == set(expected), (
             scope,
-            sorted(generated.outputs[scope] ^ expected),
+            sorted(generated.outputs[scope] ^ set(expected)),
         )
+
+
+@pytest.mark.parametrize("key", sorted(key for key in FROZEN["surfaces"] if key.startswith("sm_config/")))
+def test_the_columns_of_the_shift_production_only_add_to_the_frozen_surface(key):
+    """The additions of the shift production (C23-C27, C40) leave every frozen call and
+    column in place: the surface before them is a subset of the generated one."""
+    module, sample, era = key.split("/")
+    frozen = frozen_surface(key)
+    scopes = tuple(scope for scope in frozen["calls"] if scope != "global")
+    generated = generate_code(module, sample, era=era, scopes=scopes)
+    calls = generated_calls(generated)
+    for scope in frozen["calls"]:
+        before_calls = list(frozen["calls"][scope])
+        before_outputs = list(frozen["outputs"].get(scope, []))
+        for change in EXPECTED_CHANGES:
+            if change not in ADDITIONS:
+                before_calls, before_outputs = change(module, sample, era, scope, before_calls, before_outputs)
+        assert set(before_calls) <= set(calls[scope]), scope
+        assert set(before_outputs) <= generated.outputs.get(scope, set()), scope

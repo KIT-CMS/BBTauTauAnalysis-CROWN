@@ -42,7 +42,7 @@ from .variations.taus import (
     add_tau_id_vs_mu_shifts,
     add_tau_es_shifts
 )
-from .variations.theory import add_qcd_scale_shifts
+from .variations.theory import add_parton_shower_shifts, add_qcd_scale_shifts
 from .variations.triggers import (
     add_double_tautau_trigger_shifts,
     add_single_electron_trigger_extrapolation_shifts,
@@ -295,6 +295,29 @@ def add_mur_muf_weights_config(configuration: Configuration):
             "muF": 1.0,
         },
     )
+
+
+def add_parton_shower_weight_config(configuration: Configuration):
+    """
+    The parton shower weight of simulated events (v8 spec C23): ps_weight is 1 in
+    the nominal and the PSWeight entry of the ISR or FSR scale times 2 or 0.5
+    under the shifts ps_isr and ps_fsr (variations/theory.py). The Run-2 v15
+    files carry four entries, in the order the core function reads them; another
+    length stops the job (event.PSWeightChecked).
+
+    :param configuration: the main configuration object
+    :type configuration: Configuration
+    """
+    configuration.add_config_parameters(
+        GLOBAL_SCOPES,
+        {
+            "ps_isr_variation": 1.0,
+            "ps_fsr_variation": 1.0,
+            "ps_weight_sizes": "4",
+        },
+    )
+
+
 
 
 def add_golden_json_config(configuration: Configuration):
@@ -2527,6 +2550,16 @@ def build_config(
     # variations of the renormalization and factorization scales
     add_mur_muf_weights_config(configuration)
 
+    # The columns of the shift production of a profile (v8 spec C23-C27, C40):
+    # the parton shower weight and genTtbarId of every simulated sample, the PDF
+    # weights of the signal, the jet slots and raw tau scores of every sample
+    # (the hadron flavour of the slots in simulation, the H -> bb flag in the
+    # samples with a bb truth mother), and the pT-binned vsJet scale factor of
+    # simulated taus
+    is_simulation = sample not in ("data", "embedding", "embedding_mc")
+    parton_shower_weight = profile.shifts.parton_shower and is_simulation
+    if parton_shower_weight:
+        add_parton_shower_weight_config(configuration)
     # AK4 jet selection and energy/resolution corrections
     add_ak4jet_config(configuration, era, profile)
 
@@ -3062,6 +3095,7 @@ def build_config(
             jets.Type1JetEnergyCorrectionMC,
             # fatjets.FatJetEnergyCorrection,
         ]
+        + ([event.PSWeightChecked, event.PartonShowerWeight] if parton_shower_weight else [])
     )
 
     # Producers common to all scopes with at least one hadronic tau
@@ -4075,6 +4109,10 @@ def build_config(
     #         ],
     #     )
 
+    # the parton shower weight (C23), and the weights of the PDF eigenvectors of
+    # the signal (C24)
+    if parton_shower_weight:
+        configuration.add_outputs(SCOPES, [q.ps_weight])
     # add genWeight for everything but data
     if sample != "data":
         configuration.add_outputs(
@@ -4677,6 +4715,17 @@ def build_config(
         event.LHE_Scale_weight,
         exclude_samples=profile.lhe_scale_weight_excluded_samples,
     )
+
+    #endregion
+
+    # --- Parton shower -------------------------------------------------------
+
+    #region
+
+    # Add the shifts of the ISR and FSR scale of the parton shower (ps_isr,
+    # ps_fsr; v8 spec C23) to the simulated samples
+    if parton_shower_weight:
+        add_parton_shower_shifts(configuration, era, [event.PartonShowerWeight])
 
     #endregion
 

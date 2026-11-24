@@ -192,6 +192,11 @@ FAMILIES = [
         weights=r"lhe_scale_weight",
     ),
     Family(
+        "parton shower, ISR and FSR scale (C23)",
+        in_scopes(ALL_SCOPES, lambda era: {"ps_isr", "ps_fsr"}),
+        weights=r"ps_weight",
+    ),
+    Family(
         "muon ID and isolation SF",
         in_scopes(("mt", "em", "mm"), lambda era: {f"CMS_eff_m_id_{era}", f"CMS_eff_m_iso_{era}"}),
         weights=r"(id|iso)_wgt_mu_[12]",
@@ -241,8 +246,8 @@ FAMILIES = [
 # The number of pairs per scope: simulation, the recoil-corrected DY and W (two recoil pairs
 # for the unclustered energy pair), embedding
 PAIRS = {
-    "mc": {"et": 64, "mt": 63, "tt": 58, "em": 30, "ee": 25, "mm": 26},
-    "recoil": {"et": 65, "mt": 64, "tt": 59, "em": 31, "ee": 26, "mm": 27},
+    "mc": {"et": 66, "mt": 65, "tt": 60, "em": 32, "ee": 27, "mm": 28},
+    "recoil": {"et": 67, "mt": 66, "tt": 61, "em": 33, "ee": 28, "mm": 29},
     "embedding": {"et": 10, "mt": 10, "tt": 8},
     "data": {scope: 0 for scope in ALL_SCOPES},
 }

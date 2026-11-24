@@ -339,6 +339,28 @@ LHE_Scale_weight = Producer(
     output=[q.lhe_scale_weight],
     scopes=["global"],  #, "em", "et", "mt", "tt", "mm", "ee"],
 )
+# Parton shower weight (v8 spec C23): the PSWeight entry of the ISR or FSR scale
+# variation of a shift, and 1 in the nominal. The core function reads
+#   [0] for ps_isr_variation 2.0, [1] for ps_fsr_variation 2.0,
+#   [2] for ps_isr_variation 0.5, [3] for ps_fsr_variation 0.5,
+# the order of the Run-2 v15 files ("isr:murfac=2.0", "fsr:murfac=2.0",
+# "isr:murfac=0.5", "fsr:murfac=0.5"), and stops on another length only when it
+# evaluates a variation; PSWeightChecked stops on it in every event.
+PSWeightChecked = Producer(
+    name="PSWeightChecked",
+    call="xyh::theory_weights::CheckedSize({df}, {output}, {input}, {vec_open}{ps_weight_sizes}{vec_close})",
+    input=[nanoAOD.PSWeight],
+    output=[q.PSWeight_checked],
+    scopes=["global"],
+)
+PartonShowerWeight = Producer(
+    name="PartonShowerWeight",
+    call="event::reweighting::PartonShower({df}, {output}, {input}, {ps_isr_variation}, {ps_fsr_variation})",
+    input=[q.PSWeight_checked],
+    output=[q.ps_weight],
+    scopes=["global"],
+)
+
 LHEDrellYanDecayFlavor = Producer(
     name="LHEDrellYanDecayFlavor",
     call="genparticles::drell_yan::DecayFlavor({df}, {output}, {input})",
