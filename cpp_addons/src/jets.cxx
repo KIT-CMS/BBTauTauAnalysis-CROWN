@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <regex>
+#include <stdexcept>
 
 namespace physicsobject {
 
@@ -133,6 +135,53 @@ float apply_jes_shifts(
     return jet_pt_corr;
 }
 
+bool JERVariation::varies(const float &jet_eta,
+                          const float &jet_pt_nominal) const {
+    const float abs_eta = std::abs(jet_eta);
+    return abs_eta >= min_abs_eta && abs_eta < max_abs_eta &&
+           jet_pt_nominal >= min_pt && jet_pt_nominal < max_pt;
+}
+
+JERVariation parse_jer_variation(const std::string &jer_shift) {
+    JERVariation variation;
+    const auto region = jer_shift.find("_abseta");
+    variation.direction = jer_shift.substr(0, region);
+    if (region == std::string::npos) {
+        // no region: the variation of every jet, passed on as given
+        return variation;
+    }
+    static const std::regex pattern(
+        "(up|down)_abseta([0-9]+(p[0-9]+)?)to([0-9]+(p[0-9]+)?|Inf)"
+        "(_pt([0-9]+(p[0-9]+)?)to([0-9]+(p[0-9]+)?|Inf))?");
+    std::smatch match;
+    if (!std::regex_match(jer_shift, match, pattern)) {
+        throw std::invalid_argument(
+            "physicsobject::jet::jec: JER variation '" + jer_shift +
+            "' must be <up|down>_abseta<min>to<max>[_pt<min>to<max>]");
+    }
+    variation.regional = true;
+    auto number = [](std::string text) {
+        if (text == "Inf") {
+            return std::numeric_limits<float>::infinity();
+        }
+        std::replace(text.begin(), text.end(), 'p', '.');
+        return std::stof(text);
+    };
+    variation.min_abs_eta = number(match[2].str());
+    variation.max_abs_eta = number(match[4].str());
+    if (match[6].matched) {
+        variation.min_pt = number(match[7].str());
+        variation.max_pt = number(match[9].str());
+    }
+    if (!(variation.min_abs_eta < variation.max_abs_eta) ||
+        !(variation.min_pt < variation.max_pt)) {
+        throw std::invalid_argument(
+            "physicsobject::jet::jec: JER variation '" + jer_shift +
+            "' has an empty region");
+    }
+    return variation;
+}
+
 float apply_jer(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const float &rho, const ROOT::RVec<float> &genjet_pt,
@@ -224,12 +273,40 @@ float apply_jer(
     return c_jer * jet_pt;
 }
 
+/// The jet pT after the resolution smearing of a variation. A jet outside the
+/// region of a regional variation, decided by its nominal smeared pT, keeps
+/// the nominal smearing; the random number is the same in every case.
+float apply_jer_variation(
+    const float &jet_pt, const float &jet_eta, const float &jet_phi,
+    const float &rho, const ROOT::RVec<float> &genjet_pt,
+    const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
+    const correction::Correction *jer_resolution_evaluator,
+    const correction::Correction *jer_scalefactor_evaluator,
+    const correction::Correction *jer_scalefactor_uncertainty_evaluator,
+    const JERVariation &jer_variation, const float &jet_radius,
+    const std::string &era, const float &random_normal) {
+    auto smeared = [&](const std::string &jer_shift) {
+        return apply_jer(jet_pt, jet_eta, jet_phi, rho, genjet_pt, genjet_eta,
+                         genjet_phi, jer_resolution_evaluator,
+                         jer_scalefactor_evaluator,
+                         jer_scalefactor_uncertainty_evaluator, jer_shift,
+                         jet_radius, era, random_normal);
+    };
+    if (!jer_variation.regional) {
+        return smeared(jer_variation.direction);
+    }
+    const float nominal = smeared("nom");
+    return jer_variation.varies(jet_eta, nominal)
+               ? smeared(jer_variation.direction)
+               : nominal;
+}
+
 JECResult apply_full_jec_mc(
     const float &jet_pt, const float &jet_eta, const float &jet_phi,
     const UChar_t &jet_id, const float &jet_area, const float &rho,
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
-    const int &jes_shift_factor, const std::string &jer_shift,
+    const int &jes_shift_factor, const JERVariation &jer_variation,
     const std::string &jec_algo, const float &jet_radius, const std::string &era,
     const float &random_normal,
     const correction::Correction *jes_l1_evaluator,
@@ -246,10 +323,10 @@ JECResult apply_full_jec_mc(
     auto jet_pt_syst = apply_jes_shifts(jet_pt_l2rel, jet_eta, jet_phi, jet_id,
                                         jes_shift_source, jes_shift_factor,
                                         jes_shift_evaluators);
-    auto jet_pt_jer = apply_jer(
+    auto jet_pt_jer = apply_jer_variation(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
         jer_resolution_evaluator, jer_scalefactor_evaluator,
-        jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
+        jer_scalefactor_uncertainty_evaluator, jer_variation, jet_radius, era,
         random_normal);
 
     // Create the JECResult which also contains intermediate results of the
@@ -268,7 +345,7 @@ JECResult apply_jes_shifts_and_jer_mc(
     const UChar_t &jet_id, const float &rho, const ROOT::RVec<float> &genjet_pt,
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
     const std::string &jes_shift_source, const int &jes_shift_factor,
-    const std::string &jer_shift, const float &jet_radius,
+    const JERVariation &jer_variation, const float &jet_radius,
     const std::string &era, const float &random_normal,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,
@@ -278,10 +355,10 @@ JECResult apply_jes_shifts_and_jer_mc(
     auto jet_pt_syst =
         apply_jes_shifts(jet_pt, jet_eta, jet_phi, jet_id, jes_shift_source,
                          jes_shift_factor, jes_shift_evaluators);
-    auto jet_pt_jer = apply_jer(
+    auto jet_pt_jer = apply_jer_variation(
         jet_pt_syst, jet_eta, jet_phi, rho, genjet_pt, genjet_eta, genjet_phi,
         jer_resolution_evaluator, jer_scalefactor_evaluator,
-        jer_scalefactor_uncertainty_evaluator, jer_shift, jet_radius, era,
+        jer_scalefactor_uncertainty_evaluator, jer_variation, jet_radius, era,
         random_normal);
 
     // Create the JECResult which also contains intermediate results of the
@@ -521,7 +598,10 @@ ROOT::RDF::RNode RegResolution(ROOT::RDF::RNode df,
  * to be applied
  * @param jes_shift_factor factor of the JES shift variation (0 = nominal, +/-1
  * = up/down)
- * @param jer_shift name of the JER shift variation ("nom", "up", or "down")
+ * @param jer_shift name of the JER shift variation ("nom", "up", or "down"),
+ * optionally restricted to the jets of a region of \f$|\eta|\f$ and nominal
+ * \f$p_T\f$ (see `parse_jer_variation`); the other jets keep the nominal
+ * resolution scale factor, and every jet the random number of the nominal
  * @param reapply_jes flag to reapply the jet energy calibration, otherwise
  * `jet_pt_raw` is taken as the already JES-corrected \f$p_T\f$
  * @param era string defining the currently processed era, needed due to
@@ -587,8 +667,11 @@ PtCorrectionMC(ROOT::RDF::RNode df,
         load_jer_correction(correction_manager, jec_file, jer_tag, type_tag,
                             "SFUncertainty", jec_algo);
 
+    // The direction of the JER variation and the region of the jets it varies
+    const JERVariation jer_variation = parse_jer_variation(jer_shift);
+
     // Function to retrieve the JEC result with intermediate steps
-    auto func_jec_result = [jes_shift_source, jes_shift_factor, jer_shift,
+    auto func_jec_result = [jes_shift_source, jes_shift_factor, jer_variation,
                             jec_algo, jet_radius, reapply_jes, era, jes_l1_evaluator,
                             jes_l2rel_evaluator, jes_shift_evaluators,
                             jer_resolution_evaluator, jer_scalefactor_evaluator,
@@ -622,7 +705,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             jet_jec_result = ROOT::VecOps::Map(
                 jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area, random_normal,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jec_algo, jet_radius, era,
+                 jes_shift_factor, jer_variation, jec_algo, jet_radius, era,
                  jes_l1_evaluator, jes_l2rel_evaluator, jes_shift_evaluators,
                  jer_resolution_evaluator, jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
@@ -632,7 +715,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                     return apply_full_jec_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, jet_area, rho,
                         genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jec_algo, jet_radius, era, random_normal,
+                        jes_shift_factor, jer_variation, jec_algo, jet_radius, era, random_normal,
                         jes_l1_evaluator, jes_l2rel_evaluator,
                         jes_shift_evaluators, jer_resolution_evaluator,
                         jer_scalefactor_evaluator,
@@ -647,7 +730,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
             jet_jec_result = ROOT::VecOps::Map(
                 jet_pt_raw, jet_eta, jet_phi, jet_id, jet_area, random_normal,
                 [rho, genjet_pt, genjet_eta, genjet_phi, jes_shift_source,
-                 jes_shift_factor, jer_shift, jet_radius, era,
+                 jes_shift_factor, jer_variation, jet_radius, era,
                  jes_shift_evaluators, jer_resolution_evaluator,
                  jer_scalefactor_evaluator,
                  jer_scalefactor_uncertainty_evaluator](
@@ -657,7 +740,7 @@ PtCorrectionMC(ROOT::RDF::RNode df,
                     return apply_jes_shifts_and_jer_mc(
                         jet_pt, jet_eta, jet_phi, jet_id, rho, genjet_pt,
                         genjet_eta, genjet_phi, jes_shift_source,
-                        jes_shift_factor, jer_shift, jet_radius, era,
+                        jes_shift_factor, jer_variation, jet_radius, era,
                         random_normal, jes_shift_evaluators,
                         jer_resolution_evaluator,
                         jer_scalefactor_evaluator,

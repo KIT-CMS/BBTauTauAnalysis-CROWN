@@ -18,6 +18,25 @@ JES_SOURCE_ERA = {
     "2023postBPix": "2023BPix",
 }
 
+# The regions of the jet energy resolution uncertainty JERC gives for analyses
+# that constrain the single nuisance parameter of a year
+# (https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution_1):
+# |eta| < 1.93, 1.93 to 2.5, and 2.5 to 3 and 3 to 5 each below and above
+# 50 GeV. Name of the region in the shift name -> its selection in the
+# parameter ak4jet_jer_shift (physicsobject::jet::jec::parse_jer_variation).
+# The last |eta| region has no upper edge and the pT is the nominal one, after
+# the nominal smearing, both as in the split JER of nanoAOD-tools
+# (jetmetUncertainties.getJERsplitID), so that every jet is in one region and
+# the six shifts add up to the shift of all jets.
+JER_REGIONS = {
+    "eta0to1p93": "abseta0to1p93",
+    "eta1p93to2p5": "abseta1p93to2p5",
+    "eta2p5to3_ptlt50": "abseta2p5to3_pt0to50",
+    "eta2p5to3_ptgt50": "abseta2p5to3_pt50toInf",
+    "eta3to5_ptlt50": "abseta3toInf_pt0to50",
+    "eta3to5_ptgt50": "abseta3toInf_pt50toInf",
+}
+
 
 def _add_jes_shift(
     configuration: Configuration,
@@ -100,6 +119,7 @@ def add_jec_shifts(
     jec_producers: list[Producer | ProducerGroup],
     bjet_tagging_sf_producer: Producer | ProducerGroup = None,
     hem_shift: bool = True,
+    jer_regions: bool = False,
 ):
     """
     Add systematic uncertainties related to the jet energy calibration (JEC)
@@ -111,7 +131,12 @@ def add_jec_shifts(
 
     The function adds a systematic up and down shift for each uncertainty
     source in the jet energy scale (reduced scheme) and for the
-    jet energy resolution (one inclusive uncertainty).
+    jet energy resolution: one inclusive uncertainty, or with `jer_regions`
+    one per region of JER_REGIONS (v8 spec C33). A regional shift varies the
+    resolution scale factor of the jets of its region, decided by their nominal
+    smeared pT; the other jets keep the nominal scale factor, and every jet its
+    random number. The regional shifts replace the inclusive one, which is
+    their sum.
 
     The prodedure follows the JME recommentations for
     [JES](https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1) and
@@ -225,27 +250,33 @@ def add_jec_shifts(
     # Jet energy resolution
     # -------------------------------------------------------------------------
 
-    # Comment: If needed, the JER uncertainties could be extended to a more
-    # granular scheme by shifting different (p_T, eta) regions independently.
-    # Here, the "default" recommendation is implemented.
+    # The "default" recommendation is one uncertainty per era; the more
+    # granular scheme shifts the (p_T, eta) regions of JER_REGIONS
+    # independently.
     # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution_1
 
-    for direction in ["up", "down"]:
-        # Add shift to the configuration
-        configuration.add_shift(
-            SystematicShift(
-                name=f"CMS_res_j_{era}{direction.capitalize()}",
-                shift_config={
-                    jec_scopes: {
-                        "ak4jet_jer_shift": direction,
+    jer_shifts = (
+        {f"CMS_res_j_{region}_{era}": f"_{selection}" for region, selection in JER_REGIONS.items()}
+        if jer_regions
+        else {f"CMS_res_j_{era}": ""}
+    )
+    for name, selection in jer_shifts.items():
+        for direction in ["up", "down"]:
+            # Add shift to the configuration
+            configuration.add_shift(
+                SystematicShift(
+                    name=f"{name}{direction.capitalize()}",
+                    shift_config={
+                        jec_scopes: {
+                            "ak4jet_jer_shift": f"{direction}{selection}",
+                        },
                     },
-                },
-                producers={
-                    jec_scopes: jec_producers,
-                },
-            ),
-            exclude_samples=exclude_samples,
-        )
+                    producers={
+                        jec_scopes: jec_producers,
+                    },
+                ),
+                exclude_samples=exclude_samples,
+            )
 
     return configuration
 

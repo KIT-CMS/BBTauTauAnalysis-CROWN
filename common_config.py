@@ -4447,7 +4447,12 @@ def build_config(
         # In Run 2 and 2024/2025, working point-based b jet tagging SFs are
         # used. No special treatment for JEC uncertainties is necessary here.
         add_jec_shifts(
-            configuration, era, jec_mc_producers, hem_shift=not hem_veto_flag)
+            configuration,
+            era,
+            jec_mc_producers,
+            hem_shift=not hem_veto_flag,
+            jer_regions=profile.shifts.jer_regions,
+        )
 
     #endregion
 

@@ -22,6 +22,9 @@ class ShiftScheme:
     # fakes; None: every scope with a hadronic tau (C29).
     electron_fake_tau_es_scopes: Optional[Tuple[str, ...]] = None
     muon_fake_tau_es_scopes: Optional[Tuple[str, ...]] = None
+    # The jet energy resolution in the six eta/pT regions of JERC
+    # (variations.jec.JER_REGIONS) instead of one shift per era (C33).
+    jer_regions: bool = False
 
 
 @dataclass(frozen=True)
@@ -141,6 +144,7 @@ SM_PROFILE = AnalysisProfile(
         tau_es_per_decay_mode=True,
         electron_fake_tau_es_scopes=("et",),
         muon_fake_tau_es_scopes=("mt",),
+        jer_regions=True,
     ),
 )
 

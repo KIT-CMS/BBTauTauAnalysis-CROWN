@@ -334,13 +334,19 @@ def test_jer_hybrid_smearing_matches_gen_jets_and_draws_per_jet(
     """The JEC chain scales gen-matched jets with the closest passing gen jet,
     draws one independent standard-normal number per unmatched jet, which
     neither the matching of other jets nor the JER variation changes, and the
-    HEM variation scales every tight-ID jet in the HEM region; with the pinned
-    JME payload and tags of every Run-2 era."""
+    HEM variation scales every tight-ID jet in the HEM region; a JER variation
+    restricted to one of the six regions of the configuration (v8 spec C33)
+    varies the jets of its region like the inclusive variation and leaves every
+    other jet at its nominal pt; with the pinned JME payload and tags of every
+    Run-2 era."""
+    from analysis_configurations.bbtautau.variations.jec import JER_REGIONS
+
     payload, jer_tag, jes_tag = jec_settings(era)
     if not Path(payload).is_file():
         pytest.skip("Pinned official JME payload requires CVMFS")
     subprocess.run(
-        [str(jer_smearing_binary), payload, reapply_jes, jer_tag, jes_tag, era], check=True
+        [str(jer_smearing_binary), payload, reapply_jes, jer_tag, jes_tag, era, *JER_REGIONS.values()],
+        check=True,
     )
 
 
