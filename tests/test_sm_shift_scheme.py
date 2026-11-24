@@ -115,3 +115,103 @@ def test_vs_jet_syst_tes_changes_the_sf_of_its_decay_mode_only(era):
 def test_nmssm_has_no_vs_jet_syst_tes_shift():
     config = build("nmssm_config", "ttbar", era="2022postEE", scopes=TAU_SCOPES, shifts=("VSjet",))
     assert not [name for name in config.shifts["mt"] if "syst_TES" in name]
+
+
+# --- C21, C29: tau energy scale shifts ---------------------------------------
+
+# the custom variations of the core tau variation handler
+# (src/variation_handlers/taus.cxx, TauVariationHandler::match_custom_variation)
+CUSTOM_VARIATION = re.compile(
+    r"(up|down)_custom(_(genEle|genMu|genTau))?(_dm(0|1|10|11))?"
+    r"(_pt(\d+)to(\d+|Inf))?(_(barrel|endcap|wheel[1-5]))?"
+)
+
+
+def tau_es_pairs(era):
+    genuine = {f"CMS_scale_t_{ALGO}_DM{dm}_genTau_{era}" for dm in DECAY_MODES}
+    electron_fakes = {
+        f"CMS_scale_t_{ALGO}_DM{dm}_genElectron_{region}_{era}"
+        for dm in DECAY_MODES
+        for region in ("barrel", "endcap")
+    }
+    muon_fakes = {f"CMS_scale_t_{ALGO}_DM{dm}_genMuon_{era}" for dm in DECAY_MODES}
+    return {"et": genuine | electron_fakes, "mt": genuine | muon_fakes, "tt": genuine}
+
+
+@pytest.mark.parametrize("sample", ["ttbar", "dyjets", "diboson", "hh2b2tau"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_energy_scale_shifts_per_decay_mode_and_scope(era, sample):
+    """Genuine taus: one pair per decay mode in every tau scope, without pT bins. e -> tau
+    fakes: decay mode x barrel/endcap in et only. mu -> tau fakes: one pair per decay mode in
+    mt only. In every MC sample type (v8 spec C21, C29)."""
+    config = build("sm_config", sample, era=era, scopes=TAU_SCOPES, shifts=("CMS_scale_t",))
+    expected = tau_es_pairs(era)
+    for scope in TAU_SCOPES:
+        shifts = shifts_of(config, scope)
+        assert pairs(shifts) == expected[scope]
+        assert all(set(change) == {"tau_es_variation"} for change in shifts.values())
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_energy_scale_variations_are_understood_by_the_core_handler(era):
+    source = (CROWN / "src/variation_handlers/taus.cxx").read_text()
+    assert '"(up|down)_custom(_(genEle|genMu|genTau))?(_dm(0|1|10|11))?("' in source
+    config = build("sm_config", "ttbar", era=era, scopes=TAU_SCOPES, shifts=("CMS_scale_t",))
+    expected = {
+        "genTau": {"gen": "genTau", "pt": None, "region": None},
+        "genMuon": {"gen": "genMu", "pt": None, "region": None},
+        "genElectron": {"gen": "genEle", "pt": None},
+    }
+    for scope in TAU_SCOPES:
+        for name, change in shifts_of(config, scope).items():
+            match = CUSTOM_VARIATION.fullmatch(change["tau_es_variation"])
+            assert match, change
+            kind = re.search(r"_(genTau|genMuon|genElectron)_", name).group(1)
+            direction, gen, dm, pt, region = match.group(1, 3, 5, 6, 10)
+            assert direction == re.search(r"(Up|Down)$", name).group(1).lower()
+            assert f"_DM{dm}_" in name
+            found = {"gen": gen, "pt": pt, "region": region}
+            assert expected[kind].items() <= found.items(), name
+            if kind == "genElectron":
+                assert region in ("barrel", "endcap") and f"_{region}_" in name
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_tau_energy_scale_payload_has_the_width_the_shifts_assume(era):
+    """Why one shift per decay mode suffices (v8 spec C21): on the pinned TAU payload the scale
+    of genuine taus depends on pT only through the step at 140 GeV, and the scale of mu -> tau
+    fakes is 1 +- 1 % for every decay mode, pT and eta."""
+    correctionlib = pytest.importorskip("correctionlib")
+    nominal = build("sm_config", "ttbar", era=era, scopes=TAU_SCOPES).config_parameters
+    for scope in TAU_SCOPES:
+        parameters = nominal[scope]["nominal"]
+        payload = Path(parameters["tau_vsjet_es_sf_file"])
+        if not payload.is_file():
+            pytest.skip("TAU payloads require CVMFS")
+        correction = correctionlib.CorrectionSet.from_file(str(payload))[parameters["tau_ES_json_name"]]
+
+        def scale(pt, eta, dm, genmatch, variation):
+            return correction.evaluate(
+                pt, eta, dm, genmatch, parameters["tau_id_algorithm"],
+                parameters["tau_ides_sf_vsjet_wp"], parameters["tau_ides_sf_vsele_wp"], variation,
+            )
+
+        for dm in DECAY_MODES:
+            for variation in ("nom", "up", "down"):
+                below = {scale(pt, eta, dm, 5, variation) for pt in (20.0, 39.0, 41.0, 61.0, 139.0) for eta in (0.2, 2.2)}
+                above = {scale(pt, eta, dm, 5, variation) for pt in (140.0, 300.0) for eta in (0.2, 2.2)}
+                assert len(below) == 1 and len(above) == 1, (dm, variation)
+            for genmatch in (2, 4):
+                values = {
+                    variation: {scale(pt, eta, dm, genmatch, variation) for pt in (25.0, 80.0, 200.0) for eta in (0.2, 1.0, 1.5, 2.2)}
+                    for variation in ("nom", "up", "down")
+                }
+                assert values == {"nom": {1.0}, "up": {1.01}, "down": {0.99}}, (dm, genmatch)
+
+
+def test_nmssm_keeps_the_common_tau_energy_scale_shifts():
+    """Genuine taus per decay mode and pT bin, e -> tau per decay mode and ECAL region and
+    mu -> tau per muon wheel, in every tau scope."""
+    config = build("nmssm_config", "ttbar", era="2022postEE", scopes=TAU_SCOPES, shifts=("CMS_scale_t",))
+    for scope in TAU_SCOPES:
+        assert len(pairs(shifts_of(config, scope))) == 4 * 3 + 4 * 2 + 5

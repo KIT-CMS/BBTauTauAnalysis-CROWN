@@ -15,6 +15,13 @@ class ShiftScheme:
     # The POG syst_TES_<era>_dm<DM> components of the vsJet SF as weight shifts
     # per era and decay mode (C18).
     tau_id_vs_jet_syst_tes: bool = False
+    # The energy scale of genuine taus per decay mode without pT bins, and that
+    # of mu -> tau fakes per decay mode instead of per muon wheel (C21).
+    tau_es_per_decay_mode: bool = False
+    # The scopes with the energy scale shifts of e -> tau and of mu -> tau
+    # fakes; None: every scope with a hadronic tau (C29).
+    electron_fake_tau_es_scopes: Optional[Tuple[str, ...]] = None
+    muon_fake_tau_es_scopes: Optional[Tuple[str, ...]] = None
 
 
 @dataclass(frozen=True)
@@ -131,6 +138,9 @@ SM_PROFILE = AnalysisProfile(
     btag_sf_working_points=("T", "M"),
     shifts=ShiftScheme(
         tau_id_vs_jet_syst_tes=True,
+        tau_es_per_decay_mode=True,
+        electron_fake_tau_es_scopes=("et",),
+        muon_fake_tau_es_scopes=("mt",),
     ),
 )
 

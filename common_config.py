@@ -4417,6 +4417,9 @@ def build_config(
         configuration,
         era,
         taus.TauPtCorrectionMC,
+        per_decay_mode=profile.shifts.tau_es_per_decay_mode,
+        electron_fake_scopes=profile.shifts.electron_fake_tau_es_scopes,
+        muon_fake_scopes=profile.shifts.muon_fake_tau_es_scopes,
     )
 
     #endregion

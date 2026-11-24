@@ -233,6 +233,9 @@ def add_tau_es_shifts(
     era: str,
     producer: Producer | ProducerGroup,
     tau_id_algorithm: str = "DeepTau2018v2p5",
+    per_decay_mode: bool = False,
+    electron_fake_scopes: tuple[str, ...] | None = None,
+    muon_fake_scopes: tuple[str, ...] | None = None,
 ):
     """
     Add shifts for tau energy scale (TES) for the given era.
@@ -246,6 +249,20 @@ def add_tau_es_shifts(
     the correlation scheme from the corresponding tau ID (`VSe` and `VSmu`) is
     adopted.
 
+    With `per_decay_mode` (v8 spec C21), genuine taus have one shift per decay
+    mode instead of one per decay mode and pT bin, and
+    $\\mu \\to \\tau{\\text{h}}$ fakes one per decay mode instead of one per muon
+    wheel: below 140 GeV the payload scale of genuine taus depends neither on
+    pT nor on eta, and that of $\\mu \\to \\tau{\\text{h}}$ fakes is 1 +- 1 %
+    everywhere. The shift of a decay mode moves the taus below and above
+    140 GeV together.
+
+    `electron_fake_scopes` and `muon_fake_scopes` restrict the shifts of the
+    $\\text{e} \\to \\tau{\\text{h}}$ and $\\mu \\to \\tau{\\text{h}}$ fakes to
+    these scopes (v8 spec C29); None keeps them in every scope of the producer.
+    A shift changes the events with such a fake only, but writes nearly every
+    column again.
+
     A shifted tau pT can change the selected pair, and events can enter the
     selection under a shift only. So every producer behind the pair selection
     is recomputed, the light lepton leg of et and mt included; ignoring its
@@ -253,50 +270,75 @@ def add_tau_es_shifts(
     trigger flags or weights).
     """
 
-    # Specify properties of the shifts
-    pt_edges = [20, 40, 60, "Inf"]
-    shifts = [
-        # Shifts for genuine taus decaying hadronically
-        *[
+    decay_modes = [0, 1, 10, 11]
+
+    # Shifts for genuine taus decaying hadronically
+    if per_decay_mode:
+        genuine_tau_shifts = [
+            KeyValueShift(
+                name=f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genTau_{era}",
+                key="tau_es_variation",
+                value=f"{{direction}}_custom_genTau_dm{dm}",
+            )
+            for dm in decay_modes
+        ]
+    else:
+        pt_edges = [20, 40, 60, "Inf"]
+        genuine_tau_shifts = [
             KeyValueShift(
                 name=f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_pt{pt_start}to{pt_stop}_genTau_{era}",
                 key="tau_es_variation",
                 value=f"{{direction}}_custom_genTau_dm{dm}_pt{pt_start}to{pt_stop}",
             )
-            for dm in [0, 1, 10, 11]
+            for dm in decay_modes
             for pt_start, pt_stop in zip(pt_edges[:-1], pt_edges[1:])
-        ],
+        ]
 
-        # Shifts for electrons faking hadronic taus
-        *[
+    # Shifts for electrons faking hadronic taus
+    electron_fake_shifts = [
+        KeyValueShift(
+            name=f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genElectron_{eta_region}_{era}",
+            key="tau_es_variation",
+            value=f"{{direction}}_custom_genEle_dm{dm}_{eta_region}",
+        )
+        for dm in decay_modes
+        for eta_region in ["barrel", "endcap"]
+    ]
+
+    # Shifts for muons faking hadronic taus
+    if per_decay_mode:
+        muon_fake_shifts = [
             KeyValueShift(
-                name=f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genElectron_{eta_region}_{era}",
+                name=f"CMS_scale_t_{tau_id_algorithm}_DM{dm}_genMuon_{era}",
                 key="tau_es_variation",
-                value=f"{{direction}}_custom_genEle_dm{dm}_{eta_region}",
+                value=f"{{direction}}_custom_genMu_dm{dm}",
             )
-            for dm in [0, 1, 10, 11]
-            for eta_region in ["barrel", "endcap"]
-        ],
-
-        # Shifts for muons faking hadronic taus
-        *[
+            for dm in decay_modes
+        ]
+    else:
+        muon_fake_shifts = [
             KeyValueShift(
                 name=f"CMS_scale_t_{tau_id_algorithm}_genMuon_{eta_region}_{era}",
                 key="tau_es_variation",
                 value=f"{{direction}}_custom_genMu_{eta_region}",
             )
             for eta_region in (f"wheel{i}" for i in range(1, 6))
-        ],
-    ]
+        ]
 
     # Add up and down variation for each shift
-    for shift in shifts:
-        add_systematic_shift(
-            configuration,
-            shift,
-            producer,
-            add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
-        )
+    for shifts, scopes in [
+        (genuine_tau_shifts, None),
+        (electron_fake_shifts, electron_fake_scopes),
+        (muon_fake_shifts, muon_fake_scopes),
+    ]:
+        for shift in shifts:
+            add_systematic_shift(
+                configuration,
+                shift,
+                producer,
+                scopes=scopes,
+                add_kwargs={"exclude_samples": EXCLUDE_SAMPLES},
+            )
 
 
 def add_embedding_tau_id_vs_jet_shifts(
