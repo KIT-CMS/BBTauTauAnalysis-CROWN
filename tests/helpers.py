@@ -13,6 +13,7 @@ import importlib
 import json
 import logging
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -162,6 +163,24 @@ def generate_code(module_name, sample, era, scopes=("mt",), shifts=("none",)):
     with open(f"{directory}/outputs.json") as f:
         outputs = {scope: set(names) for scope, names in json.load(f).items()}
     return Generated(Path(directory), outputs)
+
+
+_CALL = re.compile(r"auto df\d+ = (.*?);", re.S)
+
+
+def generated_calls(generated):
+    """The producer calls of generated code per scope: every ``auto dfN = <call>;`` statement of
+    src/<scope>/, with whitespace collapsed and the dataframe numbering removed, sorted. Together
+    with the output columns they are what a build computes."""
+    (code,) = generated.directory.glob("*_generated_code")
+    return {
+        scope.name: sorted(
+            re.sub(r"\bdf\d+\b", "df", " ".join(call.split()))
+            for source in sorted(scope.glob("*.cxx"))
+            for call in _CALL.findall(source.read_text())
+        )
+        for scope in sorted((code / "src").iterdir())
+    }
 
 
 class FakeArgs:
