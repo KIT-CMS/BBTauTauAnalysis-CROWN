@@ -3636,8 +3636,9 @@ def build_config(
         ),
     )
 
-    # For whatever reason, the diboson samples do not have these weights in the
-    # ntuple....
+    # The samples of the profile without the QCD scale weights (NMSSM: the
+    # diboson samples do not have these weights in the ntuple; they get no QCD
+    # scale shifts either)
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
@@ -4583,8 +4584,14 @@ def build_config(
 
     #region
 
-    # Add QCD scale (renormalization and factorization scales) shifts
-    add_qcd_scale_shifts(configuration, era, event.LHE_Scale_weight)
+    # Add QCD scale (renormalization and factorization scales) shifts, to the
+    # samples that keep the weight producer
+    add_qcd_scale_shifts(
+        configuration,
+        era,
+        event.LHE_Scale_weight,
+        exclude_samples=profile.lhe_scale_weight_excluded_samples,
+    )
 
     #endregion
 

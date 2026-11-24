@@ -33,7 +33,8 @@ class AnalysisProfile:
     # SampleModifier mappings sample -> mother pdgid (default -1).
     bb_truegen_mother_pdgid: Mapping[str, int]
     tautau_truegen_mother_pdgid: Mapping[str, int]
-    # Samples for which the STANDARD LHE_Scale_weight producer is removed.
+    # Samples for which the STANDARD LHE_Scale_weight producer is removed; they
+    # get no QCD scale shifts either.
     lhe_scale_weight_excluded_samples: Tuple[str, ...]
     # Samples for which the special NMSSM producer replaces the standard one.
     nmssm_lhe_scale_weight_samples: Tuple[str, ...]
@@ -123,8 +124,9 @@ SM_PROFILE = AnalysisProfile(
     bb_truegen_mother_pdgid={"hh2b2tau": 25},
     tautau_truegen_mother_pdgid={"hh2b2tau": 25},
     # SM keeps the standard LHE producer for hh2b2tau (9-entry LHEScaleWeight
-    # in the v15 HH input).
-    lhe_scale_weight_excluded_samples=("data", "embedding", "embedding_mc", "diboson"),
+    # in the v15 HH input) and for diboson: all 56 diboson nicks of the Run-2
+    # v15 lists carry the 9-entry LHEScaleWeight (v8 spec C34).
+    lhe_scale_weight_excluded_samples=("data", "embedding", "embedding_mc"),
     nmssm_lhe_scale_weight_samples=(),
     use_run2_v15_inputs=True,
     bjet_max_abs_eta_override=2.4,
@@ -148,6 +150,10 @@ SM_PROFILE = AnalysisProfile(
     ),
 )
 
+# The surfaces of the productions smrun2_btag_eff_v1 and smrun2_tau_id_v2, which
+# the profiles below keep: diboson without the QCD scale weight.
+_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES = ("data", "embedding", "embedding_mc", "diboson")
+
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the
 # payload-independent probe-jet collection the efficiency is measured from.
 SM_BTAG_EFFICIENCY_PROFILE = replace(
@@ -159,6 +165,7 @@ SM_BTAG_EFFICIENCY_PROFILE = replace(
     enable_probe_jet_collection=True,
     # produced without shifts (smrun2_btag_eff_v1); the surface of that production stays
     shifts=ShiftScheme(),
+    lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
 )
 
 # The SM selection in mt and mm with the corrections and MC shifts of the tau-ID
@@ -177,4 +184,5 @@ SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     embedding_min_tau_pt=20.0 / 1.2,
     tau_id_measurement=True,
     shifts=ShiftScheme(),
+    lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
 )

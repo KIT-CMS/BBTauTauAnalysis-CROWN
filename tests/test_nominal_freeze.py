@@ -27,11 +27,26 @@ from analysis_configurations.bbtautau.tests.helpers import (
 
 FROZEN = json.load(gzip.open(FIXTURES / "nominal_calls.json.gz"))
 
+LHE_SCALE_WEIGHT = 'event::reweighting::LHEscale(df, "lhe_scale_weight", "LHEScaleWeight", 1.0, 1.0)'
+
+
+def diboson_gets_the_qcd_scale_weight(module, sample, era, scope, calls, outputs):
+    """v8 spec C34: sm_config computes lhe_scale_weight for diboson as for every other MC."""
+    if module == "sm_config" and sample == "diboson":
+        if scope == "global":
+            calls = calls + [LHE_SCALE_WEIGHT]
+        else:
+            outputs = outputs + ["lhe_scale_weight"]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
 # that stays.
-EXPECTED_CHANGES = []
+EXPECTED_CHANGES = [
+    diboson_gets_the_qcd_scale_weight,
+]
 
 # The columns sm_config writes that the v7b n-tuples lack: the MET before the lepton and the
 # recoil corrections, written since the n-tuples were produced (v8 spec 3.1)

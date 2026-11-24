@@ -19,8 +19,8 @@ from analysis_configurations.bbtautau.analysis_profiles import (
     SM_TAU_ID_MEASUREMENT_PROFILE,
     ShiftScheme,
 )
-from analysis_configurations.bbtautau.constants import ERAS_RUN2
-from analysis_configurations.bbtautau.tests.helpers import build
+from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
+from analysis_configurations.bbtautau.tests.helpers import build, output_names, producer_names
 
 CROWN = Path(__file__).resolve().parents[3]
 TAU_SCOPES = ("et", "mt", "tt")
@@ -215,3 +215,51 @@ def test_nmssm_keeps_the_common_tau_energy_scale_shifts():
     config = build("nmssm_config", "ttbar", era="2022postEE", scopes=TAU_SCOPES, shifts=("CMS_scale_t",))
     for scope in TAU_SCOPES:
         assert len(pairs(shifts_of(config, scope))) == 4 * 3 + 4 * 2 + 5
+
+
+# --- C34: QCD scale on diboson ----------------------------------------------
+
+QCD_SCALE_SHIFTS = {
+    "QCDscale_renUp": {"muR": 2.0},
+    "QCDscale_renDown": {"muR": 0.5},
+    "QCDscale_facUp": {"muF": 2.0},
+    "QCDscale_facDown": {"muF": 0.5},
+}
+
+
+def qcd_scale(config, scope):
+    return {
+        name: change for name, change in shifts_of(config, scope).items() if name.startswith("QCDscale")
+    }
+
+
+@pytest.mark.parametrize("sample", ["diboson", "ttbar", "hh2b2tau"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_qcd_scale_weight_and_shifts_on_every_mc_sample(era, sample):
+    config = build("sm_config", sample, era=era, scopes=tuple(SCOPES), shifts=("QCDscale",))
+    assert "LHE_Scale_weight" in producer_names(config, "global")
+    for scope in SCOPES:
+        assert "lhe_scale_weight" in output_names(config, scope)
+        assert qcd_scale(config, scope) == QCD_SCALE_SHIFTS
+
+
+@pytest.mark.parametrize(
+    "module,sample,era,scopes",
+    [
+        ("sm_config", "data", "2018", tuple(SCOPES)),
+        ("sm_config", "embedding", "2018", TAU_SCOPES),
+        # the surfaces of smrun2_tau_id_v2 and smrun2_btag_eff_v1 and the NMSSM analysis
+        ("sm_tau_id_measurement_config", "diboson", "2018", ("mt", "mm")),
+        ("sm_btag_efficiency_config", "diboson", "2018", tuple(SCOPES)),
+        ("nmssm_config", "diboson", "2024", tuple(SCOPES)),
+        ("nmssm_config", "hh2b2tau", "2024", tuple(SCOPES)),
+    ],
+)
+def test_no_qcd_scale_shift_without_the_weight_producer(module, sample, era, scopes):
+    """A sample without the producer has neither the column nor the shifts: registered alone,
+    the shifts have no shifted column."""
+    config = build(module, sample, era=era, scopes=scopes, shifts=("QCDscale",))
+    assert "LHE_Scale_weight" not in producer_names(config, "global")
+    for scope in scopes:
+        assert "lhe_scale_weight" not in output_names(config, scope)
+        assert not qcd_scale(config, scope)

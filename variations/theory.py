@@ -8,13 +8,19 @@ def add_qcd_scale_shifts(
     configuration: Configuration,
     era: str,
     producers: list[Producer | ProducerGroup],
+    exclude_samples: tuple[str, ...] = (),
 ):
     """
     Add shifts of the renomalization and factorization scales.
+
+    `exclude_samples` names the samples without the weight producer, besides
+    data and embedding: a shift registered for a sample without the producer
+    has no column (v8 spec C34).
     """
 
-    # Exclude data, as well as embedding samples
-    exclude_samples = ["data", "embedding", "embedding_mc"]
+    # Exclude data, as well as embedding samples, and the samples without the
+    # weight producer
+    exclude_samples = sorted({"data", "embedding", "embedding_mc", *exclude_samples})
 
     # List of shifts for the renormalization and factorization scales
     shifts = [
