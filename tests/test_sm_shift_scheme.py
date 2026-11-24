@@ -20,6 +20,7 @@ from analysis_configurations.bbtautau.analysis_profiles import (
     ShiftScheme,
 )
 from analysis_configurations.bbtautau.constants import ERAS_RUN2, SCOPES
+from analysis_configurations.bbtautau.variations.muons import MUON_ES_REGIONS
 from analysis_configurations.bbtautau.tests.helpers import (
     build,
     find_producer,
@@ -322,4 +323,109 @@ def test_other_configurations_keep_the_regressed_jets(module, sample, era):
     config = build(module, sample, era=era, scopes=("mt",))
     assert {"jpt_regressed_1", "jpt_regressed_resolution_2"} <= output_names(config, "mt")
     assert find_producer(config, "global", "JetEnergyCorrectionMCRegressedPt")
+
+
+# --- C37: muon energy scale ---------------------------------------------------
+
+MUON_ES_PAIRS = {
+    "mt": ("etalt1p2", "eta1p2to2p1"),
+    "em": ("etalt1p2", "eta1p2to2p1", "eta2p1to2p4"),
+}
+# |eta| region -> relative uncertainty (H -> tautau legacy, without Rochester correction)
+MUON_ES_UNCERTAINTIES = {"etalt1p2": 0.004, "eta1p2to2p1": 0.009, "eta2p1to2p4": 0.027}
+MUON_PT_READERS = {
+    "mt": {"GoodMuons", "MTPairSelection", "LVMu1"},
+    "em": {"GoodMuons", "EMPairSelection", "LVMu2"},
+}
+
+
+def numbers(text):
+    return [float(number) for number in text.split(",")]
+
+
+def test_muon_energy_scale_regions():
+    assert {name: edge for name, (edge, _) in MUON_ES_REGIONS.items()} == {
+        "etalt1p2": 0.0, "eta1p2to2p1": 1.2, "eta2p1to2p4": 2.1,
+    }
+    assert {name: unc for name, (_, unc) in MUON_ES_REGIONS.items()} == MUON_ES_UNCERTAINTIES
+
+
+@pytest.mark.parametrize("sample", ["ttbar", "dyjets", "embedding"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_muon_energy_scale_shifts_in_mt_and_em(era, sample):
+    """Three pairs in em (|eta| < 1.2: +-0.4 %, 1.2 to 2.1: +-0.9 %, from 2.1: +-2.7 %) and
+    the first two in mt, for simulated and embedded events; no other scope has them."""
+    scopes = TAU_SCOPES if sample == "embedding" else tuple(SCOPES)
+    config = build("sm_config", sample, era=era, scopes=scopes, shifts=("CMS_scale_m_",))
+    for scope in scopes:
+        shifts = {
+            name: change for name, change in shifts_of(config, scope).items()
+            if name.startswith("CMS_scale_m_eta")
+        }
+        assert pairs(shifts) == {
+            f"CMS_scale_m_{region}_{era}" for region in MUON_ES_PAIRS.get(scope, ())
+        }
+        if scope not in MUON_ES_PAIRS:
+            continue
+        nominal = config.config_parameters[scope]["nominal"]
+        assert numbers(nominal["muon_es_abs_eta_edges"]) == [0.0, 1.2, 2.1]
+        assert numbers(nominal["muon_es_scale_factors"]) == [1.0, 1.0, 1.0]
+        for index, region in enumerate(MUON_ES_UNCERTAINTIES):
+            if region not in MUON_ES_PAIRS[scope]:
+                continue
+            for direction, sign in (("Up", 1), ("Down", -1)):
+                change = shifts[f"CMS_scale_m_{region}_{era}{direction}"]
+                assert set(change) == {"muon_es_scale_factors"}
+                expected = [1.0, 1.0, 1.0]
+                expected[index] = 1.0 + sign * MUON_ES_UNCERTAINTIES[region]
+                assert numbers(change["muon_es_scale_factors"]) == pytest.approx(expected, abs=1e-12)
+
+
+@pytest.mark.parametrize("sample", ["ttbar", "embedding"])
+def test_muon_energy_scale_reaches_the_selection_the_pair_and_the_met(sample):
+    """The scale acts before the selection: the muon selection, the pair selection and the
+    four-vector of the muon read the scaled pT, the uncorrected four-vector the NanoAOD pT,
+    so the MET propagation sees the shift; the loose muons of the vetoes stay unscaled."""
+    scopes = ("mt",) if sample == "embedding" else ("mt", "em")
+    config = build("sm_config", sample, era="2018", scopes=scopes)
+    for scope in scopes:
+        scale = find_producer(config, scope, "MuonPtScale")
+        assert input_names(scale, scope) == ["Muon_pt_corrected", "Muon_eta"]
+        assert {"muon_es_abs_eta_edges", "muon_es_scale_factors"} <= scale.parameters[scope]
+        readers = {
+            producer.name: input_names(producer, scope)
+            for producer in all_producers(config, scope)
+        }
+        assert {
+            name for name, inputs in readers.items() if "Muon_pt_scaled" in inputs
+        } == MUON_PT_READERS[scope]
+        assert {
+            name for name, inputs in readers.items() if "Muon_pt_corrected" in inputs
+        } == {"MuonPtScale"}
+        uncorrected = "LVMu1Uncorrected" if scope == "mt" else "LVMu2Uncorrected"
+        assert "Muon_pt" in readers[uncorrected]
+        assert {"p4_1", "p4_2", "p4_1_uncorrected", "p4_2_uncorrected"} <= set(
+            readers["MetLeptonCorrection"]
+        )
+    assert "Muon_pt_corrected" in input_names(
+        find_producer(config, "global", "BaseMuons"), "global"
+    )
+
+
+@pytest.mark.parametrize(
+    "module,sample,era,scopes",
+    [
+        ("sm_config", "data", "2018", ("mt", "em")),
+        ("sm_config", "ttbar", "2018", ("et", "tt", "ee", "mm")),
+        ("sm_tau_id_measurement_config", "dyjets", "2018", ("mt", "mm")),
+        ("sm_btag_efficiency_config", "ttbar", "2018", ("mt", "em")),
+        ("nmssm_config", "ttbar", "2018", ("mt", "em")),
+    ],
+)
+def test_no_muon_energy_scale_elsewhere(module, sample, era, scopes):
+    config = build(module, sample, era=era, scopes=scopes, shifts=("CMS_scale_m_",))
+    for scope in scopes:
+        assert "MuonPtScale" not in {p.name for p in all_producers(config, scope)}
+        assert not [name for name in config.shifts.get(scope, {}) if "CMS_scale_m_eta" in name]
+        assert "muon_es_scale_factors" not in config.config_parameters[scope]["nominal"]
 

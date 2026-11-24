@@ -142,6 +142,9 @@ good_jet_collection_boosted = Quantity("good_jet_collection_boosted")
 good_bjet_collection_boosted = Quantity("good_bjet_collection_boosted")
 Electron_smearing_seed = Quantity("Electron_smearing_seed")
 Electron_pt_corrected = Quantity("Electron_pt_corrected")
+# the electron pT of a scope with its energy scale variation
+# (producers/lepton_energy_scale.py)
+Electron_pt_scaled = Quantity("Electron_pt_scaled")
 
 # boosted Tau quantities
 good_boostedtaus_mask = Quantity("good_boostedtaus_mask")
@@ -788,6 +791,9 @@ lhe_drell_yan_decay_flavor = Quantity("lhe_drell_yan_decay_flavor")
 
 # Corrected muon pt
 Muon_pt_corrected = Quantity("Muon_pt_corrected")
+# the muon pT of a scope with its energy scale variation
+# (producers/lepton_energy_scale.py)
+Muon_pt_scaled = Quantity("Muon_pt_scaled")
 
 #endregion
 

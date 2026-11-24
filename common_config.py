@@ -6,6 +6,7 @@ from .producers import electrons as electrons
 from .producers import event as event
 from .producers import genparticles as genparticles
 from .producers import jets as jets
+from .producers import lepton_energy_scale as lepton_energy_scale
 from .producers import met as met
 from .producers import muons as muons
 from .producers import pairquantities as pairquantities
@@ -33,7 +34,7 @@ from .variations.met import (
     add_unclustered_energy_shifts,
     add_recoil_calibration_shifts,
 )
-from .variations.muons import add_muon_id_iso_shifts
+from .variations.muons import add_muon_es_config, add_muon_es_shifts, add_muon_id_iso_shifts
 from .variations.jec import add_jec_shifts
 from .variations.taus import (
     add_tau_id_vs_jet_shifts,
@@ -3141,10 +3142,28 @@ def build_config(
         ]
     )
 
+    # Muon energy scale shifts of the profile (v8 spec C37): in their scopes,
+    # simulated and embedded events read the muon pT through the scope-level
+    # scale (lepton_energy_scale.MuonPtScale); data keep the corrected pT
+    muon_es_regions = {} if sample == "data" else dict(profile.shifts.muon_es_regions)
+    if not set(muon_es_regions) <= set(lepton_energy_scale.MUON_ES_SCOPES):
+        raise ValueError(
+            f"Muon energy scale shifts exist for {lepton_energy_scale.MUON_ES_SCOPES} only, "
+            f"got {sorted(muon_es_regions)}."
+        )
+
+    def muon_es(scope, producers):
+        if scope not in muon_es_regions:
+            return producers
+        return lepton_energy_scale.with_muon_es(producers)
+
+    if muon_es_regions:
+        add_muon_es_config(configuration, list(muon_es_regions))
+
     # Producers for quantities in the mt scope
     configuration.add_producers(
         MT_SCOPES,
-        [
+        muon_es("mt", [
             muons.GoodMuons,
             muons.NumberOfGoodMuons,
             muons.VetoMuons,
@@ -3164,7 +3183,7 @@ def build_config(
             # scalefactors.DoubleMuTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
             # TODO rework trigger setup before enabling this
             # triggers.GenerateSingleTrailingTauTriggerFlags,
-        ]
+        ])
     )
 
     # Producers for quantities in the tt scope
@@ -3237,7 +3256,7 @@ def build_config(
     # Producers for quantities in the em scope
     configuration.add_producers(
         EM_SCOPES,
-        [
+        muon_es("em", [
             electrons.GoodElectrons,
             electrons.NumberOfGoodElectrons,
             electrons.VetoElectrons,
@@ -3256,7 +3275,7 @@ def build_config(
             scalefactors.MuonIDIso_SF,
             triggers.SingleMuTriggerFlags,
             single_mu_trigger_sf,
-        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, em_ele_trigger_sf]),
+        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, em_ele_trigger_sf])),
     )
 
     # The supercluster eta of the electrons, at which the SFs are evaluated (C22)
@@ -4386,6 +4405,12 @@ def build_config(
     # POG SFs, see tau_id_measurement)
     if not profile.tau_id_measurement:
         add_muon_id_iso_shifts(configuration, era, [scalefactors.MuonIDIso_SF])
+
+    # Add muon energy scale shifts, of simulated and embedded events
+    if muon_es_regions:
+        add_muon_es_shifts(
+            configuration, era, lepton_energy_scale.MuonPtScale, muon_es_regions
+        )
 
     #endregion
 

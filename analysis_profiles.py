@@ -25,6 +25,11 @@ class ShiftScheme:
     # The jet energy resolution in the six eta/pT regions of JERC
     # (variations.jec.JER_REGIONS) instead of one shift per era (C33).
     jer_regions: bool = False
+    # The muon energy scale of simulated and embedded events: scope -> the
+    # |eta| regions (variations.muons.MUON_ES_REGIONS) with a shift. These
+    # scopes read the muon pT through a producer of their own
+    # (producers/lepton_energy_scale.py), whose nominal passes it on (C37).
+    muon_es_regions: Mapping[str, Tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -153,6 +158,11 @@ SM_PROFILE = AnalysisProfile(
         electron_fake_tau_es_scopes=("et",),
         muon_fake_tau_es_scopes=("mt",),
         jer_regions=True,
+        # mt keeps no muon above |eta| = 2.1 in the analysis (v7 spec E31)
+        muon_es_regions={
+            "mt": ("etalt1p2", "eta1p2to2p1"),
+            "em": ("etalt1p2", "eta1p2to2p1", "eta2p1to2p4"),
+        },
     ),
 )
 

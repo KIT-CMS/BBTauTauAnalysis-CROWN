@@ -70,6 +70,25 @@ def no_regressed_jets(module, sample, era, scope, calls, outputs):
     return calls, outputs
 
 
+MUON_PT_SCALE = (
+    'xyh::energy_scale::ScalePt( df, "Muon_pt_scaled", "Muon_pt_corrected", "Muon_eta", '
+    "{0.0, 1.2, 2.1}, {1.0, 1.0, 1.0} )"
+)
+
+
+def muon_pt_through_the_scope_level_scale(module, sample, era, scope, calls, outputs):
+    """v8 spec C37: in mt and em of sm_config, simulated and embedded events read the muon pT
+    through MuonPtScale, whose nominal factors of 1 pass the corrected pT on unchanged
+    (tests/cpp/test_energy_scale.cxx). The selection, the pair selection and the four-vector
+    of the muon read the scaled pT; the calls stay the same otherwise."""
+    if module == "sm_config" and sample != "data" and scope in ("mt", "em"):
+        readers = [call for call in calls if '"Muon_pt_corrected"' in call]
+        assert len(readers) == 3, readers
+        calls = [call.replace('"Muon_pt_corrected"', '"Muon_pt_scaled"') for call in calls]
+        calls = calls + [MUON_PT_SCALE]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
@@ -77,6 +96,7 @@ def no_regressed_jets(module, sample, era, scope, calls, outputs):
 EXPECTED_CHANGES = [
     diboson_gets_the_qcd_scale_weight,
     no_regressed_jets,
+    muon_pt_through_the_scope_level_scale,
 ]
 
 # The columns sm_config writes that the v7b n-tuples lack: the MET before the lepton and the

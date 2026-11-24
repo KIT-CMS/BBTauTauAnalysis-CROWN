@@ -350,6 +350,49 @@ def test_jer_hybrid_smearing_matches_gen_jets_and_draws_per_jet(
     )
 
 
+@pytest.fixture(scope="module")
+def energy_scale_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("energy_scale"),
+        "energy_scale",
+        [CPP / "test_energy_scale.cxx", ADDONS / "src/energy_scale.cxx"],
+    )
+
+
+def cpp_numbers(text):
+    """The numbers of a C++ list body written by helpers.cpp_list."""
+    return [number.strip() for number in text.split(",")]
+
+
+def scale_pt_arguments(config, scope, prefix):
+    """The arguments of tests/cpp/test_energy_scale.cxx for the scope-level energy scale of
+    ``config``: the |eta| edges, and the factors of the nominal and of every shift."""
+    nominal = config.config_parameters[scope]["nominal"]
+    edges = cpp_numbers(nominal[f"{prefix}_es_abs_eta_edges"])
+    variations = [nominal[f"{prefix}_es_scale_factors"]] + [
+        change[f"{prefix}_es_scale_factors"]
+        for change in config.shifts[scope].values()
+        if f"{prefix}_es_scale_factors" in change
+    ]
+    arguments = [str(len(edges)), *edges, str(len(variations))]
+    for factors in variations:
+        factors = cpp_numbers(factors)
+        assert len(factors) == len(edges)
+        arguments += factors
+    return arguments, len(variations) - 1
+
+
+@pytest.mark.parametrize("scope,pairs", [("mt", 2), ("em", 3)])
+def test_muon_energy_scale_scales_the_muons_of_a_region(energy_scale_binary, scope, pairs):
+    """The scope-level muon pT scale (v8 spec C37) with the edges and factors of the
+    configuration: the nominal factors return the input pT bit for bit, and every shift
+    scales the muons of its |eta| region only."""
+    config = build("sm_config", "ttbar", era="2018", scopes=(scope,), shifts=("CMS_scale_m",))
+    arguments, shifts = scale_pt_arguments(config, scope, "muon")
+    assert shifts == 2 * pairs
+    subprocess.run([str(energy_scale_binary), *arguments], check=True)
+
+
 def test_matched_trigger_object_quantity(tmp_path):
     """trigger::MatchedObjectQuantity (trgobj_*_2 of the tau-ID measurement): the
     nearest trigger object in Delta R with the ID and all filter bits wins, -1
