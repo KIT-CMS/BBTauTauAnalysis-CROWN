@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Compile check of the generated C++ code (v7 spec C17): one MC configuration per
-# production in every Run-2 era. Code generation alone (pytest, the dry run) never
+# production in every Run-2 era, the embedding and the signal of sm_config. Code
+# generation alone (pytest, the dry run) never
 # compiles, so a changed core signature only shows in the build; run this after every
 # CROWN pin change and before a production.
 #
@@ -44,6 +45,8 @@ builds=(
     "sm_btag_efficiency_config_ttbar sm_btag_efficiency_config ${eras} ttbar et,mt,tt,em,ee,mm none"
     "sm_tau_id_measurement_config_dyjets sm_tau_id_measurement_config ${eras} dyjets mt,mm ${tm_shifts}"
     "sm_config_embedding sm_config ${embedding_eras} embedding et,mt,tt none"
+    # the signal: the only sample type with the PDF weight columns and the H -> bb jet flags
+    "sm_config_hh2b2tau sm_config ${eras} hh2b2tau et,mt,tt none"
 )
 
 spdlog=()
