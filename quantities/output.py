@@ -244,6 +244,11 @@ q_1 = Quantity("q_1")
 q_2 = Quantity("q_2")
 iso_1 = Quantity("iso_1")
 iso_2 = Quantity("iso_2")
+# raw DeepTau scores against electrons and muons of the tau legs (v8 spec C26)
+rawDeepTau2018v2p5VSe_1 = Quantity("rawDeepTau2018v2p5VSe_1")
+rawDeepTau2018v2p5VSe_2 = Quantity("rawDeepTau2018v2p5VSe_2")
+rawDeepTau2018v2p5VSmu_1 = Quantity("rawDeepTau2018v2p5VSmu_1")
+rawDeepTau2018v2p5VSmu_2 = Quantity("rawDeepTau2018v2p5VSmu_2")
 is_global_1 = Quantity("is_global_1")
 is_global_2 = Quantity("is_global_2")
 tau_decaymode_1 = Quantity("tau_decaymode_1")
@@ -436,6 +441,40 @@ jeta_2 = Quantity("jeta_2")
 jphi_2 = Quantity("jphi_2")
 jtag_value_2 = Quantity("jtag_value_2")
 jet_hadronFlavour_2 = Quantity("jet_hadronFlavour_2")
+
+# Jet slots (v8 spec C25): <quantity>_<slot> of the jet at position slot - 1 of
+# good_jet_collection, the jets of n_jets ordered in pT. The quantities above
+# of the slots 1 and 2 stay; the loop adds their slots 3 to 8, and for every
+# slot the mass, the UParT CvB, CvL and QvG scores and the flag of the jets
+# matched to a b quark of the Higgs boson decay.
+JET_SLOTS = tuple(range(1, 9))
+JET_SLOT_QUANTITIES = (
+    "jet_p4",
+    "jpt",
+    "jeta",
+    "jphi",
+    "jmass",
+    "jtag_value",
+    "jtag_cvb",
+    "jtag_cvl",
+    "jtag_qvg",
+    "jet_hadronFlavour",
+    "jet_from_hbb",
+)
+for _name in JET_SLOT_QUANTITIES:
+    for _slot in JET_SLOTS:
+        if not hasattr(this_module, f"{_name}_{_slot}"):
+            setattr(this_module, f"{_name}_{_slot}", Quantity(f"{_name}_{_slot}"))
+# per jet of good_jet_collection: matched to a b quark of the Higgs boson decay
+jets_from_hbb = Quantity("jets_from_hbb")
+
+
+def jet_slot(name, slot):
+    """The quantity <name>_<slot> of a jet slot."""
+    if name not in JET_SLOT_QUANTITIES or slot not in JET_SLOTS:
+        raise ValueError(f"no jet slot quantity {name}_{slot}")
+    return getattr(this_module, f"{name}_{slot}")
+
 mjj = Quantity("mjj")
 bjet_p4_1 = Quantity("bjet_p4_1")
 bpt_1 = Quantity("bpt_1")

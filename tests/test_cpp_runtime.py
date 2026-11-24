@@ -454,6 +454,19 @@ def test_parton_shower_weight_indices_and_checked_weight_length(tmp_path):
     subprocess.run([str(binary)], check=True)
 
 
+def test_jets_from_the_higgs_boson_decay(tmp_path):
+    """xyh::genmatching::JetsFromBosonDecay (jet_from_hbb_<slot>, v8 spec C25): every last
+    copy of a hard-process b quark below the boson flags its nearest jet of the collection
+    within Delta R < 0.4; quarks from gluon splitting, real emissions and the quarks of
+    another boson do not."""
+    binary = compile_fixture(
+        tmp_path,
+        "hbb_jets",
+        [CPP / "test_hbb_jets.cxx", ADDONS / "src/hbb_jets.cxx"],
+    )
+    subprocess.run([str(binary)], check=True)
+
+
 def test_matched_trigger_object_quantity(tmp_path):
     """trigger::MatchedObjectQuantity (trgobj_*_2 of the tau-ID measurement): the
     nearest trigger object in Delta R with the ID and all filter bits wins, -1

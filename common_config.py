@@ -2577,6 +2577,8 @@ def build_config(
     is_simulation = sample not in ("data", "embedding", "embedding_mc")
     parton_shower_weight = profile.shifts.parton_shower and is_simulation
     lhe_pdf_weights = sample in profile.lhe_pdf_weight_samples
+    stage_b_columns = profile.stage_b_columns
+    hbb_jet_flags = stage_b_columns and sample in profile.bb_truegen_mother_pdgid
     if parton_shower_weight:
         add_parton_shower_weight_config(configuration)
     if lhe_pdf_weights:
@@ -2761,6 +2763,8 @@ def build_config(
             "bb_truegen_daughter_1_pdgid": 5,
             "bb_truegen_daughter_2_pdgid": 5,
             "gen_bpair_match_deltaR": 0.2,
+            # jet slots: radius of the match of a b quark of the decay to a jet
+            "hbb_jet_match_delta_r": 0.4,
             "tautau_truegen_mother_pdgid": SampleModifier(
                 dict(profile.tautau_truegen_mother_pdgid), default=-1
             ),
@@ -3176,6 +3180,9 @@ def build_config(
             scalefactors.TauIDSF,
             taus.TauEnergyCorrectionMC,
         ]
+        + ([*jets.JetSlots, pairquantities.TauRawDeepTauScores] if stage_b_columns else [])
+        + (jets.JetSlotHadronFlavours if stage_b_columns and is_simulation else [])
+        + ([jets.JetSlotHbbFlags] if hbb_jet_flags else [])
     )
 
     # Producers for quantities in the et scope
@@ -4138,6 +4145,26 @@ def build_config(
         configuration.add_outputs(SCOPES, [q.ps_weight])
     if lhe_pdf_weights:
         configuration.add_outputs(SCOPES, [q.lhe_pdf_weight(member) for member in q.LHE_PDF_MEMBERS])
+
+    # the inputs of the NN stage B (C25-C27)
+    if stage_b_columns:
+        configuration.add_outputs(
+            HAD_TAU_SCOPES,
+            jets.JET_SLOT_OUTPUTS
+            + (jets.JET_SLOT_HADRON_FLAVOUR_OUTPUTS if is_simulation else [])
+            + (jets.JET_SLOT_HBB_OUTPUTS if hbb_jet_flags else []),
+        )
+        for _scope in HAD_TAU_SCOPES:
+            configuration.add_outputs(
+                [_scope],
+                [
+                    output
+                    for producer in pairquantities.TauRawDeepTauScores.producers[_scope]
+                    for output in producer.output
+                ],
+            )
+        if is_simulation:
+            configuration.add_outputs(SCOPES, [nanoAOD.genTtbarId])
 
     # add genWeight for everything but data
     if sample != "data":

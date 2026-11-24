@@ -133,6 +133,12 @@ class AnalysisProfile:
     # lhe_pdf_weight_<i> = LHEPdfWeight[i], i = 1..100, without a combination per
     # event (v8 spec C24).
     lhe_pdf_weight_samples: Tuple[str, ...] = ()
+    # The inputs of the NN stage B (nn spec N19, v8 spec C25-C27, V12): in et, mt
+    # and tt the jets of n_jets in eight slots (kinematics, UParT scores, in MC
+    # the hadron flavour and in the samples of bb_truegen_mother_pdgid the flag
+    # of the jets from the decay to bb) and the raw DeepTau vsEle and vsMu
+    # scores of the tau legs; in every scope of MC genTtbarId.
+    stage_b_columns: bool = False
     # The systematic shifts beyond the common set.
     shifts: ShiftScheme = field(default_factory=ShiftScheme)
 
@@ -175,6 +181,7 @@ SM_PROFILE = AnalysisProfile(
     btag_sf_working_points=("T", "M"),
     regressed_jet_columns=False,
     lhe_pdf_weight_samples=("hh2b2tau",),
+    stage_b_columns=True,
     shifts=ShiftScheme(
         tau_id_vs_jet_syst_tes=True,
         tau_es_per_decay_mode=True,
@@ -201,6 +208,7 @@ _V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES = ("data", "embedding", "embedding_mc", "d
 _V7_COLUMNS = dict(
     regressed_jet_columns=True,
     lhe_pdf_weight_samples=(),
+    stage_b_columns=False,
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the

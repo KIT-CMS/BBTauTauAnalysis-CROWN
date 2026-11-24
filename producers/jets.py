@@ -1336,6 +1336,178 @@ JetHadronFlavours = ProducerGroup(
     ],
 )
 
+# ------------------------------------------------------------------------------
+# Jet slots (inputs of the NN stage B; nn spec N19, v8 spec C25)
+# ------------------------------------------------------------------------------
+#
+# The jets of good_jet_collection, the pT-ordered collection behind n_jets and
+# the columns of the two leading jets above, in JET_SLOTS fixed slots: slot i
+# holds the jet at position i - 1 and, in events with fewer jets, the default
+# of the functions that fill the slots 1 and 2 (-10; 246 for the hadron
+# flavour, the unsigned -10). The slots are built from the corrected jets like
+# the leading two (same producers and calls), so they follow every shift of the
+# collection: jet energy scale and resolution, and the shifts that change the
+# pair the jets are cleaned against.
+
+JET_SLOTS = q.JET_SLOTS
+# producers of the two leading jets that exist above, per quantity
+_LEADING_JET_PRODUCERS = {
+    "jet_p4": (LVJet1, LVJet2),
+    "jpt": (jpt_1, jpt_2),
+    "jeta": (jeta_1, jeta_2),
+    "jphi": (jphi_1, jphi_2),
+    "jtag_value": (jtag_value_1, jtag_value_2),
+    "jet_hadronFlavour": (jet_hadronFlavour_1, jet_hadronFlavour_2),
+}
+# quantity -> the call of its producer and the inputs before the slot
+_JET_SLOT_CALLS = {
+    "jet_p4": (
+        "lorentzvector::Build({df}, {output}, {input}, %d)",
+        lambda slot: [
+            q.Jet_correctedPt,
+            nanoAOD.Jet_eta,
+            nanoAOD.Jet_phi,
+            q.Jet_correctedMass,
+            q.good_jet_collection,
+        ],
+    ),
+    "jpt": ("lorentzvector::GetPt({df}, {output}, {input})", lambda slot: [q.jet_slot("jet_p4", slot)]),
+    "jeta": ("lorentzvector::GetEta({df}, {output}, {input})", lambda slot: [q.jet_slot("jet_p4", slot)]),
+    "jphi": ("lorentzvector::GetPhi({df}, {output}, {input})", lambda slot: [q.jet_slot("jet_p4", slot)]),
+    "jmass": ("lorentzvector::GetMass({df}, {output}, {input})", lambda slot: [q.jet_slot("jet_p4", slot)]),
+    "jtag_value": (
+        "event::quantity::Get<float>({df}, {output}, {input}, %d)",
+        lambda slot: [q.Jet_bTagValue, q.good_jet_collection],
+    ),
+    "jtag_cvb": (
+        "event::quantity::Get<float>({df}, {output}, {input}, %d)",
+        lambda slot: [nanoAOD.Jet_btagUParTAK4CvB, q.good_jet_collection],
+    ),
+    "jtag_cvl": (
+        "event::quantity::Get<float>({df}, {output}, {input}, %d)",
+        lambda slot: [nanoAOD.Jet_btagUParTAK4CvL, q.good_jet_collection],
+    ),
+    "jtag_qvg": (
+        "event::quantity::Get<float>({df}, {output}, {input}, %d)",
+        lambda slot: [nanoAOD.Jet_btagUParTAK4QvG, q.good_jet_collection],
+    ),
+    "jet_hadronFlavour": (
+        "event::quantity::Get<UChar_t>({df}, {output}, {input}, %d)",
+        lambda slot: [nanoAOD.Jet_hadronFlavour, q.good_jet_collection],
+    ),
+    "jet_from_hbb": (
+        "event::quantity::Get<int>({df}, {output}, {input}, %d)",
+        lambda slot: [q.jets_from_hbb],
+    ),
+}
+
+
+def _make_jet_slot_producer(name, slot):
+    if name in _LEADING_JET_PRODUCERS and slot <= 2:
+        return _LEADING_JET_PRODUCERS[name][slot - 1]
+    call, inputs = _JET_SLOT_CALLS[name]
+    return Producer(
+        name=f"{name}_{slot}",
+        call=call % (slot - 1) if "%d" in call else call,
+        input=inputs(slot),
+        output=[q.jet_slot(name, slot)],
+        scopes=SCOPES,
+    )
+
+
+# (quantity, slot) -> the producer of <quantity>_<slot>: the existing one of the
+# two leading jets, else one with the same call at position slot - 1
+JET_SLOT_PRODUCERS = {
+    (name, slot): _make_jet_slot_producer(name, slot)
+    for name in _JET_SLOT_CALLS
+    for slot in JET_SLOTS
+}
+
+
+def _jet_slot_groups(group, names):
+    """Per slot a producer group <group><slot> with the producers of the quantities
+    ``names`` that the scopes do not have already (BasicJetQuantities and
+    JetHadronFlavours hold those of the two leading jets), and the output columns
+    of every slot. One group per slot keeps the generated source files small: the
+    jet shifts repeat every producer about sixty times, and a single file with
+    all slots needed 8 GB to compile."""
+    groups = []
+    for slot in JET_SLOTS:
+        producers = [
+            JET_SLOT_PRODUCERS[name, slot]
+            for name in names
+            if not (name in _LEADING_JET_PRODUCERS and slot <= 2)
+        ]
+        if producers:
+            groups.append(
+                ProducerGroup(
+                    name=f"{group}{slot}",
+                    call=None,
+                    input=None,
+                    output=None,
+                    scopes=SCOPES,
+                    subproducers=producers,
+                )
+            )
+    outputs = [q.jet_slot(name, slot) for slot in JET_SLOTS for name in names if name != "jet_p4"]
+    return groups, outputs
+
+
+# Kinematics and UParT scores of every sample: pT, eta, phi, mass, B (the
+# tagger of jtag_value_1/2), CvB, CvL and QvG; the groups JetSlot1 to JetSlot8
+JetSlots, JET_SLOT_OUTPUTS = _jet_slot_groups(
+    "JetSlot", ["jet_p4", "jpt", "jeta", "jphi", "jmass", "jtag_value", "jtag_cvb", "jtag_cvl", "jtag_qvg"]
+)
+# Hadron flavour, simulation only; the groups JetSlotHadronFlavour3 to 8
+JetSlotHadronFlavours, JET_SLOT_HADRON_FLAVOUR_OUTPUTS = _jet_slot_groups(
+    "JetSlotHadronFlavour", ["jet_hadronFlavour"]
+)
+
+# Flag of the jets from H -> bb, signal only: 1 for the jet of the collection
+# nearest to a b quark of the Higgs boson decay within Delta R <
+# hbb_jet_match_delta_r, each quark matched to at most one jet, 0 for the other
+# jets and -10 in an empty slot. The quarks are the last copies of the b quarks
+# of the hard process whose chain of b-quark mothers ends at the boson
+# bb_truegen_mother_pdgid (xyh::genmatching::JetsFromBosonDecay; exactly two
+# per signal event). The configuration had no working matching to reuse:
+# YbbTrueGenPair passes its arguments in the wrong order and takes the first
+# two b quarks with the boson anywhere among their ancestors, and the function
+# of GenMatchingBPairFlag does not exist.
+JetsFromHbb = Producer(
+    name="JetsFromHbb",
+    call="""
+    xyh::genmatching::JetsFromBosonDecay(
+        {df},
+        {output},
+        {input},
+        {bb_truegen_mother_pdgid},
+        {bb_truegen_daughter_1_pdgid},
+        {hbb_jet_match_delta_r}
+    )
+    """,
+    input=[
+        nanoAOD.GenPart_pdgId,
+        nanoAOD.GenPart_statusFlags,
+        nanoAOD.GenPart_genPartIdxMother,
+        nanoAOD.GenPart_eta,
+        nanoAOD.GenPart_phi,
+        nanoAOD.Jet_eta,
+        nanoAOD.Jet_phi,
+        q.good_jet_collection,
+    ],
+    output=[q.jets_from_hbb],
+    scopes=SCOPES,
+)
+JET_SLOT_HBB_OUTPUTS = [q.jet_slot("jet_from_hbb", slot) for slot in JET_SLOTS]
+JetSlotHbbFlags = ProducerGroup(
+    name="JetSlotHbbFlags",
+    call=None,
+    input=None,
+    output=None,
+    scopes=SCOPES,
+    subproducers=[JetsFromHbb] + [JET_SLOT_PRODUCERS["jet_from_hbb", slot] for slot in JET_SLOTS],
+)
+
 ##########################
 # Basic b-Jet Quantities
 # nbtag, pt, eta, phi, b-tag value

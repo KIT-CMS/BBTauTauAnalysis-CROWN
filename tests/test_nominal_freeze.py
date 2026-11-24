@@ -176,6 +176,81 @@ def pdf_weights_of_the_signal(module, sample, era, scope, calls, outputs):
     return calls, outputs
 
 
+def jet_slots(module, sample, era, scope, calls, outputs):
+    """v8 spec C25: et, mt and tt of sm_config write the jets of n_jets in eight slots. The
+    two leading slots keep their frozen calls for pT, eta, phi, the UParT B score and the
+    hadron flavour; the slots 3 to 8 are built by the same functions at their position of
+    good_jet_collection, and every slot gets the mass and the CvB, CvL and QvG scores.
+    Simulation adds the hadron flavour, the signal the flag of the jets from H -> bb."""
+    if module != "sm_config" or scope not in TAU_SCOPES:
+        return calls, outputs
+    quantities = ["jpt", "jeta", "jphi", "jmass", "jtag_value", "jtag_cvb", "jtag_cvl", "jtag_qvg"]
+    new_calls = []
+    for slot in JET_SLOTS:
+        if slot > 2:
+            new_calls += [
+                f'lorentzvector::Build(df, "jet_p4_{slot}", "Jet_correctedPt", "Jet_eta", "Jet_phi", '
+                f'"Jet_correctedMass", "good_jet_collection", {slot - 1})',
+                f'lorentzvector::GetPt(df, "jpt_{slot}", "jet_p4_{slot}")',
+                f'lorentzvector::GetEta(df, "jeta_{slot}", "jet_p4_{slot}")',
+                f'lorentzvector::GetPhi(df, "jphi_{slot}", "jet_p4_{slot}")',
+                f'event::quantity::Get<float>(df, "jtag_value_{slot}", "Jet_bTagValue", "good_jet_collection", {slot - 1})',
+            ]
+        new_calls.append(f'lorentzvector::GetMass(df, "jmass_{slot}", "jet_p4_{slot}")')
+        new_calls += [
+            f'event::quantity::Get<float>(df, "jtag_{name}_{slot}", "Jet_btagUParTAK4{branch}", '
+            f'"good_jet_collection", {slot - 1})'
+            for name, branch in (("cvb", "CvB"), ("cvl", "CvL"), ("qvg", "QvG"))
+        ]
+    if is_simulation(sample):
+        quantities.append("jet_hadronFlavour")
+        new_calls += [
+            f'event::quantity::Get<UChar_t>(df, "jet_hadronFlavour_{slot}", "Jet_hadronFlavour", '
+            f'"good_jet_collection", {slot - 1})'
+            for slot in JET_SLOTS
+            if slot > 2
+        ]
+    if sample == "hh2b2tau":
+        quantities.append("jet_from_hbb")
+        new_calls.append(
+            'xyh::genmatching::JetsFromBosonDecay( df, "jets_from_hbb", "GenPart_pdgId", '
+            '"GenPart_statusFlags", "GenPart_genPartIdxMother", "GenPart_eta", "GenPart_phi", "Jet_eta", '
+            '"Jet_phi", "good_jet_collection", 25, 5, 0.4 )'
+        )
+        new_calls += [
+            f'event::quantity::Get<int>(df, "jet_from_hbb_{slot}", "jets_from_hbb", {slot - 1})'
+            for slot in JET_SLOTS
+        ]
+    columns = [f"{quantity}_{slot}" for quantity in quantities for slot in JET_SLOTS]
+    # the columns of the two leading jets that the frozen surface has
+    frozen = {f"{quantity}_{slot}" for quantity in ("jpt", "jeta", "jphi", "jtag_value") for slot in (1, 2)}
+    if is_simulation(sample):
+        frozen |= {"jet_hadronFlavour_1", "jet_hadronFlavour_2"}
+    assert frozen <= set(outputs), sorted(frozen - set(outputs))
+    return calls + new_calls, outputs + [column for column in columns if column not in frozen]
+
+
+def raw_tau_scores(module, sample, era, scope, calls, outputs):
+    """v8 spec C26: et, mt and tt of sm_config write the raw DeepTau scores against
+    electrons and muons of their tau legs."""
+    if module == "sm_config" and scope in TAU_SCOPES:
+        for leg in TAU_LEGS[scope]:
+            for name in ("VSe", "VSmu"):
+                calls = calls + [
+                    f'event::quantity::Get<Float_t>(df, "rawDeepTau2018v2p5{name}_{leg}", '
+                    f'"Tau_rawDeepTau2018v2p5{name}", "dileptonpair", {leg - 1})'
+                ]
+                outputs = outputs + [f"rawDeepTau2018v2p5{name}_{leg}"]
+    return calls, outputs
+
+
+def gen_ttbar_id(module, sample, era, scope, calls, outputs):
+    """v8 spec C27: simulated samples of sm_config write the NanoAOD branch genTtbarId."""
+    if module == "sm_config" and is_simulation(sample) and scope != "global":
+        outputs = outputs + ["genTtbarId"]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
@@ -188,6 +263,9 @@ EXPECTED_CHANGES = [
     ditau_trigger_sf_from_the_addon,
     parton_shower_weight,
     pdf_weights_of_the_signal,
+    jet_slots,
+    raw_tau_scores,
+    gen_ttbar_id,
 ]
 # the changes that only add calls and columns: every frozen call and column is still there
 ADDITIONS = EXPECTED_CHANGES[5:]

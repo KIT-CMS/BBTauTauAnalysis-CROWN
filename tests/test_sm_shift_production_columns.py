@@ -161,3 +161,123 @@ def test_no_other_sample_has_pdf_columns(era, sample):
         assert not [name for name in output_names(config, scope) if "pdf" in name.lower()], scope
 
 
+# --- C25: jet slots -------------------------------------------------------------
+
+SLOT_QUANTITIES = ("jpt", "jeta", "jphi", "jmass", "jtag_value", "jtag_cvb", "jtag_cvl", "jtag_qvg")
+# the columns of the two leading jets that every scope had before
+LEADING_JET_COLUMNS = {f"{name}_{slot}" for name in ("jpt", "jeta", "jphi", "jtag_value") for slot in (1, 2)}
+LEADING_JET_FLAVOURS = {"jet_hadronFlavour_1", "jet_hadronFlavour_2"}
+
+
+def slot_columns(config, scope):
+    prefixes = (*SLOT_QUANTITIES, "jet_hadronFlavour", "jet_from_hbb")
+    return {
+        name for name in output_names(config, scope)
+        if name.rsplit("_", 1)[0] in prefixes and name.rsplit("_", 1)[1].isdigit()
+    }
+
+
+@pytest.mark.parametrize("sample", ["data", "embedding", "ttbar", "hh2b2tau"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_jet_slot_columns_per_sample_and_scope(era, sample):
+    """et, mt and tt: eight slots with pT, eta, phi, mass and the UParT B, CvB, CvL and QvG
+    scores in every sample, the hadron flavour in simulation and the H -> bb flag in the
+    signal; em, ee and mm keep the columns of the two leading jets."""
+    config = sm_config(sample, era)
+    simulated = sample not in NOT_SIMULATED
+    expected = {f"{name}_{slot}" for name in SLOT_QUANTITIES for slot in SLOTS}
+    if simulated:
+        expected |= {f"jet_hadronFlavour_{slot}" for slot in SLOTS}
+    if sample == "hh2b2tau":
+        expected |= {f"jet_from_hbb_{slot}" for slot in SLOTS}
+    for scope in scopes_of(sample):
+        if scope in TAU_SCOPES:
+            assert slot_columns(config, scope) == expected, (scope, sorted(slot_columns(config, scope) ^ expected))
+        else:
+            assert slot_columns(config, scope) == LEADING_JET_COLUMNS | (LEADING_JET_FLAVOURS if simulated else set()), scope
+            assert not [name for name in producer_names(config, scope) if name.startswith("JetSlot")], scope
+    for scope in TAU_SCOPES:
+        # one producer group per slot, so that no generated source file holds all slots
+        groups = {name for name in producer_names(config, scope) if name.startswith("JetSlot")}
+        expected_groups = {f"JetSlot{slot}" for slot in SLOTS}
+        if simulated:
+            expected_groups |= {f"JetSlotHadronFlavour{slot}" for slot in range(3, 9)}
+        if sample == "hh2b2tau":
+            expected_groups.add("JetSlotHbbFlags")
+        assert groups == expected_groups, scope
+
+
+def test_jet_slots_read_the_collection_of_n_jets_in_order():
+    """Slot i is position i - 1 of good_jet_collection, the pT-ordered collection that n_jets
+    counts; the two leading slots are the producers the configuration had, and the further
+    slots call the same functions on the same columns."""
+    assert [quantity.name for quantity in jets.NumberOfJets.input[TAU_SCOPES[0]]] == ["good_jet_collection"]
+    assert jets.JetCollection.call.startswith("physicsobject::OrderByPt(")
+    leading = {"jet_p4": (jets.LVJet1, jets.LVJet2), "jpt": (jets.jpt_1, jets.jpt_2),
+               "jeta": (jets.jeta_1, jets.jeta_2), "jphi": (jets.jphi_1, jets.jphi_2),
+               "jtag_value": (jets.jtag_value_1, jets.jtag_value_2),
+               "jet_hadronFlavour": (jets.jet_hadronFlavour_1, jets.jet_hadronFlavour_2)}
+    for name, (first, second) in leading.items():
+        assert jets.JET_SLOT_PRODUCERS[name, 1] is first and jets.JET_SLOT_PRODUCERS[name, 2] is second
+        for slot in range(3, 9):
+            producer = jets.JET_SLOT_PRODUCERS[name, slot]
+            # the call of the leading jet at the position of the slot
+            assert producer.call == second.call.replace(", 1)", f", {slot - 1})"), (name, slot)
+            inputs = [quantity.name for quantity in producer.input["mt"]]
+            expected = [quantity.name for quantity in second.input["mt"]]
+            assert inputs == [name.replace("jet_p4_2", f"jet_p4_{slot}") for name in expected], (name, slot)
+            assert [quantity.name for quantity in producer.output] == [f"{name}_{slot}"]
+    for name, branch in (("jtag_cvb", "Jet_btagUParTAK4CvB"), ("jtag_cvl", "Jet_btagUParTAK4CvL"),
+                         ("jtag_qvg", "Jet_btagUParTAK4QvG")):
+        for slot in SLOTS:
+            producer = jets.JET_SLOT_PRODUCERS[name, slot]
+            assert producer.call == f"event::quantity::Get<float>({{df}}, {{output}}, {{input}}, {slot - 1})"
+            assert [quantity.name for quantity in producer.input["mt"]] == [branch, "good_jet_collection"]
+    for slot in SLOTS:
+        producer = jets.JET_SLOT_PRODUCERS["jmass", slot]
+        assert producer.call == "lorentzvector::GetMass({df}, {output}, {input})"
+        assert [quantity.name for quantity in producer.input["mt"]] == [f"jet_p4_{slot}"]
+
+
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_the_hbb_flag_matches_the_b_quarks_of_the_higgs_boson_within_0p4(era):
+    config = sm_config("hh2b2tau", era)
+    for scope in TAU_SCOPES:
+        nominal = config.config_parameters[scope]["nominal"]
+        assert nominal["bb_truegen_mother_pdgid"] == 25 and nominal["bb_truegen_daughter_1_pdgid"] == 5
+        assert nominal["hbb_jet_match_delta_r"] == 0.4
+        matching = find_producer(config, scope, "JetsFromHbb")
+        assert matching.call.split("(")[0].strip() == "xyh::genmatching::JetsFromBosonDecay"
+        assert [quantity.name for quantity in matching.input[scope]][-3:] == ["Jet_eta", "Jet_phi", "good_jet_collection"]
+        for slot in SLOTS:
+            flag = find_producer(config, scope, f"jet_from_hbb_{slot}")
+            assert flag.call == f"event::quantity::Get<int>({{df}}, {{output}}, {{input}}, {slot - 1})"
+            assert [quantity.name for quantity in flag.input[scope]] == ["jets_from_hbb"]
+
+
+# --- C26, C27: raw tau scores and genTtbarId ------------------------------------
+
+
+@pytest.mark.parametrize("sample", ["data", "embedding", "ttbar", "hh2b2tau"])
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_raw_tau_scores_of_the_tau_legs_and_gen_ttbar_id(era, sample):
+    """The raw DeepTau scores against electrons and muons for the tau legs of et, mt (leg 2)
+    and tt (both), in every sample, and no raw score against jets under such a name;
+    genTtbarId in every scope of simulated samples only."""
+    config = sm_config(sample, era)
+    for scope in scopes_of(sample):
+        names = output_names(config, scope)
+        raw = {name for name in names if "rawdeeptau" in name.lower()}
+        expected = {
+            f"rawDeepTau2018v2p5{against}_{leg}" for against in ("VSe", "VSmu") for leg in TAU_LEGS.get(scope, ())
+        }
+        assert raw == expected, scope
+        assert ("genTtbarId" in names) is (sample not in NOT_SIMULATED), scope
+    for scope in TAU_SCOPES:
+        for leg in TAU_LEGS[scope]:
+            for against, branch in (("ele", "Tau_rawDeepTau2018v2p5VSe"), ("mu", "Tau_rawDeepTau2018v2p5VSmu")):
+                producer = find_producer(config, scope, f"tau_raw_vs_{against}_{leg}")
+                assert producer.call == f"event::quantity::Get<Float_t>({{df}}, {{output}}, {{input}}, {leg - 1})"
+                assert [quantity.name for quantity in producer.input[scope]] == [branch, "dileptonpair"]
+
+
