@@ -462,7 +462,7 @@ def test_both_fake_factor_entry_points_generate(wjets_payload, scope, tmp_path):
             assert "this friend expects" in result.stderr, result.stderr[-2000:]
 
 
-# --- the v7b payloads of P5 (ff_v7b, ff_v7b_w) in every era and sample kind ------
+# --- the payloads of the fake-factor friends (v7: ff_v7b, ff_v7b_w; v8: ff_v8, ff_v8_w) in every era and sample kind ---
 
 
 def relabelled_ff_map(era, sample, tmp_path):
@@ -476,17 +476,17 @@ def relabelled_ff_map(era, sample, tmp_path):
 
 
 @pytest.mark.parametrize("era", ERAS_RUN2)
-@pytest.mark.parametrize("module", [sm_fake_factors, sm_fake_factors_w], ids=["ff_v7b", "ff_v7b_w"])
+@pytest.mark.parametrize("module", [sm_fake_factors, sm_fake_factors_w], ids=["ff", "ff_w"])
 def test_both_fake_factor_friends_build_in_every_run2_era_and_sample_kind(module, era, tmp_path):
-    """P5 builds ff_v7b and ff_v7b_w for the data, the MC and the embedding of every
-    Run-2 era from the v7b payloads (2016preVFP and 2016postVFP from the one 2016
-    payload); the friend does not depend on the sample kind, W+jets enters et and
-    mt of ff_v7b_w only, and every correction of the configuration is in the payload
-    of the era."""
+    """Both fake-factor friends build for the data, the MC and the embedding of every
+    Run-2 era from the v7c payloads of the shift production (v8 spec 5.2; 2016preVFP
+    and 2016postVFP from the one 2016 payload); the friend does not depend on the
+    sample kind, W+jets enters et and mt of the W variant only, and every correction
+    of the configuration is in the payload of the era."""
     assert module.AVAILABLE_ERAS == ERAS_RUN2
     payload_era = module.PAYLOAD_ERAS[era]
     directory = module.SM_PAYLOAD_DIRS[era]
-    variant = "fake-factors-2026-10-19" + ("-w" if module is sm_fake_factors_w else "")
+    variant = "fake-factors-2026-11-24" + ("-w" if module is sm_fake_factors_w else "")
     assert directory == f"payloads/fake_factors/sm/{variant}/{payload_era}"
     analysis = Path(module.__file__).parent
     for scope in ("et", "mt", "tt"):

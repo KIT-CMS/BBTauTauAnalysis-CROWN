@@ -523,15 +523,18 @@ FF_REFERENCE_LEGS = [
     ("nmssm2023postBPix", FF_PAYLOADS / "fake-factors-2026-06-10/2023postBPix", ("mt",)),
     ("nmssm2025", FF_PAYLOADS / "fake-factors-2026-09-26/2025", ("mt",)),
 ]
-# the v7b payloads of every SM payload era (2026-10-19): QCD + ttbar against the frozen
-# reference, QCD + W + ttbar as the three-process sum in et and mt, whose tt legs (no
-# W+jets in tt) are two-process again: (label, payload directory, scopes, reference)
+# the v7b (2026-10-19) and v7c (2026-11-24, the payloads of the shift production)
+# payloads of every SM payload era: QCD + ttbar against the frozen reference,
+# QCD + W + ttbar as the three-process sum in et and mt, whose tt legs (no W+jets in
+# tt) are two-process again: (label, payload directory, scopes, reference)
 V7B_PAYLOAD_ERAS = ("2016", "2017", "2018")
 V7B_LEGS = [
-    (f"sm{era}v7b", FF_PAYLOADS / f"sm/fake-factors-2026-10-19/{era}", ("et", "mt", "tt"), True)
+    (f"sm{era}{label}", FF_PAYLOADS / f"sm/fake-factors-{date}/{era}", ("et", "mt", "tt"), True)
+    for label, date in (("v7b", "2026-10-19"), ("v7c", "2026-11-24"))
     for era in V7B_PAYLOAD_ERAS
 ] + [
-    (f"sm{era}v7bw", FF_PAYLOADS / f"sm/fake-factors-2026-10-19-w/{era}", scopes, reference)
+    (f"sm{era}{label}w", FF_PAYLOADS / f"sm/fake-factors-{date}-w/{era}", scopes, reference)
+    for label, date in (("v7b", "2026-10-19"), ("v7c", "2026-11-24"))
     for era in V7B_PAYLOAD_ERAS
     for scopes, reference in ((("et", "mt"), False), (("tt",), True))
 ]
@@ -603,11 +606,11 @@ def fake_factor_plan(label, payload_dir, scopes, reference):
 def test_fake_factor_sum_over_the_payload_processes(tmp_path):
     """C15: fakefactors::xyh::FakeFactor sums f_p * FF_p * corrections_p over the
     processes of the payload. On the measured two-process payloads (SM 2018 et,
-    mt, tt; NMSSM 2023postBPix, 2025 mt; the v7b QCD + ttbar payloads of 2016, 2017
-    and 2018 and the tt legs of the v7b W variant) it reproduces the friend before C15 bit
+    mt, tt; NMSSM 2023postBPix, 2025 mt; the v7b and v7c QCD + ttbar payloads of 2016, 2017
+    and 2018 and the tt legs of their W variants) it reproduces the friend before C15 bit
     for bit, raw and corrected, nominal and with every syst key the friend
     shifts; on a QCD + W + ttbar payload (derived from SM 2018 et and mt, and the
-    measured v7b ones of every era) it gives the three-process sum, with a W term. Every leg gives that sum in the
+    measured v7b and v7c ones of every era) it gives the three-process sum, with a W term. Every leg gives that sum in the
     float arithmetic of the friend (in payload order) bit for bit, which fixes
     the values of the three-process legs as well.
 
@@ -641,7 +644,8 @@ def test_fake_factor_sum_over_the_payload_processes(tmp_path):
     result = subprocess.run([str(binary), str(plan)], capture_output=True, text=True)
     summary = [line for line in result.stdout.splitlines() if line.startswith(("PASS", "FAIL"))]
     assert result.returncode == 0, "\n".join(summary) + result.stderr[-3000:]
-    legs = 8 + 3 * 4 + 3 * 4  # + per v7b payload era: et, mt, tt leading and subleading, in both variants
+    # + per v7b and v7c payload era: et, mt, tt leading and subleading, in both variants
+    legs = 8 + 2 * (3 * 4 + 3 * 4)
     assert len(summary) == legs and all(line.startswith("PASS") for line in summary), summary
 
 
