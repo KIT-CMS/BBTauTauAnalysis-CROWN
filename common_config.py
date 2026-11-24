@@ -336,6 +336,38 @@ def add_lhe_pdf_weight_config(configuration: Configuration):
     )
 
 
+def add_tau_id_vs_jet_high_pt_config(configuration: Configuration):
+    """
+    The columns of the pT-binned vsJet scale factor (v8 spec C40, V35): for every
+    working point of the DM-binned scale factor columns (vsjet_tau_id_sf) the
+    members nom, up and down of the pT-binned set,
+    id_wgt_tau_vsJet_<WP>_highpt[_up|_down]_<leg>
+    (scalefactors.TauIDVsJetHighPtSF).
+
+    :param configuration: the main configuration object
+    :type configuration: Configuration
+    """
+    for scope in HAD_TAU_SCOPES:
+        configuration.add_config_parameters(
+            [scope],
+            {
+                "vsjet_tau_id_sf_high_pt": [
+                    {
+                        "discriminator": entry["discriminator"],
+                        "vsjet_wp": entry["vsjet_wp"],
+                        "high_pt_member": member,
+                        "tau1_output_name": "id_wgt_tau_vsJet_{wp}_highpt{suffix}_1".format(
+                            wp=entry["vsjet_wp"], suffix=suffix
+                        ),
+                        "tau2_output_name": "id_wgt_tau_vsJet_{wp}_highpt{suffix}_2".format(
+                            wp=entry["vsjet_wp"], suffix=suffix
+                        ),
+                    }
+                    for entry in configuration.config_parameters[scope]["vsjet_tau_id_sf"]
+                    for member, suffix in [("nom", ""), ("up", "_up"), ("down", "_down")]
+                ],
+            },
+        )
 
 
 def add_golden_json_config(configuration: Configuration):
@@ -2579,6 +2611,7 @@ def build_config(
     lhe_pdf_weights = sample in profile.lhe_pdf_weight_samples
     stage_b_columns = profile.stage_b_columns
     hbb_jet_flags = stage_b_columns and sample in profile.bb_truegen_mother_pdgid
+    tau_id_vs_jet_high_pt = profile.tau_id_vs_jet_high_pt_columns and is_simulation
     if parton_shower_weight:
         add_parton_shower_weight_config(configuration)
     if lhe_pdf_weights:
@@ -2602,6 +2635,8 @@ def build_config(
 
     # hadronic tau selection and corrections for identification and energy scale
     add_hadronic_tau_config(configuration, era)
+    if tau_id_vs_jet_high_pt:
+        add_tau_id_vs_jet_high_pt_config(configuration)
 
     # b jet selection, identification, and corrections
     add_bjet_config(configuration, era, available_sample_types, profile)
@@ -3180,6 +3215,7 @@ def build_config(
             scalefactors.TauIDSF,
             taus.TauEnergyCorrectionMC,
         ]
+        + ([scalefactors.TauIDVsJetHighPtSF] if tau_id_vs_jet_high_pt else [])
         + ([*jets.JetSlots, pairquantities.TauRawDeepTauScores] if stage_b_columns else [])
         + (jets.JetSlotHadronFlavours if stage_b_columns and is_simulation else [])
         + ([jets.JetSlotHbbFlags] if hbb_jet_flags else [])
@@ -4242,6 +4278,15 @@ def build_config(
                 for producer in scalefactors.TauIDSF.producers[_scope]
             ],
         )
+        # the pT-binned vsJet scale factor with its uncertainty (C40)
+        if tau_id_vs_jet_high_pt:
+            configuration.add_outputs(
+                [_scope],
+                [
+                    producer.output_group
+                    for producer in scalefactors.TauIDVsJetHighPtSF.producers[_scope]
+                ],
+            )
 
     configuration.add_outputs(
         MT_SCOPES,

@@ -431,6 +431,40 @@ def test_tau_trigger_sf_per_decay_mode(tau_trigger_sf_binary, era):
     )
 
 
+@pytest.fixture(scope="module")
+def tau_id_high_pt_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("tau_id_high_pt"),
+        "tau_id_high_pt",
+        [CPP / "test_tau_id_high_pt.cxx", ADDONS / "src/tau_id_high_pt.cxx", CORRECTION_MANAGER],
+        correctionlib=True,
+    )
+
+
+@pytest.mark.parametrize("scope", ["et", "mt", "tt"])
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_tau_id_vs_jet_pt_binned_columns(tau_id_high_pt_binary, era, scope):
+    """The columns of the pT-binned vsJet SF (v8 spec C40) on the pinned TAU payload of the
+    era with the working points of the scope: the nominal is the correction with flag "pt",
+    up and down are nom +- the quadrature sum of the four components (the payload's own
+    total without the extrapolation component), and the columns are defined and finite
+    below 140 GeV, for non-taus and for legs without a tau."""
+    nominal = build("sm_config", "ttbar", era=era, scopes=(scope,)).config_parameters[scope]["nominal"]
+    payload = Path(nominal["tau_vsjet_es_sf_file"])
+    if not payload.is_file():
+        pytest.skip("Pinned official TAU payload requires CVMFS")
+    entries = nominal["vsjet_tau_id_sf_high_pt"]
+    assert {entry["discriminator"] for entry in entries} == {"DeepTau2018v2p5VSjet"}
+    for wp in sorted({entry["vsjet_wp"] for entry in entries}):
+        subprocess.run(
+            [
+                str(tau_id_high_pt_binary), str(payload), "DeepTau2018v2p5VSjet", wp,
+                nominal["tau_ides_sf_vsele_wp"],
+            ],
+            check=True,
+        )
+
+
 def test_parton_shower_weight_indices_and_checked_weight_length(tmp_path):
     """The parton shower weight (v8 spec C23): the core function reads PSWeight[0, 1, 2, 3]
     for the ISR and FSR scale times 2 and times 0.5, the order of the Run-2 v15 files, and

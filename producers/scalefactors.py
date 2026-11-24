@@ -332,6 +332,64 @@ TauIDVsJetSF2 = _create_tau_id_vsjet_sf_producer(
     scopes=HAD_TAU_SCOPES,
 )
 
+# The vsJet scale factor of the pT-binned set of the TAU payload (flag "pt",
+# recommended above 140 GeV) with its total uncertainty, as weight columns
+# next to the DM-binned scale factor that is applied (v8 spec C40, V35). One
+# entry of vsjet_tau_id_sf_high_pt per working point and member (nom, up,
+# down); the columns are no shifts.
+def _create_tau_id_vsjet_high_pt_sf_producer(
+    name: str,
+    input: list[Quantity],
+    output: str,
+    scopes: list[str],
+):
+    return ExtendedVectorProducer(
+        name=name,
+        call="""
+            xyh::scalefactor::tau_id_vsjet_pt_binned(
+                {df},
+                correctionManager,
+                {output},
+                {input},
+                "{tau_vsjet_es_sf_file}",
+                "{discriminator}",
+                "{vsjet_wp}",
+                "{tau_ides_sf_vsele_wp}",
+                "{high_pt_member}"
+            )
+        """,
+        input=input,
+        output=output,
+        scopes=scopes,
+        vec_config="vsjet_tau_id_sf_high_pt",
+    )
+
+
+TauIDVsJetHighPtSF1 = _create_tau_id_vsjet_high_pt_sf_producer(
+    name="TauIDVsJetHighPtSF1",
+    input=[q.pt_1, q.tau_decaymode_1, q.gen_match_1],
+    output="tau1_output_name",
+    scopes=TT_SCOPES,
+)
+TauIDVsJetHighPtSF2 = _create_tau_id_vsjet_high_pt_sf_producer(
+    name="TauIDVsJetHighPtSF2",
+    input=[q.pt_2, q.tau_decaymode_2, q.gen_match_2],
+    output="tau2_output_name",
+    scopes=HAD_TAU_SCOPES,
+)
+TauIDVsJetHighPtSF = ProducerGroup(
+    name="TauIDVsJetHighPtSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=HAD_TAU_SCOPES,
+    subproducers={
+        "tt": [TauIDVsJetHighPtSF1, TauIDVsJetHighPtSF2],
+        "mt": [TauIDVsJetHighPtSF2],
+        "et": [TauIDVsJetHighPtSF2],
+    },
+)
+
 # DeepTau ID vs. electrons scale factor for the first tau
 TauIDVsEleSF1 = _create_tau_id_vsele_sf_producer(
     name="TauIDVsEleSF1",

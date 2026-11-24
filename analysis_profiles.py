@@ -139,6 +139,11 @@ class AnalysisProfile:
     # of the jets from the decay to bb) and the raw DeepTau vsEle and vsMu
     # scores of the tau legs; in every scope of MC genTtbarId.
     stage_b_columns: bool = False
+    # Per hadronic tau leg of MC the vsJet SF of the pT-binned set of the TAU
+    # payload (flag "pt", for taus above 140 GeV) with its total uncertainty, as
+    # the weight columns id_wgt_tau_vsJet_<WP>_highpt[_up|_down]_<leg>; the SF
+    # applied stays the DM-binned one (v8 spec C40, V35).
+    tau_id_vs_jet_high_pt_columns: bool = False
     # The systematic shifts beyond the common set.
     shifts: ShiftScheme = field(default_factory=ShiftScheme)
 
@@ -182,6 +187,7 @@ SM_PROFILE = AnalysisProfile(
     regressed_jet_columns=False,
     lhe_pdf_weight_samples=("hh2b2tau",),
     stage_b_columns=True,
+    tau_id_vs_jet_high_pt_columns=True,
     shifts=ShiftScheme(
         tau_id_vs_jet_syst_tes=True,
         tau_es_per_decay_mode=True,
@@ -209,6 +215,7 @@ _V7_COLUMNS = dict(
     regressed_jet_columns=True,
     lhe_pdf_weight_samples=(),
     stage_b_columns=False,
+    tau_id_vs_jet_high_pt_columns=False,
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the

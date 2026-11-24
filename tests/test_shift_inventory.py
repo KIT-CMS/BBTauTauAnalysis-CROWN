@@ -62,8 +62,38 @@ def in_scopes(scopes, names):
     return lambda era, scope: set(names(era)) if scope in scopes else set()
 
 
+def jet_slot_columns(scope):
+    """Columns of the jet slots of et, mt and tt (v8 spec C25), which follow the jets: of the
+    two leading jets and of the last slot."""
+    if scope not in TAU_SCOPES:
+        return ()
+    return ("jmass_1", "jtag_cvb_2", "jpt_3", "jeta_8", "jphi_8", "jmass_8", "jtag_value_8", "jtag_cvl_8", "jtag_qvg_8")
+
+
 def jet_columns(scope):
-    return ("jpt_1", "jpt_2", "n_jets", "n_bjets", "bpair_pt_1", "bpair_m_inv", "met", "metphi")
+    return (
+        "jpt_1", "jpt_2", "n_jets", "n_bjets", "bpair_pt_1", "bpair_m_inv", "met", "metphi",
+        *jet_slot_columns(scope),
+    )
+
+
+def tau_leg_columns(scope):
+    """Columns of the tau legs that are read at the pair (v8 spec C26), which a shift of the
+    pair selection has to recompute."""
+    return {
+        "et": ("rawDeepTau2018v2p5VSe_2", "rawDeepTau2018v2p5VSmu_2"),
+        "mt": ("rawDeepTau2018v2p5VSe_2", "rawDeepTau2018v2p5VSmu_2"),
+        "tt": ("rawDeepTau2018v2p5VSe_1", "rawDeepTau2018v2p5VSmu_1", "rawDeepTau2018v2p5VSe_2"),
+    }.get(scope, ())
+
+
+def high_pt_sf_columns(scope):
+    """The columns of the pT-binned vsJet SF of simulated taus (v8 spec C40)."""
+    return tuple(
+        f"id_wgt_tau_vsJet_Medium_highpt{suffix}_{leg}"
+        for leg in {"et": (2,), "mt": (2,), "tt": (1, 2)}.get(scope, ())
+        for suffix in ("", "_up", "_down")
+    )
 
 
 def lepton_leg(scope):
@@ -91,7 +121,7 @@ FAMILIES = [
                 "eta3to5_ptlt50", "eta3to5_ptgt50",
             )
         }),
-        reaches=lambda scope: ("jpt_1", "jpt_2", "n_jets", "bpair_pt_1"),
+        reaches=lambda scope: ("jpt_1", "jpt_2", "n_jets", "bpair_pt_1", *jet_slot_columns(scope)),
         spares=lambda scope: ("pt_1", "pt_2", "m_vis"),
     ),
     Family(
@@ -123,7 +153,10 @@ FAMILIES = [
         in_scopes(TAU_SCOPES, lambda era: {
             f"CMS_scale_t_{ALGO}_DM{dm}_genTau_{era}" for dm in DECAY_MODES
         }),
-        reaches=lambda scope: ("pt_2", "m_vis", "met", "mt_2", lepton_leg(scope) or "pt_1"),
+        reaches=lambda scope: (
+            "pt_2", "m_vis", "met", "mt_2", lepton_leg(scope) or "pt_1",
+            *jet_slot_columns(scope), *tau_leg_columns(scope), *high_pt_sf_columns(scope),
+        ),
     ),
     Family(
         "tau energy scale, e -> tau fakes, et only (C29)",
@@ -132,14 +165,20 @@ FAMILIES = [
             for dm in DECAY_MODES
             for region in ("barrel", "endcap")
         }),
-        reaches=lambda scope: ("pt_2", "m_vis", "met", "pt_1"),
+        reaches=lambda scope: (
+            "pt_2", "m_vis", "met", "pt_1",
+            *jet_slot_columns(scope), *tau_leg_columns(scope), *high_pt_sf_columns(scope),
+        ),
     ),
     Family(
         "tau energy scale, mu -> tau fakes per decay mode, mt only (C21, C29)",
         in_scopes(("mt",), lambda era: {
             f"CMS_scale_t_{ALGO}_DM{dm}_genMuon_{era}" for dm in DECAY_MODES
         }),
-        reaches=lambda scope: ("pt_2", "m_vis", "met", "pt_1"),
+        reaches=lambda scope: (
+            "pt_2", "m_vis", "met", "pt_1",
+            *jet_slot_columns(scope), *tau_leg_columns(scope), *high_pt_sf_columns(scope),
+        ),
     ),
     Family(
         "muon energy scale (C37)",
@@ -163,7 +202,9 @@ FAMILIES = [
             f"CMS_eff_t_{ALGO}_VSjet_dm_syst_{era}",
             *(f"CMS_eff_t_{ALGO}_VSjet_dm_syst_TES_{era}_dm{dm}" for dm in DECAY_MODES),
         }),
-        weights=r"id_wgt_tau_vsJet_\w+_[12]",
+        # the columns of the DM-binned SF, id_wgt_tau_vsJet_<WP>_<leg>; not those of the
+        # pT-binned set (id_wgt_tau_vsJet_<WP>_highpt..., C40), which have no weight shift
+        weights=r"id_wgt_tau_vsJet_[A-Za-z]+_[12]",
     ),
     Family(
         "tau vsEle SF",
@@ -226,13 +267,15 @@ FAMILIES = [
         "embedding tau energy scale",
         in_scopes(TAU_SCOPES, lambda era: {f"CMS_scale_t_emb_{ALGO}_DM{dm}_{era}" for dm in DECAY_MODES}),
         samples=lambda era, sample: sample == "embedding",
-        reaches=lambda scope: ("pt_2", "m_vis", "met", lepton_leg(scope) or "pt_1"),
+        reaches=lambda scope: (
+            "pt_2", "m_vis", "met", lepton_leg(scope) or "pt_1", *jet_slot_columns(scope), *tau_leg_columns(scope),
+        ),
     ),
     Family(
         "embedding tau vsJet SF",
         in_scopes(TAU_SCOPES, lambda era: {f"CMS_eff_t_emb_{ALGO}_VSjet_DM{dm}_{era}" for dm in DECAY_MODES}),
         samples=lambda era, sample: sample == "embedding",
-        weights=r"id_wgt_tau_vsJet_\w+_[12]",
+        weights=r"id_wgt_tau_vsJet_[A-Za-z]+_[12]",
     ),
     Family(
         "embedding electron energy scale (C32)",
@@ -339,6 +382,8 @@ def test_shifted_columns(era, sample):
                     assert not unexpected, (scope, shift, sorted(unexpected))
                 else:
                     reaches = {c for c in family.reaches(scope) if c}
+                    # a kinematic shift changes no generator weight
+                    assert "ps_weight" not in shifted and "lhe_scale_weight" not in shifted, (scope, shift)
                     assert reaches <= nominal, (scope, shift, sorted(reaches - nominal))
                     assert reaches <= shifted, (scope, shift, sorted(reaches - shifted))
                     assert not set(family.spares(scope)) & shifted, (

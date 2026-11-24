@@ -49,6 +49,18 @@ def shifts_of(config, scope):
     return {name.removeprefix("__"): change for name, change in config.shifts.get(scope, {}).items()}
 
 
+def test_only_the_sm_analysis_has_the_columns_of_the_shift_production():
+    assert SM_PROFILE.shifts.parton_shower
+    assert SM_PROFILE.lhe_pdf_weight_samples == ("hh2b2tau",)
+    assert SM_PROFILE.stage_b_columns and SM_PROFILE.tau_id_vs_jet_high_pt_columns
+    # the flag of the jets from H -> bb is written for the samples with a bb truth mother
+    assert set(SM_PROFILE.bb_truegen_mother_pdgid) == {"hh2b2tau"}
+    for profile in (NMSSM_PROFILE, SM_BTAG_EFFICIENCY_PROFILE, SM_TAU_ID_MEASUREMENT_PROFILE):
+        assert not profile.shifts.parton_shower, profile.name
+        assert profile.lhe_pdf_weight_samples == (), profile.name
+        assert not profile.stage_b_columns and not profile.tau_id_vs_jet_high_pt_columns, profile.name
+
+
 # --- C23: parton shower ---------------------------------------------------------
 
 PS_SHIFTS = {
@@ -281,3 +293,63 @@ def test_raw_tau_scores_of_the_tau_legs_and_gen_ttbar_id(era, sample):
                 assert [quantity.name for quantity in producer.input[scope]] == [branch, "dileptonpair"]
 
 
+# --- C40: pT-binned vsJet SF ----------------------------------------------------
+
+
+def high_pt_columns(sample, era, scope):
+    """The columns of the pT-binned SF in the generated code (the outputs of vector
+    producers get their names there)."""
+    generated = generate_code("sm_config", sample, era=era, scopes=scopes_of(sample))
+    return {name for name in generated.outputs[scope] if "highpt" in name}
+
+
+@pytest.mark.parametrize("sample", SIMULATED)
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_high_pt_vs_jet_sf_columns_of_simulated_taus(era, sample):
+    """Three columns per tau leg and working point of the DM-binned SF column: the nominal,
+    up and down of the pT-binned set, evaluated on the TAU payload and with the vsEle working
+    point of the DM-binned SF. They are columns of the nominal tree: no shift sets their
+    parameters, and the DM-binned configuration is untouched."""
+    config = sm_config(sample, era, shifts=("all",))
+    for scope in ALL_SCOPES:
+        if scope not in TAU_SCOPES:
+            assert not high_pt_columns(sample, era, scope), scope
+            continue
+        nominal = config.config_parameters[scope]["nominal"]
+        dm_binned = nominal["vsjet_tau_id_sf"]
+        assert [entry["vsjet_wp"] for entry in dm_binned] == ["Medium"]
+        assert nominal["tau_id_sf_vsjet_sf_dependence"] == "dm" and nominal["tau_id_sf_vsjet_variation"] == "nom"
+        entries = nominal["vsjet_tau_id_sf_high_pt"]
+        assert [(entry["vsjet_wp"], entry["high_pt_member"]) for entry in entries] == [
+            (wp["vsjet_wp"], member) for wp in dm_binned for member in ("nom", "up", "down")
+        ]
+        for entry in entries:
+            suffix = "" if entry["high_pt_member"] == "nom" else "_" + entry["high_pt_member"]
+            assert entry["discriminator"] == dm_binned[0]["discriminator"] == "DeepTau2018v2p5VSjet"
+            for leg in (1, 2):
+                assert entry[f"tau{leg}_output_name"] == f"id_wgt_tau_vsJet_{entry['vsjet_wp']}_highpt{suffix}_{leg}"
+        assert high_pt_columns(sample, era, scope) == {
+            f"id_wgt_tau_vsJet_Medium_highpt{suffix}_{leg}" for suffix in ("", "_up", "_down") for leg in TAU_LEGS[scope]
+        }, scope
+        for leg in TAU_LEGS[scope]:
+            producer = find_producer(config, scope, f"TauIDVsJetHighPtSF{leg}")
+            assert producer.call.split("(")[0].strip() == "xyh::scalefactor::tau_id_vsjet_pt_binned"
+            assert '"{tau_vsjet_es_sf_file}"' in producer.call and '"{tau_ides_sf_vsele_wp}"' in producer.call
+            assert [quantity.name for quantity in producer.input[scope]] == [
+                f"pt_{leg}", f"tau_decaymode_{leg}", f"gen_match_{leg}"
+            ]
+        # the DM-binned SF and the pT-binned columns read the same payload
+        assert nominal["tau_vsjet_es_sf_file"] == nominal["tau_ides_sf_file"]
+        for name, change in shifts_of(config, scope).items():
+            assert not {"vsjet_tau_id_sf_high_pt", "vsjet_tau_id_sf"} & set(change), name
+
+
+@pytest.mark.parametrize("sample", NOT_SIMULATED)
+@pytest.mark.parametrize("era", ERAS_RUN2)
+def test_data_and_embedding_have_no_high_pt_vs_jet_sf_columns(era, sample):
+    """The embedding has its own tau-ID measurement (binned in the decay mode)."""
+    config = sm_config(sample, era)
+    for scope in TAU_SCOPES:
+        assert not high_pt_columns(sample, era, scope), scope
+        assert "vsjet_tau_id_sf_high_pt" not in config.config_parameters[scope]["nominal"]
+        assert "TauIDVsJetHighPtSF" not in producer_names(config, scope)

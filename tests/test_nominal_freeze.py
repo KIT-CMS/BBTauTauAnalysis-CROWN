@@ -251,6 +251,26 @@ def gen_ttbar_id(module, sample, era, scope, calls, outputs):
     return calls, outputs
 
 
+def high_pt_tau_id_sf_columns(module, sample, era, scope, calls, outputs):
+    """v8 spec C40: the tau legs of simulated samples of sm_config get the vsJet SF of the
+    pT-binned set with its uncertainty as three columns, from the TAU payload and the
+    working points of the DM-binned SF, whose call and column stay."""
+    if module == "sm_config" and is_simulation(sample) and scope in TAU_SCOPES:
+        payload = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/TAU/Run2-{era}-UL-NanoAODv15/2025-11-27/tau.json.gz"
+        vs_ele = "Tight" if scope == "et" else "VVLoose"
+        for leg in TAU_LEGS[scope]:
+            assert f"id_wgt_tau_vsJet_Medium_{leg}" in outputs
+            for member, suffix in (("nom", ""), ("up", "_up"), ("down", "_down")):
+                column = f"id_wgt_tau_vsJet_Medium_highpt{suffix}_{leg}"
+                calls = calls + [
+                    f'xyh::scalefactor::tau_id_vsjet_pt_binned( df, correctionManager, "{column}", "pt_{leg}", '
+                    f'"tau_decaymode_{leg}", "gen_match_{leg}", "{payload}", "DeepTau2018v2p5VSjet", "Medium", '
+                    f'"{vs_ele}", "{member}" )'
+                ]
+                outputs = outputs + [column]
+    return calls, outputs
+
+
 # Changes of the nominal surface since the frozen commit: functions
 # (module, sample, era, scope, calls, outputs) -> (calls, outputs) applied in this order to the
 # frozen calls and output columns of a scope. None of them may change the value of a column
@@ -266,6 +286,7 @@ EXPECTED_CHANGES = [
     jet_slots,
     raw_tau_scores,
     gen_ttbar_id,
+    high_pt_tau_id_sf_columns,
 ]
 # the changes that only add calls and columns: every frozen call and column is still there
 ADDITIONS = EXPECTED_CHANGES[5:]
