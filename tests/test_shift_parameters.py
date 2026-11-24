@@ -25,6 +25,9 @@ SURFACES = [
         for module, sample, scopes, items in [
             ("sm_config", "ttbar", tuple(SCOPES), ()),
             ("sm_config", "dyjets", tuple(SCOPES), ()),
+            # the QCD scale shifts of diboson and the signal (v8 spec C30, C34)
+            ("sm_config", "diboson", tuple(SCOPES), ()),
+            ("sm_config", "hh2b2tau", tuple(SCOPES), ()),
             ("sm_config", "embedding", ("et", "mt", "tt"), ()),
             ("sm_tau_id_measurement_config", "dyjets", ("mt", "mm"), ()),
         ]
@@ -82,20 +85,22 @@ def test_every_shifted_parameter_is_read(module, sample, era, scopes):
     assert not unread, sorted(set(unread))
 
 
-# Builds one surface with its tau energy scale shifts in a fresh process, since the
-# shifts a build gives the module-level quantities leak into later builds, and lists
-# the outputs computed from the pair that lack one of the shifts.
+# Builds one surface with its energy scale shifts of the tau and of the light lepton
+# of a scope (v8 spec C32, C37) in a fresh process, since the shifts a build gives the
+# module-level quantities leak into later builds, and lists the outputs computed from
+# the pair that lack one of the shifts.
 _UNSHIFTED_BEHIND_PAIR = """
 import json, sys
 from analysis_configurations.bbtautau.quantities import output as q
 from analysis_configurations.bbtautau.tests.helpers import build
 module, sample, era, scopes = json.loads(sys.argv[1])
-config = build(module, sample, era, tuple(scopes), ("CMS_scale_t",))
+config = build(module, sample, era, tuple(scopes), ("CMS_scale_t", "CMS_scale_m_", "CMS_scale_e_"))
+keys = {"tau_es_variation", "muon_es_scale_factors", "electron_es_scale_factors"}
 unshifted, counts = [], {}
 for scope in scopes:
     shifts = {
         name for name, change in config.shifts.get(scope, {}).items()
-        if "tau_es_variation" in change
+        if keys & set(change)
     }
     counts[scope] = len(shifts)
     behind_pair, todo = set(), [q.dileptonpair]
@@ -119,7 +124,9 @@ def test_tau_energy_scale_shifts_recompute_every_column_behind_the_pair(
     """A shifted tau pT changes the pair selection, and some events pass it under a
     shift only. Every output computed from the pair, the light lepton leg of et and
     mt included, must therefore have the shifted columns: an ignored producer left
-    those events with a default lepton leg (pt_1 = -10, no trigger flags or SFs)."""
+    those events with a default lepton leg (pt_1 = -10, no trigger flags or SFs).
+    The same holds for the energy scale shifts of the muon (mt, em) and of the
+    embedded electron (et), which scale the lepton pT before the selection."""
     result = subprocess.run(
         [sys.executable, "-c", _UNSHIFTED_BEHIND_PAIR, json.dumps([module, sample, era, scopes])],
         cwd=Path(__file__).resolve().parents[3],
