@@ -596,19 +596,20 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
 # Electron ID/ISO SF
 #########################
 # Electron reconstruction weight: the EGM payload stores the reconstruction
-# efficiency in pt categories, so the addon selects the category per electron
-# (see cpp_addons/include/electron_reco.hxx) and takes the era key from the
-# config instead of a fixed category name.
+# efficiency in pt categories (Run 2: below and above 20 GeV; Run 3: below 20,
+# 20 to 75 and above 75 GeV), which the core function selects per electron; the
+# era key comes from the config. An electron with negative pt (CROWN's default
+# of a rejected pair) gets a weight of 1.
 Ele_1_Reco_SF = Producer(
     name="Ele_1_Reco_SF",
-    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
+    call='physicsobject::electron::scalefactor::Reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_1, q.eta_1, q.phi_1],
     output=[q.reco_wgt_ele_1],
     scopes=["em", "ee", "et"],
 )
 Ele_2_Reco_SF = Producer(
     name="Ele_2_Reco_SF",
-    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
+    call='physicsobject::electron::scalefactor::Reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_2, q.eta_2, q.phi_2],
     output=[q.reco_wgt_ele_2],
     scopes=["ee"],

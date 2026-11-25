@@ -381,8 +381,8 @@ WP90 electrons with the isolation pre-cuts 0.25 (loose) and 0.4 (tight), medium-
 `wp90iso`, `NUM_MediumID_DEN_TrackerMuons` and `NUM_TightRelIso_DEN_MediumID`, and no low-p<sub>T</sub>
 muon ID SF column -- in place of the NMSSM object defaults (MVA WP80 electrons without isolation
 pre-cut, tight-ID muons). The electron reconstruction SF is written in et, em and ee for both
-analyses (`xyh::scalefactor::electron_reco`), and the muon p<sub>T</sub> calibration applies in Run 3
-only. The KIT lepton SF files of MC are those of the era, `data/embedding/{electron,muon}_<era>UL.json.gz`
+analyses (`physicsobject::electron::scalefactor::Reco` of the core), and the muon p<sub>T</sub>
+calibration applies in Run 3 only. The KIT lepton SF files of MC are those of the era, `data/embedding/{electron,muon}_<era>UL.json.gz`
 (`mc_electron_sf_file`, `mc_muon_sf_file`).
 
 The light dilepton control channels ee, em and mm (`sm_light_controls`) exist in every Run-2 v15 era:

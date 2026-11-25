@@ -132,6 +132,20 @@ def ditau_trigger_sf_from_the_addon(module, sample, era, scope, calls, outputs):
     return calls, outputs
 
 
+def electron_reco_sf_from_the_core(module, sample, era, scope, calls, outputs):
+    """The electron reconstruction SF comes from the core function
+    physicsobject::electron::scalefactor::Reco (CROWN main 4f4535b and later) instead of the
+    addon xyh::scalefactor::electron_reco, which it replaced with the same arguments and the
+    same pt categories (tests/cpp/test_control_electron_reco.cxx); on local n-tuples of ttbar
+    in all four eras and of hh, embedding and data 2018 the columns stay bit for bit the same."""
+    addon, core = (
+        "xyh::scalefactor::electron_reco(",
+        "physicsobject::electron::scalefactor::Reco(",
+    )
+    calls = [core + call[len(addon):] if call.startswith(addon) else call for call in calls]
+    return calls, outputs
+
+
 # --- The columns of the shift production (v8 spec C23-C27, C40): calls and columns that are
 # added, in sm_config only. No frozen call changes, so every column that was there keeps
 # its value.
@@ -281,6 +295,7 @@ EXPECTED_CHANGES = [
     muon_pt_through_the_scope_level_scale,
     embedded_electron_pt_through_the_scope_level_scale,
     ditau_trigger_sf_from_the_addon,
+    electron_reco_sf_from_the_core,
     parton_shower_weight,
     pdf_weights_of_the_signal,
     jet_slots,
@@ -289,7 +304,15 @@ EXPECTED_CHANGES = [
     high_pt_tau_id_sf_columns,
 ]
 # the changes that only add calls and columns: every frozen call and column is still there
-ADDITIONS = EXPECTED_CHANGES[5:]
+ADDITIONS = [
+    parton_shower_weight,
+    pdf_weights_of_the_signal,
+    jet_slots,
+    raw_tau_scores,
+    gen_ttbar_id,
+    high_pt_tau_id_sf_columns,
+]
+assert ADDITIONS == EXPECTED_CHANGES[-len(ADDITIONS):]
 
 # The columns sm_config writes that the v7b n-tuples lack: the MET before the lepton and the
 # recoil corrections, written since the n-tuples were produced (v8 spec 3.1); the columns of

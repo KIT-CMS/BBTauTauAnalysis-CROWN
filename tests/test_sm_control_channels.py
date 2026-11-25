@@ -89,14 +89,14 @@ def test_ee_takes_the_kit_electron_trigger_sf(era):
 
 
 @pytest.mark.parametrize("era", ERAS_RUN2)
-def test_electron_reco_weight_is_the_era_keyed_addon_call(era):
+def test_electron_reco_weight_is_the_era_keyed_core_call(era):
     """The reco weight picks the payload's pt category itself, so the call carries the
     era id instead of a fixed category name; it reads the supercluster eta (C22)."""
     config = build("sm_config", "ttbar", era=era, scopes=CONTROLS)
     for producer, leg in (("Ele_1_Reco_SF_ScEta", 1), ("Ele_2_Reco_SF_ScEta", 2)):
         reco = find_producer(config, "ee", producer)
         assert (
-            "xyh::scalefactor::electron_reco(" in reco.call
+            "physicsobject::electron::scalefactor::Reco(" in reco.call
             and "{ele_sf_year_id}" in reco.call
         )
         assert [q.name for q in reco.get_inputs("ee")] == [

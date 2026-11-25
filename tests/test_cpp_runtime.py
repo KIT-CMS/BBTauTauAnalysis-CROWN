@@ -26,6 +26,8 @@ CPP, ADDONS, FIXTURES = (
     ANALYSIS / "tests/fixtures",
 )
 CORRECTION_MANAGER = CROWN / "src/utility/CorrectionManager.cxx"
+# the implementation of the core Logger (in the header before CROWN#414)
+LOGGER = CROWN / "src/utility/Logger.cxx"
 EGM_ROOT = Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM")
 # The pinned official EGM payloads of the category layouts the reconstruction
 # weight handles: Run 2 UL (split at 20 GeV, every era), Run 3 (splits at 20 and
@@ -91,6 +93,9 @@ def onnxruntime_flags():
 
 def compile_fixture(directory, name, sources, defines=(), correctionlib=False, libraries=()):
     compiler, flags, corr, spdlog = toolchain()
+    sources = list(sources)
+    if LOGGER.is_file() and LOGGER not in sources:
+        sources.append(LOGGER)
     includes = [ADDONS / "include", CROWN / "include", spdlog, corr / "include"]
     command = [
         compiler,
@@ -123,7 +128,7 @@ def electron_reco_binary(tmp_path_factory):
         "electron_reco",
         [
             CPP / "test_control_electron_reco.cxx",
-            ADDONS / "src/electron_reco.cxx",
+            CROWN / "src/electrons.cxx",
             CORRECTION_MANAGER,
         ],
         correctionlib=True,
@@ -257,7 +262,6 @@ def electron_supercluster_binary(tmp_path_factory):
         [
             CPP / "test_electron_supercluster_eta.cxx",
             CROWN / "src/electrons.cxx",
-            ADDONS / "src/electron_reco.cxx",
             CORRECTION_MANAGER,
         ],
         correctionlib=True,
