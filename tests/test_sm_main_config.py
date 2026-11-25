@@ -338,16 +338,14 @@ def test_sm_jet_scaled_pt_comes_with_the_recoil_chain(sample, era):
 @pytest.mark.parametrize("era", RECOIL_ERAS)
 def test_sm_recoil_corrected_met_follows_the_jes_and_recoil_shifts(era):
     """The generated DY code writes the MET under the JES shifts (propagated after
-    the recoil correction through Jet_scaledPt) and under the recoil shifts. The
-    unclustered-energy shift varies the NanoAOD PuppiMET, so for DY and W it acts
-    before the recoil correction, as it did before the fix (there through the
-    jet-propagated MET); the HTT recipe applies the recoil shifts instead of it to
-    recoil-corrected samples, to be decided with the shift production (nominal
-    unaffected, see variations/met.py)."""
+    the recoil correction through Jet_scaledPt) and under the recoil shifts. It has
+    no unclustered-energy shift: that one varies the NanoAOD PuppiMET, so for DY and
+    W it would act before the recoil correction; the HTT recipe applies the recoil
+    shifts instead of it to recoil-corrected samples (v8 spec C38, V9)."""
     met = {o for o in generate_code("sm_config", "dyjets", era, shifts=("all",)).outputs["mt"] if o.startswith("met__")}
     assert {"met__CMS_scale_j_AbsoluteUp", f"met__CMS_scale_j_Absolute_{era}Down"} <= met
     assert {f"met__CMS_{kind}_met_RecoilCalibration_{era}{d}" for kind in ("scale", "res") for d in ("Up", "Down")} <= met
-    assert {f"met__CMS_scale_met_unclustered_energy_{era}{d}" for d in ("Up", "Down")} <= met
+    assert not {o for o in met if "unclustered" in o}
 
 
 @pytest.mark.parametrize("era", RECOIL_ERAS)

@@ -4,12 +4,14 @@
 #include "jets.hxx"
 #include "utility/CorrectionManager.hxx"
 #include <cmath>
+#include <limits>
 #include <cstdio>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 // Usage: <binary> <jet_jerc payload of the era's UL-NanoAODv15> <reapply_jes: 0|1>
-//                 <JER tag> <JES tag> <era>
+//                 <JER tag> <JES tag> <era> <six JER region selections>
 //
 // Drives physicsobject::jet::jec::PtCorrectionMC through RDataFrame with the
 // official JER payload, in the production mode (reapply_jes = 1) or on
@@ -27,6 +29,15 @@
 //    nominal and the JER-up variation.
 // Here z = (pt' / pt - 1) / (sigma * sqrt(sf^2 - 1)). The HEM variation must
 // scale jets that pass the tight jet ID (ID 2 or 6) in the HEM region.
+//
+// The JER variations restricted to a region (v8 spec C33) are driven with the
+// six selections of the configuration (variations.jec.JER_REGIONS, in the
+// order of the JERC table) on a second set of jets that populates every
+// region, matched and unmatched. A regional variation must give the jets of
+// its region the pt of the inclusive variation and every other jet the nominal
+// pt, both bit for bit: the region is decided by the nominal smeared pt (as in
+// the split JER of nanoAOD-tools), and the random numbers are those of the
+// nominal.
 namespace {
 int failures = 0;
 
@@ -36,15 +47,40 @@ void check(bool condition, const char *what) {
         ++failures;
     }
 }
+
+// The JERC regions of the resolution uncertainty, in the order of the table
+int jerc_region(float eta, float pt) {
+    const float abs_eta = std::abs(eta);
+    if (abs_eta < 1.93f) {
+        return 0;
+    }
+    if (abs_eta < 2.5f) {
+        return 1;
+    }
+    if (abs_eta < 3.0f) {
+        return pt < 50.f ? 2 : 3;
+    }
+    return pt < 50.f ? 4 : 5;
+}
+
+bool throws(const std::string &jer_shift) {
+    try {
+        physicsobject::jet::jec::parse_jer_variation(jer_shift);
+    } catch (const std::invalid_argument &) {
+        return true;
+    }
+    return false;
+}
 } // namespace
 
 int main(int argc, char **argv) {
-    if (argc != 6) {
+    if (argc != 12) {
         std::printf("usage: %s <payload> <reapply_jes: 0|1> <JER tag> <JES tag> "
-                    "<era>\n",
+                    "<era> <six JER region selections>\n",
                     argv[0]);
         return 2;
     }
+    const std::vector<std::string> regions(argv + 6, argv + 12);
     const std::string payload = argv[1];
     const bool reapply_jes = std::string(argv[2]) == "1";
     const std::string jer_tag = argv[3];
@@ -195,6 +231,141 @@ int main(int argc, char **argv) {
         apply_jes_shifts(50.f, -2.0f, -1.2f, 0, hem, -1, none) == 50.f &&
         apply_jes_shifts(50.f, -2.0f, 0.5f, 6, hem, -1, none) == 50.f &&
         apply_jes_shifts(50.f, -2.0f, -1.2f, 6, hem, 1, none) == 50.f;
+
+    // --- JER variations restricted to a region ---------------------------------
+    using physicsobject::jet::jec::parse_jer_variation;
+    const float inf = std::numeric_limits<float>::infinity();
+    const auto all_jets = parse_jer_variation("up");
+    const auto endcap_low = parse_jer_variation("down_abseta2p5to3_pt0to50");
+    const auto forward_high = parse_jer_variation("up_abseta3toInf_pt50toInf");
+    check(parse_jer_variation("nom").direction == "nom" &&
+              !parse_jer_variation("nom").regional &&
+              all_jets.direction == "up" && !all_jets.regional &&
+              all_jets.varies(4.9f, 1e4f) && all_jets.varies(0.f, 0.f),
+          "a variation without region varies every jet");
+    check(endcap_low.direction == "down" && endcap_low.regional &&
+              endcap_low.min_abs_eta == 2.5f && endcap_low.max_abs_eta == 3.f &&
+              endcap_low.min_pt == 0.f && endcap_low.max_pt == 50.f,
+          "the region of a variation is parsed");
+    check(forward_high.regional && forward_high.min_abs_eta == 3.f &&
+              forward_high.max_abs_eta == inf && forward_high.min_pt == 50.f &&
+              forward_high.max_pt == inf,
+          "Inf opens a region upwards");
+    check(endcap_low.varies(-2.7f, 49.99f) && endcap_low.varies(2.5f, 20.f) &&
+              !endcap_low.varies(2.7f, 50.f) && !endcap_low.varies(3.0f, 20.f) &&
+              !endcap_low.varies(2.49f, 20.f),
+          "a region includes its lower edges and excludes its upper edges");
+    check(throws("up_abseta") && throws("up_abseta3to2") &&
+              throws("up_abseta0to1_pt50to50") && throws("left_abseta0to1") &&
+              throws("up_abseta0to1_pt") && throws("up_abseta0.5to1"),
+          "malformed regions are refused");
+
+    // jets in every region, also where the re-applied JES raises the pt (jets 3
+    // and 5 stay below 50 GeV); jets 0, 2, 4 and 6 have a gen jet nearby. Jets
+    // 7 to 14 lie beyond |eta| 2.5 with a pt of 30 to 51 GeV, so that with and
+    // without the re-applied JES some of them are smeared across 50 GeV
+    const ROOT::RVec<float> r_pt{60.f, 40.f, 60.f, 20.f, 90.f, 25.f, 90.f, 49.f,
+                                 51.f, 30.f, 36.f, 42.f, 30.f, 36.f, 42.f},
+        r_eta{0.3f, -1.2f, 2.2f,   -2.7f, 2.8f,  3.5f,  -4.0f, 2.7f,
+              -3.2f, 2.7f, 2.75f, 2.65f, -3.2f, -3.3f, -3.1f},
+        r_phi{-2.0f, 0.0f, 2.5f,  1.0f, -1.0f, 0.5f, -0.5f, 2.0f,
+              -2.6f, 3.0f, -3.0f, 1.5f, -1.5f, 2.9f, 0.2f};
+    ROOT::RDataFrame region_base(n);
+    ROOT::RDF::RNode rdf =
+        region_base.Define("pt", [r_pt] { return r_pt; })
+            .Define("eta", [r_eta] { return r_eta; })
+            .Define("phi", [r_phi] { return r_phi; })
+            .Define("area",
+                    [r_pt] { return ROOT::RVec<float>(r_pt.size(), 0.5f); })
+            .Define("id", [r_pt] { return ROOT::RVec<int>(r_pt.size(), 6); })
+            .Define("gen_pt",
+                    [r_pt] {
+                        return ROOT::RVec<float>{0.95f * r_pt[0], 0.95f * r_pt[2],
+                                                 0.95f * r_pt[4],
+                                                 0.95f * r_pt[6]};
+                    })
+            .Define("gen_eta",
+                    [r_eta] {
+                        return ROOT::RVec<float>{r_eta[0], r_eta[2], r_eta[4],
+                                                 r_eta[6]};
+                    })
+            .Define("gen_phi",
+                    [r_phi] {
+                        return ROOT::RVec<float>{r_phi[0], r_phi[2], r_phi[4],
+                                                 r_phi[6]};
+                    })
+            .Define("no_gen", [] { return ROOT::RVec<float>{}; })
+            .Define("rho", [rho] { return rho; })
+            .Define("seed",
+                    [](ULong64_t entry) {
+                        return static_cast<unsigned int>(7654321u +
+                                                         2654435761u * entry);
+                    },
+                    {"rdfentry_"});
+    rdf = correct(rdf, "nominal", true, "nom");
+    const std::vector<std::string> directions{"up", "down"};
+    for (const auto &direction : directions) {
+        rdf = correct(rdf, direction, true, direction);
+        for (std::size_t r = 0; r < regions.size(); ++r) {
+            rdf = correct(rdf, direction + std::to_string(r), true,
+                          direction + "_" + regions[r]);
+        }
+    }
+    auto r_input = rdf.Take<ROOT::RVec<float>>("nominal_l2rel");
+    auto r_nominal = rdf.Take<ROOT::RVec<float>>("nominal");
+    std::vector<ROOT::RDF::RResultPtr<std::vector<ROOT::RVec<float>>>>
+        r_inclusive, r_regional;
+    for (const auto &direction : directions) {
+        r_inclusive.push_back(rdf.Take<ROOT::RVec<float>>(direction));
+        for (std::size_t r = 0; r < regions.size(); ++r) {
+            r_regional.push_back(
+                rdf.Take<ROOT::RVec<float>>(direction + std::to_string(r)));
+        }
+    }
+    // the region of each jet from its nominal smeared pt, event by event:
+    // jets 7 and 8 start next to 50 GeV and are smeared across it
+    std::vector<unsigned> jets_in_region(regions.size(), 0),
+        varied_in_region(regions.size(), 0);
+    unsigned region_mismatches = 0, smeared_across_50 = 0;
+    for (unsigned e = 0; e < n; ++e) {
+        for (std::size_t j = 0; j < r_pt.size(); ++j) {
+            const float before = (*r_input)[e][j], nom = (*r_nominal)[e][j];
+            const int jet_region = jerc_region(r_eta[j], nom);
+            ++jets_in_region[jet_region];
+            smeared_across_50 += std::abs(r_eta[j]) >= 2.5f &&
+                                 (before < 50.f) != (nom < 50.f);
+            for (std::size_t d = 0; d < directions.size(); ++d) {
+                const float inclusive = (*r_inclusive[d])[e][j];
+                varied_in_region[jet_region] += inclusive != nom;
+                for (std::size_t r = 0; r < regions.size(); ++r) {
+                    const float regional =
+                        (*r_regional[d * regions.size() + r])[e][j];
+                    const float expected =
+                        jet_region == static_cast<int>(r) ? inclusive : nom;
+                    region_mismatches += regional != expected;
+                }
+            }
+        }
+    }
+    bool regions_populated = true, regions_varied = true;
+    for (std::size_t r = 0; r < regions.size(); ++r) {
+        regions_populated = regions_populated && jets_in_region[r] > n / 2;
+        regions_varied = regions_varied && varied_in_region[r] > n / 2;
+    }
+    std::printf("JER regions: jets per region %u %u %u %u %u %u, %u jets "
+                "smeared across 50 GeV, %u mismatches\n",
+                jets_in_region[0], jets_in_region[1], jets_in_region[2],
+                jets_in_region[3], jets_in_region[4], jets_in_region[5],
+                smeared_across_50, region_mismatches);
+    check(regions.size() == 6 && regions_populated,
+          "the test jets populate the six JER regions");
+    check(regions_varied, "the inclusive JER variation changes jets of every region");
+    check(smeared_across_50 > 0,
+          "jets beyond |eta| 2.5 are smeared across the 50 GeV edge, so that the "
+          "nominal pt and the pt before the smearing give different regions");
+    check(region_mismatches == 0,
+          "a regional JER variation varies the jets of its region only, like "
+          "the inclusive variation");
 
     // 20000 events: the statistical uncertainty is 0.007 on the mean and on
     // corr and 0.005 on the standard deviation, all tolerances exceed 4 sigma

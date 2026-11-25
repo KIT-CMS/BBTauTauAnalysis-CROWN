@@ -8,6 +8,8 @@
 #include "ROOT/RVec.hxx"
 #include "TRandom3.h"
 #include "correction.h"
+#include <limits>
+#include <string>
 
 namespace physicsobject {
 
@@ -22,6 +24,43 @@ typedef struct jec_result_t {
     float jet_pt_syst;
     float jet_pt_corr;
 } JECResult;
+
+/**
+ * @brief A variation of the jet energy resolution scale factor and the jets it
+ * varies.
+ *
+ * JERC splits the resolution uncertainty of a year into regions of the jet
+ * \f$|\eta|\f$ and \f$p_T\f$ for analyses that constrain it. A variation
+ * restricted to a region varies the scale factor of the jets inside it; every
+ * other jet keeps the nominal scale factor. The \f$p_T\f$ that decides is the
+ * nominal one, after the nominal smearing, as in the split JER of
+ * nanoAOD-tools (`jetmetUncertainties`, `getJERsplitID(jet_pt_nom, eta)`), so a
+ * jet belongs to the same region in every variation.
+ */
+struct JERVariation {
+    /// "nom", "up" or "down"
+    std::string direction = "nom";
+    /// whether the variation is restricted to the jets of a region
+    bool regional = false;
+    /// the region: min_abs_eta <= |eta| < max_abs_eta, min_pt <= pT < max_pt
+    float min_abs_eta = 0.f;
+    float max_abs_eta = std::numeric_limits<float>::infinity();
+    float min_pt = 0.f;
+    float max_pt = std::numeric_limits<float>::infinity();
+
+    /// Whether a jet with this pseudorapidity and nominal pT is in the region
+    bool varies(const float &jet_eta, const float &jet_pt_nominal) const;
+};
+/**
+ * @brief Parse the name of a jet energy resolution variation: a direction
+ * ("nom", "up", "down"), optionally followed by the region of the varied jets,
+ * `<direction>_abseta<min>to<max>[_pt<min>to<max>]`, with `p` as decimal point
+ * and `Inf` for no upper bound, e.g. `up_abseta2p5to3_pt0to50`. A name without
+ * a region varies every jet.
+ *
+ * @throws std::invalid_argument for a region that does not follow this form
+ */
+JERVariation parse_jer_variation(const std::string &jer_shift);
 const correction::Correction *load_nominal_jes_correction(
     correctionManager::CorrectionManager &correction_manager,
     const std::string &jec_file, const std::string &jes_tag,
@@ -67,7 +106,7 @@ JECResult apply_full_jec_mc(
     const UChar_t &jet_id, const float &jet_area, const float &rho,
     const ROOT::RVec<float> &genjet_pt, const ROOT::RVec<float> &genjet_eta,
     const ROOT::RVec<float> &genjet_phi, const std::string &jes_shift_source,
-    const int &jes_shift_factor, const std::string &jer_shift,
+    const int &jes_shift_factor, const JERVariation &jer_variation,
     const std::string &jec_algo, const float &jet_radius,
     const std::string &era, const float &random_normal,
     const correction::Correction *jes_l1_evaluator,
@@ -81,7 +120,7 @@ JECResult apply_jes_shifts_and_jer_mc(
     const UChar_t &jet_id, const float &rho, const ROOT::RVec<float> &genjet_pt,
     const ROOT::RVec<float> &genjet_eta, const ROOT::RVec<float> &genjet_phi,
     const std::string &jes_shift_source, const int &jes_shift_factor,
-    const std::string &jer_shift, const float &jet_radius,
+    const JERVariation &jer_variation, const float &jet_radius,
     const std::string &era, const float &random_normal,
     const std::vector<correction::Correction *> &jes_shift_evaluators,
     const correction::Correction *jer_resolution_evaluator,

@@ -13,18 +13,19 @@ from ..quantities import nanoAOD
 def add_unclustered_energy_shifts(
     configuration: Configuration,
     era: str,
+    exclude_samples: tuple[str, ...] = (),
 ):
     """
     Unclustered energy shifts of the missing transverse momentum.
 
     The shift replaces the NanoAOD PuppiMET, so it reaches every MET built from
-    it. For the recoil-corrected DY and W of the Run-2 v15 recoil eras
-    (constants.RUN2_V15_RECOIL_CORRECTION_ERAS) it therefore acts before the
-    recoil correction, whose quantile mapping then partly maps it back onto the
-    data templates; it did so before the 2026-10-18 MET fix as well (there through
-    the jet-propagated MET). The HTT recipe applies the recoil calibration shifts
-    instead of this one to recoil-corrected samples. Nominal is unaffected; to be
-    decided before a shift production of DY and W (met_recoil_study, open point 3).
+    it. For recoil-corrected samples it would act before the recoil correction,
+    whose quantile mapping then partly maps it back onto the data templates. The
+    HTT recipe applies the recoil calibration shifts instead of this one to
+    recoil-corrected samples: `exclude_samples` names the samples that get no
+    unclustered energy shift, besides data and embedding (v8 spec C38, V9: DY
+    and W of the Run-2 v15 recoil eras,
+    constants.RUN2_V15_RECOIL_CORRECTION_ERAS).
     """
 
     # TODO check if we need to do this for x and y independently
@@ -45,7 +46,7 @@ def add_unclustered_energy_shifts(
                 },
                 scopes=["global"],
             ),
-            exclude_samples=["data", "embedding", "embedding_mc"],
+            exclude_samples=sorted({"data", "embedding", "embedding_mc", *exclude_samples}),
         )
 
 

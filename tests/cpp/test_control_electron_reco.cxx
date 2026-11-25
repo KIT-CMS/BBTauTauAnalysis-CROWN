@@ -1,12 +1,28 @@
-#include "electron_reco.hxx"
 #include "utility/CorrectionManager.hxx"
+#include <ROOT/RDataFrame.hxx>
 #include <cassert>
 #include <cmath>
 #include <string>
 
+namespace physicsobject {
+namespace electron {
+namespace scalefactor {
+// the core function (src/electrons.cxx)
+ROOT::RDF::RNode Reco(ROOT::RDF::RNode df,
+                      correctionManager::CorrectionManager &correction_manager,
+                      const std::string &outputname, const std::string &pt,
+                      const std::string &eta, const std::string &phi,
+                      const std::string &era, const std::string &sf_file,
+                      const std::string &sf_name,
+                      const std::string &variation);
+} // namespace scalefactor
+} // namespace electron
+} // namespace physicsobject
+
 // Usage: <binary> <payload> <correction set> <era>
 //
-// The reconstruction weight must pick the official pt category of the era's
+// The reconstruction weight of the core
+// (physicsobject::electron::scalefactor::Reco) must pick the official pt category of the era's
 // payload per electron: Run 2 splits at 20 GeV (RecoBelow20 / RecoAbove20),
 // Run 3 additionally at 75 GeV (Reco20to75 / RecoAbove75), and 2023 payloads
 // take phi as a further input. Rejected pairs carry CROWN's default kinematics
@@ -35,9 +51,9 @@ int main(int argc, char **argv) {
             .Define("pt__shift", [pts, rejected_in_shift](ULong64_t i) { return rejected_in_shift[i] ? -10.f : pts[i]; }, {"rdfentry_"})
             .Define("eta__shift", [rejected_in_shift, eta](ULong64_t i) { return rejected_in_shift[i] ? -10.f : eta; }, {"rdfentry_"})
             .Define("phi__shift", [rejected_in_shift, phi](ULong64_t i) { return rejected_in_shift[i] ? -10.f : phi; }, {"rdfentry_"});
-    auto nominal = xyh::scalefactor::electron_reco(
+    auto nominal = physicsobject::electron::scalefactor::Reco(
         input, manager, "reco", "pt", "eta", "phi", era, payload, cset, "sf");
-    auto shifted = xyh::scalefactor::electron_reco(
+    auto shifted = physicsobject::electron::scalefactor::Reco(
         nominal, manager, "reco__shift", "pt__shift", "eta__shift", "phi__shift", era, payload, cset, "sf");
     auto values = shifted.Take<double>("reco");
     auto shifted_values = shifted.Take<double>("reco__shift");

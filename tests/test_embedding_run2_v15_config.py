@@ -355,6 +355,25 @@ def test_tt_embedding_trigger_payload_is_the_one_its_readme_records(era):
     assert f"`{digest}`" in row
 
 
+# The shifts of the light lepton of the scope: the muon energy scale in mt (v8 spec C37)
+# and the electron energy scale in et, barrel and endcap (C32)
+LEPTON_ES_PARAMETER = {"mt": "muon_es_scale_factors", "et": "electron_es_scale_factors"}
+LEPTON_ES_READER = {"mt": "MuonPtScale", "et": "ElectronPtScale"}
+LEPTON_ES_SHIFTS = {
+    "mt": {
+        f"CMS_scale_m_{region}_2018{direction}"
+        for region in ("etalt1p2", "eta1p2to2p1")
+        for direction in ("Up", "Down")
+    },
+    "et": {
+        f"CMS_scale_e_{region}_emb_2018{direction}"
+        for region in ("barrel", "endcap")
+        for direction in ("Up", "Down")
+    },
+    "tt": set(),
+}
+
+
 def expected_shifts():
     """The payload tau shifts, one per decay mode."""
     shifts = {}
@@ -374,6 +393,10 @@ def expected_shifts():
 def test_embedding_shifts_are_the_payload_tau_shifts_and_reach_their_producers(scope):
     config = embedding(shifts=("all",))
     shifts = shifts_of(config, scope)
+    lepton_shifts = {name: shifts.pop(name) for name in LEPTON_ES_SHIFTS[scope]}
+    for change in lepton_shifts.values():
+        assert set(change) == {LEPTON_ES_PARAMETER[scope]}
+        assert set(change) <= find_producer(config, scope, LEPTON_ES_READER[scope]).parameters[scope]
     assert shifts == expected_shifts()
     es_reader = find_producer(config, scope, "TauPtCorrectionMC").parameters[scope]
     vsjet_readers = [
@@ -453,12 +476,13 @@ def test_profile_restricts_the_embedding_scopes():
 
 
 def test_profile_without_tau_corrections():
-    """No payload energy scale (a factor 1), no vsJet SF and no payload tau shifts."""
+    """No payload energy scale (a factor 1), no vsJet SF and no payload tau shifts; the
+    energy scale shifts of the light lepton stay."""
     config = build_profile(
         replace(SM_PROFILE, embedding_tau_corrections=False), CHANNELS, ("all",)
     )
     for scope in CHANNELS:
-        assert not config.shifts[scope]
+        assert set(shifts_of(config, scope)) == LEPTON_ES_SHIFTS[scope]
         correction = find_producer(config, scope, "TauPtCorrection")
         assert correction.call.startswith("embedding::tau::PtCorrection_byValue(")
         assert {

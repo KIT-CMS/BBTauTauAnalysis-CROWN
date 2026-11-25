@@ -1,7 +1,7 @@
 // Test of the electron SFs at the supercluster eta (v7 spec K7, C22): the pair
 // electron's supercluster eta xyh::electron::supercluster_eta (eta +
 // deltaEtaSC) feeds the core ID SF (physicsobject::electron::scalefactor::Id)
-// and the reconstruction weight (xyh::scalefactor::electron_reco) of the
+// and the reconstruction weight (physicsobject::electron::scalefactor::Reco) of the
 // official EGM payload. An electron with eta just below the barrel edge 1.444
 // and supercluster eta just above it takes the SF of the bin above, and so at
 // the endcap edge 1.566.
@@ -9,7 +9,6 @@
 // Usage: test_electron_supercluster_eta <EGM electron.json.gz> <correction>
 //        <year id> <ID working point>
 
-#include "electron_reco.hxx"
 #include "electron_supercluster.hxx"
 
 #include "utility/CorrectionManager.hxx"
@@ -32,6 +31,13 @@ ROOT::RDF::RNode Id(ROOT::RDF::RNode df,
                     const std::string &era, const std::string &wp,
                     const std::string &sf_file, const std::string &sf_name,
                     const std::string &variation);
+ROOT::RDF::RNode Reco(ROOT::RDF::RNode df,
+                      correctionManager::CorrectionManager &correction_manager,
+                      const std::string &outputname, const std::string &pt,
+                      const std::string &eta, const std::string &phi,
+                      const std::string &era, const std::string &sf_file,
+                      const std::string &sf_name,
+                      const std::string &variation);
 } // namespace scalefactor
 } // namespace electron
 } // namespace physicsobject
@@ -102,9 +108,9 @@ int main(int argc, char **argv) {
     node = physicsobject::electron::scalefactor::Id(
         node, mgr, "id_wgt_ele_2", "pt_2", "sc_eta_2", "phi_2", year, wp,
         payload, cset, "sf");
-    node = xyh::scalefactor::electron_reco(node, mgr, "reco_wgt_ele_2", "pt_2",
-                                           "sc_eta_2", "phi_2", year, payload,
-                                           cset, "sf");
+    node = physicsobject::electron::scalefactor::Reco(
+        node, mgr, "reco_wgt_ele_2", "pt_2", "sc_eta_2", "phi_2", year, payload,
+        cset, "sf");
     auto sc_eta = node.Take<float>("sc_eta_2");
     auto bad = node.Take<float>("sc_eta_bad");
     auto id = node.Take<double>("id_wgt_ele_2");

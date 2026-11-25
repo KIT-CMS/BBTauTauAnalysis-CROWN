@@ -132,7 +132,8 @@ def test_embedding_jets_get_the_data_calibration(module, era):
     embedding = build(module, "embedding", era=era, scopes=("mt",))
     names = (
         "JetEnergyCorrectionData",
-        "JetEnergyCorrectionDataRegressed",
+        # the SM analysis has no regressed jets (v8 spec C36)
+        *(["JetEnergyCorrectionDataRegressed"] if module != "sm_config" else []),
         "Type1JetEnergyCorrectionData",
     )
     for config in (data, embedding):
@@ -224,7 +225,7 @@ def test_hem_shift_replaced_by_the_flag():
     the shift and has no flag."""
     sm = build("sm_config", "ttbar", era="2018", shifts=("all",))
     assert not {s for s in shift_names(sm) if "HEM" in s}
-    assert {"CMS_scale_j_Absolute_2018Up", "CMS_res_j_2018Down"} <= shift_names(sm)
+    assert {"CMS_scale_j_Absolute_2018Up", "CMS_res_j_eta0to1p93_2018Down"} <= shift_names(sm)
     nmssm = build("nmssm_config", "ttbar", era="2018", shifts=("all",))
     assert {"CMS_HEM_2018Up", "CMS_HEM_2018Down"} <= shift_names(nmssm)
     assert "HemVetoFlag" not in producer_names(build("nmssm_config", "ttbar", era="2018"), "global")

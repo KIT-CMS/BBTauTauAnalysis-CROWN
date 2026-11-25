@@ -12,6 +12,24 @@ puweight = Quantity("puweight")
 prefireweight = Quantity("prefiring_wgt")
 lhe_scale_weight = Quantity("lhe_scale_weight")
 
+# Parton shower weight (v8 spec C23): PSWeight with a checked length, and the
+# weight of the ISR and FSR scale variation of a shift (1 in the nominal)
+PSWeight_checked = Quantity("PSWeight_checked")
+ps_weight = Quantity("ps_weight")
+
+# Weights of the PDF eigenvectors (v8 spec C24): LHEPdfWeight with a checked
+# length and lhe_pdf_weight_<i> = LHEPdfWeight[i] for the members i = 1..100
+LHEPdfWeight_checked = Quantity("LHEPdfWeight_checked")
+LHE_PDF_MEMBERS = tuple(range(1, 101))
+for _member in LHE_PDF_MEMBERS:
+    setattr(this_module, f"lhe_pdf_weight_{_member}", Quantity(f"lhe_pdf_weight_{_member}"))
+
+
+def lhe_pdf_weight(member):
+    """The quantity lhe_pdf_weight_<member>."""
+    return getattr(this_module, f"lhe_pdf_weight_{member}")
+
+
 # Seed and random numbers for sample splitting
 event_hash_split = Quantity("event_hash_split")
 wgt_sample_split = Quantity("wgt_sample_split")
@@ -142,6 +160,9 @@ good_jet_collection_boosted = Quantity("good_jet_collection_boosted")
 good_bjet_collection_boosted = Quantity("good_bjet_collection_boosted")
 Electron_smearing_seed = Quantity("Electron_smearing_seed")
 Electron_pt_corrected = Quantity("Electron_pt_corrected")
+# the electron pT of a scope with its energy scale variation
+# (producers/lepton_energy_scale.py)
+Electron_pt_scaled = Quantity("Electron_pt_scaled")
 
 # boosted Tau quantities
 good_boostedtaus_mask = Quantity("good_boostedtaus_mask")
@@ -223,6 +244,11 @@ q_1 = Quantity("q_1")
 q_2 = Quantity("q_2")
 iso_1 = Quantity("iso_1")
 iso_2 = Quantity("iso_2")
+# raw DeepTau scores against electrons and muons of the tau legs (v8 spec C26)
+rawDeepTau2018v2p5VSe_1 = Quantity("rawDeepTau2018v2p5VSe_1")
+rawDeepTau2018v2p5VSe_2 = Quantity("rawDeepTau2018v2p5VSe_2")
+rawDeepTau2018v2p5VSmu_1 = Quantity("rawDeepTau2018v2p5VSmu_1")
+rawDeepTau2018v2p5VSmu_2 = Quantity("rawDeepTau2018v2p5VSmu_2")
 is_global_1 = Quantity("is_global_1")
 is_global_2 = Quantity("is_global_2")
 tau_decaymode_1 = Quantity("tau_decaymode_1")
@@ -415,6 +441,40 @@ jeta_2 = Quantity("jeta_2")
 jphi_2 = Quantity("jphi_2")
 jtag_value_2 = Quantity("jtag_value_2")
 jet_hadronFlavour_2 = Quantity("jet_hadronFlavour_2")
+
+# Jet slots (v8 spec C25): <quantity>_<slot> of the jet at position slot - 1 of
+# good_jet_collection, the jets of n_jets ordered in pT. The quantities above
+# of the slots 1 and 2 stay; the loop adds their slots 3 to 8, and for every
+# slot the mass, the UParT CvB, CvL and QvG scores and the flag of the jets
+# matched to a b quark of the Higgs boson decay.
+JET_SLOTS = tuple(range(1, 9))
+JET_SLOT_QUANTITIES = (
+    "jet_p4",
+    "jpt",
+    "jeta",
+    "jphi",
+    "jmass",
+    "jtag_value",
+    "jtag_cvb",
+    "jtag_cvl",
+    "jtag_qvg",
+    "jet_hadronFlavour",
+    "jet_from_hbb",
+)
+for _name in JET_SLOT_QUANTITIES:
+    for _slot in JET_SLOTS:
+        if not hasattr(this_module, f"{_name}_{_slot}"):
+            setattr(this_module, f"{_name}_{_slot}", Quantity(f"{_name}_{_slot}"))
+# per jet of good_jet_collection: matched to a b quark of the Higgs boson decay
+jets_from_hbb = Quantity("jets_from_hbb")
+
+
+def jet_slot(name, slot):
+    """The quantity <name>_<slot> of a jet slot."""
+    if name not in JET_SLOT_QUANTITIES or slot not in JET_SLOTS:
+        raise ValueError(f"no jet slot quantity {name}_{slot}")
+    return getattr(this_module, f"{name}_{slot}")
+
 mjj = Quantity("mjj")
 bjet_p4_1 = Quantity("bjet_p4_1")
 bpt_1 = Quantity("bpt_1")
@@ -788,6 +848,9 @@ lhe_drell_yan_decay_flavor = Quantity("lhe_drell_yan_decay_flavor")
 
 # Corrected muon pt
 Muon_pt_corrected = Quantity("Muon_pt_corrected")
+# the muon pT of a scope with its energy scale variation
+# (producers/lepton_energy_scale.py)
+Muon_pt_scaled = Quantity("Muon_pt_scaled")
 
 #endregion
 

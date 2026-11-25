@@ -6,6 +6,7 @@ from .producers import electrons as electrons
 from .producers import event as event
 from .producers import genparticles as genparticles
 from .producers import jets as jets
+from .producers import lepton_energy_scale as lepton_energy_scale
 from .producers import met as met
 from .producers import muons as muons
 from .producers import pairquantities as pairquantities
@@ -33,7 +34,7 @@ from .variations.met import (
     add_unclustered_energy_shifts,
     add_recoil_calibration_shifts,
 )
-from .variations.muons import add_muon_id_iso_shifts
+from .variations.muons import add_muon_es_config, add_muon_es_shifts, add_muon_id_iso_shifts
 from .variations.jec import add_jec_shifts
 from .variations.taus import (
     add_tau_id_vs_jet_shifts,
@@ -41,7 +42,7 @@ from .variations.taus import (
     add_tau_id_vs_mu_shifts,
     add_tau_es_shifts
 )
-from .variations.theory import add_qcd_scale_shifts
+from .variations.theory import add_parton_shower_shifts, add_qcd_scale_shifts
 from .variations.triggers import (
     add_double_tautau_trigger_shifts,
     add_single_electron_trigger_extrapolation_shifts,
@@ -294,6 +295,79 @@ def add_mur_muf_weights_config(configuration: Configuration):
             "muF": 1.0,
         },
     )
+
+
+def add_parton_shower_weight_config(configuration: Configuration):
+    """
+    The parton shower weight of simulated events (v8 spec C23): ps_weight is 1 in
+    the nominal and the PSWeight entry of the ISR or FSR scale times 2 or 0.5
+    under the shifts ps_isr and ps_fsr (variations/theory.py). The Run-2 v15
+    files carry four entries, in the order the core function reads them; another
+    length stops the job (event.PSWeightChecked).
+
+    :param configuration: the main configuration object
+    :type configuration: Configuration
+    """
+    configuration.add_config_parameters(
+        GLOBAL_SCOPES,
+        {
+            "ps_isr_variation": 1.0,
+            "ps_fsr_variation": 1.0,
+            "ps_weight_sizes": "4",
+        },
+    )
+
+
+def add_lhe_pdf_weight_config(configuration: Configuration):
+    """
+    The weights of the PDF eigenvectors as columns (v8 spec C24): the Hessian
+    sets of the signal samples have 101 entries (LHA 325500, madgraph) or 103
+    (LHA 325300, powheg, with two alpha_s members at the end); another length
+    stops the job (event.LHEPdfWeightChecked).
+
+    :param configuration: the main configuration object
+    :type configuration: Configuration
+    """
+    configuration.add_config_parameters(
+        GLOBAL_SCOPES,
+        {
+            "lhe_pdf_weight_sizes": "101, 103",
+        },
+    )
+
+
+def add_tau_id_vs_jet_high_pt_config(configuration: Configuration):
+    """
+    The columns of the pT-binned vsJet scale factor (v8 spec C40, V35): for every
+    working point of the DM-binned scale factor columns (vsjet_tau_id_sf) the
+    members nom, up and down of the pT-binned set,
+    id_wgt_tau_vsJet_<WP>_highpt[_up|_down]_<leg>
+    (scalefactors.TauIDVsJetHighPtSF).
+
+    :param configuration: the main configuration object
+    :type configuration: Configuration
+    """
+    for scope in HAD_TAU_SCOPES:
+        configuration.add_config_parameters(
+            [scope],
+            {
+                "vsjet_tau_id_sf_high_pt": [
+                    {
+                        "discriminator": entry["discriminator"],
+                        "vsjet_wp": entry["vsjet_wp"],
+                        "high_pt_member": member,
+                        "tau1_output_name": "id_wgt_tau_vsJet_{wp}_highpt{suffix}_1".format(
+                            wp=entry["vsjet_wp"], suffix=suffix
+                        ),
+                        "tau2_output_name": "id_wgt_tau_vsJet_{wp}_highpt{suffix}_2".format(
+                            wp=entry["vsjet_wp"], suffix=suffix
+                        ),
+                    }
+                    for entry in configuration.config_parameters[scope]["vsjet_tau_id_sf"]
+                    for member, suffix in [("nom", ""), ("up", "_up"), ("down", "_down")]
+                ],
+            },
+        )
 
 
 def add_golden_json_config(configuration: Configuration):
@@ -2454,6 +2528,24 @@ def build_config(
     # tautau+bb quantities). NMSSM and the SM main profile never set the flag.
     strip_analysis_bjets = profile.enable_probe_jet_collection
 
+    # The di-tau trigger SF of tt, with variations per decay mode where the
+    # profile shifts it per decay mode (v8 spec C39)
+    tautau_trigger_sf = scalefactors.tautau_trigger_sf(
+        profile.shifts.ditau_trigger_per_decay_mode
+    )
+
+    # The jets with the PNet/UParT pT regression: their calibration, the bb pair
+    # built from them and their columns (not in the SM analysis, v8 spec C36)
+    regressed_jets = profile.regressed_jet_columns
+    basic_jet_quantities = (
+        jets.BasicJetQuantities if regressed_jets else jets.BasicJetQuantitiesWithoutRegression
+    )
+    bb_pair_producers = (
+        pairquantities_bbpair.AllBBPairProducers
+        if regressed_jets
+        else pairquantities_bbpair.BBPairProducersWithoutRegression
+    )
+
     # Single-electron trigger SF: the EGM Electron-HLT-SF correction exists only in
     # the Run-3 payloads, so every Run-2 era evaluates the SF of the Tau Embedding
     # group (KIT) of its triggers (tau_triggersetup.KIT_SINGLE_ELECTRON_TRIGGER_SFS).
@@ -2508,6 +2600,23 @@ def build_config(
     # variations of the renormalization and factorization scales
     add_mur_muf_weights_config(configuration)
 
+    # The columns of the shift production of a profile (v8 spec C23-C27, C40):
+    # the parton shower weight and genTtbarId of every simulated sample, the PDF
+    # weights of the signal, the jet slots and raw tau scores of every sample
+    # (the hadron flavour of the slots in simulation, the H -> bb flag in the
+    # samples with a bb truth mother), and the pT-binned vsJet scale factor of
+    # simulated taus
+    is_simulation = sample not in ("data", "embedding", "embedding_mc")
+    parton_shower_weight = profile.shifts.parton_shower and is_simulation
+    lhe_pdf_weights = sample in profile.lhe_pdf_weight_samples
+    stage_b_columns = profile.stage_b_columns
+    hbb_jet_flags = stage_b_columns and sample in profile.bb_truegen_mother_pdgid
+    tau_id_vs_jet_high_pt = profile.tau_id_vs_jet_high_pt_columns and is_simulation
+    if parton_shower_weight:
+        add_parton_shower_weight_config(configuration)
+    if lhe_pdf_weights:
+        add_lhe_pdf_weight_config(configuration)
+
     # AK4 jet selection and energy/resolution corrections
     add_ak4jet_config(configuration, era, profile)
 
@@ -2526,6 +2635,8 @@ def build_config(
 
     # hadronic tau selection and corrections for identification and energy scale
     add_hadronic_tau_config(configuration, era)
+    if tau_id_vs_jet_high_pt:
+        add_tau_id_vs_jet_high_pt_config(configuration)
 
     # b jet selection, identification, and corrections
     add_bjet_config(configuration, era, available_sample_types, profile)
@@ -2687,6 +2798,8 @@ def build_config(
             "bb_truegen_daughter_1_pdgid": 5,
             "bb_truegen_daughter_2_pdgid": 5,
             "gen_bpair_match_deltaR": 0.2,
+            # jet slots: radius of the match of a b quark of the decay to a jet
+            "hbb_jet_match_delta_r": 0.4,
             "tautau_truegen_mother_pdgid": SampleModifier(
                 dict(profile.tautau_truegen_mother_pdgid), default=-1
             ),
@@ -2827,7 +2940,7 @@ def build_config(
     )
 
     AuxJetCollectionQuantities = jets.aux_jet_collection_quantities(
-        era, version="v15" if use_run2_v15_inputs else None
+        era, version="v15" if use_run2_v15_inputs else None, regression=regressed_jets
     )
     AuxCorrT1METJetCollectionQuantities = get_for_era(jets.AuxCorrT1METJetCollectionQuantities, era)
 
@@ -3037,10 +3150,14 @@ def build_config(
             get_for_era(muons.MuonPtCorrection, era),
             jets.JERSmearingSeed,
             jets.JetEnergyCorrectionMC,
-            jets.JetEnergyCorrectionMCRegressed,
+        ]
+        + ([jets.JetEnergyCorrectionMCRegressed] if regressed_jets else [])
+        + [
             jets.Type1JetEnergyCorrectionMC,
             # fatjets.FatJetEnergyCorrection,
         ]
+        + ([event.PSWeightChecked, event.PartonShowerWeight] if parton_shower_weight else [])
+        + ([event.LHEPdfWeights] if lhe_pdf_weights else [])
     )
 
     # Producers common to all scopes with at least one hadronic tau
@@ -3049,9 +3166,9 @@ def build_config(
         # fatjets.FatJetCollectionWithoutVeto,
         # fatjets.BasicFatJetQuantities,
         jets.JetSelection,
-        jets.BasicJetQuantities,
+        basic_jet_quantities,
         jets.BasicBJetQuantities,
-        pairquantities_bbpair.AllBBPairProducers,
+        bb_pair_producers,
         genparticles.GenDiBjetPairQuantities,
         # fatjets.FindFatjetMatchingBjet,
         # fatjets.BasicMatchedFatJetQuantities,
@@ -3072,7 +3189,7 @@ def build_config(
         # the ditau+MET quantities without the tautau+bb combination
         analysis_bjet_layer = [
             jets.BasicBJetQuantities,
-            pairquantities_bbpair.AllBBPairProducers,
+            bb_pair_producers,
             genparticles.GenDiBjetPairQuantities,
             jets.JetHadronFlavours,
             bjet_id_sf_producer,
@@ -3098,6 +3215,10 @@ def build_config(
             scalefactors.TauIDSF,
             taus.TauEnergyCorrectionMC,
         ]
+        + ([scalefactors.TauIDVsJetHighPtSF] if tau_id_vs_jet_high_pt else [])
+        + ([*jets.JetSlots, pairquantities.TauRawDeepTauScores] if stage_b_columns else [])
+        + (jets.JetSlotHadronFlavours if stage_b_columns and is_simulation else [])
+        + ([jets.JetSlotHbbFlags] if hbb_jet_flags else [])
     )
 
     # Producers for quantities in the et scope
@@ -3127,10 +3248,28 @@ def build_config(
         ]
     )
 
+    # Muon energy scale shifts of the profile (v8 spec C37): in their scopes,
+    # simulated and embedded events read the muon pT through the scope-level
+    # scale (lepton_energy_scale.MuonPtScale); data keep the corrected pT
+    muon_es_regions = {} if sample == "data" else dict(profile.shifts.muon_es_regions)
+    if not set(muon_es_regions) <= set(lepton_energy_scale.MUON_ES_SCOPES):
+        raise ValueError(
+            f"Muon energy scale shifts exist for {lepton_energy_scale.MUON_ES_SCOPES} only, "
+            f"got {sorted(muon_es_regions)}."
+        )
+
+    def muon_es(scope, producers):
+        if scope not in muon_es_regions:
+            return producers
+        return lepton_energy_scale.with_muon_es(producers)
+
+    if muon_es_regions:
+        add_muon_es_config(configuration, list(muon_es_regions))
+
     # Producers for quantities in the mt scope
     configuration.add_producers(
         MT_SCOPES,
-        [
+        muon_es("mt", [
             muons.GoodMuons,
             muons.NumberOfGoodMuons,
             muons.VetoMuons,
@@ -3150,7 +3289,7 @@ def build_config(
             # scalefactors.DoubleMuTauTriggerSF,  # TODO fix for Run 2, SF seem to not be available
             # TODO rework trigger setup before enabling this
             # triggers.GenerateSingleTrailingTauTriggerFlags,
-        ]
+        ])
     )
 
     # Producers for quantities in the tt scope
@@ -3168,7 +3307,7 @@ def build_config(
             pairquantities.TTDiTauPairQuantities,
             genparticles.TTGenDiTauPairQuantities,
             triggers.TauTauTriggerFlags,
-            scalefactors.TauTauTriggerSF,
+            tautau_trigger_sf,
             # TODO rework trigger setup before enabling this
             # triggers.GenerateSingleTrailingTauTriggerFlags,
             # triggers.GenerateSingleLeadingTauTriggerFlags,
@@ -3223,7 +3362,7 @@ def build_config(
     # Producers for quantities in the em scope
     configuration.add_producers(
         EM_SCOPES,
-        [
+        muon_es("em", [
             electrons.GoodElectrons,
             electrons.NumberOfGoodElectrons,
             electrons.VetoElectrons,
@@ -3242,7 +3381,7 @@ def build_config(
             scalefactors.MuonIDIso_SF,
             triggers.SingleMuTriggerFlags,
             single_mu_trigger_sf,
-        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, em_ele_trigger_sf]),
+        ] + ([] if sm_light_controls else [triggers.SingleEleTriggerFlags, em_ele_trigger_sf])),
     )
 
     # The supercluster eta of the electrons, at which the SFs are evaluated (C22)
@@ -3470,7 +3609,7 @@ def build_config(
         TT_SCOPES,
         RemoveProducer(
             producers=[
-                scalefactors.TauTauTriggerSF,
+                tautau_trigger_sf,
             ],
             samples=["data"],
         ),
@@ -3549,16 +3688,17 @@ def build_config(
     )
 
     # Replace regressed jet energy correction for data and embedding
-    configuration.add_modification_rule(
-        GLOBAL_SCOPES,
-        ReplaceProducer(
-            producers=[
-                jets.JetEnergyCorrectionMCRegressed,
-                jets.JetEnergyCorrectionDataRegressed,
-            ],
-            samples=["data", "embedding", "embedding_mc"],
-        ),
-    )
+    if regressed_jets:
+        configuration.add_modification_rule(
+            GLOBAL_SCOPES,
+            ReplaceProducer(
+                producers=[
+                    jets.JetEnergyCorrectionMCRegressed,
+                    jets.JetEnergyCorrectionDataRegressed,
+                ],
+                samples=["data", "embedding", "embedding_mc"],
+            ),
+        )
 
     # Replace jet energy correction for type-I correction jets for data and embedding
     configuration.add_modification_rule(
@@ -3636,8 +3776,9 @@ def build_config(
         ),
     )
 
-    # For whatever reason, the diboson samples do not have these weights in the
-    # ntuple....
+    # The samples of the profile without the QCD scale weights (NMSSM: the
+    # diboson samples do not have these weights in the ntuple; they get no QCD
+    # scale shifts either)
     configuration.add_modification_rule(
         GLOBAL_SCOPES,
         RemoveProducer(
@@ -3985,6 +4126,29 @@ def build_config(
             q.mass_tautaubb,
         ]
         scope_outputs = [o for o in scope_outputs if o not in analysis_bjet_layer_outputs]
+    if not regressed_jets:
+        regressed_jet_outputs = [
+            q.bpair_pt_regressed_1,
+            q.bpair_pt_regressed_2,
+            q.bpair_eta_regressed_1,
+            q.bpair_eta_regressed_2,
+            q.bpair_phi_regressed_1,
+            q.bpair_phi_regressed_2,
+            q.bpair_mass_regressed_1,
+            q.bpair_mass_regressed_2,
+            q.bpair_btag_value_regressed_1,
+            q.bpair_btag_value_regressed_2,
+            q.bpair_pt_resolution_regressed_1,
+            q.bpair_pt_resolution_regressed_2,
+            q.bpair_m_inv_regressed,
+            q.bpair_deltaR_regressed,
+            q.bpair_pt_dijet_regressed,
+            q.jpt_regressed_1,
+            q.jpt_regressed_2,
+            q.jpt_regressed_resolution_1,
+            q.jpt_regressed_resolution_2,
+        ]
+        scope_outputs = [o for o in scope_outputs if o not in regressed_jet_outputs]
     configuration.add_outputs(SCOPES, scope_outputs)
 
     if era in ["2024", "2025"] and sample not in ["data", "embedding"]:
@@ -4010,6 +4174,33 @@ def build_config(
     #             q.pNet_Xbb_weight,
     #         ],
     #     )
+
+    # the parton shower weight (C23), and the weights of the PDF eigenvectors of
+    # the signal (C24)
+    if parton_shower_weight:
+        configuration.add_outputs(SCOPES, [q.ps_weight])
+    if lhe_pdf_weights:
+        configuration.add_outputs(SCOPES, [q.lhe_pdf_weight(member) for member in q.LHE_PDF_MEMBERS])
+
+    # the inputs of the NN stage B (C25-C27)
+    if stage_b_columns:
+        configuration.add_outputs(
+            HAD_TAU_SCOPES,
+            jets.JET_SLOT_OUTPUTS
+            + (jets.JET_SLOT_HADRON_FLAVOUR_OUTPUTS if is_simulation else [])
+            + (jets.JET_SLOT_HBB_OUTPUTS if hbb_jet_flags else []),
+        )
+        for _scope in HAD_TAU_SCOPES:
+            configuration.add_outputs(
+                [_scope],
+                [
+                    output
+                    for producer in pairquantities.TauRawDeepTauScores.producers[_scope]
+                    for output in producer.output
+                ],
+            )
+        if is_simulation:
+            configuration.add_outputs(SCOPES, [nanoAOD.genTtbarId])
 
     # add genWeight for everything but data
     if sample != "data":
@@ -4087,6 +4278,15 @@ def build_config(
                 for producer in scalefactors.TauIDSF.producers[_scope]
             ],
         )
+        # the pT-binned vsJet scale factor with its uncertainty (C40)
+        if tau_id_vs_jet_high_pt:
+            configuration.add_outputs(
+                [_scope],
+                [
+                    producer.output_group
+                    for producer in scalefactors.TauIDVsJetHighPtSF.producers[_scope]
+                ],
+            )
 
     configuration.add_outputs(
         MT_SCOPES,
@@ -4154,7 +4354,7 @@ def build_config(
             pairquantities.VsMuTauIDFlag_2.output_group,
             triggers.TauTauTriggerFlags.output_group,
             ] + [
-                o for o in scalefactors.TauTauTriggerSF.get_outputs("tt")
+                o for o in tautau_trigger_sf.get_outputs("tt")
             ] + [
                 producer.output_group
                 for producer in tautaujet_trigger_producers
@@ -4315,7 +4515,7 @@ def build_config(
         for _scopes, _producer in [
             (ET_SCOPES, single_ele_trigger_sf),
             (MT_SCOPES, scalefactors.MuonIDIso_SF),
-            (TT_SCOPES, scalefactors.TauTauTriggerSF),
+            (TT_SCOPES, tautau_trigger_sf),
         ]:
             configuration.add_modification_rule(
                 _scopes,
@@ -4348,6 +4548,12 @@ def build_config(
     if not profile.tau_id_measurement:
         add_muon_id_iso_shifts(configuration, era, [scalefactors.MuonIDIso_SF])
 
+    # Add muon energy scale shifts, of simulated and embedded events
+    if muon_es_regions:
+        add_muon_es_shifts(
+            configuration, era, lepton_energy_scale.MuonPtScale, muon_es_regions
+        )
+
     #endregion
 
     # --- Hadronic tau identification & energy scale correction ---------------
@@ -4363,6 +4569,7 @@ def build_config(
             era,
             [scalefactors.TauIDVsJetSF2],
             scopes=SL_SCOPES,
+            syst_tes=profile.shifts.tau_id_vs_jet_syst_tes,
         )
 
         # Add hadronic tau ID vs jet SF shifts to fullhadronic scopes
@@ -4372,6 +4579,7 @@ def build_config(
             era,
             [scalefactors.TauIDVsJetSF1, scalefactors.TauIDVsJetSF2],
             scopes=TT_SCOPES,
+            syst_tes=profile.shifts.tau_id_vs_jet_syst_tes,
         )
 
     # Add hadronic tau ID vs electron SF shifts to semileptonic scopes (producer
@@ -4415,6 +4623,9 @@ def build_config(
         configuration,
         era,
         taus.TauPtCorrectionMC,
+        per_decay_mode=profile.shifts.tau_es_per_decay_mode,
+        electron_fake_scopes=profile.shifts.electron_fake_tau_es_scopes,
+        muon_fake_scopes=profile.shifts.muon_fake_tau_es_scopes,
     )
 
     #endregion
@@ -4425,7 +4636,7 @@ def build_config(
 
     jec_mc_producers = [
         jets.JetEnergyCorrectionMC,
-        jets.JetEnergyCorrectionMCRegressed,
+        *([jets.JetEnergyCorrectionMCRegressed] if regressed_jets else []),
         jets.Type1JetEnergyCorrectionMC,
     ]
     if era in ["2022preEE", "2022postEE", "2023preBPix", "2023postBPix"]:
@@ -4442,7 +4653,12 @@ def build_config(
         # In Run 2 and 2024/2025, working point-based b jet tagging SFs are
         # used. No special treatment for JEC uncertainties is necessary here.
         add_jec_shifts(
-            configuration, era, jec_mc_producers, hem_shift=not hem_veto_flag)
+            configuration,
+            era,
+            jec_mc_producers,
+            hem_shift=not hem_veto_flag,
+            jer_regions=profile.shifts.jer_regions,
+        )
 
     #endregion
 
@@ -4478,20 +4694,35 @@ def build_config(
 
     #region
 
-    # Propagation of unclustered energy shift to missing transverse momentum
-    # (for the recoil-corrected DY and W before the recoil correction, see the
-    # note in variations/met.py)
-    add_unclustered_energy_shifts(configuration, era)
+    # The samples with the shifts of the recoil calibration (none for the v15
+    # eras without a recoil correction); the merged SM "wjets" joins via
+    # sm_merged_dyw (empty for NMSSM)
+    recoil_shift_samples = (
+        _get_recoil_calibration_samples() + sm_merged_dyw
+        if MetRecoilShiftProducer is not None
+        else []
+    )
 
-    # Uncertainties in the recoil calibration (none for the v15 eras without
-    # a recoil correction)
+    # Propagation of unclustered energy shift to missing transverse momentum;
+    # on the recoil-corrected samples only where the profile keeps it (it acts
+    # before the recoil correction there, see the note in variations/met.py)
+    add_unclustered_energy_shifts(
+        configuration,
+        era,
+        exclude_samples=(
+            []
+            if profile.shifts.unclustered_energy_shift_on_recoil_corrected_samples
+            else recoil_shift_samples
+        ),
+    )
+
+    # Uncertainties in the recoil calibration
     if MetRecoilShiftProducer is not None:
         add_recoil_calibration_shifts(
             configuration,
             era,
             MetRecoilShiftProducer,
-            # the merged SM "wjets" joins via sm_merged_dyw (empty for NMSSM)
-            _get_recoil_calibration_samples() + sm_merged_dyw,
+            recoil_shift_samples,
         )
 
     #endregion
@@ -4563,8 +4794,9 @@ def build_config(
     add_double_tautau_trigger_shifts(
         configuration,
         era,
-        [scalefactors.TauTauTriggerSF],
+        [tautau_trigger_sf],
         "tt",
+        per_decay_mode=profile.shifts.ditau_trigger_per_decay_mode,
     )
 
     #endregion
@@ -4573,8 +4805,25 @@ def build_config(
 
     #region
 
-    # Add QCD scale (renormalization and factorization scales) shifts
-    add_qcd_scale_shifts(configuration, era, event.LHE_Scale_weight)
+    # Add QCD scale (renormalization and factorization scales) shifts, to the
+    # samples that keep the weight producer
+    add_qcd_scale_shifts(
+        configuration,
+        era,
+        event.LHE_Scale_weight,
+        exclude_samples=profile.lhe_scale_weight_excluded_samples,
+    )
+
+    #endregion
+
+    # --- Parton shower -------------------------------------------------------
+
+    #region
+
+    # Add the shifts of the ISR and FSR scale of the parton shower (ps_isr,
+    # ps_fsr; v8 spec C23) to the simulated samples
+    if parton_shower_weight:
+        add_parton_shower_shifts(configuration, era, [event.PartonShowerWeight])
 
     #endregion
 

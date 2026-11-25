@@ -1,6 +1,6 @@
-"""SM HH fake-factor friend-tree entry point, QCD + ttbar (friend ff_v7b; the Run-2 eras
-with a measured payload). The QCD + W + ttbar variant is sm_fake_factors_w (v7 spec
-E18, C15, P5)."""
+"""SM HH fake-factor friend-tree entry point, QCD + ttbar (friend ff_v8, before ff_v7b;
+the Run-2 eras with a measured payload). The QCD + W + ttbar variant is
+sm_fake_factors_w (v7 spec E18, C15, P5)."""
 from code_generation.friend_trees import FriendTreeConfiguration  # noqa: F401  (dispatcher check)
 
 from .constants import ERAS_RUN2
@@ -19,11 +19,14 @@ def payload_dirs(payloads):
 # The processes the payloads of this entry point sum (read from their fractions)
 PROCESSES = ("QCD", "ttbar")
 # The measured payload of each payload era, relative to the analysis directory:
-# the v7b measurement (smrun2_binned_v7 data, smrun2_binned_v7b MC and embedding;
-# payloads/fake_factors/sm/fake-factors-2026-10-19/README.md). The v6 2018 payload
-# fake-factors-2026-10-09 stays for reference.
+# the v7c measurement (v8 spec 5.2, V14, V33: the v7b measurement on
+# smrun2_binned_v7 data and smrun2_binned_v7b MC and embedding, read without
+# repeated events and with the QCD isolation non-closure of mt smoothed;
+# payloads/fake_factors/sm/fake-factors-2026-11-24/README.md). The v7b payload
+# fake-factors-2026-10-19 and the v6 2018 payload fake-factors-2026-10-09 stay
+# for reference.
 PAYLOADS = {
-    era: f"payloads/fake_factors/sm/fake-factors-2026-10-19/{era}"
+    era: f"payloads/fake_factors/sm/fake-factors-2026-11-24/{era}"
     for era in ("2016", "2017", "2018")
 }
 # Payload directory per era

@@ -25,6 +25,9 @@ SURFACES = [
         for module, sample, scopes, items in [
             ("sm_config", "ttbar", tuple(SCOPES), ()),
             ("sm_config", "dyjets", tuple(SCOPES), ()),
+            # the QCD scale shifts of diboson and the signal (v8 spec C30, C34)
+            ("sm_config", "diboson", tuple(SCOPES), ()),
+            ("sm_config", "hh2b2tau", tuple(SCOPES), ()),
             ("sm_config", "embedding", ("et", "mt", "tt"), ()),
             ("sm_tau_id_measurement_config", "dyjets", ("mt", "mm"), ()),
         ]
@@ -82,20 +85,22 @@ def test_every_shifted_parameter_is_read(module, sample, era, scopes):
     assert not unread, sorted(set(unread))
 
 
-# Builds one surface with its tau energy scale shifts in a fresh process, since the
-# shifts a build gives the module-level quantities leak into later builds, and lists
-# the outputs computed from the pair that lack one of the shifts.
+# Builds one surface with its energy scale shifts of the tau and of the light lepton
+# of a scope (v8 spec C32, C37) in a fresh process, since the shifts a build gives the
+# module-level quantities leak into later builds, and lists the outputs computed from
+# the pair that lack one of the shifts.
 _UNSHIFTED_BEHIND_PAIR = """
 import json, sys
 from analysis_configurations.bbtautau.quantities import output as q
 from analysis_configurations.bbtautau.tests.helpers import build
 module, sample, era, scopes = json.loads(sys.argv[1])
-config = build(module, sample, era, tuple(scopes), ("CMS_scale_t",))
+config = build(module, sample, era, tuple(scopes), ("CMS_scale_t", "CMS_scale_m_", "CMS_scale_e_"))
+keys = {"tau_es_variation", "muon_es_scale_factors", "electron_es_scale_factors"}
 unshifted, counts = [], {}
 for scope in scopes:
     shifts = {
         name for name, change in config.shifts.get(scope, {}).items()
-        if "tau_es_variation" in change
+        if keys & set(change)
     }
     counts[scope] = len(shifts)
     behind_pair, todo = set(), [q.dileptonpair]
@@ -119,7 +124,9 @@ def test_tau_energy_scale_shifts_recompute_every_column_behind_the_pair(
     """A shifted tau pT changes the pair selection, and some events pass it under a
     shift only. Every output computed from the pair, the light lepton leg of et and
     mt included, must therefore have the shifted columns: an ignored producer left
-    those events with a default lepton leg (pt_1 = -10, no trigger flags or SFs)."""
+    those events with a default lepton leg (pt_1 = -10, no trigger flags or SFs).
+    The same holds for the energy scale shifts of the muon (mt, em) and of the
+    embedded electron (et), which scale the lepton pT before the selection."""
     result = subprocess.run(
         [sys.executable, "-c", _UNSHIFTED_BEHIND_PAIR, json.dumps([module, sample, era, scopes])],
         cwd=Path(__file__).resolve().parents[3],
@@ -134,6 +141,9 @@ def test_tau_energy_scale_shifts_recompute_every_column_behind_the_pair(
 
 # the values that select the nominal correction, per payload convention
 NOMINAL_VARIATIONS = {"nom", "nominal", "sf", "central", False}
+# variations that are a scale factor of a scale, nominal at 1 (the ISR and FSR scale of the
+# parton shower, v8 spec C23)
+NOMINAL_SCALES = {"ps_isr_variation": 1.0, "ps_fsr_variation": 1.0}
 
 
 def _variation_parameters(parameters):
@@ -163,7 +173,7 @@ def test_nominal_parameters_select_the_nominal_corrections(module, sample, era, 
         (scope, key, value)
         for scope, parameters in config.config_parameters.items()
         for key, value in _variation_parameters(parameters["nominal"])
-        if value not in NOMINAL_VARIATIONS
+        if (value != NOMINAL_SCALES[key] if key in NOMINAL_SCALES else value not in NOMINAL_VARIATIONS)
     ]
     assert not shifted_nominal, shifted_nominal
 
@@ -185,10 +195,13 @@ def test_tau_vs_mu_shifts_vary_the_vs_mu_sf(era):
 
 
 @pytest.mark.parametrize(
-    "module,era", [("sm_config", era) for era in ERAS_RUN2] + [("nmssm_config", "2022postEE")]
+    "module,era,expected",
+    [("sm_config", era, 28) for era in ERAS_RUN2] + [("nmssm_config", "2022postEE", 20)],
 )
-def test_tau_vs_jet_variations_exist_in_the_era_payload(module, era):
-    """The Run-2/2022/2023 vsJet variations are evaluated as given by the payload."""
+def test_tau_vs_jet_variations_exist_in_the_era_payload(module, era, expected):
+    """The Run-2/2022/2023 vsJet variations are evaluated as given by the payload: two
+    statistical components per decay mode, syst_alleras and syst_<era>, and in the SM shift
+    scheme syst_TES_<era>_dm<DM> per decay mode (v8 spec C18)."""
     config = build(module, "ttbar", era=era, scopes=("mt",), shifts=("VSjet",))
     payload = Path(config.config_parameters["mt"]["nominal"]["tau_ides_sf_file"])
     if not payload.is_file():
@@ -212,5 +225,5 @@ def test_tau_vs_jet_variations_exist_in_the_era_payload(module, era):
     variations = {
         change["tau_id_sf_vsjet_variation"] for change in config.shifts["mt"].values()
     }
-    assert len(variations) == 20, sorted(variations)
+    assert len(variations) == expected, sorted(variations)
     assert variations <= keys, sorted(variations - keys)

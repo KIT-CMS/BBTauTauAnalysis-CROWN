@@ -348,6 +348,49 @@ tau_iso_2 = Producer(
     output=[q.iso_2],
     scopes=["mt", "et", "tt"],
 )
+# Raw DeepTau scores against electrons and muons of the tau legs (inputs of the
+# NN stage B; nn spec N19, v8 spec C26). The raw score against jets is iso_1/2
+# above, which no classifier may read (nn spec 5.3).
+tau_raw_vs_ele_1 = Producer(
+    name="tau_raw_vs_ele_1",
+    call="event::quantity::Get<Float_t>({df}, {output}, {input}, 0)",
+    input=[nanoAOD.Tau_rawDeepTau2018v2p5VSe, q.dileptonpair],
+    output=[q.rawDeepTau2018v2p5VSe_1],
+    scopes=["tt"],
+)
+tau_raw_vs_ele_2 = Producer(
+    name="tau_raw_vs_ele_2",
+    call="event::quantity::Get<Float_t>({df}, {output}, {input}, 1)",
+    input=[nanoAOD.Tau_rawDeepTau2018v2p5VSe, q.dileptonpair],
+    output=[q.rawDeepTau2018v2p5VSe_2],
+    scopes=["mt", "et", "tt"],
+)
+tau_raw_vs_mu_1 = Producer(
+    name="tau_raw_vs_mu_1",
+    call="event::quantity::Get<Float_t>({df}, {output}, {input}, 0)",
+    input=[nanoAOD.Tau_rawDeepTau2018v2p5VSmu, q.dileptonpair],
+    output=[q.rawDeepTau2018v2p5VSmu_1],
+    scopes=["tt"],
+)
+tau_raw_vs_mu_2 = Producer(
+    name="tau_raw_vs_mu_2",
+    call="event::quantity::Get<Float_t>({df}, {output}, {input}, 1)",
+    input=[nanoAOD.Tau_rawDeepTau2018v2p5VSmu, q.dileptonpair],
+    output=[q.rawDeepTau2018v2p5VSmu_2],
+    scopes=["mt", "et", "tt"],
+)
+TauRawDeepTauScores = ProducerGroup(
+    name="TauRawDeepTauScores",
+    call=None,
+    input=None,
+    output=None,
+    scopes=["mt", "et", "tt"],
+    subproducers={
+        "tt": [tau_raw_vs_ele_1, tau_raw_vs_mu_1, tau_raw_vs_ele_2, tau_raw_vs_mu_2],
+        "mt": [tau_raw_vs_ele_2, tau_raw_vs_mu_2],
+        "et": [tau_raw_vs_ele_2, tau_raw_vs_mu_2],
+    },
+)
 tau_decaymode_1 = Producer(
     name="decaymode_1",
     call="event::quantity::Get<UChar_t>({df}, {output}, {input}, 0)",

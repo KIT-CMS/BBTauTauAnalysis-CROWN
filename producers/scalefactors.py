@@ -332,6 +332,64 @@ TauIDVsJetSF2 = _create_tau_id_vsjet_sf_producer(
     scopes=HAD_TAU_SCOPES,
 )
 
+# The vsJet scale factor of the pT-binned set of the TAU payload (flag "pt",
+# recommended above 140 GeV) with its total uncertainty, as weight columns
+# next to the DM-binned scale factor that is applied (v8 spec C40, V35). One
+# entry of vsjet_tau_id_sf_high_pt per working point and member (nom, up,
+# down); the columns are no shifts.
+def _create_tau_id_vsjet_high_pt_sf_producer(
+    name: str,
+    input: list[Quantity],
+    output: str,
+    scopes: list[str],
+):
+    return ExtendedVectorProducer(
+        name=name,
+        call="""
+            xyh::scalefactor::tau_id_vsjet_pt_binned(
+                {df},
+                correctionManager,
+                {output},
+                {input},
+                "{tau_vsjet_es_sf_file}",
+                "{discriminator}",
+                "{vsjet_wp}",
+                "{tau_ides_sf_vsele_wp}",
+                "{high_pt_member}"
+            )
+        """,
+        input=input,
+        output=output,
+        scopes=scopes,
+        vec_config="vsjet_tau_id_sf_high_pt",
+    )
+
+
+TauIDVsJetHighPtSF1 = _create_tau_id_vsjet_high_pt_sf_producer(
+    name="TauIDVsJetHighPtSF1",
+    input=[q.pt_1, q.tau_decaymode_1, q.gen_match_1],
+    output="tau1_output_name",
+    scopes=TT_SCOPES,
+)
+TauIDVsJetHighPtSF2 = _create_tau_id_vsjet_high_pt_sf_producer(
+    name="TauIDVsJetHighPtSF2",
+    input=[q.pt_2, q.tau_decaymode_2, q.gen_match_2],
+    output="tau2_output_name",
+    scopes=HAD_TAU_SCOPES,
+)
+TauIDVsJetHighPtSF = ProducerGroup(
+    name="TauIDVsJetHighPtSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=HAD_TAU_SCOPES,
+    subproducers={
+        "tt": [TauIDVsJetHighPtSF1, TauIDVsJetHighPtSF2],
+        "mt": [TauIDVsJetHighPtSF2],
+        "et": [TauIDVsJetHighPtSF2],
+    },
+)
+
 # DeepTau ID vs. electrons scale factor for the first tau
 TauIDVsEleSF1 = _create_tau_id_vsele_sf_producer(
     name="TauIDVsEleSF1",
@@ -538,19 +596,20 @@ Tau_2_antiMuTauID_SF = ExtendedVectorProducer(
 # Electron ID/ISO SF
 #########################
 # Electron reconstruction weight: the EGM payload stores the reconstruction
-# efficiency in pt categories, so the addon selects the category per electron
-# (see cpp_addons/include/electron_reco.hxx) and takes the era key from the
-# config instead of a fixed category name.
+# efficiency in pt categories (Run 2: below and above 20 GeV; Run 3: below 20,
+# 20 to 75 and above 75 GeV), which the core function selects per electron; the
+# era key comes from the config. An electron with negative pt (CROWN's default
+# of a rejected pair) gets a weight of 1.
 Ele_1_Reco_SF = Producer(
     name="Ele_1_Reco_SF",
-    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
+    call='physicsobject::electron::scalefactor::Reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_1, q.eta_1, q.phi_1],
     output=[q.reco_wgt_ele_1],
     scopes=["em", "ee", "et"],
 )
 Ele_2_Reco_SF = Producer(
     name="Ele_2_Reco_SF",
-    call='xyh::scalefactor::electron_reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
+    call='physicsobject::electron::scalefactor::Reco({df}, correctionManager, {output}, {input}, "{ele_sf_year_id}", "{ele_sf_file}", "{ele_sf_cset_name}", "{ele_reco_sf_variation}")',
     input=[q.pt_2, q.eta_2, q.phi_2],
     output=[q.reco_wgt_ele_2],
     scopes=["ee"],
@@ -890,6 +949,54 @@ TauTauTriggerSF = ProducerGroup(
         TauTauTriggerLeg2SF,
     ],
 )
+
+# The same scale factors from the addon function, which also takes variations
+# of a single decay mode ("up_dm0", ...; v8 spec C39). Its "nom", "up" and
+# "down" are those of the core function above.
+_TAUTAU_TRIGGER_SF_PER_DECAY_MODE_CALL = (
+    "xyh::scalefactor::tau_trigger_per_decay_mode({{df}}, correctionManager, {{output}}, "
+    '{{input}}, "{{tt_trigger_flag}}", "{{tau_trigger_sf_file}}", "{{tau_trigger_cset_name}}", '
+    '"{{tt_trigger_leg{leg}_sf_name}}", "Medium", "sf", "{{tt_trigger_leg{leg}_variation}}")'
+)
+TauTauTriggerLeg1SFPerDecayMode = ExtendedVectorProducer(
+    name="DoubleTauTauTriggerLeg1SF",
+    call=_TAUTAU_TRIGGER_SF_PER_DECAY_MODE_CALL.format(leg=1),
+    input=[
+        q.pt_1,
+        q.tau_decaymode_1,
+    ],
+    output="tt_trigger_leg1_flagname",
+    scopes=TT_SCOPES,
+    vec_config="double_tautau_trigger_leg1_sf",
+)
+TauTauTriggerLeg2SFPerDecayMode = ExtendedVectorProducer(
+    name="DoubleTauTauTriggerLeg2SF",
+    call=_TAUTAU_TRIGGER_SF_PER_DECAY_MODE_CALL.format(leg=2),
+    input=[
+        q.pt_2,
+        q.tau_decaymode_2,
+    ],
+    output="tt_trigger_leg2_flagname",
+    scopes=TT_SCOPES,
+    vec_config="double_tautau_trigger_leg2_sf",
+)
+TauTauTriggerSFPerDecayMode = ProducerGroup(
+    name="DoubleTauTauTriggerSF",
+    call=None,
+    input=None,
+    output=None,
+    scopes=TT_SCOPES,
+    subproducers=[
+        TauTauTriggerLeg1SFPerDecayMode,
+        TauTauTriggerLeg2SFPerDecayMode,
+    ],
+)
+
+
+def tautau_trigger_sf(per_decay_mode: bool) -> ProducerGroup:
+    """The di-tau trigger SF group of tt, with variations per decay mode
+    (AnalysisProfile.shifts.ditau_trigger_per_decay_mode) or the coherent ones."""
+    return TauTauTriggerSFPerDecayMode if per_decay_mode else TauTauTriggerSF
 
 
 BoostedMTGenerateSingleMuonTriggerSF_MC = ExtendedVectorProducer(

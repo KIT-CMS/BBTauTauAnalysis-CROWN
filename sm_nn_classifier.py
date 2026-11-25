@@ -12,10 +12,14 @@ from .constants import ERAS_RUN2
 from .friend_common import build_nn_classifier_friend
 from .nn_payloads import NNModel  # noqa: F401  (the type of the entries of MODELS)
 
-# The models of the production, e.g. for FR2 of the spec
-#     NNModel("payloads/nn_classifier/m0_v1", "nn_m0_"), NNModel("payloads/nn_classifier/m0_k4_v1", "nn_m0k4_"),
-# with a new friend tag whenever the list or a payload changes. None is trained on v7b yet.
-MODELS = ()
+# The models of the production, with a new friend tag whenever the list or a payload changes. The shift production
+# (v8 spec C28, V15, 5.3) evaluates the deployed model M3 (repetition 4) and the baseline AB_NV1 (repetition 0),
+# both trained on v7b, installed by `bbtautau-nn install` (the README of each directory has the provenance). The
+# prefixes are those of the ShapeSmith runs.
+MODELS = (
+    NNModel("payloads/nn_classifier/m3_abnv1_20261113", "nn_m3abnv1_"),
+    NNModel("payloads/nn_classifier/m0_k4_v7b5_wp_abnv1", "nn_m0k4abnv1_"),
+)
 AVAILABLE_ERAS = list(ERAS_RUN2)
 
 

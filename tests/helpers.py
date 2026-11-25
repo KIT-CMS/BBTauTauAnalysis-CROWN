@@ -13,6 +13,7 @@ import importlib
 import json
 import logging
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -162,6 +163,82 @@ def generate_code(module_name, sample, era, scopes=("mt",), shifts=("none",)):
     with open(f"{directory}/outputs.json") as f:
         outputs = {scope: set(names) for scope, names in json.load(f).items()}
     return Generated(Path(directory), outputs)
+
+
+def quantities_map(outputs, era, sample, config, path):
+    """Write the quantities map of the output columns ``outputs`` (scope -> names, a shifted
+    column as <name>__<shift>) to ``path`` and return the path as a string. It is the map an
+    executable writes into its output file (CodeGenerator.set_shift_quantities_map: per scope
+    the columns of every shift, "" for the nominal) in the JSON layout KingMaker hands to the
+    friend builds (helpers/GetQuantitiesMap.py)."""
+    scopes = {}
+    for scope, names in outputs.items():
+        shifts = scopes.setdefault(scope, {})
+        for name in names:
+            quantity, _, shift = name.partition("__")
+            shifts.setdefault(shift, []).append(quantity)
+    content = {
+        "quantities": {era: {sample: {s: {k: sorted(v) for k, v in shifts.items()} for s, shifts in scopes.items()}}},
+        "metadata": {"era": era, "sample_type": sample, "config": config},
+    }
+    Path(path).write_text(json.dumps(content))
+    return str(path)
+
+
+_GENERATE_FRIEND = """
+import importlib, json, logging, sys
+from analysis_configurations.bbtautau.constants import ALL_SAMPLES, ERAS, SCOPES
+from code_generation.code_generation import CodeGenerator
+module_name, sample, era, scope, shifts, maps, directory = json.loads(sys.argv[1])
+module = importlib.import_module(f"analysis_configurations.bbtautau.{module_name}")
+logging.disable(logging.CRITICAL)
+config = module.build_config(era, sample, [scope], set(shifts), ALL_SAMPLES,
+                             list(getattr(module, "AVAILABLE_ERAS", ERAS)), SCOPES, maps)
+generator = CodeGenerator("code_generation/analysis_template_friends.cxx",
+                          "code_generation/subset_template.cxx", config, "bbtautau",
+                          module_name, f"{module_name}_{sample}_{era}_{scope}", directory)
+generator.generate_code()
+with open(f"{directory}/outputs.json", "w") as f:
+    json.dump(generator.output_commands, f)
+"""
+
+
+def generate_friend_code(module_name, sample, era, scope, maps, shifts=("all",)):
+    """Generate the C++ code of the friend ``module_name`` for one scope on the quantities maps
+    ``maps`` (the main n-tuple first, then the friends it requires), as generate_friends.run
+    does, in a subprocess: a friend build leaves the shifts of its inputs on module-level
+    quantities. Returns a ``Generated`` with the output columns of the scope."""
+    directory = tempfile.mkdtemp(prefix=f"{module_name}_{sample}_{era}_{scope}_")
+    atexit.register(shutil.rmtree, directory, ignore_errors=True)
+    arguments = json.dumps([module_name, sample, era, scope, list(shifts), list(maps), directory])
+    result = subprocess.run(
+        [sys.executable, "-c", _GENERATE_FRIEND, arguments],
+        cwd=Path(__file__).resolve().parents[3],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-3000:]
+    with open(f"{directory}/outputs.json") as f:
+        outputs = {name: set(names) for name, names in json.load(f).items()}
+    return Generated(Path(directory), outputs)
+
+
+_CALL = re.compile(r"auto df\d+ = (.*?);", re.S)
+
+
+def generated_calls(generated):
+    """The producer calls of generated code per scope: every ``auto dfN = <call>;`` statement of
+    src/<scope>/, with whitespace collapsed and the dataframe numbering removed, sorted. Together
+    with the output columns they are what a build computes."""
+    (code,) = generated.directory.glob("*_generated_code")
+    return {
+        scope.name: sorted(
+            re.sub(r"\bdf\d+\b", "df", " ".join(call.split()))
+            for source in sorted(scope.glob("*.cxx"))
+            for call in _CALL.findall(source.read_text())
+        )
+        for scope in sorted((code / "src").iterdir())
+    }
 
 
 class FakeArgs:

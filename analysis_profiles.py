@@ -1,6 +1,53 @@
 """Immutable analysis profiles consumed by common_config.build_config."""
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Mapping, Optional, Tuple
+
+
+@dataclass(frozen=True)
+class ShiftScheme:
+    """
+    The systematic shifts of a profile where they differ from the common set of
+    `variations/`. The defaults are the common set, which the NMSSM analysis and
+    the tau-ID measurement keep; the SM analysis sets the scheme of its shift
+    production (v8 spec section 4, the item is named at each field).
+    """
+
+    # The POG syst_TES_<era>_dm<DM> components of the vsJet SF as weight shifts
+    # per era and decay mode (C18).
+    tau_id_vs_jet_syst_tes: bool = False
+    # The energy scale of genuine taus per decay mode without pT bins, and that
+    # of mu -> tau fakes per decay mode instead of per muon wheel (C21).
+    tau_es_per_decay_mode: bool = False
+    # The scopes with the energy scale shifts of e -> tau and of mu -> tau
+    # fakes; None: every scope with a hadronic tau (C29).
+    electron_fake_tau_es_scopes: Optional[Tuple[str, ...]] = None
+    muon_fake_tau_es_scopes: Optional[Tuple[str, ...]] = None
+    # The jet energy resolution in the six eta/pT regions of JERC
+    # (variations.jec.JER_REGIONS) instead of one shift per era (C33).
+    jer_regions: bool = False
+    # The muon energy scale of simulated and embedded events: scope -> the
+    # |eta| regions (variations.muons.MUON_ES_REGIONS) with a shift. These
+    # scopes read the muon pT through a producer of their own
+    # (producers/lepton_energy_scale.py), whose nominal passes it on (C37).
+    muon_es_regions: Mapping[str, Tuple[str, ...]] = field(default_factory=dict)
+    # The electron energy scale of the tau embedding in et, barrel and endcap
+    # (variations.electrons.add_embedding_electron_es_shifts); the embedded
+    # events of et then read the electron pT through a producer of the scope,
+    # whose nominal passes it on (C32).
+    embedding_electron_es: bool = False
+    # The unclustered energy shift of the MET also on the recoil-corrected
+    # samples (DY and W of the Run-2 v15 recoil eras), where it acts before
+    # the recoil correction. Without it these samples have the recoil shifts
+    # only, every other simulated sample the unclustered energy shift only
+    # (C38).
+    unclustered_energy_shift_on_recoil_corrected_samples: bool = True
+    # The di-tau trigger SF of tt varied per decay mode, four shifts per era,
+    # instead of coherently (C39).
+    ditau_trigger_per_decay_mode: bool = False
+    # The parton shower weight ps_weight of simulated events with the shifts
+    # ps_isr and ps_fsr, the ISR and FSR scale times 2 (Up) and 0.5 (Down) from
+    # the PSWeight of NanoAOD (C23).
+    parton_shower: bool = False
 
 
 @dataclass(frozen=True)
@@ -9,7 +56,8 @@ class AnalysisProfile:
     # SampleModifier mappings sample -> mother pdgid (default -1).
     bb_truegen_mother_pdgid: Mapping[str, int]
     tautau_truegen_mother_pdgid: Mapping[str, int]
-    # Samples for which the STANDARD LHE_Scale_weight producer is removed.
+    # Samples for which the STANDARD LHE_Scale_weight producer is removed; they
+    # get no QCD scale shifts either.
     lhe_scale_weight_excluded_samples: Tuple[str, ...]
     # Samples for which the special NMSSM producer replaces the standard one.
     nmssm_lhe_scale_weight_samples: Tuple[str, ...]
@@ -76,6 +124,28 @@ class AnalysisProfile:
     # Working points of the strict UParTAK4 b-tag event weight, tightest first
     # (v7 spec E14, C14).
     btag_sf_working_points: Tuple[str, ...] = ("T", "M")
+    # The columns of the jets with the PNet/UParT pT regression (bpair_*_regressed*,
+    # jpt_regressed*) and their producers. The Run-2 v15 path calibrates these
+    # jets with the AK4PFPuppi corrections, which JERC excludes for regressed
+    # jets, and nothing reads the columns (v8 spec C36).
+    regressed_jet_columns: bool = True
+    # The sample types with the weights of the 100 PDF eigenvectors as columns
+    # lhe_pdf_weight_<i> = LHEPdfWeight[i], i = 1..100, without a combination per
+    # event (v8 spec C24).
+    lhe_pdf_weight_samples: Tuple[str, ...] = ()
+    # The inputs of the NN stage B (nn spec N19, v8 spec C25-C27, V12): in et, mt
+    # and tt the jets of n_jets in eight slots (kinematics, UParT scores, in MC
+    # the hadron flavour and in the samples of bb_truegen_mother_pdgid the flag
+    # of the jets from the decay to bb) and the raw DeepTau vsEle and vsMu
+    # scores of the tau legs; in every scope of MC genTtbarId.
+    stage_b_columns: bool = False
+    # Per hadronic tau leg of MC the vsJet SF of the pT-binned set of the TAU
+    # payload (flag "pt", for taus above 140 GeV) with its total uncertainty, as
+    # the weight columns id_wgt_tau_vsJet_<WP>_highpt[_up|_down]_<leg>; the SF
+    # applied stays the DM-binned one (v8 spec C40, V35).
+    tau_id_vs_jet_high_pt_columns: bool = False
+    # The systematic shifts beyond the common set.
+    shifts: ShiftScheme = field(default_factory=ShiftScheme)
 
 
 NMSSM_PROFILE = AnalysisProfile(
@@ -97,8 +167,9 @@ SM_PROFILE = AnalysisProfile(
     bb_truegen_mother_pdgid={"hh2b2tau": 25},
     tautau_truegen_mother_pdgid={"hh2b2tau": 25},
     # SM keeps the standard LHE producer for hh2b2tau (9-entry LHEScaleWeight
-    # in the v15 HH input).
-    lhe_scale_weight_excluded_samples=("data", "embedding", "embedding_mc", "diboson"),
+    # in the v15 HH input) and for diboson: all 56 diboson nicks of the Run-2
+    # v15 lists carry the 9-entry LHEScaleWeight (v8 spec C34).
+    lhe_scale_weight_excluded_samples=("data", "embedding", "embedding_mc"),
     nmssm_lhe_scale_weight_samples=(),
     use_run2_v15_inputs=True,
     bjet_max_abs_eta_override=2.4,
@@ -113,6 +184,38 @@ SM_PROFILE = AnalysisProfile(
     hem_veto_flag=True,
     electron_sf_supercluster_eta=True,
     btag_sf_working_points=("T", "M"),
+    regressed_jet_columns=False,
+    lhe_pdf_weight_samples=("hh2b2tau",),
+    stage_b_columns=True,
+    tau_id_vs_jet_high_pt_columns=True,
+    shifts=ShiftScheme(
+        tau_id_vs_jet_syst_tes=True,
+        tau_es_per_decay_mode=True,
+        electron_fake_tau_es_scopes=("et",),
+        muon_fake_tau_es_scopes=("mt",),
+        jer_regions=True,
+        # mt keeps no muon above |eta| = 2.1 in the analysis (v7 spec E31)
+        muon_es_regions={
+            "mt": ("etalt1p2", "eta1p2to2p1"),
+            "em": ("etalt1p2", "eta1p2to2p1", "eta2p1to2p4"),
+        },
+        embedding_electron_es=True,
+        unclustered_energy_shift_on_recoil_corrected_samples=False,
+        ditau_trigger_per_decay_mode=True,
+        parton_shower=True,
+    ),
+)
+
+# The surfaces of the productions smrun2_btag_eff_v1 and smrun2_tau_id_v2, which
+# the profiles below keep: diboson without the QCD scale weight, the columns of
+# the regressed jets, and none of the columns of the shift production (PDF
+# weights, NN stage B, high-pT vsJet SF).
+_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES = ("data", "embedding", "embedding_mc", "diboson")
+_V7_COLUMNS = dict(
+    regressed_jet_columns=True,
+    lhe_pdf_weight_samples=(),
+    stage_b_columns=False,
+    tau_id_vs_jet_high_pt_columns=False,
 )
 
 # Same selection as the SM analysis, but MC only, no b-tag SF, and the
@@ -124,12 +227,18 @@ SM_BTAG_EFFICIENCY_PROFILE = replace(
     mc_only=True,
     enable_btag_sf=False,
     enable_probe_jet_collection=True,
+    # produced without shifts (smrun2_btag_eff_v1); the surface of that production stays
+    shifts=ShiftScheme(),
+    lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
+    **_V7_COLUMNS,
 )
 
 # The SM selection in mt and mm with the corrections and MC shifts of the tau-ID
 # SF and ES measurement, which applies no b-tag SF. The embedded taus stay
 # uncorrected and keep a lower pT threshold, so that the ES grid applied
-# downstream (up to +20 %) still finds every tau above 20 GeV.
+# downstream (up to +20 %) still finds every tau above 20 GeV. Its MC shifts are
+# those of its production smrun2_tau_id_v2, the common set (README, section
+# "Tau-ID measurement"), not the scheme of the SM shift production.
 SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     SM_PROFILE,
     name="sm_tau_id_measurement",
@@ -139,4 +248,7 @@ SM_TAU_ID_MEASUREMENT_PROFILE = replace(
     embedding_tau_corrections=False,
     embedding_min_tau_pt=20.0 / 1.2,
     tau_id_measurement=True,
+    shifts=ShiftScheme(),
+    lhe_scale_weight_excluded_samples=_V7_LHE_SCALE_WEIGHT_EXCLUDED_SAMPLES,
+    **_V7_COLUMNS,
 )

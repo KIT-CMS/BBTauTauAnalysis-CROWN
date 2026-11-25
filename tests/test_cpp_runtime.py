@@ -26,6 +26,8 @@ CPP, ADDONS, FIXTURES = (
     ANALYSIS / "tests/fixtures",
 )
 CORRECTION_MANAGER = CROWN / "src/utility/CorrectionManager.cxx"
+# the implementation of the core Logger (in the header before CROWN#414)
+LOGGER = CROWN / "src/utility/Logger.cxx"
 EGM_ROOT = Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM")
 # The pinned official EGM payloads of the category layouts the reconstruction
 # weight handles: Run 2 UL (split at 20 GeV, every era), Run 3 (splits at 20 and
@@ -91,6 +93,9 @@ def onnxruntime_flags():
 
 def compile_fixture(directory, name, sources, defines=(), correctionlib=False, libraries=()):
     compiler, flags, corr, spdlog = toolchain()
+    sources = list(sources)
+    if LOGGER.is_file() and LOGGER not in sources:
+        sources.append(LOGGER)
     includes = [ADDONS / "include", CROWN / "include", spdlog, corr / "include"]
     command = [
         compiler,
@@ -123,7 +128,7 @@ def electron_reco_binary(tmp_path_factory):
         "electron_reco",
         [
             CPP / "test_control_electron_reco.cxx",
-            ADDONS / "src/electron_reco.cxx",
+            CROWN / "src/electrons.cxx",
             CORRECTION_MANAGER,
         ],
         correctionlib=True,
@@ -257,7 +262,6 @@ def electron_supercluster_binary(tmp_path_factory):
         [
             CPP / "test_electron_supercluster_eta.cxx",
             CROWN / "src/electrons.cxx",
-            ADDONS / "src/electron_reco.cxx",
             CORRECTION_MANAGER,
         ],
         correctionlib=True,
@@ -334,14 +338,171 @@ def test_jer_hybrid_smearing_matches_gen_jets_and_draws_per_jet(
     """The JEC chain scales gen-matched jets with the closest passing gen jet,
     draws one independent standard-normal number per unmatched jet, which
     neither the matching of other jets nor the JER variation changes, and the
-    HEM variation scales every tight-ID jet in the HEM region; with the pinned
-    JME payload and tags of every Run-2 era."""
+    HEM variation scales every tight-ID jet in the HEM region; a JER variation
+    restricted to one of the six regions of the configuration (v8 spec C33)
+    varies the jets of its region like the inclusive variation and leaves every
+    other jet at its nominal pt; with the pinned JME payload and tags of every
+    Run-2 era."""
+    from analysis_configurations.bbtautau.variations.jec import JER_REGIONS
+
     payload, jer_tag, jes_tag = jec_settings(era)
     if not Path(payload).is_file():
         pytest.skip("Pinned official JME payload requires CVMFS")
     subprocess.run(
-        [str(jer_smearing_binary), payload, reapply_jes, jer_tag, jes_tag, era], check=True
+        [str(jer_smearing_binary), payload, reapply_jes, jer_tag, jes_tag, era, *JER_REGIONS.values()],
+        check=True,
     )
+
+
+@pytest.fixture(scope="module")
+def energy_scale_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("energy_scale"),
+        "energy_scale",
+        [CPP / "test_energy_scale.cxx", ADDONS / "src/energy_scale.cxx"],
+    )
+
+
+def cpp_numbers(text):
+    """The numbers of a C++ list body written by helpers.cpp_list."""
+    return [number.strip() for number in text.split(",")]
+
+
+def scale_pt_arguments(config, scope, prefix):
+    """The arguments of tests/cpp/test_energy_scale.cxx for the scope-level energy scale of
+    ``config``: the |eta| edges, and the factors of the nominal and of every shift."""
+    nominal = config.config_parameters[scope]["nominal"]
+    edges = cpp_numbers(nominal[f"{prefix}_es_abs_eta_edges"])
+    variations = [nominal[f"{prefix}_es_scale_factors"]] + [
+        change[f"{prefix}_es_scale_factors"]
+        for change in config.shifts[scope].values()
+        if f"{prefix}_es_scale_factors" in change
+    ]
+    arguments = [str(len(edges)), *edges, str(len(variations))]
+    for factors in variations:
+        factors = cpp_numbers(factors)
+        assert len(factors) == len(edges)
+        arguments += factors
+    return arguments, len(variations) - 1
+
+
+@pytest.mark.parametrize("scope,pairs", [("mt", 2), ("em", 3)])
+def test_muon_energy_scale_scales_the_muons_of_a_region(energy_scale_binary, scope, pairs):
+    """The scope-level muon pT scale (v8 spec C37) with the edges and factors of the
+    configuration: the nominal factors return the input pT bit for bit, and every shift
+    scales the muons of its |eta| region only."""
+    config = build("sm_config", "ttbar", era="2018", scopes=(scope,), shifts=("CMS_scale_m",))
+    arguments, shifts = scale_pt_arguments(config, scope, "muon")
+    assert shifts == 2 * pairs
+    subprocess.run([str(energy_scale_binary), *arguments], check=True)
+
+
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_embedding_electron_energy_scale_scales_the_electrons_of_a_region(energy_scale_binary, era):
+    """The scope-level electron pT scale of the et embedding (v8 spec C32) with the edges and
+    factors of the configuration: nominal bit for bit, barrel and endcap shifted alone."""
+    config = build("sm_config", "embedding", era=era, scopes=("et",), shifts=("CMS_scale_e_",))
+    arguments, shifts = scale_pt_arguments(config, "et", "electron")
+    assert shifts == 4
+    subprocess.run([str(energy_scale_binary), *arguments], check=True)
+
+
+@pytest.fixture(scope="module")
+def tau_trigger_sf_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("tau_trigger_sf"),
+        "tau_trigger_sf",
+        [CPP / "test_tau_trigger_sf.cxx", ADDONS / "src/tau_trigger_sf.cxx", CORRECTION_MANAGER],
+        correctionlib=True,
+    )
+
+
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_tau_trigger_sf_per_decay_mode(tau_trigger_sf_binary, era):
+    """The di-tau trigger SF of the SM analysis (v8 spec C39) on the pinned TAU payload of
+    the era: "nom", "up" and "down" are the correction at the tau as the core function
+    evaluates it, and "<up|down>_dm<DM>" varies the taus of one decay mode only."""
+    nominal = build("sm_config", "ttbar", era=era, scopes=("tt",)).config_parameters["tt"]["nominal"]
+    payload = Path(nominal["tau_trigger_sf_file"])
+    if not payload.is_file():
+        pytest.skip("Pinned official TAU payload requires CVMFS")
+    triggers = {entry["tt_trigger_leg1_sf_name"] for entry in nominal["double_tautau_trigger_leg1_sf"]}
+    triggers |= {entry["tt_trigger_leg2_sf_name"] for entry in nominal["double_tautau_trigger_leg2_sf"]}
+    (trigger,) = triggers
+    subprocess.run(
+        [str(tau_trigger_sf_binary), str(payload), nominal["tau_trigger_cset_name"], trigger, "Medium"],
+        check=True,
+    )
+
+
+@pytest.fixture(scope="module")
+def tau_id_high_pt_binary(tmp_path_factory):
+    return compile_fixture(
+        tmp_path_factory.mktemp("tau_id_high_pt"),
+        "tau_id_high_pt",
+        [CPP / "test_tau_id_high_pt.cxx", ADDONS / "src/tau_id_high_pt.cxx", CORRECTION_MANAGER],
+        correctionlib=True,
+    )
+
+
+@pytest.mark.parametrize("scope", ["et", "mt", "tt"])
+@pytest.mark.parametrize("era", RUN2_ERAS)
+def test_tau_id_vs_jet_pt_binned_columns(tau_id_high_pt_binary, era, scope):
+    """The columns of the pT-binned vsJet SF (v8 spec C40) on the pinned TAU payload of the
+    era with the working points of the scope: the nominal is the correction with flag "pt",
+    up and down are nom +- the quadrature sum of the four components (the payload's own
+    total without the extrapolation component), and the columns are defined and finite
+    below 140 GeV, for non-taus and for legs without a tau."""
+    nominal = build("sm_config", "ttbar", era=era, scopes=(scope,)).config_parameters[scope]["nominal"]
+    payload = Path(nominal["tau_vsjet_es_sf_file"])
+    if not payload.is_file():
+        pytest.skip("Pinned official TAU payload requires CVMFS")
+    entries = nominal["vsjet_tau_id_sf_high_pt"]
+    assert {entry["discriminator"] for entry in entries} == {"DeepTau2018v2p5VSjet"}
+    for wp in sorted({entry["vsjet_wp"] for entry in entries}):
+        subprocess.run(
+            [
+                str(tau_id_high_pt_binary), str(payload), "DeepTau2018v2p5VSjet", wp,
+                nominal["tau_ides_sf_vsele_wp"],
+            ],
+            check=True,
+        )
+
+
+def test_parton_shower_weight_indices_and_checked_weight_length(tmp_path):
+    """The parton shower weight (v8 spec C23): the core function reads PSWeight[0, 1, 2, 3]
+    for the ISR and FSR scale times 2 and times 0.5, the order of the Run-2 v15 files, and
+    xyh::theory_weights::CheckedSize in front of it stops on every other length, in the
+    nominal as under a variation (and on PDF weight vectors that are not 101 or 103 long)."""
+    root_config = shutil.which("root-config")
+    if not root_config:
+        pytest.skip("ROOT and a C++ compiler are required")
+    binary = compile_fixture(
+        tmp_path,
+        "theory_weights",
+        [
+            CPP / "test_theory_weights.cxx",
+            ADDONS / "src/theory_weights.cxx",
+            CROWN / "src/reweighting.cxx",
+            CORRECTION_MANAGER,
+        ],
+        correctionlib=True,
+        libraries=["-lRooFit", "-lRooFitCore", "-lROOTDataFrame", "-lROOTVecOps"],
+    )
+    subprocess.run([str(binary)], check=True)
+
+
+def test_jets_from_the_higgs_boson_decay(tmp_path):
+    """xyh::genmatching::JetsFromBosonDecay (jet_from_hbb_<slot>, v8 spec C25): every last
+    copy of a hard-process b quark below the boson flags its nearest jet of the collection
+    within Delta R < 0.4; quarks from gluon splitting, real emissions and the quarks of
+    another boson do not."""
+    binary = compile_fixture(
+        tmp_path,
+        "hbb_jets",
+        [CPP / "test_hbb_jets.cxx", ADDONS / "src/hbb_jets.cxx"],
+    )
+    subprocess.run([str(binary)], check=True)
 
 
 def test_matched_trigger_object_quantity(tmp_path):
@@ -366,15 +527,18 @@ FF_REFERENCE_LEGS = [
     ("nmssm2023postBPix", FF_PAYLOADS / "fake-factors-2026-06-10/2023postBPix", ("mt",)),
     ("nmssm2025", FF_PAYLOADS / "fake-factors-2026-09-26/2025", ("mt",)),
 ]
-# the v7b payloads of every SM payload era (2026-10-19): QCD + ttbar against the frozen
-# reference, QCD + W + ttbar as the three-process sum in et and mt, whose tt legs (no
-# W+jets in tt) are two-process again: (label, payload directory, scopes, reference)
+# the v7b (2026-10-19) and v7c (2026-11-24, the payloads of the shift production)
+# payloads of every SM payload era: QCD + ttbar against the frozen reference,
+# QCD + W + ttbar as the three-process sum in et and mt, whose tt legs (no W+jets in
+# tt) are two-process again: (label, payload directory, scopes, reference)
 V7B_PAYLOAD_ERAS = ("2016", "2017", "2018")
 V7B_LEGS = [
-    (f"sm{era}v7b", FF_PAYLOADS / f"sm/fake-factors-2026-10-19/{era}", ("et", "mt", "tt"), True)
+    (f"sm{era}{label}", FF_PAYLOADS / f"sm/fake-factors-{date}/{era}", ("et", "mt", "tt"), True)
+    for label, date in (("v7b", "2026-10-19"), ("v7c", "2026-11-24"))
     for era in V7B_PAYLOAD_ERAS
 ] + [
-    (f"sm{era}v7bw", FF_PAYLOADS / f"sm/fake-factors-2026-10-19-w/{era}", scopes, reference)
+    (f"sm{era}{label}w", FF_PAYLOADS / f"sm/fake-factors-{date}-w/{era}", scopes, reference)
+    for label, date in (("v7b", "2026-10-19"), ("v7c", "2026-11-24"))
     for era in V7B_PAYLOAD_ERAS
     for scopes, reference in ((("et", "mt"), False), (("tt",), True))
 ]
@@ -446,11 +610,11 @@ def fake_factor_plan(label, payload_dir, scopes, reference):
 def test_fake_factor_sum_over_the_payload_processes(tmp_path):
     """C15: fakefactors::xyh::FakeFactor sums f_p * FF_p * corrections_p over the
     processes of the payload. On the measured two-process payloads (SM 2018 et,
-    mt, tt; NMSSM 2023postBPix, 2025 mt; the v7b QCD + ttbar payloads of 2016, 2017
-    and 2018 and the tt legs of the v7b W variant) it reproduces the friend before C15 bit
+    mt, tt; NMSSM 2023postBPix, 2025 mt; the v7b and v7c QCD + ttbar payloads of 2016, 2017
+    and 2018 and the tt legs of their W variants) it reproduces the friend before C15 bit
     for bit, raw and corrected, nominal and with every syst key the friend
     shifts; on a QCD + W + ttbar payload (derived from SM 2018 et and mt, and the
-    measured v7b ones of every era) it gives the three-process sum, with a W term. Every leg gives that sum in the
+    measured v7b and v7c ones of every era) it gives the three-process sum, with a W term. Every leg gives that sum in the
     float arithmetic of the friend (in payload order) bit for bit, which fixes
     the values of the three-process legs as well.
 
@@ -484,7 +648,8 @@ def test_fake_factor_sum_over_the_payload_processes(tmp_path):
     result = subprocess.run([str(binary), str(plan)], capture_output=True, text=True)
     summary = [line for line in result.stdout.splitlines() if line.startswith(("PASS", "FAIL"))]
     assert result.returncode == 0, "\n".join(summary) + result.stderr[-3000:]
-    legs = 8 + 3 * 4 + 3 * 4  # + per v7b payload era: et, mt, tt leading and subleading, in both variants
+    # + per v7b and v7c payload era: et, mt, tt leading and subleading, in both variants
+    legs = 8 + 2 * (3 * 4 + 3 * 4)
     assert len(summary) == legs and all(line.startswith("PASS") for line in summary), summary
 
 
